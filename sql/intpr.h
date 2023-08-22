@@ -61,8 +61,8 @@ typedef struct {
 
 typedef struct {
    union {
-      ConstNode  *i_value;
-      IdentSetNode *s_value;
+      ConstNode *i_value;
+      IdentNode *s_value;
    };
 }ValueItemNode;
 

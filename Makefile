@@ -5,6 +5,6 @@ CFLAGS=-std=c99
 compile: ${PROP}
 	gcc ${PROP} -o ${PROMT} -w
 debug: ${PROP}
-	gcc -g ${PROP} -o ${PROMT}
+	gcc -g ${PROP} -o ${PROMT} -w
 clean:
 	rm -r -f *.o ${PROMT}

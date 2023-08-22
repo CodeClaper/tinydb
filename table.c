@@ -16,7 +16,7 @@
 
 // Get table file path.
 static char *table_file_path(char *table_name) {
-  char *file_path = malloc(strlen(data_dir) + strlen(table_name) + strlen(".db"));
+  char *file_path = malloc(strlen(data_dir) + strlen(table_name) + strlen(".dbt"));
   sprintf(file_path, "%s%s%s", data_dir, table_name, ".dbt");
   return file_path;
 }

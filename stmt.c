@@ -16,6 +16,9 @@
 // get row from insert statement
 Row *get_statement_insert_row(Statement *stmt) {
     ASTNode *node = stmt->ast_node;
+    if (node == NULL) {
+        fatal("Sql parse error.");
+    }
     assert(node->statement_type == INSERT_STMT);
     return generate_insert_row(node->insert_node);
 }
@@ -46,6 +49,8 @@ ExecuteResult statement_create_table(Statement *stmt) {
 // execute insert statment
 ExecuteResult statement_insert(Statement *stmt) {
     Row *row = get_statement_insert_row(stmt);
+    if (row == NULL)
+        return EXIT_FAILURE;
     Table *table = open_table(row->table_name);
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->id);
@@ -55,7 +60,7 @@ ExecuteResult statement_insert(Statement *stmt) {
     }
     insert_leaf_node(cursor, row);
     // free memeory
-    for (uint32_t i = 0; i < MAX_COLUMN_SIZE; i++) {
+    for (uint32_t i = 0; i < row->data_len; i++) {
         if (row->data[i]) {
             free(row->data[i]);
         }

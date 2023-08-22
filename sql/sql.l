@@ -23,7 +23,7 @@ values  return VALUES;
 [=]     return EQ;
 [>]     return GT;
 [<]     return LT;
-[']     return QUOTE;
+"'"     return QUOTE;
 "!="    return NE;
 ">="    return GE;
 "<="    return LE;

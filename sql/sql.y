@@ -9,7 +9,7 @@ int yywrap() {
 }
 
 int yyerror(const char *s) {
-    fprintf(stderr, "Sql Syatax Error, '%s'\n", s);
+    fprintf(stderr, "Sql parse error, '%s'.\n", s);
 }
 %}
 %union 
@@ -88,6 +88,7 @@ statement_insert:
                     InsertNode *node = make_insert_node();
                     node->if_ignore_columns = true;
                     node->from_item_node = $3;
+                    node->value_item_set_node = $6;
                     $$ = node;
                 }
             | insert into from_item LEFTPAREN columns RIGHTPAREN values LEFTPAREN value_items RIGHTPAREN SEMICOLON NL

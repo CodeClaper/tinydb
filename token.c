@@ -15,6 +15,8 @@ extern YY_BUFFER_STATE yy_scan_string(char *str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
 Statement *adapt(ASTNode *node) {
+    if (node == NULL)
+        return NULL;
     Statement *statement = malloc(sizeof(Statement));
     if (statement == NULL)
         MALLOC_ERROR;
@@ -33,6 +35,7 @@ Statement *adapt(ASTNode *node) {
             break;
 
     }
+    statement->ast_node = node;
     return statement;
 }
 

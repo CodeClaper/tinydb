@@ -10,7 +10,7 @@ InputBuffer *input_buffer;
 
 // init variable
 void init_variable() {
-    data_dir = "/data/";
+    data_dir = "./data/";
     input_buffer = malloc(sizeof(InputBuffer));
 }
 
@@ -25,6 +25,8 @@ int main(void) {
         print_prompt();
         read_input(input_buffer);
         Statement *statement = parse(input_buffer->input);
+        if (statement == NULL)
+            continue;
         switch(statement->statement_type) {
             case STMT_CREATE_TABLE:
                 statement_create_table(statement);
