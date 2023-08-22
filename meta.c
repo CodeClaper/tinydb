@@ -1,0 +1,72 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include "common.h"
+#include "meta.h"
+#include "node.h"
+#include "misc.h"
+#include "pager.h"
+
+uint32_t column_type_length(ColumnType column_type) {
+    switch(column_type) {
+        case BIT:
+            return 2;
+        case CHAR:
+            return sizeof(char);
+        case INT:
+            return sizeof(int);
+        case DOUBLE:
+            return sizeof(double);
+        case FLOAT:
+            return sizeof(float);
+        case VARCHAR:
+            return 256;
+        case DATE:
+            return 48;
+        case TIMESTAMP:
+            return 48;
+        default:
+            fatal("unknow column type"); 
+    }
+}
+
+// calculate the length of table row
+uint32_t calc_table_row_length(Table *table) {
+    uint32_t len = 0;
+    for (int i = 0; i < table->meta_table->column_size; i++) {
+        MetaColumn *meta_col = (table->meta_table->meta_column[i]);
+        len += meta_col->column_length;
+    }
+    return len;
+}
+
+
+// get index column meta info
+MetaColumn *get_meta_column(void *root_node, uint32_t index) {
+    uint32_t column_size = get_column_size(root_node);  
+    if (index >= column_size) {
+        fprintf(stderr, "Try to fetch colum number out of bounds: %d >= %d", index, column_size);
+        exit(1);
+    } 
+    void *destination = get_meta_column_pointer(root_node, index);
+    return deserialize_meta_column(destination);
+}
+
+// get table meta info
+MetaTable *get_meta_table(Table *table, char *table_name) {
+    MetaTable *meta_table = malloc(sizeof(MetaTable));
+    if (meta_table == NULL)
+        MALLOC_ERROR;
+    void *root_node = get_page(table->pager, table->root_page_num);
+    uint32_t column_size = get_column_size(root_node);  
+
+    meta_table->table_name = table_name;
+    meta_table->column_size = column_size;
+    size_t meta_column_size = sizeof(MetaColumn); 
+    for (int i = 0; i < column_size; i++) {
+        meta_table->meta_column[i] = malloc(meta_column_size);
+        memcpy(meta_table->meta_column[i], get_meta_column(root_node, i), meta_column_size);
+    }
+    return meta_table;
+}
