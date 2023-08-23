@@ -7,6 +7,7 @@
 #include "table.h"
 #include "meta.h"
 #include "insert.h"
+#include "index.h"
 
 // get table name in select node.
 static char *get_table_name(InsertNode *insert_node) {
@@ -75,6 +76,9 @@ Row *generate_insert_row(InsertNode *insert_node) {
             exit(1);
         }
         key_value->value = get_column_value(insert_node, i, meta_column);
+        if (meta_column->is_primary) {
+            row->key = define_key(key_value->value, meta_column);
+        }
         *(row->data + i)= key_value;
     }
     return row;

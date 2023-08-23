@@ -12,6 +12,7 @@
 #include "node.h"
 #include "meta.h"
 #include "insert.h"
+#include "select.h"
 
 // get row from insert statement
 Row *get_statement_insert_row(Statement *stmt) {
@@ -72,6 +73,8 @@ ExecuteResult statement_insert(Statement *stmt) {
 }
 
 ExecuteResult statement_select(Statement *statement) {
+    assert(statement->statement_type == STMT_SELECT);
+    select_print(statement->ast_node->select_node);
     return EXECUTE_SUCCESS;
 }
 

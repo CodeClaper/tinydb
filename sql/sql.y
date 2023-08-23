@@ -20,11 +20,14 @@ int yyerror(const char *s) {
    ConstNode *const_node;
    IdentNode *ident_node;
    IdentSetNode *ident_set_node;
+   OprNode *opr_node;
+   ConnNode *conn_node;
    SelectItemsNode *select_items_node;
    ColumnSetNode *column_set_node;
    ValueItemNode *value_item_node;
    ValueItemSetNode *value_item_set_node;
    FromItemNode *from_item_node;
+   ConditionNode *cond_node;
    SelectNode *select_node;
    InsertNode *insert_node;
 };
@@ -35,7 +38,7 @@ int yyerror(const char *s) {
 %token <keyword> INTO
 %token <keyword> VALUES
 %token <keyword> MAX MIN COUNT SUM AVERAGE
-%token <keyword> AND OR
+%token AND OR
 %token ALL
 %token <ident_node> IDENTIFIER
 %token <const_node> CONST
@@ -45,6 +48,9 @@ int yyerror(const char *s) {
 %type <from_item_node> from_item
 %type <value_item_node> value_item
 %type <value_item_set_node> value_items
+%type <cond_node> cond
+%type <opr_node> op
+%type <conn_node> conn
 %type <select_node> statement_select
 %type <insert_node> statement_insert
 %token EQ NE GT GE LT LE IN LIKE
@@ -58,7 +64,6 @@ statements:
 statement: 
             statement_select 
                 {
-                    graph($1);
                     set_select_ast_node($1);
                 }
             | statement_insert 
@@ -182,24 +187,41 @@ identifiers:
            ;
 cond: 
             IDENTIFIER op compare
+                {
+                    ConditionNode *cond_node = make_cond_node();
+                    IdentNode *ident_node = make_ident_node($1);
+                    cond_node->column = ident_node;
+                    cond_node->opr_node = $2;
+                    $$ = cond_node;
+                }
             | IDENTIFIER op compare conn cond
+                {
+                    ConditionNode *cond_node = make_cond_node();
+                    IdentNode *ident_node = make_ident_node($1);
+                    cond_node->column = ident_node;
+                    cond_node->opr_node = $2;
+                    $$ = cond_node;
+                }
             ;
 compare: 
-            IDENTIFIER { IdentNode *node = make_ident_node($1);}
+            IDENTIFIER 
+                { 
+                    IdentNode *node = make_ident_node($1);
+                }
             | CONST;
 op: 
-            EQ
-            | NE
-            | GT
-            | GE
-            | LT
-            | LE
-            | IN
-            | LIKE
+            EQ      { $$ = make_opr_node(O_EQ); }
+            | NE    { $$ = make_opr_node(O_NE); }
+            | GT    { $$ = make_opr_node(O_GT); }
+            | GE    { $$ = make_opr_node(O_GE); }
+            | LT    { $$ = make_opr_node(O_LT); }
+            | LE    { $$ = make_opr_node(O_LE); }
+            | IN    { $$ = make_opr_node(O_IN); }
+            | LIKE  { $$ = make_opr_node(O_LIKE); }
             ;
 conn: 
-            AND
-            | OR
+            AND     { $$ = make_conn_node(C_AND); }
+            | OR    { $$ = make_conn_node(C_OR); }
             ;
 func: 
             MAX

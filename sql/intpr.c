@@ -72,6 +72,27 @@ void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node) {
     node->num++;
 }
 
+
+// make a condition node.
+ConditionNode *make_cond_node() {
+    ConditionNode *cond_node = malloc(sizeof(ConditionNode));
+    return cond_node;
+}
+
+// make a operator node.
+OprNode *make_opr_node(OpType op_type) {
+    OprNode *opr_node = malloc(sizeof(OprNode));
+    opr_node->op_type = op_type;
+    return opr_node;
+}
+
+// make a connnection node.
+ConnNode *make_conn_node(ConnType conn_type) {
+    ConnNode *conn_node = malloc(sizeof(ConnNode));
+    conn_node->conn_type = conn_type;
+    return conn_node;
+}
+
 // make a select node.
 SelectNode *make_select_node() {
     SelectNode *select_node = malloc(sizeof(SelectNode));

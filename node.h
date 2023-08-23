@@ -23,6 +23,8 @@ uint32_t get_internal_node_child(void *node, uint32_t index);
 uint32_t get_internal_node_cell_child_page_num(void *node, uint32_t key, uint32_t keys_num);
 // get leaf node cell key
 uint32_t get_leaf_node_cell_key(void *node, uint32_t index, uint32_t row_len);
+// get leaf node cell value pointer
+void *get_leaf_node_cell_value(void *node, uint32_t row_len, uint32_t index);
 // get leaf node cell index
 uint32_t get_leaf_node_cell_index(void *node, uint32_t key, uint32_t cell_num, uint32_t row_len);
 // get index meta column pointer

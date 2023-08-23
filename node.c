@@ -143,6 +143,15 @@ uint32_t get_internal_node_keys_num(void *node) {
     }
 }
 
+void set_internal_node_keys_num(void *node, uint32_t num) {
+    if (is_root_node(node)) {
+        uint32_t column_size = get_column_size(node);
+        *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size) = num;
+    } else {
+        *(uint32_t *)(node + KEYS_NUM_OFFSET) = num;
+    }
+}
+
 // get keys number in the node by index
 uint32_t get_internal_node_keys(void *node, uint32_t index) {
     if (is_root_node(node)) {
@@ -239,6 +248,8 @@ void insert_leaf_node(Cursor *cursor, Row *row) {
         set_leaf_node_cell_key(node, cursor->cell_num, row_length, row->key);
         void *destination = serialize_row_data(row, cursor->table);
         memcpy(get_leaf_node_cell_value(node, row_length, cursor->cell_num), destination, row_length);
+        uint32_t key_num = get_internal_node_keys_num(node);
+        set_internal_node_keys_num(node, ++key_num);
     }
 }
 

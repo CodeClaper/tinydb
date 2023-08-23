@@ -139,15 +139,18 @@ union YYSTYPE
    ConstNode *const_node;
    IdentNode *ident_node;
    IdentSetNode *ident_set_node;
+   OprNode *opr_node;
+   ConnNode *conn_node;
    SelectItemsNode *select_items_node;
    ColumnSetNode *column_set_node;
    ValueItemNode *value_item_node;
    ValueItemSetNode *value_item_set_node;
    FromItemNode *from_item_node;
+   ConditionNode *cond_node;
    SelectNode *select_node;
    InsertNode *insert_node;
 
-#line 151 "y.tab.h"
+#line 154 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

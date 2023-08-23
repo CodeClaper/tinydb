@@ -76,15 +76,17 @@ typedef struct {
 }FromItemNode;
 
 
-typedef struct {
+typedef struct S_ConditionNode {
     IdentNode *column; 
     OprNode *opr_node;
     ConnNode *conn_node;
+    struct S_ConditionNode *next;
 } ConditionNode;
 
 typedef struct {
     SelectItemsNode *select_items_node; 
     FromItemNode *from_item_node;
+    ConditionNode *condition_node;
 }SelectNode;
 
 typedef struct { 
@@ -131,6 +133,15 @@ void set_select_ast_node(SelectNode *select_node);
 
 // make a column set node.
 ColumnSetNode *make_column_set_node();
+
+// make a condition node.
+ConditionNode *make_cond_node();
+
+// make a operator node.
+OprNode *make_opr_node(OpType op_type);
+
+// make a connnection node.
+ConnNode *make_conn_node(ConnType conn_type);
 
 // make a value item node.
 ValueItemNode *make_value_item_node();
