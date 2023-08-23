@@ -96,7 +96,7 @@ typedef struct {
 }KeyValue;
 
 typedef struct {
-    uint32_t id;
+    uint32_t key;
     char *table_name;
     KeyValue **data;
     uint32_t data_len;

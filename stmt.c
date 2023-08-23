@@ -53,12 +53,13 @@ ExecuteResult statement_insert(Statement *stmt) {
         return EXIT_FAILURE;
     Table *table = open_table(row->table_name);
     void *root_node = get_page(table->pager, table->root_page_num); 
-    Cursor *cursor = define_cursor(table, row->id);
-    if (check_duplicate_key(cursor, row->id)) {
-        fprintf(stderr, "key '%d' already exists, not allow duplicate key", row->id);
+    Cursor *cursor = define_cursor(table, row->key);
+    if (check_duplicate_key(cursor, row->key)) {
+        fprintf(stderr, "key '%d' already exists, not allow duplicate key. \n", row->key);
         return EXECUTE_DUPLICATE_KEY;
     }
     insert_leaf_node(cursor, row);
+    flush_page(cursor->table->pager, cursor->page_num); // flush into disk.
     // free memeory
     for (uint32_t i = 0; i < row->data_len; i++) {
         if (row->data[i]) {

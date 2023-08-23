@@ -917,7 +917,7 @@ YY_RULE_SETUP
 case 29:
 YY_RULE_SETUP
 #line 36 "sql.l"
-return CONST;
+{ yylval.i_value = atoi(yytext); return CONST;}
 	YY_BREAK
 case 30:
 /* rule 30 can match eol */

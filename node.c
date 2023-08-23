@@ -236,9 +236,9 @@ void insert_leaf_node(Cursor *cursor, Row *row) {
                 memcpy(get_leaf_node_cell(node, row_length, i), get_leaf_node_cell(node, row_length, i), cell_length);
             }
         }
-        set_leaf_node_cell_key(node, cursor->cell_num, row_length, row->id);
+        set_leaf_node_cell_key(node, cursor->cell_num, row_length, row->key);
         void *destination = serialize_row_data(row, cursor->table);
-        memcpy(get_leaf_node_cell_value(node, row_length, cursor->cell_num), destination, cell_length);
+        memcpy(get_leaf_node_cell_value(node, row_length, cursor->cell_num), destination, row_length);
     }
 }
 
@@ -268,6 +268,17 @@ void *serialize_meta_column(MetaColumn *meta_column) {
     return destination;
 }
 
+static void *get_column_value(Row *row, MetaColumn *meta_column) {
+    char *column_name = meta_column->column_name;
+    for(uint32_t i = 0; i < row->data_len; i++) {
+        if (strcmp(column_name, row->data[i]->key) == 0) {
+           return row->data[i]->value;
+        }
+    }
+    fatal("Inner error, value in row can`t match.");
+    return NULL;
+}
+
 // serialize row data
 void *serialize_row_data(Row *row, Table *table) {
     uint32_t row_length = calc_table_row_length(table);
@@ -279,7 +290,8 @@ void *serialize_row_data(Row *row, Table *table) {
     uint32_t offset = 0;
     for(uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
-        memcpy(destination + offset, row->data[i], meta_column->column_length);
+        void *value = get_column_value(row, meta_column);
+        memcpy(destination + offset, value, meta_column->column_length);
         offset += meta_column->column_length;
     }
     return destination;

@@ -10,15 +10,15 @@
 char *data_dir = "../data/";
 
 int main(void) {
-   /** MetaTable *meta_table = malloc(sizeof(MetaTable));
 
+    MetaTable *meta_table = malloc(sizeof(MetaTable));
     meta_table->table_name = "demo";
     meta_table->column_size = 3;
     MetaColumn *col1 = malloc(sizeof(MetaColumn));
     strcpy(col1->column_name, "id");
     col1->column_type = INT;
     col1->is_primary = true;
-    col1->column_length = 32;
+    col1->column_length = 4;
     MetaColumn *col2 = malloc(sizeof(MetaColumn));
     strcpy(col2->column_name, "address");
     col2->column_type = VARCHAR;
@@ -37,7 +37,5 @@ int main(void) {
     memcpy(meta_table->meta_column[1], col2, sizeof(MetaColumn));
     memcpy(meta_table->meta_column[2], col3, sizeof(MetaColumn));
     create_table(meta_table);
-    **/
-    Table *table = open_table("demo");
     printf("end");
 }

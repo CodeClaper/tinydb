@@ -33,7 +33,7 @@ values  return VALUES;
 "count" return COUNT;
 "average" return AVERAGE;
 [a-zA-Z][a-zA-Z0-9]*    { yylval.s_value = yytext; return IDENTIFIER;} 
-[0-9]+  return CONST;
+[0-9]+                  { yylval.i_value = atoi(yytext); return CONST;}
 \n      return NL;
 [ \t]   /* igonore space */
 %%

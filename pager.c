@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include "pager.h"
 #include "misc.h"
@@ -60,7 +62,11 @@ void flush_page(Pager *pager, uint32_t page_num) {
     if (pager->pages[page_num] == NULL) {
         fatal("Tried to flush null page to disk");
     } 
-    lseek(pager->file_length, PAGE_SIZE * page_num, SEEK_SET);
+    off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * page_num, SEEK_SET);
+    if (offset == -1) {
+        printf("Error seeking: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     ssize_t write_size = write(pager->file_descriptor, pager->pages[page_num], PAGE_SIZE);
     if (write_size == -1) {
         fatald("Try to write page error and errno", errno);        
