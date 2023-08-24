@@ -5,8 +5,6 @@
 #include "meta.h"
 #include "sql/intpr.h"
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 static char* get_table_name(SelectNode *select_node) {
     return select_node->from_item_node->table->name;
@@ -39,11 +37,12 @@ ExecuteResult select_print(SelectNode *select_node) {
     Table *table = open_table(table_name);
     if (table == NULL)
         return EXECUTE_TABLE_EXIST_FAIL;
-    for(uint32_t i = 0; i < table->pager->num_page; i++) {
+    uint32_t row_len = calc_table_row_length(table);
+    uint32_t i, j;
+    for(i = 0; i < table->pager->num_page; i++) {
         void *node = get_page(table->pager, i);
-        uint32_t row_len = calc_table_row_length(table);
-        uint32_t keys_num = get_internal_node_keys_num(node);
-        for(uint32_t j = 0; j < keys_num; j++) {
+        uint32_t cell_num = get_leaf_node_cell_num(node);
+        for(j = 0; j < cell_num; j++) {
             void *destinct = get_leaf_node_cell_value(node, row_len, j); 
             select_row_print(destinct, table->meta_table);
         }

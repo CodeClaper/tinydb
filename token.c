@@ -33,7 +33,6 @@ Statement *adapt(ASTNode *node) {
         case DELETE_STMT:
             statement->statement_type = STMT_DELETE;
             break;
-
     }
     statement->ast_node = node;
     return statement;
@@ -41,10 +40,13 @@ Statement *adapt(ASTNode *node) {
 
 // parse token
 Statement *parse(char *input) {
-  char *state = malloc(strlen(input) + 1);
-  sprintf(state, "%s%c", input, '\n');
-  YY_BUFFER_STATE buffer = yy_scan_string(state);
-  yyparse();
-  ASTNode *node = get_ast_node();
-  return adapt(node);
+    char *state = malloc(strlen(input) + 1);
+    sprintf(state, "%s%c", input, '\n');
+    YY_BUFFER_STATE buffer = yy_scan_string(state);
+    if(yyparse() == 0) {
+        ASTNode *node = get_ast_node();
+        return adapt(node);
+    } else {
+        return NULL;
+    }
 }

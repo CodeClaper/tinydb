@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 #include "common.h"
 #include "misc.h"
@@ -36,7 +37,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     ValueItemNode* value_item_node = *(insert_node->value_item_set_node->value_item_node + index);
     switch(meta_column->column_type) {
         case VARCHAR:
-            return value_item_node->s_value->name;
+            return (char *)value_item_node->s_value->name;
         case INT:
             return &(value_item_node->i_value->i_value);
         case BIT:
@@ -71,6 +72,8 @@ Row *generate_insert_row(InsertNode *insert_node) {
         KeyValue *key_value = malloc(sizeof(KeyValue));
         key_value->key = get_column_name(insert_node, i, meta_table);
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
+        key_value->value = malloc(meta_column->column_length);
+        memset(key_value->value, 0, meta_column->column_length);
         if (meta_column == NULL) {
             fprintf(stderr, "Inner error, not find meta column info by name '%s'", key_value->key);
             exit(1);

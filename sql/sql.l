@@ -23,7 +23,7 @@ values  return VALUES;
 [=]     return EQ;
 [>]     return GT;
 [<]     return LT;
-"'"     return QUOTE;
+[']     return QUOTE;
 "!="    return NE;
 ">="    return GE;
 "<="    return LE;
@@ -32,7 +32,7 @@ values  return VALUES;
 "SUM"   return SUM;
 "count" return COUNT;
 "average" return AVERAGE;
-[a-zA-Z][a-zA-Z0-9]*    { yylval.s_value = yytext; return IDENTIFIER;} 
+[a-zA-Z][a-zA-Z0-9]*    { yylval.s_value = strdup(yytext); return IDENTIFIER;} 
 [0-9]+                  { yylval.i_value = atoi(yytext); return CONST;}
 \n      return NL;
 [ \t]   /* igonore space */

@@ -912,7 +912,7 @@ return AVERAGE;
 case 28:
 YY_RULE_SETUP
 #line 35 "sql.l"
-{ yylval.s_value = yytext; return IDENTIFIER;} 
+{ yylval.s_value = strdup(yytext); return IDENTIFIER;} 
 	YY_BREAK
 case 29:
 YY_RULE_SETUP

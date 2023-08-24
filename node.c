@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include "common.h"
 #include "misc.h"
@@ -68,7 +69,7 @@ uint32_t get_leaf_node_cell_num(void *node) {
 static void set_leaf_node_cell_num(void *node, uint32_t cell_num) {
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
-        *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size) = column_size;
+        *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size) = cell_num;
     } else {
         *(uint32_t *)(node + CELL_NUM_OFFSET) = cell_num;
     }
@@ -100,7 +101,7 @@ void *get_leaf_node_cell(void *node, uint32_t row_len, uint32_t index) {
     uint32_t cell_len = row_len + LEAF_NODE_CELL_KEY_SIZE;
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
-        return (node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size  + cell_len * index); 
+        return (node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + cell_len * index); 
     } else {
         return (node + LEAF_NODE_HEAD_SIZE + cell_len * index);
     }
@@ -111,7 +112,7 @@ uint32_t get_leaf_node_cell_key(void *node, uint32_t index, uint32_t row_len) {
     uint32_t cell_len = row_len + LEAF_NODE_CELL_KEY_SIZE;
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
-        return *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size  + cell_len * index + row_len); 
+        return *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + cell_len * index + row_len); 
     } else {
         return *(uint32_t *)(node + LEAF_NODE_HEAD_SIZE + cell_len * index + row_len);
     }
@@ -122,7 +123,7 @@ void set_leaf_node_cell_key(void *node, uint32_t index, uint32_t row_len, uint32
     uint32_t cell_len = row_len + LEAF_NODE_CELL_KEY_SIZE;
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
-        *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size  + cell_len * index + row_len) = key;
+        *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size +CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + cell_len * index + row_len) = key;
     } else {
         *(uint32_t *)(node + LEAF_NODE_HEAD_SIZE + cell_len * index + row_len) = key;
     }
@@ -198,8 +199,8 @@ uint32_t get_leaf_node_cell_index(void *node, uint32_t key, uint32_t cell_num, u
     uint32_t max_index = cell_num;
     while(min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
-        uint32_t index_key = get_leaf_node_cell_key(node, key, row_len);
-        if (index_key >= key) {
+        uint32_t index_at_key = get_leaf_node_cell_key(node, index, row_len);
+        if (index_at_key >= key) {
             max_index = index;
         } else {
             min_index = index + 1; 
@@ -230,6 +231,11 @@ void initial_leaf_node(void *leaf_node, bool is_root) {
     set_leaf_node_next_leaf(leaf_node, 0); // 'next leaf = 0' means no subling leaf node
 }
 
+// when page if full, split and add leaf node into another page
+static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
+
+}
+
 // insert a new leaf node
 void insert_leaf_node(Cursor *cursor, Row *row) {
     void *node = get_page(cursor->table->pager, cursor->page_num); 
@@ -237,19 +243,18 @@ void insert_leaf_node(Cursor *cursor, Row *row) {
     uint32_t row_length = calc_table_row_length(cursor->table);
     uint32_t cell_length = row_length + LEAF_NODE_CELL_KEY_SIZE;
     if (LEAF_NODE_HEAD_SIZE + (LEAF_NODE_CELL_KEY_SIZE + row_length) *(cell_num + 1) > PAGE_SIZE) {
-
+        insert_and_split_leaf_node(cursor, row);
     } else {
         if (cursor->cell_num < cell_num) {
             // make room for new cell
             for (uint32_t i = cell_num; i > cursor->cell_num; i--) {
-                memcpy(get_leaf_node_cell(node, row_length, i), get_leaf_node_cell(node, row_length, i), cell_length);
+                memcpy(get_leaf_node_cell(node, row_length, i), get_leaf_node_cell(node, row_length, i-1), cell_length);
             }
         }
         set_leaf_node_cell_key(node, cursor->cell_num, row_length, row->key);
         void *destination = serialize_row_data(row, cursor->table);
         memcpy(get_leaf_node_cell_value(node, row_length, cursor->cell_num), destination, row_length);
-        uint32_t key_num = get_internal_node_keys_num(node);
-        set_internal_node_keys_num(node, ++key_num);
+        set_leaf_node_cell_num(node, ++cell_num);
     }
 }
 
