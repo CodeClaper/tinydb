@@ -36,18 +36,19 @@ static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable 
 static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
     ValueItemNode* value_item_node = *(insert_node->value_item_set_node->value_item_node + index);
     switch(meta_column->column_type) {
-        case VARCHAR:
-            return (char *)value_item_node->s_value->name;
-        case INT:
+        case T_STRING:
+            return (char *)value_item_node->s_value->s_value;
+        case T_INT:
             return &(value_item_node->i_value->i_value);
-        case BIT:
-        case DOUBLE:
-        case FLOAT:
-        case DATE:
-        case CHAR:
-        case TIMESTAMP:
+        case T_BIT:
+        case T_DOUBLE:
+        case T_FLOAT:
+        case T_DATE:
+        case T_CHAR:
+        case T_TIMESTAMP:
             fatal("not support type.");
     }
+    fprintf(stderr, "Unspported column type. \n");
     return NULL;
 }
 
@@ -56,7 +57,6 @@ Row *generate_insert_row(InsertNode *insert_node) {
     Row *row = malloc(sizeof(Row));
     if (NULL == row) 
         MALLOC_ERROR;
-    row->key = 12;
     row->table_name = get_table_name(insert_node);
     row->data = malloc(0);
     Table *table = open_table(row->table_name);
@@ -66,7 +66,8 @@ Row *generate_insert_row(InsertNode *insert_node) {
     MetaTable *meta_table = table->meta_table;
     row->data_len = get_column_size(insert_node, meta_table);
     if (row->data_len != get_value_size(insert_node)) {
-        fatal("Inner error, column num can`t match value num in insert node");
+        fprintf(stderr,"Column count doesn't match value count");
+        return NULL;
     }
     for(uint32_t i = 0; i < row->data_len; i++) {
         KeyValue *key_value = malloc(sizeof(KeyValue));
@@ -82,7 +83,7 @@ Row *generate_insert_row(InsertNode *insert_node) {
         if (meta_column->is_primary) {
             row->key = define_key(key_value->value, meta_column);
         }
-        *(row->data + i)= key_value;
+        *(row->data + i) = key_value;
     }
     return row;
 }

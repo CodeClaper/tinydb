@@ -14,46 +14,61 @@ int yyerror(const char *s) {
 %}
 %union 
 {
-   char *s_value;
-   int i_value;
-   char *keyword;
-   ConstNode *const_node;
-   IdentNode *ident_node;
-   IdentSetNode *ident_set_node;
-   OprNode *opr_node;
-   ConnNode *conn_node;
-   SelectItemsNode *select_items_node;
-   ColumnSetNode *column_set_node;
-   ValueItemNode *value_item_node;
+   char             *s_value;
+   int              i_value;
+   char             *keyword;
+   IntValueNode     *int_value_node;
+   StringValueNode  *string_value_node;
+   IdentNode        *ident_node;
+   IdentSetNode     *ident_set_node;
+   OprNode          *opr_node;
+   ConnNode         *conn_node;
+   DataTypeNode     *data_type_node;
+   ColumnDefNode    *column_def_node;
+   ColumnDefSetNode *column_def_set_node;
+   SelectItemsNode  *select_items_node;
+   ColumnSetNode    *column_set_node;
+   ValueItemNode    *value_item_node;
    ValueItemSetNode *value_item_set_node;
-   FromItemNode *from_item_node;
-   ConditionNode *cond_node;
-   SelectNode *select_node;
-   InsertNode *insert_node;
+   PrimaryKeyNode   *primary_key_node;
+   FromItemNode     *from_item_node;
+   ConditionNode    *cond_node;
+   CreateTableNode  *create_table_node;
+   SelectNode       *select_node;
+   InsertNode       *insert_node;
 };
 %token NL COMMA SEMICOLON LEFTPAREN RIGHTPAREN QUOTE
-%token <keyword> SELECT INSERT UPDATE DELETE
+%token <keyword> CREATE SELECT INSERT UPDATE DELETE
 %token <keyword> FROM
 %token <keyword> WHERE
 %token <keyword> INTO
 %token <keyword> VALUES
+%token <keyword> TABLE
 %token <keyword> MAX MIN COUNT SUM AVERAGE
+%token INT STRING BIT FLOAT DOUBLE DATE TIMESTAMP
+%token PRIMARY KEY
+%token EQ NE GT GE LT LE IN LIKE
 %token AND OR
 %token ALL
-%token <ident_node> IDENTIFIER
-%token <const_node> CONST
+%token <ident_node>IDENTIFIER
+%token <int_value_node>INTVALUE
+%token <string_value_node>STRINGVALUE
 %type <ident_set_node> identifiers
+%type <data_type_node> column_type
 %type <select_items_node> select_items 
 %type <column_set_node> columns 
 %type <from_item_node> from_item
 %type <value_item_node> value_item
 %type <value_item_set_node> value_items
+%type <column_def_node> column_def
+%type <column_def_set_node> column_defs
+%type <primary_key_node> primary_key
 %type <cond_node> cond
 %type <opr_node> op
 %type <conn_node> conn
 %type <select_node> statement_select
 %type <insert_node> statement_insert
-%token EQ NE GT GE LT LE IN LIKE
+%type <create_table_node> statement_create_table
 
 %%
 statements: 
@@ -62,7 +77,11 @@ statements:
             | statements error
             ;
 statement: 
-            statement_select 
+            statement_create_table
+                {
+                   set_create_table_ast_node($1); 
+                }
+            |statement_select 
                 {
                     set_select_ast_node($1);
                 }
@@ -71,15 +90,34 @@ statement:
                     set_insert_ast_node($1);
                 }
             ;
+statement_create_table: 
+            create table IDENTIFIER LEFTPAREN column_defs RIGHTPAREN statement_end
+                {
+                    CreateTableNode *create_table_node = make_create_table_node();
+                    IdentNode *node = make_ident_node($3);
+                    create_table_node->table_name = node;
+                    create_table_node->column_def_set_node = $5;
+                    $$ = create_table_node;
+                }
+            | create table IDENTIFIER LEFTPAREN column_defs COMMA primary_key RIGHTPAREN statement_end
+                {
+                    CreateTableNode *create_table_node = make_create_table_node();
+                    IdentNode *node = make_ident_node($3);
+                    create_table_node->table_name = node;
+                    create_table_node->column_def_set_node = $5;
+                    create_table_node->primary_key_node = $7;
+                    $$ = create_table_node;
+                }
+            ;
 statement_select:
-            select select_items FROM from_item WHERE cond SEMICOLON NL
+            select select_items FROM from_item WHERE cond statement_end
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
                     select_node->from_item_node = $4;
                     $$ = select_node;
                 }
-            | select select_items FROM from_item SEMICOLON NL
+            | select select_items FROM from_item statement_end
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
@@ -88,7 +126,7 @@ statement_select:
                 }
             ;
 statement_insert: 
-            insert into from_item values LEFTPAREN value_items RIGHTPAREN SEMICOLON NL
+            insert into from_item values LEFTPAREN value_items RIGHTPAREN statement_end
                 {
                     InsertNode *node = make_insert_node();
                     node->if_ignore_columns = true;
@@ -96,7 +134,7 @@ statement_insert:
                     node->value_item_set_node = $6;
                     $$ = node;
                 }
-            | insert into from_item LEFTPAREN columns RIGHTPAREN values LEFTPAREN value_items RIGHTPAREN SEMICOLON NL
+            | insert into from_item LEFTPAREN columns RIGHTPAREN values LEFTPAREN value_items RIGHTPAREN statement_end
                 {
                     InsertNode *node = make_insert_node();
                     node->if_ignore_columns = false;
@@ -106,11 +144,21 @@ statement_insert:
                     $$ = node;
                 }
             ;
+statement_end:
+            NL
+            | SEMICOLON NL
+            ;
+create:
+            CREATE
+            ;
 select: 
             SELECT 
             ;
 insert:     
             INSERT
+            ;
+table:      
+            TABLE
             ;
 select_items: 
             identifiers
@@ -128,6 +176,42 @@ columns:
                     $$ = column_set_node;
                 }
             ;
+column_defs:
+            column_def
+                {
+                    ColumnDefSetNode *column_def_set_node = make_column_def_set_node();
+                    add_column_def_to_set(column_def_set_node, $1);
+                    $$ = column_def_set_node;
+                }
+            | column_defs COMMA column_def
+                {
+                    $$ = $1;
+                    add_column_def_to_set($$, $3);
+                }
+            ;
+column_def:
+           IDENTIFIER column_type
+                {
+                    ColumnDefNode *column_def_node = make_column_def_node();
+                    IdentNode *node = make_ident_node($1);
+                    column_def_node->column_name = node;
+                    column_def_node->column_type = $2;
+                    $$ = column_def_node;
+                }
+           ;
+column_type:
+           INT          { $$ = make_data_type_node(T_INT); }
+           | STRING     { $$ = make_data_type_node(T_STRING);}
+           | BIT        { $$ = make_data_type_node(T_BIT); }
+primary_key:
+           PRIMARY KEY IDENTIFIER
+                {
+                    PrimaryKeyNode *primary_key_node = make_primary_key_node();
+                    IdentNode *node = make_ident_node($3);
+                    primary_key_node->primary_key_column = node;
+                    $$ = primary_key_node;
+                }
+           ;
 from_item: 
             IDENTIFIER
                 {
@@ -150,18 +234,28 @@ value_items:
                 }
             ;
 value_item:
-            CONST
+            INTVALUE
                 {
                     ValueItemNode *node = make_value_item_node();
-                    ConstNode *const_node = make_const_node($1);
-                    node->i_value = const_node;
+                    IntValueNode *int_value_node = make_int_value_node($1);
+                    node->i_value = int_value_node;
+                    node->data_type = T_INT;
                     $$ = node;
                 }
             | QUOTE IDENTIFIER QUOTE 
                 {
                     ValueItemNode *node = make_value_item_node();
-                    IdentNode *ident_node = make_ident_node($2);
-                    node->s_value = ident_node;
+                    StringValueNode *string_value_node = make_string_value_node($2);
+                    node->s_value = string_value_node;
+                    node->data_type = T_STRING;
+                    $$ = node;
+                }
+            | QUOTE STRINGVALUE QUOTE 
+                {
+                    ValueItemNode *node = make_value_item_node();
+                    StringValueNode *string_value_node = make_string_value_node($2);
+                    node->s_value = string_value_node;
+                    node->data_type = T_STRING;
                     $$ = node;
                 }
             ;
@@ -208,7 +302,7 @@ compare:
                 { 
                     IdentNode *node = make_ident_node($1);
                 }
-            | CONST;
+            | INTVALUE;
 op: 
             EQ      { $$ = make_opr_node(O_EQ); }
             | NE    { $$ = make_opr_node(O_NE); }

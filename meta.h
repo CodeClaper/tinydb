@@ -1,5 +1,7 @@
 #include "data.h"
 
+// column type length
+uint32_t column_type_length(DataType column_type);
 // calculate the length of table row
 uint32_t calc_table_row_length(Table *table);
 // get table meta info

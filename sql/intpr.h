@@ -19,11 +19,23 @@ typedef enum {
 } OpType; // operator type
 
 typedef enum {
+    T_BIT,
+    T_CHAR,
+    T_INT,
+    T_DOUBLE,
+    T_FLOAT,
+    T_STRING,
+    T_DATE,
+    T_TIMESTAMP
+}DataType;
+
+typedef enum {
     C_AND,
     C_OR
 } ConnType; // connector type
 
 typedef enum {
+    CREATE_TABLE_STMT,
     SELECT_STMT,
     INSERT_STMT,
     UPDATE_STMT,
@@ -32,7 +44,11 @@ typedef enum {
 
 typedef struct {
     int i_value;
-}ConstNode; 
+}IntValueNode; 
+
+typedef struct {
+    char *s_value;
+}StringValueNode;
 
 typedef struct {
     char *name;
@@ -41,6 +57,10 @@ typedef struct {
 typedef struct {
     ConnType conn_type;
 } ConnNode;
+
+typedef struct {
+    DataType data_type;
+} DataTypeNode;
 
 typedef struct {
    OpType op_type;  
@@ -56,13 +76,29 @@ typedef struct {
 }SelectItemsNode;
 
 typedef struct {
+    IdentNode *column_name;
+    DataTypeNode *column_type;
+}ColumnDefNode;
+
+typedef struct {
+    ColumnDefNode **column_def;
+    uint32_t column_size;
+}ColumnDefSetNode;
+
+
+typedef struct {
+    IdentNode *primary_key_column;
+} PrimaryKeyNode;
+
+typedef struct {
     IdentSetNode *ident_set_node;
 }ColumnSetNode;
 
 typedef struct {
+   DataType data_type;
    union {
-      ConstNode *i_value;
-      IdentNode *s_value;
+      IntValueNode *i_value;
+      StringValueNode *s_value;
    };
 }ValueItemNode;
 
@@ -75,13 +111,18 @@ typedef struct {
     IdentNode *table;
 }FromItemNode;
 
-
 typedef struct S_ConditionNode {
     IdentNode *column; 
     OprNode *opr_node;
     ConnNode *conn_node;
     struct S_ConditionNode *next;
 } ConditionNode;
+
+typedef struct {
+    IdentNode *table_name;
+    ColumnDefSetNode *column_def_set_node;
+    PrimaryKeyNode *primary_key_node;
+}CreateTableNode;
 
 typedef struct {
     SelectItemsNode *select_items_node; 
@@ -99,13 +140,17 @@ typedef struct {
 typedef struct {
     StatementType statement_type;
     union {
+        CreateTableNode *create_table_node;
         SelectNode *select_node;
         InsertNode *insert_node;
     };
 }ASTNode;
 
-// make a const node.
-ConstNode *make_const_node(int i);
+// make an int value node.
+IntValueNode *make_int_value_node(int i);
+
+// make a string value node.
+StringValueNode *make_string_value_node(char *s);
 
 // make an ident node.
 IdentNode *make_ident_node(char *s);
@@ -125,12 +170,6 @@ SelectItemsNode *make_select_items_node();
 // make a select node.
 SelectNode *make_select_node();
 
-// graph select node tree
-void graph(SelectNode *select_node);
-
-// set ASTNode;
-void set_select_ast_node(SelectNode *select_node);
-
 // make a column set node.
 ColumnSetNode *make_column_set_node();
 
@@ -142,6 +181,12 @@ OprNode *make_opr_node(OpType op_type);
 
 // make a connnection node.
 ConnNode *make_conn_node(ConnType conn_type);
+
+// make a data type node.
+DataTypeNode *make_data_type_node(DataType data_type);
+
+// make a create table node.
+CreateTableNode *make_create_table_node();
 
 // make a value item node.
 ValueItemNode *make_value_item_node();
@@ -155,8 +200,26 @@ void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node);
 // make an insert node.
 InsertNode *make_insert_node();
 
+// make a column def node.
+ColumnDefNode *make_column_def_node();
+
+// make a column def set node.
+ColumnDefSetNode *make_column_def_set_node();
+
+// make a primary key node.
+PrimaryKeyNode *make_primary_key_node();
+
+// add column def node to set.
+void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
+
+// set ASTNode;
+void set_select_ast_node(SelectNode *select_node);
+
 // set ASTNode;
 void set_insert_ast_node(InsertNode *insert_node);
+
+// set ASTNode
+void set_create_table_ast_node(CreateTableNode *create_table_node);
 
 // get an ASTNode
 ASTNode *get_ast_node();

@@ -16,17 +16,17 @@ int main(void) {
     meta_table->column_size = 3;
     MetaColumn *col1 = malloc(sizeof(MetaColumn));
     strcpy(col1->column_name, "id");
-    col1->column_type = INT;
+    col1->column_type = T_INT;
     col1->is_primary = true;
     col1->column_length = 4;
     MetaColumn *col2 = malloc(sizeof(MetaColumn));
     strcpy(col2->column_name, "address");
-    col2->column_type = VARCHAR;
+    col2->column_type = T_STRING;
     col2->column_length = 32;
     col2->is_primary = false;
     MetaColumn *col3 = malloc(sizeof(MetaColumn));
     strcpy(col3->column_name, "ipone");
-    col3->column_type = VARCHAR;
+    col3->column_type = T_STRING;
     col3->column_length = 11;
     col3->is_primary = false;
 

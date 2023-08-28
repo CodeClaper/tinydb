@@ -16,9 +16,16 @@
 
 // Get table file path.
 static char *table_file_path(char *table_name) {
-  char *file_path = malloc(strlen(data_dir) + strlen(table_name) + strlen(".dbt"));
-  sprintf(file_path, "%s%s%s", data_dir, table_name, ".dbt");
-  return file_path;
+#ifdef DEBUG
+    printf("TABLE NAME: %s\n", table_name);
+#endif
+    if (table_name == NULL) {
+        fprintf(stderr, "Inner error, table name can`t be NULL.\n");
+        exit(EXIT_FAILURE);
+    }
+    char *file_path = malloc(strlen(data_dir) + strlen(table_name) + strlen(".dbt"));
+    sprintf(file_path, "%s%s%s", data_dir, table_name, ".dbt");
+    return file_path;
 }
 
 // Check table file if exist
@@ -31,6 +38,10 @@ static int table_file_exist(char *table_file_path) {
 
 // Create a new table.
 ExecuteResult create_table(MetaTable *meta_table) {
+  if (meta_table == NULL) {
+     fprintf(stderr, "meta table can`t be NULL. \n");
+     exit(EXIT_FAILURE);
+  }
   char *file_path = table_file_path(meta_table->table_name);
   if (table_file_exist(file_path)) {
     fprintf(stderr, "Table '%s' already exists. \n", meta_table->table_name);

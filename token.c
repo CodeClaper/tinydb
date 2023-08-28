@@ -21,6 +21,9 @@ Statement *adapt(ASTNode *node) {
     if (statement == NULL)
         MALLOC_ERROR;
     switch(node->statement_type) {
+        case CREATE_TABLE_STMT:
+            statement->statement_type = STMT_CREATE_TABLE;
+            break;
         case SELECT_STMT:
             statement->statement_type = STMT_SELECT;
             break;

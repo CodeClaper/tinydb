@@ -53,20 +53,9 @@ typedef struct {
     void *pages[MAX_TABLE_PAGE];
 } Pager;
 
-typedef enum {
-    BIT,
-    CHAR,
-    INT,
-    DOUBLE,
-    FLOAT,
-    VARCHAR,
-    DATE,
-    TIMESTAMP
-}ColumnType;
-
 typedef struct {
     char column_name[MAX_COLUMN_NAME_LEN];
-    ColumnType column_type;
+    DataType column_type;
     uint32_t column_length;
     bool is_primary;
 } MetaColumn;

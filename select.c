@@ -17,10 +17,10 @@ static void select_row_print(void *destinct, MetaTable *meta_table) {
         printf("column : %s", meta_column->column_name);
         void *value = destinct + off_set;
         switch(meta_column->column_type) {
-            case INT:
+            case T_INT:
                 printf("\t\tvalue : %d", *(uint32_t *) value);
                 break;
-            case VARCHAR:
+            case T_STRING:
                 printf("\t\tvalue: %s", (char *) value);
                 break;
             default:

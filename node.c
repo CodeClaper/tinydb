@@ -265,7 +265,7 @@ MetaColumn *deserialize_meta_column(void *destination) {
         MALLOC_ERROR;
     memset(meta_column, 0, sizeof(MetaColumn));
     strcpy(meta_column->column_name, destination); 
-    meta_column->column_type = (ColumnType)*(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE);
+    meta_column->column_type = (DataType)*(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE);
     meta_column->column_length = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE);
     meta_column->is_primary = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE);
     return meta_column;
@@ -291,7 +291,7 @@ static void *get_column_value(Row *row, MetaColumn *meta_column) {
            return row->data[i]->value;
         }
     }
-    fatal("Inner error, value in row can`t match.");
+    fatals("Inner error, unknown column ", column_name);
     return NULL;
 }
 

@@ -8,23 +8,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-uint32_t column_type_length(ColumnType column_type) {
+// column type length
+uint32_t column_type_length(DataType column_type) {
   switch (column_type) {
-  case BIT:
+  case T_BIT:
     return 2;
-  case CHAR:
+  case T_CHAR:
     return sizeof(char);
-  case INT:
-    return sizeof(int);
-  case DOUBLE:
+  case T_INT:
+    return sizeof(uint32_t);
+  case T_DOUBLE:
     return sizeof(double);
-  case FLOAT:
+  case T_FLOAT:
     return sizeof(float);
-  case VARCHAR:
-    return 256;
-  case DATE:
+  case T_STRING:
     return 48;
-  case TIMESTAMP:
+  case T_DATE:
+    return 48;
+  case T_TIMESTAMP:
     return 48;
   default:
     fatal("unknow column type");

@@ -13,6 +13,7 @@
 #include "meta.h"
 #include "insert.h"
 #include "select.h"
+#include "create.h"
 
 // get row from insert statement
 Row *get_statement_insert_row(Statement *stmt) {
@@ -24,15 +25,6 @@ Row *get_statement_insert_row(Statement *stmt) {
     return generate_insert_row(node->insert_node);
 }
 
-// get table from statement
-Table *get_statement_table(Statement *stmt) {
-    Table *table = malloc(sizeof(Table));
-    if (NULL == table)
-        MALLOC_ERROR;
-    return table;
-}
-
-
 // check if key already exists in db
 bool check_duplicate_key(Cursor *cursor, uint32_t key) {
     void *node = get_page(cursor->table->pager, cursor->page_num);
@@ -43,8 +35,9 @@ bool check_duplicate_key(Cursor *cursor, uint32_t key) {
 
 // Create a table
 ExecuteResult statement_create_table(Statement *stmt) {
-    Table *table = get_statement_table(stmt);
-    return EXECUTE_SUCCESS;
+    assert(stmt->statement_type == STMT_CREATE_TABLE);
+    MetaTable *meta_table = gen_meta_table(stmt->ast_node->create_table_node);
+    return create_table(meta_table);
 }
 
 // execute insert statment
@@ -87,6 +80,5 @@ ExecuteResult statement_delete(Statement *statement) {
 }
 
 void free_statement(Statement *statement) {
-    free_ast_node(statement->ast_node); 
     free(statement);
 }

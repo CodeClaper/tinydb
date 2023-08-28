@@ -4,17 +4,17 @@
 // get key by column type
 uint32_t define_key(void *value, MetaColumn *meta_column) {
     switch(meta_column->column_type) {
-        case BIT:
-        case FLOAT:
-        case DOUBLE:
-        case INT:
+        case T_BIT:
+        case T_FLOAT:
+        case T_DOUBLE:
+        case T_INT:
             return *((uint32_t *) value);
-        case CHAR:
+        case T_CHAR:
             return (uint32_t)(*((char *)value) - 'A');
-        case VARCHAR:
+        case T_STRING:
             return atoi((char *) value);
-        case DATE:
-        case TIMESTAMP:
+        case T_DATE:
+        case T_TIMESTAMP:
             break;
 
     }
