@@ -88,6 +88,11 @@ typedef struct {
     uint32_t key;
     char *table_name;
     KeyValue **data;
-    uint32_t data_len;
+    uint32_t column_len;
 }Row;
+
+typedef struct {
+    Row *row;
+}SelectResult;
+
 #endif

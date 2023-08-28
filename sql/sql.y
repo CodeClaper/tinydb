@@ -9,9 +9,9 @@ int yywrap() {
 }
 
 int yyerror(const char *s) {
-    fprintf(stderr, "Sql parse error, '%s'.\n", s);
+    fprintf(stderr, "Sql parse error, near by'%s'.\n", yylval.keyword);
 }
-%}
+%} 
 %union 
 {
    char             *s_value;

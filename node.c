@@ -286,7 +286,7 @@ void *serialize_meta_column(MetaColumn *meta_column) {
 
 static void *get_column_value(Row *row, MetaColumn *meta_column) {
     char *column_name = meta_column->column_name;
-    for(uint32_t i = 0; i < row->data_len; i++) {
+    for(uint32_t i = 0; i < row->column_len; i++) {
         if (strcmp(column_name, row->data[i]->key) == 0) {
            return row->data[i]->value;
         }

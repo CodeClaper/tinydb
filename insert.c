@@ -64,12 +64,12 @@ Row *generate_insert_row(InsertNode *insert_node) {
         return NULL;
     }
     MetaTable *meta_table = table->meta_table;
-    row->data_len = get_column_size(insert_node, meta_table);
-    if (row->data_len != get_value_size(insert_node)) {
+    row->column_len = get_column_size(insert_node, meta_table);
+    if (row->column_len != get_value_size(insert_node)) {
         fprintf(stderr,"Column count doesn't match value count");
         return NULL;
     }
-    for(uint32_t i = 0; i < row->data_len; i++) {
+    for(uint32_t i = 0; i < row->column_len; i++) {
         KeyValue *key_value = malloc(sizeof(KeyValue));
         key_value->key = get_column_name(insert_node, i, meta_table);
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);

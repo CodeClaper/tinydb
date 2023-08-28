@@ -55,7 +55,7 @@ ExecuteResult statement_insert(Statement *stmt) {
     insert_leaf_node(cursor, row);
     flush_page(cursor->table->pager, cursor->page_num); // flush into disk.
     // free memeory
-    for (uint32_t i = 0; i < row->data_len; i++) {
+    for (uint32_t i = 0; i < row->column_len; i++) {
         if (row->data[i]) {
             free(row->data[i]);
         }
