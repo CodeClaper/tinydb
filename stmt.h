@@ -14,6 +14,3 @@ ExecuteResult statement_select(Statement *stmt);
 ExecuteResult statement_update(Statement *stmt);
 // execute delete statment
 ExecuteResult statement_delete(Statement *stmt);
-// free statement
-void free_statement(Statement *statement);
-

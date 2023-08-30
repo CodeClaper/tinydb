@@ -72,13 +72,12 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
   void *root_node = get_page(table->pager, table->root_page_num);
   uint32_t column_size = get_column_size(root_node);
 
-  meta_table->table_name = table_name;
+  meta_table->table_name = strdup(table_name);
   meta_table->column_size = column_size;
   size_t meta_column_size = sizeof(MetaColumn);
   for (int i = 0; i < column_size; i++) {
     meta_table->meta_column[i] = malloc(meta_column_size);
-    memcpy(meta_table->meta_column[i], get_meta_column(root_node, i),
-           meta_column_size);
+    memcpy(meta_table->meta_column[i], get_meta_column(root_node, i), meta_column_size);
   }
   return meta_table;
 }

@@ -54,27 +54,31 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 
 // generate insert row
 Row *generate_insert_row(InsertNode *insert_node) {
+    uint32_t i, column_len;
     Row *row = malloc(sizeof(Row));
     if (NULL == row) 
         MALLOC_ERROR;
     row->table_name = get_table_name(insert_node);
-    row->data = malloc(0);
     Table *table = open_table(row->table_name);
     if (table == NULL) {
         return NULL;
     }
     MetaTable *meta_table = table->meta_table;
-    row->column_len = get_column_size(insert_node, meta_table);
-    if (row->column_len != get_value_size(insert_node)) {
+    column_len = get_column_size(insert_node, meta_table);
+    if (column_len != get_value_size(insert_node)) {
         fprintf(stderr,"Column count doesn't match value count");
         return NULL;
     }
-    for(uint32_t i = 0; i < row->column_len; i++) {
+    row->data = malloc(sizeof(KeyValue *) * column_len);
+    row->column_len = column_len;
+    for(i = 0; i < column_len; i++) {
         KeyValue *key_value = malloc(sizeof(KeyValue));
-        key_value->key = get_column_name(insert_node, i, meta_table);
+        char *column_name = get_column_name(insert_node, i, meta_table);
+        key_value->key = strdup(column_name);
+#ifdef DEBUG
+        printf("key: %s\n", key_value->key);
+#endif
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
-        key_value->value = malloc(meta_column->column_length);
-        memset(key_value->value, 0, meta_column->column_length);
         if (meta_column == NULL) {
             fprintf(stderr, "Inner error, not find meta column info by name '%s'", key_value->key);
             exit(1);
@@ -84,6 +88,7 @@ Row *generate_insert_row(InsertNode *insert_node) {
             row->key = define_key(key_value->value, meta_column);
         }
         *(row->data + i) = key_value;
+        printf("");
     }
     return row;
 }

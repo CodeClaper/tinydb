@@ -23,7 +23,9 @@ static char *table_file_path(char *table_name) {
         fprintf(stderr, "Inner error, table name can`t be NULL.\n");
         exit(EXIT_FAILURE);
     }
-    char *file_path = malloc(strlen(data_dir) + strlen(table_name) + strlen(".dbt"));
+    int len = strlen(data_dir) + strlen(table_name) + strlen(".dbt") + 1;
+    char *file_path = malloc(len);
+    memset(file_path, 0, len);
     sprintf(file_path, "%s%s%s", data_dir, table_name, ".dbt");
     return file_path;
 }

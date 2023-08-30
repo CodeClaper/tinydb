@@ -20,8 +20,8 @@ IntValueNode *make_int_value_node(int i) {
 
 StringValueNode *make_string_value_node(char *s) {
     StringValueNode *string_value_node = malloc(sizeof(StringValueNode));
-    string_value_node->s_value = malloc(strlen(s));
-    memset(string_value_node->s_value, 0, strlen(s));
+    string_value_node->s_value = malloc(strlen(s) + 1);
+    memset(string_value_node->s_value, 0, strlen(s) + 1);
     strcpy(string_value_node->s_value, strdup(s));
 #ifdef DEBUG
     printf("STRINGVALUE: %s\n", string_value_node->s_value);
@@ -32,8 +32,8 @@ StringValueNode *make_string_value_node(char *s) {
 // make an ident node.
 IdentNode *make_ident_node(char *s) {
     IdentNode *ident_node = malloc(sizeof(IdentNode));
-    ident_node->name = malloc(MAX_COLUMN_NAME_LEN);
-    memset(ident_node->name, 0, MAX_COLUMN_NAME_LEN);
+    ident_node->name = malloc(strlen(s) + 1);
+    memset(ident_node->name, 0, strlen(s) + 1);
     strcpy(ident_node->name, strdup(s));
 #ifdef DEBUG
     printf("IDENT: %s\n", ident_node->name);
@@ -51,6 +51,7 @@ IdentSetNode *make_ident_set_node() {
 
 // add a new ident node to set
 void add_ident(IdentSetNode *ident_set_node, IdentNode *ident_node) {
+    ident_set_node->ident_node = realloc(ident_set_node->ident_node, sizeof(IdentNode *) * (ident_set_node->num + 1));
     *(ident_set_node->ident_node + ident_set_node->num) = ident_node;
     ident_set_node->num ++;
 }
@@ -87,6 +88,7 @@ ValueItemSetNode *make_value_item_set_node() {
 }
 // add value item into set.
 void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node) {
+    node->value_item_node = realloc(node->value_item_node, sizeof(ValueItemNode *) * (node->num + 1));
     *(node->value_item_node + node->num) = value_item_node;
     node->num++;
 }
@@ -133,6 +135,13 @@ ColumnDefSetNode *make_column_def_set_node() {
     return column_def_set_node;
 }
 
+// add column def node to set.
+void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node) {
+    columns_def_set_node->column_def = realloc(columns_def_set_node->column_def, sizeof(ColumnDefNode *) * (columns_def_set_node->column_size + 1));
+    *(columns_def_set_node->column_def + columns_def_set_node->column_size) = column_def_node;
+    columns_def_set_node->column_size++;
+}
+
 // make a primary key node.
 PrimaryKeyNode *make_primary_key_node() {
     PrimaryKeyNode *primary_key_node = malloc(sizeof(PrimaryKeyNode));
@@ -157,11 +166,6 @@ CreateTableNode *make_create_table_node() {
     return create_table_node;
 }
 
-// add column def node to set.
-void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node) {
-    *(columns_def_set_node->column_def + columns_def_set_node->column_size) = column_def_node;
-    columns_def_set_node->column_size++;
-}
 
 void set_select_ast_node(SelectNode *select_node) {
     if (root == NULL)
@@ -245,6 +249,7 @@ void free_ident_set_node(IdentSetNode *ident_set_node) {
         for(uint32_t i = 0; i < ident_set_node->num; i++) {
             free(*(ident_set_node->ident_node + i));
         }
+        free(ident_set_node->ident_node);
         free(ident_set_node);
     }
 }
@@ -269,6 +274,7 @@ void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
         for(uint32_t i = 0; i < column_def_set_node->column_size; i++) {
             free_column_def_node(*(column_def_set_node->column_def + i));
         }
+        free(column_def_set_node->column_def);
         free(column_def_set_node);
     } 
 }
@@ -302,6 +308,7 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
         for(uint32_t i = 0; i < value_item_set_node->num; i++) {
             free_value_item_node(*(value_item_set_node->value_item_node + i));
         }
+        free(value_item_set_node->value_item_node);
         free(value_item_set_node);
     }
 }
@@ -344,7 +351,8 @@ void free_select_node(SelectNode *select_node) {
 void free_insert_node(InsertNode *insert_node) {
     if (insert_node != NULL) {
         free_from_item_node(insert_node->from_item_node);
-        free_column_set_node(insert_node->columns_set_node);
+        if (!insert_node->if_ignore_columns)
+            free_column_set_node(insert_node->columns_set_node);
         free_value_item_set_node(insert_node->value_item_set_node);
         free(insert_node);
     }

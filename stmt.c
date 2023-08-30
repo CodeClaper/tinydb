@@ -14,6 +14,7 @@
 #include "insert.h"
 #include "select.h"
 #include "create.h"
+#include "free.h"
 
 // get row from insert statement
 Row *get_statement_insert_row(Statement *stmt) {
@@ -55,19 +56,16 @@ ExecuteResult statement_insert(Statement *stmt) {
     insert_leaf_node(cursor, row);
     flush_page(cursor->table->pager, cursor->page_num); // flush into disk.
     // free memeory
-    for (uint32_t i = 0; i < row->column_len; i++) {
-        if (row->data[i]) {
-            free(row->data[i]);
-        }
-    }
-    free(row);
-    free(cursor);
     return EXECUTE_SUCCESS;    
 }
 
 ExecuteResult statement_select(Statement *statement) {
     assert(statement->statement_type == STMT_SELECT);
-    select_print(statement->ast_node->select_node);
+    SelectResult *select_result = gen_select_result(statement->ast_node->select_node);
+    if (select_result) {
+        print_select_result_plain(select_result);
+        free_select_result(select_result); 
+    }
     return EXECUTE_SUCCESS;
 }
 
@@ -77,8 +75,4 @@ ExecuteResult statement_update(Statement *statement) {
 
 ExecuteResult statement_delete(Statement *statement) {
     return EXECUTE_SUCCESS;
-}
-
-void free_statement(Statement *statement) {
-    free(statement);
 }

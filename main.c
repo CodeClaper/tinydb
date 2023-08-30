@@ -1,3 +1,7 @@
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "data.h"
 #include "defs.h"
 #include "token.h"
@@ -18,11 +22,28 @@ void print_prompt() {
     printf("tinydb > "); 
 }
 
+bool meta_statment(char *input) {
+    if (strcmp("exit", input) == 0) {
+        printf("Goodbye.\n");
+        exit(EXIT_SUCCESS);
+    } else if (strcmp("clear", input) == 0) {
+        #ifdef _WIN32
+            system("cls");
+        #else
+            system("clear");
+        #endif
+        return true;
+    } 
+    return false;
+}
+
 int main(void) {
     init_variable();
     while(true) {
         print_prompt();
         read_input(input_buffer);
+        if(meta_statment(input_buffer->input))
+            continue;
         Statement *statement = parse(input_buffer->input);
         if (statement == NULL)
             continue;
@@ -43,7 +64,6 @@ int main(void) {
                 statement_delete(statement); 
                 break; 
         }
-        free_statement(statement);
     }
     return 0;
 }
