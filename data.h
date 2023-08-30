@@ -29,7 +29,8 @@ typedef enum {
     STMT_SELECT,
     STMT_UPDATE,
     STMT_INSERT,
-    STMT_DELETE
+    STMT_DELETE,
+    STMT_DESCRIBE
 }StamentType;
 
 typedef struct {

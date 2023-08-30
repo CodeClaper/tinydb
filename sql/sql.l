@@ -10,6 +10,7 @@ select      return SELECT;
 insert      return INSERT;
 update      return UPDATE;
 delete      return DELETE;
+describe    return DESCRIBE;
 from        return FROM;
 table       return TABLE;
 where       return WHERE;

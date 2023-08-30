@@ -66,7 +66,7 @@ Row *generate_insert_row(InsertNode *insert_node) {
     MetaTable *meta_table = table->meta_table;
     column_len = get_column_size(insert_node, meta_table);
     if (column_len != get_value_size(insert_node)) {
-        fprintf(stderr,"Column count doesn't match value count");
+        fprintf(stderr,"Column count doesn't match value count.\n");
         return NULL;
     }
     row->data = malloc(sizeof(KeyValue *) * column_len);

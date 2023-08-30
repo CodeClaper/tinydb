@@ -8,6 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+static char *data_type_name_list[] = { "bit", "char", "int", "double", "float", "string", "date", "timestamp" };
+
+// get data type name.
+char *data_type_name(DataType data_type) {
+    return data_type_name_list[data_type];
+}
+
 // column type length
 uint32_t column_type_length(DataType column_type) {
   switch (column_type) {

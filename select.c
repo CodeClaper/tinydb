@@ -1,3 +1,4 @@
+#include <string.h>
 #include "select.h"
 #include "table.h"
 #include "pager.h"
@@ -6,10 +7,6 @@
 #include "common.h"
 #include "misc.h"
 #include "sql/intpr.h"
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 static char* get_table_name(SelectNode *select_node) {
     return select_node->from_item_node->table->name;

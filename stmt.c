@@ -14,6 +14,7 @@
 #include "insert.h"
 #include "select.h"
 #include "create.h"
+#include "desc.h"
 #include "free.h"
 
 // get row from insert statement
@@ -75,4 +76,9 @@ ExecuteResult statement_update(Statement *statement) {
 
 ExecuteResult statement_delete(Statement *statement) {
     return EXECUTE_SUCCESS;
+}
+
+ExecuteResult statement_describe(Statement *statement) {
+    assert(statement->statement_type == STMT_DESCRIBE); 
+    return print_describe_info(statement->ast_node->describe_node);
 }

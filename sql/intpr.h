@@ -39,7 +39,8 @@ typedef enum {
     SELECT_STMT,
     INSERT_STMT,
     UPDATE_STMT,
-    DELETE_STMT
+    DELETE_STMT,
+    DESCRIBE_STMT
 } StatementType; // statement type
 
 typedef struct {
@@ -138,11 +139,16 @@ typedef struct {
 }InsertNode;
 
 typedef struct {
+   FromItemNode *from_item_node; 
+}DescribeNode;
+
+typedef struct {
     StatementType statement_type;
     union {
         CreateTableNode *create_table_node;
         SelectNode *select_node;
         InsertNode *insert_node;
+        DescribeNode *describe_node;
     };
 }ASTNode;
 
@@ -212,6 +218,9 @@ PrimaryKeyNode *make_primary_key_node();
 // add column def node to set.
 void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
 
+// make a describe node.
+DescribeNode *make_describe_node();
+
 // set ASTNode;
 void set_select_ast_node(SelectNode *select_node);
 
@@ -220,6 +229,9 @@ void set_insert_ast_node(InsertNode *insert_node);
 
 // set ASTNode
 void set_create_table_ast_node(CreateTableNode *create_table_node);
+
+// set describe node ASTNode.
+void set_describe_ast_node(DescribeNode *describe_node);
 
 // get an ASTNode
 ASTNode *get_ast_node();

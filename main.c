@@ -63,6 +63,9 @@ int main(void) {
             case STMT_DELETE:
                 statement_delete(statement); 
                 break; 
+            case STMT_DESCRIBE:
+                statement_describe(statement);
+                break;
         }
     }
     return 0;

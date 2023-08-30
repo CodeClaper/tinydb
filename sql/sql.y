@@ -36,9 +36,10 @@ int yyerror(const char *s) {
    CreateTableNode  *create_table_node;
    SelectNode       *select_node;
    InsertNode       *insert_node;
+   DescribeNode     *describe_node;
 };
 %token NL COMMA SEMICOLON LEFTPAREN RIGHTPAREN QUOTE
-%token <keyword> CREATE SELECT INSERT UPDATE DELETE
+%token <keyword> CREATE SELECT INSERT UPDATE DELETE DESCRIBE
 %token <keyword> FROM
 %token <keyword> WHERE
 %token <keyword> INTO
@@ -69,6 +70,7 @@ int yyerror(const char *s) {
 %type <select_node> statement_select
 %type <insert_node> statement_insert
 %type <create_table_node> statement_create_table
+%type <describe_node> statement_describe
 
 %%
 statements: 
@@ -88,6 +90,10 @@ statement:
             | statement_insert 
                 {
                     set_insert_ast_node($1);
+                }
+            | statement_describe
+                {
+                    set_describe_ast_node($1);
                 }
             ;
 statement_create_table: 
@@ -144,6 +150,14 @@ statement_insert:
                     $$ = node;
                 }
             ;
+statement_describe:
+            describe from_item statement_end
+                {
+                    DescribeNode *node = make_describe_node();
+                    node->from_item_node = $2;
+                    $$ = node;
+                }
+            ;
 statement_end:
             NL
             | SEMICOLON NL
@@ -159,6 +173,9 @@ insert:
             ;
 table:      
             TABLE
+            ;
+describe:
+            DESCRIBE
             ;
 select_items: 
             identifiers
@@ -204,10 +221,10 @@ column_type:
            | STRING     { $$ = make_data_type_node(T_STRING);}
            | BIT        { $$ = make_data_type_node(T_BIT); }
 primary_key:
-           PRIMARY KEY IDENTIFIER
+           PRIMARY KEY LEFTPAREN IDENTIFIER RIGHTPAREN
                 {
                     PrimaryKeyNode *primary_key_node = make_primary_key_node();
-                    IdentNode *node = make_ident_node($3);
+                    IdentNode *node = make_ident_node($4);
                     primary_key_node->primary_key_column = node;
                     $$ = primary_key_node;
                 }

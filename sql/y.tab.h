@@ -65,39 +65,40 @@ extern int yydebug;
     INSERT = 266,                  /* INSERT  */
     UPDATE = 267,                  /* UPDATE  */
     DELETE = 268,                  /* DELETE  */
-    FROM = 269,                    /* FROM  */
-    WHERE = 270,                   /* WHERE  */
-    INTO = 271,                    /* INTO  */
-    VALUES = 272,                  /* VALUES  */
-    TABLE = 273,                   /* TABLE  */
-    MAX = 274,                     /* MAX  */
-    MIN = 275,                     /* MIN  */
-    COUNT = 276,                   /* COUNT  */
-    SUM = 277,                     /* SUM  */
-    AVERAGE = 278,                 /* AVERAGE  */
-    INT = 279,                     /* INT  */
-    STRING = 280,                  /* STRING  */
-    BIT = 281,                     /* BIT  */
-    FLOAT = 282,                   /* FLOAT  */
-    DOUBLE = 283,                  /* DOUBLE  */
-    DATE = 284,                    /* DATE  */
-    TIMESTAMP = 285,               /* TIMESTAMP  */
-    PRIMARY = 286,                 /* PRIMARY  */
-    KEY = 287,                     /* KEY  */
-    EQ = 288,                      /* EQ  */
-    NE = 289,                      /* NE  */
-    GT = 290,                      /* GT  */
-    GE = 291,                      /* GE  */
-    LT = 292,                      /* LT  */
-    LE = 293,                      /* LE  */
-    IN = 294,                      /* IN  */
-    LIKE = 295,                    /* LIKE  */
-    AND = 296,                     /* AND  */
-    OR = 297,                      /* OR  */
-    ALL = 298,                     /* ALL  */
-    IDENTIFIER = 299,              /* IDENTIFIER  */
-    INTVALUE = 300,                /* INTVALUE  */
-    STRINGVALUE = 301              /* STRINGVALUE  */
+    DESCRIBE = 269,                /* DESCRIBE  */
+    FROM = 270,                    /* FROM  */
+    WHERE = 271,                   /* WHERE  */
+    INTO = 272,                    /* INTO  */
+    VALUES = 273,                  /* VALUES  */
+    TABLE = 274,                   /* TABLE  */
+    MAX = 275,                     /* MAX  */
+    MIN = 276,                     /* MIN  */
+    COUNT = 277,                   /* COUNT  */
+    SUM = 278,                     /* SUM  */
+    AVERAGE = 279,                 /* AVERAGE  */
+    INT = 280,                     /* INT  */
+    STRING = 281,                  /* STRING  */
+    BIT = 282,                     /* BIT  */
+    FLOAT = 283,                   /* FLOAT  */
+    DOUBLE = 284,                  /* DOUBLE  */
+    DATE = 285,                    /* DATE  */
+    TIMESTAMP = 286,               /* TIMESTAMP  */
+    PRIMARY = 287,                 /* PRIMARY  */
+    KEY = 288,                     /* KEY  */
+    EQ = 289,                      /* EQ  */
+    NE = 290,                      /* NE  */
+    GT = 291,                      /* GT  */
+    GE = 292,                      /* GE  */
+    LT = 293,                      /* LT  */
+    LE = 294,                      /* LE  */
+    IN = 295,                      /* IN  */
+    LIKE = 296,                    /* LIKE  */
+    AND = 297,                     /* AND  */
+    OR = 298,                      /* OR  */
+    ALL = 299,                     /* ALL  */
+    IDENTIFIER = 300,              /* IDENTIFIER  */
+    INTVALUE = 301,                /* INTVALUE  */
+    STRINGVALUE = 302              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -117,39 +118,40 @@ extern int yydebug;
 #define INSERT 266
 #define UPDATE 267
 #define DELETE 268
-#define FROM 269
-#define WHERE 270
-#define INTO 271
-#define VALUES 272
-#define TABLE 273
-#define MAX 274
-#define MIN 275
-#define COUNT 276
-#define SUM 277
-#define AVERAGE 278
-#define INT 279
-#define STRING 280
-#define BIT 281
-#define FLOAT 282
-#define DOUBLE 283
-#define DATE 284
-#define TIMESTAMP 285
-#define PRIMARY 286
-#define KEY 287
-#define EQ 288
-#define NE 289
-#define GT 290
-#define GE 291
-#define LT 292
-#define LE 293
-#define IN 294
-#define LIKE 295
-#define AND 296
-#define OR 297
-#define ALL 298
-#define IDENTIFIER 299
-#define INTVALUE 300
-#define STRINGVALUE 301
+#define DESCRIBE 269
+#define FROM 270
+#define WHERE 271
+#define INTO 272
+#define VALUES 273
+#define TABLE 274
+#define MAX 275
+#define MIN 276
+#define COUNT 277
+#define SUM 278
+#define AVERAGE 279
+#define INT 280
+#define STRING 281
+#define BIT 282
+#define FLOAT 283
+#define DOUBLE 284
+#define DATE 285
+#define TIMESTAMP 286
+#define PRIMARY 287
+#define KEY 288
+#define EQ 289
+#define NE 290
+#define GT 291
+#define GE 292
+#define LT 293
+#define LE 294
+#define IN 295
+#define LIKE 296
+#define AND 297
+#define OR 298
+#define ALL 299
+#define IDENTIFIER 300
+#define INTVALUE 301
+#define STRINGVALUE 302
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -179,8 +181,9 @@ union YYSTYPE
    CreateTableNode  *create_table_node;
    SelectNode       *select_node;
    InsertNode       *insert_node;
+   DescribeNode     *describe_node;
 
-#line 184 "y.tab.h"
+#line 187 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

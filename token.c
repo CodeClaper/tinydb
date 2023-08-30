@@ -36,6 +36,9 @@ Statement *adapt(ASTNode *node) {
         case DELETE_STMT:
             statement->statement_type = STMT_DELETE;
             break;
+        case DESCRIBE_STMT:
+            statement->statement_type = STMT_DESCRIBE;
+            break;
     }
     statement->ast_node = node;
     return statement;
