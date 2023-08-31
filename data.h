@@ -30,7 +30,8 @@ typedef enum {
     STMT_UPDATE,
     STMT_INSERT,
     STMT_DELETE,
-    STMT_DESCRIBE
+    STMT_DESCRIBE,
+    STMT_SHOW_TABLES
 }StamentType;
 
 typedef struct {

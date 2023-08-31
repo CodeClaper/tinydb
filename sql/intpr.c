@@ -172,6 +172,12 @@ DescribeNode *make_describe_node() {
     return describe_node;
 }
 
+// make a shwo table node.
+ShowTablesNode *make_show_tables_node() {
+    ShowTablesNode *show_tables_node = malloc(sizeof(ShowTablesNode));
+    return show_tables_node;
+}
+
 void set_select_ast_node(SelectNode *select_node) {
     if (root == NULL)
         root = malloc(sizeof(ASTNode));
@@ -218,6 +224,18 @@ void set_describe_ast_node(DescribeNode *describe_node) {
     }
     root->statement_type = DESCRIBE_STMT;
     root->describe_node = describe_node;
+}
+
+void set_show_tables_ast_node(ShowTablesNode *show_table_node) {
+    if (root == NULL)
+        root = malloc(sizeof(ASTNode));
+    else {
+        ASTNode *temp = root;
+        root = malloc(sizeof(ASTNode));
+        free_ast_node(temp);
+    }
+    root->statement_type = SHOW_TABLES_STMT;
+    root->show_tables_node = show_table_node;
 }
 
 
@@ -390,6 +408,8 @@ void free_ast_node(ASTNode *node) {
         case CREATE_TABLE_STMT:
             break;
         case DESCRIBE_STMT:
+            break;
+        case SHOW_TABLES_STMT:
             break;
     }
     free(node);

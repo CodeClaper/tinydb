@@ -23,3 +23,6 @@ ExecuteResult statement_delete(Statement *stmt);
 
 // execute descrbe statement
 ExecuteResult statement_describe(Statement *stmt);
+
+// execute show table statement
+ExecuteResult statement_show_tables(Statement *stmt);

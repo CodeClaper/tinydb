@@ -39,6 +39,9 @@ Statement *adapt(ASTNode *node) {
         case DESCRIBE_STMT:
             statement->statement_type = STMT_DESCRIBE;
             break;
+        case SHOW_TABLES_STMT:
+            statement->statement_type = STMT_SHOW_TABLES;
+            break;
     }
     statement->ast_node = node;
     return statement;

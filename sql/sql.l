@@ -14,6 +14,8 @@ describe    return DESCRIBE;
 from        return FROM;
 table       return TABLE;
 where       return WHERE;
+show        return SHOW;
+tables      return TABLES;
 and         return AND;
 or          return OR;
 into        return INTO;

@@ -37,6 +37,7 @@ int yyerror(const char *s) {
    SelectNode       *select_node;
    InsertNode       *insert_node;
    DescribeNode     *describe_node;
+   ShowTablesNode   *show_table_node;
 };
 %token NL COMMA SEMICOLON LEFTPAREN RIGHTPAREN QUOTE
 %token <keyword> CREATE SELECT INSERT UPDATE DELETE DESCRIBE
@@ -45,6 +46,8 @@ int yyerror(const char *s) {
 %token <keyword> INTO
 %token <keyword> VALUES
 %token <keyword> TABLE
+%token <keyword> SHOW
+%token <keyword> TABLES
 %token <keyword> MAX MIN COUNT SUM AVERAGE
 %token INT STRING BIT FLOAT DOUBLE DATE TIMESTAMP
 %token PRIMARY KEY
@@ -71,6 +74,7 @@ int yyerror(const char *s) {
 %type <insert_node> statement_insert
 %type <create_table_node> statement_create_table
 %type <describe_node> statement_describe
+%type <show_table_node> statement_show_tables
 
 %%
 statements: 
@@ -94,6 +98,10 @@ statement:
             | statement_describe
                 {
                     set_describe_ast_node($1);
+                }
+            | statement_show_tables 
+                {
+                    set_show_tables_ast_node($1);
                 }
             ;
 statement_create_table: 
@@ -158,6 +166,12 @@ statement_describe:
                     $$ = node;
                 }
             ;
+statement_show_tables:
+            show tables statement_end
+                {
+                    $$ = make_show_tables_node();
+                }
+            ;
 statement_end:
             NL
             | SEMICOLON NL
@@ -176,6 +190,12 @@ table:
             ;
 describe:
             DESCRIBE
+            ;
+show:       
+            SHOW
+            ;
+tables:     
+            TABLES
             ;
 select_items: 
             identifiers

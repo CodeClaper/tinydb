@@ -15,6 +15,7 @@
 #include "select.h"
 #include "create.h"
 #include "desc.h"
+#include "show.h"
 #include "free.h"
 
 // get row from insert statement
@@ -81,4 +82,13 @@ ExecuteResult statement_delete(Statement *statement) {
 ExecuteResult statement_describe(Statement *statement) {
     assert(statement->statement_type == STMT_DESCRIBE); 
     return print_describe_info(statement->ast_node->describe_node);
+}
+
+ExecuteResult statement_show_tables(Statement *statement) {
+    assert(statement->statement_type == STMT_SHOW_TABLES); 
+    TableList *table_list = gen_table_list();
+    if (table_list != NULL) {
+        print_show_table(stdout, table_list);
+    }
+    return EXECUTE_SUCCESS;
 }

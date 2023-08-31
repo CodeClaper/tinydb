@@ -66,6 +66,9 @@ int main(void) {
             case STMT_DESCRIBE:
                 statement_describe(statement);
                 break;
+            case STMT_SHOW_TABLES:
+                statement_show_tables(statement);
+                break;
         }
     }
     return 0;
