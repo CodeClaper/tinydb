@@ -53,6 +53,9 @@ void *get_page(Pager *pager, int page_num) {
         }
         pager->pages[page_num] = page;
     }
+    if (page_num >= pager->num_page) {
+        pager->num_page++;
+    }
     return pager->pages[page_num];
 }
 

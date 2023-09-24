@@ -2,9 +2,11 @@ PROP=node.c token.c table.c pager.c misc.c stmt.c meta.c input.c insert.c select
 PROMT=tinydb
 CFLAGS=-std=c99
 
-compile: ${PROP}
+run: ${PROP}
 	gcc ${PROP} -o ${PROMT} -w
 debug: ${PROP}
 	gcc -g ${PROP} -o ${PROMT} -w -D DEBUG
+test: ${PROMT}
+	rspec test/insert.rb	
 clean:
 	rm -r -f *.o ${PROMT} core.*

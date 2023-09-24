@@ -7,15 +7,27 @@
 #include "misc.h"
 #include "table.h"
 #include "meta.h"
+#include "node.h"
+#include "table.h"
+#include "pager.h"
 #include "insert.h"
 #include "index.h"
+
+
+// check if key already exists in db
+static bool check_duplicate_key(Cursor *cursor, uint32_t key) {
+    void *node = get_page(cursor->table->pager, cursor->page_num);
+    uint32_t row_length = calc_table_row_length(cursor->table);
+    uint32_t target = get_leaf_node_cell_key(node, cursor->cell_num, row_length);
+    return target == key;
+}
 
 // get table name in select node.
 static char *get_table_name(InsertNode *insert_node) {
     return insert_node->from_item_node->table->name;
 }
 
-static uint32_t get_column_size(InsertNode *insert_node, MetaTable *meta_table) {
+static uint32_t get_insert_column_size(InsertNode *insert_node, MetaTable *meta_table) {
     if (insert_node->if_ignore_columns)
         return meta_table->column_size;
     else 
@@ -53,7 +65,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 }
 
 // generate insert row
-Row *generate_insert_row(InsertNode *insert_node) {
+static Row *generate_insert_row(InsertNode *insert_node) {
     uint32_t i, column_len;
     Row *row = malloc(sizeof(Row));
     if (NULL == row) 
@@ -64,7 +76,7 @@ Row *generate_insert_row(InsertNode *insert_node) {
         return NULL;
     }
     MetaTable *meta_table = table->meta_table;
-    column_len = get_column_size(insert_node, meta_table);
+    column_len = get_insert_column_size(insert_node, meta_table);
     if (column_len != get_value_size(insert_node)) {
         fprintf(stderr,"Column count doesn't match value count.\n");
         return NULL;
@@ -92,3 +104,22 @@ Row *generate_insert_row(InsertNode *insert_node) {
     }
     return row;
 }
+
+// execute insert statement.
+ExecuteResult exec_insert_statement(InsertNode *insert_node) {
+    Row *row = generate_insert_row(insert_node);
+    if (row == NULL)
+        return EXIT_FAILURE;
+    Table *table = open_table(row->table_name);
+    void *root_node = get_page(table->pager, table->root_page_num); 
+    Cursor *cursor = define_cursor(table, row->key);
+    if (check_duplicate_key(cursor, row->key)) {
+        fprintf(stderr, "key '%d' already exists, not allow duplicate key. \n", row->key);
+        return EXECUTE_DUPLICATE_KEY;
+    }
+    insert_leaf_node(cursor, row);
+    fprintf(stdout, "Successfully insert 1 row data.\n");
+    // free memeory
+    return EXECUTE_SUCCESS;    
+}
+

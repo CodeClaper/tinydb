@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/types.h>
 #include "common.h"
 #include "table.h"
 #include "node.h"
@@ -74,7 +74,7 @@ ExecuteResult create_table(MetaTable *meta_table) {
   }
   free(file_path);
   close(descr);
-  printf("Table '%s' created success.\n", meta_table->table_name);
+  printf("Table '%s' created successfully.\n", meta_table->table_name);
   for (uint32_t i = 0; i < meta_table->column_size; i++) {
     free(meta_table->meta_column[i]);
   }
@@ -136,7 +136,7 @@ static Cursor *deine_cursor_internal_node(Table *table, void *internal_node, uin
 }
 
 // Deine cursor throngth table and key
-// Cursor can help us quickly find table、page、row
+// Cursor can help us quickly find table, page and row.
 Cursor *define_cursor(Table *table, uint32_t key) {
     void *root_node = get_page(table->pager, table->root_page_num);
     if (get_node_type(root_node) == LEAF_NODE) {
@@ -147,7 +147,6 @@ Cursor *define_cursor(Table *table, uint32_t key) {
         return deine_cursor_internal_node(table, root_node, key);
     }
 }
-
 
 
 // Delete an existed table.

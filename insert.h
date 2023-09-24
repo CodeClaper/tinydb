@@ -1,5 +1,5 @@
 #include "data.h"
 #include "sql/intpr.h"
 
-// generate insert row
-Row *generate_insert_row(InsertNode *insert_node);
+// execute insert statement.
+ExecuteResult exec_insert_statement(InsertNode *insert_node);

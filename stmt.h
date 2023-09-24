@@ -1,8 +1,5 @@
 #include "data.h"
 
-// get row from insert statement
-Row *get_statement_insert_row(Statement *stmt);
-
 // get table from statement
 Table *get_statement_table(Statement *stmt);
 

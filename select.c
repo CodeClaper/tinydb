@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include "select.h"
 #include "table.h"
@@ -32,6 +34,46 @@ static Row *generate_row(void *destinct, MetaTable *meta_table) {
     }
     return row;
 }
+
+// select work through leaf node
+static void select_from_leaf_node(SelectResult *select_result, void *leaf_node, Table *table) {
+    uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
+    uint32_t row_size = calc_table_row_length(table);
+    for(uint32_t i = 0; i < cell_num; i++) {
+        void *destinct = get_leaf_node_cell_value(leaf_node, row_size, i); 
+        select_result->row = realloc(select_result->row, sizeof(Row *) * (select_result->row_len + 1));
+        *(select_result->row + select_result->row_len)  = generate_row(destinct, table->meta_table);
+        select_result->row_len++;
+    }
+}
+
+// select work through internal node
+static void select_from_internal_node(SelectResult *select_result, void *internal_node, Table *table) {
+    uint32_t keys_num = get_internal_node_keys_num(internal_node);
+    for(int32_t i = 0; i < keys_num; i++) {
+        uint32_t page_num = get_internal_node_child(internal_node, i);
+        void *node = get_page(table->pager, page_num);
+        switch (get_node_type(node)) {
+            case LEAF_NODE:
+                select_from_leaf_node(select_result, node, table);
+                break;
+            case INTERNAL_NODE:
+                select_from_internal_node(select_result, node, table);
+                break;
+        }
+    }
+    // don`t forget the right child
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node);
+    void *right_child = get_page(table->pager, right_child_page_num);
+    switch (get_node_type(right_child)) {
+        case LEAF_NODE:
+            select_from_leaf_node(select_result, right_child, table);
+            break;
+        case INTERNAL_NODE:
+            select_from_internal_node(select_result, right_child, table);
+            break;
+    }
+}
  
 // generate select reuslt.
 SelectResult *gen_select_result(SelectNode *select_node) {
@@ -45,17 +87,14 @@ SelectResult *gen_select_result(SelectNode *select_node) {
     Table *table = open_table(table_name);
     if (table == NULL)
         return NULL;
-    uint32_t row_size = calc_table_row_length(table);
-    uint32_t i, j;
-    for(i = 0; i < table->pager->num_page; i++) {
-        void *node = get_page(table->pager, i);
-        uint32_t cell_num = get_leaf_node_cell_num(node);
-        for(j = 0; j < cell_num; j++) {
-            void *destinct = get_leaf_node_cell_value(node, row_size, j); 
-            select_result->row = realloc(select_result->row, sizeof(Row *) * (select_result->row_len + 1));
-            *(select_result->row + select_result->row_len)  = generate_row(destinct, table->meta_table);
-            select_result->row_len++;
-        }
+    void *root = get_page(table->pager, table->root_page_num);
+    switch (get_node_type(root)) {
+        case LEAF_NODE:
+            select_from_leaf_node(select_result, root, table);
+            break;
+        case INTERNAL_NODE:
+            select_from_internal_node(select_result, root, table);
+            break;
     }
     return select_result;
 }

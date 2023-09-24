@@ -21,6 +21,9 @@ uint32_t get_leaf_node_cell_num(void *node);
 // get internal node keys number
 uint32_t get_internal_node_keys_num(void *node);
 
+// get right child of internal node 
+uint32_t get_internal_node_right_child(void *node);
+
 // get keys number in the node by index
 uint32_t get_internal_node_keys(void *node, uint32_t index);
 

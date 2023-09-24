@@ -18,23 +18,6 @@
 #include "show.h"
 #include "free.h"
 
-// get row from insert statement
-Row *get_statement_insert_row(Statement *stmt) {
-    ASTNode *node = stmt->ast_node;
-    if (node == NULL) {
-        fatal("Sql parse error.");
-    }
-    assert(node->statement_type == INSERT_STMT);
-    return generate_insert_row(node->insert_node);
-}
-
-// check if key already exists in db
-bool check_duplicate_key(Cursor *cursor, uint32_t key) {
-    void *node = get_page(cursor->table->pager, cursor->page_num);
-    uint32_t row_length = calc_table_row_length(cursor->table);
-    uint32_t target = get_leaf_node_cell_key(node, cursor->cell_num, row_length);
-    return target == key;
-}
 
 // Create a table
 ExecuteResult statement_create_table(Statement *stmt) {
@@ -45,20 +28,8 @@ ExecuteResult statement_create_table(Statement *stmt) {
 
 // execute insert statment
 ExecuteResult statement_insert(Statement *stmt) {
-    Row *row = get_statement_insert_row(stmt);
-    if (row == NULL)
-        return EXIT_FAILURE;
-    Table *table = open_table(row->table_name);
-    void *root_node = get_page(table->pager, table->root_page_num); 
-    Cursor *cursor = define_cursor(table, row->key);
-    if (check_duplicate_key(cursor, row->key)) {
-        fprintf(stderr, "key '%d' already exists, not allow duplicate key. \n", row->key);
-        return EXECUTE_DUPLICATE_KEY;
-    }
-    insert_leaf_node(cursor, row);
-    flush_page(cursor->table->pager, cursor->page_num); // flush into disk.
-    // free memeory
-    return EXECUTE_SUCCESS;    
+    assert(stmt->statement_type == STMT_INSERT);
+    return exec_insert_statement(stmt->ast_node->insert_node);
 }
 
 ExecuteResult statement_select(Statement *statement) {
