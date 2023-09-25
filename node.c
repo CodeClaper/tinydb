@@ -386,10 +386,9 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num, ui
 }
 
 // insert new internla node
-static void insert_internal_node(Table *table, uint32_t parent_page_num, uint32_t new_child_page_num) {
+static void insert_internal_node(Table *table, void *internal_node , uint32_t new_child_page_num) {
     uint32_t row_length = calc_table_row_length(table);
     void *new_child = get_page(table->pager, new_child_page_num);
-    void *internal_node = get_page(table->pager, parent_page_num);
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
     if (overflow_internal_node(internal_node, keys_num)) {
         fprintf(stderr, "not implement now.\n");
@@ -476,7 +475,9 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         void *parent = get_page(cursor->table->pager, parent_page_num);
         uint32_t new_max_key = get_max_key(old_node, row_length);
         update_internal_node_key(parent, old_max_key, new_max_key);
-        insert_internal_node(cursor->table, parent_page_num, next_unused_page_num);
+        insert_internal_node(cursor->table, parent, next_unused_page_num);
+        flush_page(cursor->table->pager, cursor->page_num);
+        flush_page(cursor->table->pager, next_unused_page_num);
         flush_page(cursor->table->pager, parent_page_num);
     }
 }
