@@ -41,6 +41,7 @@ typedef struct {
 
 typedef enum {
     EXECUTE_SUCCESS,
+    EXECUTE_FAIL,
     EXECUTE_TABLE_EXIST_FAIL,
     EXECUTE_TABLE_CREATE_FAIL,
     EXECUTE_TABLE_DROP_FAIL,
@@ -92,6 +93,15 @@ typedef struct {
     KeyValue **data;
     uint32_t column_len;
 }Row;
+
+
+typedef struct {
+    char *table_name;
+    bool is_function;
+    MetaColumn **meta_columns;
+    uint32_t column_size;
+    FunctionNode *function_node;
+}SelectParam;
 
 typedef struct {
     char *table_name;

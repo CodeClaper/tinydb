@@ -49,6 +49,18 @@ IdentSetNode *make_ident_set_node() {
     return ident_set_node;
 }
 
+// make a function value node.
+FunctionValueNode *make_function_value_node() {
+    FunctionValueNode *function_value_node = malloc(sizeof(FunctionValueNode));
+    return function_value_node;
+}
+
+// make a functon node
+FunctionNode *make_function_node() {
+    FunctionNode *function_node = malloc(sizeof(FunctionNode));
+    return function_node;
+}
+
 // add a new ident node to set
 void add_ident(IdentSetNode *ident_set_node, IdentNode *ident_node) {
     ident_set_node->ident_node = realloc(ident_set_node->ident_node, sizeof(IdentNode *) * (ident_set_node->num + 1));

@@ -150,7 +150,7 @@ extern int yydebug;
     MIN = 278,                     /* MIN  */
     COUNT = 279,                   /* COUNT  */
     SUM = 280,                     /* SUM  */
-    AVERAGE = 281,                 /* AVERAGE  */
+    AVG = 281,                     /* AVG  */
     INT = 282,                     /* INT  */
     STRING = 283,                  /* STRING  */
     BIT = 284,                     /* BIT  */
@@ -205,7 +205,7 @@ extern int yydebug;
 #define MIN 278
 #define COUNT 279
 #define SUM 280
-#define AVERAGE 281
+#define AVG 281
 #define INT 282
 #define STRING 283
 #define BIT 284
@@ -236,32 +236,34 @@ union YYSTYPE
 {
 #line 16 "sql.y"
 
-   char             *s_value;
-   int              i_value;
-   char             *keyword;
-   IntValueNode     *int_value_node;
-   StringValueNode  *string_value_node;
-   IdentNode        *ident_node;
-   IdentSetNode     *ident_set_node;
-   OprNode          *opr_node;
-   ConnNode         *conn_node;
-   DataTypeNode     *data_type_node;
-   ColumnDefNode    *column_def_node;
-   ColumnDefSetNode *column_def_set_node;
-   SelectItemsNode  *select_items_node;
-   ColumnSetNode    *column_set_node;
-   ValueItemNode    *value_item_node;
-   ValueItemSetNode *value_item_set_node;
-   PrimaryKeyNode   *primary_key_node;
-   FromItemNode     *from_item_node;
-   ConditionNode    *cond_node;
-   CreateTableNode  *create_table_node;
-   SelectNode       *select_node;
-   InsertNode       *insert_node;
-   DescribeNode     *describe_node;
-   ShowTablesNode   *show_table_node;
+   char                     *s_value;
+   int                      i_value;
+   char                     *keyword;
+   IntValueNode             *int_value_node;
+   StringValueNode          *string_value_node;
+   IdentNode                *ident_node;
+   IdentSetNode             *ident_set_node;
+   OprNode                  *opr_node;
+   ConnNode                 *conn_node;
+   DataTypeNode             *data_type_node;
+   ColumnDefNode            *column_def_node;
+   ColumnDefSetNode         *column_def_set_node;
+   SelectItemsNode          *select_items_node;
+   ColumnSetNode            *column_set_node;
+   ValueItemNode            *value_item_node;
+   ValueItemSetNode         *value_item_set_node;
+   FunctionValueNode        *function_value_node;
+   FunctionNode             *function_node;
+   PrimaryKeyNode           *primary_key_node;
+   FromItemNode             *from_item_node;
+   ConditionNode            *cond_node;
+   CreateTableNode          *create_table_node;
+   SelectNode               *select_node;
+   InsertNode               *insert_node;
+   DescribeNode             *describe_node;
+   ShowTablesNode           *show_table_node;
 
-#line 264 "y.tab.c"
+#line 266 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -307,7 +309,7 @@ enum yysymbol_kind_t
   YYSYMBOL_MIN = 23,                       /* MIN  */
   YYSYMBOL_COUNT = 24,                     /* COUNT  */
   YYSYMBOL_SUM = 25,                       /* SUM  */
-  YYSYMBOL_AVERAGE = 26,                   /* AVERAGE  */
+  YYSYMBOL_AVG = 26,                       /* AVG  */
   YYSYMBOL_INT = 27,                       /* INT  */
   YYSYMBOL_STRING = 28,                    /* STRING  */
   YYSYMBOL_BIT = 29,                       /* BIT  */
@@ -361,8 +363,10 @@ enum yysymbol_kind_t
   YYSYMBOL_compare = 77,                   /* compare  */
   YYSYMBOL_op = 78,                        /* op  */
   YYSYMBOL_conn = 79,                      /* conn  */
-  YYSYMBOL_into = 80,                      /* into  */
-  YYSYMBOL_values = 81                     /* values  */
+  YYSYMBOL_func = 80,                      /* func  */
+  YYSYMBOL_function_value = 81,            /* function_value  */
+  YYSYMBOL_into = 82,                      /* into  */
+  YYSYMBOL_values = 83                     /* values  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -479,7 +483,7 @@ typedef int yytype_uint16;
 
 
 /* Stored state numbers (used for stacks). */
-typedef yytype_int8 yy_state_t;
+typedef yytype_uint8 yy_state_t;
 
 /* State numbers in computations.  */
 typedef int yy_state_fast_t;
@@ -690,16 +694,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  18
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   86
+#define YYLAST   112
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  50
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  32
+#define YYNNTS  34
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  60
+#define YYNRULES  68
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  109
+#define YYNSTATES  132
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   304
@@ -753,13 +757,13 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    81,    81,    82,    83,    86,    90,    94,    98,   102,
-     108,   116,   127,   134,   143,   151,   162,   170,   176,   177,
-     180,   183,   186,   189,   192,   195,   198,   201,   209,   217,
-     223,   230,   240,   241,   242,   244,   253,   261,   267,   274,
-     282,   290,   300,   306,   312,   320,   328,   338,   342,   344,
-     345,   346,   347,   348,   349,   350,   351,   354,   355,   365,
-     368
+       0,    85,    85,    86,    87,    90,    94,    98,   102,   106,
+     112,   120,   131,   138,   147,   155,   166,   174,   180,   181,
+     184,   187,   190,   193,   196,   199,   202,   205,   212,   221,
+     229,   235,   242,   252,   253,   254,   256,   265,   273,   279,
+     286,   294,   302,   312,   318,   326,   334,   342,   352,   356,
+     358,   359,   360,   361,   362,   363,   364,   365,   368,   369,
+     372,   379,   386,   393,   400,   409,   416,   425,   428
 };
 #endif
 
@@ -778,17 +782,17 @@ static const char *const yytname[] =
   "\"end of file\"", "error", "\"invalid token\"", "NL", "COMMA",
   "SEMICOLON", "LEFTPAREN", "RIGHTPAREN", "QUOTE", "CREATE", "SELECT",
   "INSERT", "UPDATE", "DELETE", "DESCRIBE", "FROM", "WHERE", "INTO",
-  "VALUES", "TABLE", "SHOW", "TABLES", "MAX", "MIN", "COUNT", "SUM",
-  "AVERAGE", "INT", "STRING", "BIT", "FLOAT", "DOUBLE", "DATE",
-  "TIMESTAMP", "PRIMARY", "KEY", "EQ", "NE", "GT", "GE", "LT", "LE", "IN",
-  "LIKE", "AND", "OR", "ALL", "IDENTIFIER", "INTVALUE", "STRINGVALUE",
-  "$accept", "statements", "statement", "statement_create_table",
-  "statement_select", "statement_insert", "statement_describe",
-  "statement_show_tables", "statement_end", "create", "select", "insert",
-  "table", "describe", "show", "tables", "select_items", "columns",
-  "column_defs", "column_def", "column_type", "primary_key", "from_item",
-  "value_items", "value_item", "identifiers", "cond", "compare", "op",
-  "conn", "into", "values", YY_NULLPTR
+  "VALUES", "TABLE", "SHOW", "TABLES", "MAX", "MIN", "COUNT", "SUM", "AVG",
+  "INT", "STRING", "BIT", "FLOAT", "DOUBLE", "DATE", "TIMESTAMP",
+  "PRIMARY", "KEY", "EQ", "NE", "GT", "GE", "LT", "LE", "IN", "LIKE",
+  "AND", "OR", "ALL", "IDENTIFIER", "INTVALUE", "STRINGVALUE", "$accept",
+  "statements", "statement", "statement_create_table", "statement_select",
+  "statement_insert", "statement_describe", "statement_show_tables",
+  "statement_end", "create", "select", "insert", "table", "describe",
+  "show", "tables", "select_items", "columns", "column_defs", "column_def",
+  "column_type", "primary_key", "from_item", "value_items", "value_item",
+  "identifiers", "cond", "compare", "op", "conn", "func", "function_value",
+  "into", "values", YY_NULLPTR
 };
 
 static const char *
@@ -798,7 +802,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-33)
+#define YYPACT_NINF (-39)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -812,17 +816,20 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      14,   -33,   -33,   -33,   -33,   -33,     2,   -33,   -33,   -33,
-     -33,   -33,   -33,   -12,   -27,    -2,   -21,    19,   -33,   -33,
-     -33,   -33,     7,   -33,   -33,    41,    58,   -33,   -21,   -33,
-      47,   -33,    47,    57,   -21,    17,     3,   -33,    62,   -33,
-     -33,    20,     1,   -33,   -27,   -33,    60,   -33,    10,    23,
-     -33,    21,   -33,    63,    58,    -7,   -33,   -33,   -33,   -33,
-     -29,    47,     6,    47,    51,     4,   -33,    28,   -33,    36,
-     -33,    65,   -33,   -33,   -33,   -33,   -33,   -33,   -33,   -33,
-     -33,    11,   -33,    67,    68,    69,    -7,    47,    72,    47,
-     -33,   -33,    16,    -7,   -33,   -33,   -33,   -33,    32,   -33,
-     -33,   -33,    21,    29,    73,   -33,    47,   -33,   -33
+      22,   -39,   -39,   -39,   -39,   -39,     9,   -39,   -39,   -39,
+     -39,   -39,   -39,   -12,   -20,    26,   -22,    14,   -39,   -39,
+     -39,   -39,   -17,    63,    67,    71,    72,    73,   -39,   -39,
+      44,    76,   -39,   -39,   -22,   -39,    12,   -39,    12,    75,
+      18,    18,    18,    18,    18,   -22,    36,    10,   -39,    79,
+     -39,   -39,    37,   -39,   -39,    78,    80,    81,    82,    83,
+       8,   -39,    21,   -39,    86,   -39,    35,    40,   -39,   -39,
+     -39,   -39,   -39,   -39,    39,   -39,    87,    76,    -7,   -39,
+     -39,   -39,   -39,   -26,    12,    13,    12,    77,   -35,   -39,
+      53,   -39,    58,   -39,    89,   -39,   -39,   -39,   -39,   -39,
+     -39,   -39,   -39,   -39,    23,   -39,    91,    90,    92,    -7,
+      12,    93,    12,   -39,   -39,    31,    -7,   -39,   -39,   -39,
+     -39,    55,   -39,   -39,   -39,    39,    54,    94,   -39,    12,
+     -39,   -39
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -832,62 +839,71 @@ static const yytype_int8 yydefact[] =
 {
        0,    20,    21,    22,    24,    25,     0,     2,     5,     6,
        7,     8,     9,     0,     0,     0,     0,     0,     1,     4,
-       3,    23,     0,    42,    43,     0,    27,    59,     0,    36,
-       0,    26,     0,     0,     0,     0,     0,    18,     0,    16,
-      17,     0,     0,    44,     0,    60,     0,    19,     0,     0,
-      29,     0,    13,     0,    28,     0,    32,    33,    34,    31,
-       0,     0,     0,     0,     0,     0,    39,     0,    37,     0,
-      30,     0,    10,    49,    50,    51,    52,    53,    54,    55,
-      56,     0,    12,     0,     0,     0,     0,     0,     0,     0,
-      47,    48,    45,     0,    40,    41,    38,    14,     0,    11,
-      57,    58,     0,     0,     0,    46,     0,    35,    15
+       3,    23,     0,     0,     0,     0,     0,     0,    43,    44,
+       0,    27,    28,    67,     0,    37,     0,    26,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    18,     0,
+      16,    17,     0,    66,    65,     0,     0,     0,     0,     0,
+       0,    45,     0,    68,     0,    19,     0,     0,    30,    60,
+      61,    62,    63,    64,     0,    13,     0,    29,     0,    33,
+      34,    35,    32,     0,     0,     0,     0,     0,     0,    40,
+       0,    38,     0,    31,     0,    10,    50,    51,    52,    53,
+      54,    55,    56,    57,     0,    12,     0,     0,     0,     0,
+       0,     0,     0,    48,    49,    46,     0,    41,    42,    39,
+      14,     0,    11,    58,    59,     0,     0,     0,    47,     0,
+      36,    15
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -33,   -33,    75,   -33,   -33,   -33,   -33,   -33,   -32,   -33,
-     -33,   -33,   -33,   -33,   -33,   -33,   -33,   -33,   -33,    15,
-     -33,   -33,   -20,   -11,    -3,    40,   -17,   -33,   -33,   -33,
-     -33,    22
+     -39,   -39,    97,   -39,   -39,   -39,   -39,   -39,   -38,   -39,
+     -39,   -39,   -39,   -39,   -39,   -39,   -39,   -39,   -39,    24,
+     -39,   -39,     0,   -11,    -5,    46,   -19,   -39,   -39,   -39,
+     -39,    -4,   -39,    25
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     6,     7,     8,     9,    10,    11,    12,    39,    13,
-      14,    15,    22,    16,    17,    32,    25,    53,    49,    50,
-      59,    71,    30,    67,    68,    26,    63,    92,    81,   102,
-      28,    46
+       0,     6,     7,     8,     9,    10,    11,    12,    50,    13,
+      14,    15,    22,    16,    17,    38,    30,    76,    67,    68,
+      82,    94,    36,    90,    91,    31,    86,   115,   104,   125,
+      32,    55,    34,    64
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
    positive, shift that token.  If negative, reduce the rule whose
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
-static const yytype_int8 yytable[] =
+static const yytype_uint8 yytable[] =
 {
-      40,    65,    18,    19,    37,    69,    38,    21,    36,    44,
-      52,     1,     2,     3,    42,    27,     4,    51,    48,    23,
-      24,    45,     5,     1,     2,     3,    29,    60,     4,    72,
-      61,    82,    86,    86,     5,    87,   106,    56,    57,    58,
-      31,    66,    73,    74,    75,    76,    77,    78,    79,    80,
-      37,    84,    38,    85,    33,    97,    34,    99,    90,    91,
-     100,   101,    35,    41,    43,    47,    55,    48,    62,    45,
-      64,    88,    89,    93,   108,    70,    94,    95,    98,   104,
-     107,    20,   103,    96,    54,   105,    83
+      51,    88,    23,    24,    25,    26,    27,    21,    92,    18,
+      19,    48,   107,    49,   108,    48,    62,    49,     1,     2,
+       3,    66,    75,     4,    74,    35,    28,    29,    63,     5,
+      39,     1,     2,     3,    47,    37,     4,    56,    57,    58,
+      59,    89,     5,    33,    83,    60,    95,    84,   105,    96,
+      97,    98,    99,   100,   101,   102,   103,   109,   109,    45,
+     110,   129,    79,    80,    81,    53,    54,    28,    29,    40,
+     113,   114,   120,    41,   122,   123,   124,    42,    43,    44,
+      46,    52,    65,    61,    66,    69,    85,    70,    71,    72,
+      73,   131,    78,   111,    87,    63,   112,   116,   117,   121,
+     118,   130,   127,    20,   119,   126,   128,    93,    77,     0,
+       0,     0,   106
 };
 
-static const yytype_int8 yycheck[] =
+static const yytype_int16 yycheck[] =
 {
-      32,     8,     0,     1,     3,    34,     5,    19,    28,     6,
-      42,     9,    10,    11,    34,    17,    14,    16,    47,    46,
-      47,    18,    20,     9,    10,    11,    47,     4,    14,    61,
-       7,    63,     4,     4,    20,     7,     7,    27,    28,    29,
-      21,    48,    36,    37,    38,    39,    40,    41,    42,    43,
-       3,    47,     5,    49,    47,    87,    15,    89,    47,    48,
-      44,    45,     4,     6,    47,     3,     6,    47,    47,    18,
-       7,    35,     7,     6,   106,    60,     8,     8,     6,    47,
-       7,     6,    93,    86,    44,   102,    64
+      38,     8,    22,    23,    24,    25,    26,    19,    34,     0,
+       1,     3,    47,     5,    49,     3,     6,     5,     9,    10,
+      11,    47,    60,    14,    16,    47,    46,    47,    18,    20,
+      47,     9,    10,    11,    34,    21,    14,    41,    42,    43,
+      44,    48,    20,    17,     4,    45,    84,     7,    86,    36,
+      37,    38,    39,    40,    41,    42,    43,     4,     4,    15,
+       7,     7,    27,    28,    29,    47,    48,    46,    47,     6,
+      47,    48,   110,     6,   112,    44,    45,     6,     6,     6,
+       4,     6,     3,    47,    47,     7,    47,     7,     7,     7,
+       7,   129,     6,    35,     7,    18,     7,     6,     8,     6,
+       8,     7,    47,     6,   109,   116,   125,    83,    62,    -1,
+      -1,    -1,    87
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
@@ -896,15 +912,18 @@ static const yytype_int8 yystos[] =
 {
        0,     9,    10,    11,    14,    20,    51,    52,    53,    54,
       55,    56,    57,    59,    60,    61,    63,    64,     0,     1,
-      52,    19,    62,    46,    47,    66,    75,    17,    80,    47,
-      72,    21,    65,    47,    15,     4,    72,     3,     5,    58,
-      58,     6,    72,    47,     6,    18,    81,     3,    47,    68,
-      69,    16,    58,    67,    75,     6,    27,    28,    29,    70,
-       4,     7,    47,    76,     7,     8,    48,    73,    74,    34,
-      69,    71,    58,    36,    37,    38,    39,    40,    41,    42,
-      43,    78,    58,    81,    47,    49,     4,     7,    35,     7,
-      47,    48,    77,     6,     8,     8,    74,    58,     6,    58,
-      44,    45,    79,    73,    47,    76,     7,     7,    58
+      52,    19,    62,    22,    23,    24,    25,    26,    46,    47,
+      66,    75,    80,    17,    82,    47,    72,    21,    65,    47,
+       6,     6,     6,     6,     6,    15,     4,    72,     3,     5,
+      58,    58,     6,    47,    48,    81,    81,    81,    81,    81,
+      72,    47,     6,    18,    83,     3,    47,    68,    69,     7,
+       7,     7,     7,     7,    16,    58,    67,    75,     6,    27,
+      28,    29,    70,     4,     7,    47,    76,     7,     8,    48,
+      73,    74,    34,    69,    71,    58,    36,    37,    38,    39,
+      40,    41,    42,    43,    78,    58,    83,    47,    49,     4,
+       7,    35,     7,    47,    48,    77,     6,     8,     8,    74,
+      58,     6,    58,    44,    45,    79,    73,    47,    76,     7,
+       7,    58
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
@@ -912,11 +931,11 @@ static const yytype_int8 yyr1[] =
 {
        0,    50,    51,    51,    51,    52,    52,    52,    52,    52,
       53,    53,    54,    54,    55,    55,    56,    57,    58,    58,
-      59,    60,    61,    62,    63,    64,    65,    66,    67,    68,
-      68,    69,    70,    70,    70,    71,    72,    73,    73,    74,
-      74,    74,    75,    75,    75,    76,    76,    77,    77,    78,
-      78,    78,    78,    78,    78,    78,    78,    79,    79,    80,
-      81
+      59,    60,    61,    62,    63,    64,    65,    66,    66,    67,
+      68,    68,    69,    70,    70,    70,    71,    72,    73,    73,
+      74,    74,    74,    75,    75,    75,    76,    76,    77,    77,
+      78,    78,    78,    78,    78,    78,    78,    78,    79,    79,
+      80,    80,    80,    80,    80,    81,    81,    82,    83
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -925,10 +944,10 @@ static const yytype_int8 yyr2[] =
        0,     2,     1,     2,     2,     1,     1,     1,     1,     1,
        7,     9,     7,     5,     8,    11,     3,     3,     1,     2,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       3,     2,     1,     1,     1,     5,     1,     1,     3,     1,
-       3,     3,     1,     1,     3,     3,     5,     1,     1,     1,
+       1,     3,     2,     1,     1,     1,     5,     1,     1,     3,
+       1,     3,     3,     1,     1,     3,     3,     5,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1
+       4,     4,     4,     4,     4,     1,     1,     1,     1
 };
 
 
@@ -1392,47 +1411,47 @@ yyreduce:
   switch (yyn)
     {
   case 5: /* statement: statement_create_table  */
-#line 87 "sql.y"
+#line 91 "sql.y"
                 {
                    set_create_table_ast_node((yyvsp[0].create_table_node)); 
                 }
-#line 1399 "y.tab.c"
+#line 1418 "y.tab.c"
     break;
 
   case 6: /* statement: statement_select  */
-#line 91 "sql.y"
+#line 95 "sql.y"
                 {
                     set_select_ast_node((yyvsp[0].select_node));
                 }
-#line 1407 "y.tab.c"
+#line 1426 "y.tab.c"
     break;
 
   case 7: /* statement: statement_insert  */
-#line 95 "sql.y"
+#line 99 "sql.y"
                 {
                     set_insert_ast_node((yyvsp[0].insert_node));
                 }
-#line 1415 "y.tab.c"
+#line 1434 "y.tab.c"
     break;
 
   case 8: /* statement: statement_describe  */
-#line 99 "sql.y"
+#line 103 "sql.y"
                 {
                     set_describe_ast_node((yyvsp[0].describe_node));
                 }
-#line 1423 "y.tab.c"
+#line 1442 "y.tab.c"
     break;
 
   case 9: /* statement: statement_show_tables  */
-#line 103 "sql.y"
+#line 107 "sql.y"
                 {
                     set_show_tables_ast_node((yyvsp[0].show_table_node));
                 }
-#line 1431 "y.tab.c"
+#line 1450 "y.tab.c"
     break;
 
   case 10: /* statement_create_table: create table IDENTIFIER LEFTPAREN column_defs RIGHTPAREN statement_end  */
-#line 109 "sql.y"
+#line 113 "sql.y"
                 {
                     CreateTableNode *create_table_node = make_create_table_node();
                     IdentNode *node = make_ident_node((yyvsp[-4].ident_node));
@@ -1440,11 +1459,11 @@ yyreduce:
                     create_table_node->column_def_set_node = (yyvsp[-2].column_def_set_node);
                     (yyval.create_table_node) = create_table_node;
                 }
-#line 1443 "y.tab.c"
+#line 1462 "y.tab.c"
     break;
 
   case 11: /* statement_create_table: create table IDENTIFIER LEFTPAREN column_defs COMMA primary_key RIGHTPAREN statement_end  */
-#line 117 "sql.y"
+#line 121 "sql.y"
                 {
                     CreateTableNode *create_table_node = make_create_table_node();
                     IdentNode *node = make_ident_node((yyvsp[-6].ident_node));
@@ -1453,33 +1472,33 @@ yyreduce:
                     create_table_node->primary_key_node = (yyvsp[-2].primary_key_node);
                     (yyval.create_table_node) = create_table_node;
                 }
-#line 1456 "y.tab.c"
+#line 1475 "y.tab.c"
     break;
 
   case 12: /* statement_select: select select_items FROM from_item WHERE cond statement_end  */
-#line 128 "sql.y"
+#line 132 "sql.y"
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = (yyvsp[-5].select_items_node);
                     select_node->from_item_node = (yyvsp[-3].from_item_node);
                     (yyval.select_node) = select_node;
                 }
-#line 1467 "y.tab.c"
+#line 1486 "y.tab.c"
     break;
 
   case 13: /* statement_select: select select_items FROM from_item statement_end  */
-#line 135 "sql.y"
+#line 139 "sql.y"
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = (yyvsp[-3].select_items_node);
                     select_node->from_item_node = (yyvsp[-1].from_item_node);
                     (yyval.select_node) = select_node;
                 }
-#line 1478 "y.tab.c"
+#line 1497 "y.tab.c"
     break;
 
   case 14: /* statement_insert: insert into from_item values LEFTPAREN value_items RIGHTPAREN statement_end  */
-#line 144 "sql.y"
+#line 148 "sql.y"
                 {
                     InsertNode *node = make_insert_node();
                     node->if_ignore_columns = true;
@@ -1487,11 +1506,11 @@ yyreduce:
                     node->value_item_set_node = (yyvsp[-2].value_item_set_node);
                     (yyval.insert_node) = node;
                 }
-#line 1490 "y.tab.c"
+#line 1509 "y.tab.c"
     break;
 
   case 15: /* statement_insert: insert into from_item LEFTPAREN columns RIGHTPAREN values LEFTPAREN value_items RIGHTPAREN statement_end  */
-#line 152 "sql.y"
+#line 156 "sql.y"
                 {
                     InsertNode *node = make_insert_node();
                     node->if_ignore_columns = false;
@@ -1500,68 +1519,80 @@ yyreduce:
                     node->value_item_set_node = (yyvsp[-2].value_item_set_node);
                     (yyval.insert_node) = node;
                 }
-#line 1503 "y.tab.c"
+#line 1522 "y.tab.c"
     break;
 
   case 16: /* statement_describe: describe from_item statement_end  */
-#line 163 "sql.y"
+#line 167 "sql.y"
                 {
                     DescribeNode *node = make_describe_node();
                     node->from_item_node = (yyvsp[-1].from_item_node);
                     (yyval.describe_node) = node;
                 }
-#line 1513 "y.tab.c"
+#line 1532 "y.tab.c"
     break;
 
   case 17: /* statement_show_tables: show tables statement_end  */
-#line 171 "sql.y"
+#line 175 "sql.y"
                 {
                     (yyval.show_table_node) = make_show_tables_node();
                 }
-#line 1521 "y.tab.c"
+#line 1540 "y.tab.c"
     break;
 
   case 27: /* select_items: identifiers  */
-#line 202 "sql.y"
+#line 206 "sql.y"
                 {
                     SelectItemsNode *select_items_node = make_select_items_node();
                     select_items_node-> ident_set_node= (yyvsp[0].ident_set_node);
+                    select_items_node->is_function_node = false;
                     (yyval.select_items_node) = select_items_node;
                 }
-#line 1531 "y.tab.c"
+#line 1551 "y.tab.c"
     break;
 
-  case 28: /* columns: identifiers  */
-#line 210 "sql.y"
+  case 28: /* select_items: func  */
+#line 213 "sql.y"
+                {
+                    SelectItemsNode *select_items_node = make_select_items_node();
+                    select_items_node->function_node= (yyvsp[0].function_node);
+                    select_items_node->is_function_node = true;
+                    (yyval.select_items_node) = select_items_node;
+                }
+#line 1562 "y.tab.c"
+    break;
+
+  case 29: /* columns: identifiers  */
+#line 222 "sql.y"
                 {
                     ColumnSetNode *column_set_node = make_column_set_node();
                     column_set_node -> ident_set_node = (yyvsp[0].ident_set_node);
                     (yyval.column_set_node) = column_set_node;
                 }
-#line 1541 "y.tab.c"
+#line 1572 "y.tab.c"
     break;
 
-  case 29: /* column_defs: column_def  */
-#line 218 "sql.y"
+  case 30: /* column_defs: column_def  */
+#line 230 "sql.y"
                 {
                     ColumnDefSetNode *column_def_set_node = make_column_def_set_node();
                     add_column_def_to_set(column_def_set_node, (yyvsp[0].column_def_node));
                     (yyval.column_def_set_node) = column_def_set_node;
                 }
-#line 1551 "y.tab.c"
+#line 1582 "y.tab.c"
     break;
 
-  case 30: /* column_defs: column_defs COMMA column_def  */
-#line 224 "sql.y"
+  case 31: /* column_defs: column_defs COMMA column_def  */
+#line 236 "sql.y"
                 {
                     (yyval.column_def_set_node) = (yyvsp[-2].column_def_set_node);
                     add_column_def_to_set((yyval.column_def_set_node), (yyvsp[0].column_def_node));
                 }
-#line 1560 "y.tab.c"
+#line 1591 "y.tab.c"
     break;
 
-  case 31: /* column_def: IDENTIFIER column_type  */
-#line 231 "sql.y"
+  case 32: /* column_def: IDENTIFIER column_type  */
+#line 243 "sql.y"
                 {
                     ColumnDefNode *column_def_node = make_column_def_node();
                     IdentNode *node = make_ident_node((yyvsp[-1].ident_node));
@@ -1569,69 +1600,69 @@ yyreduce:
                     column_def_node->column_type = (yyvsp[0].data_type_node);
                     (yyval.column_def_node) = column_def_node;
                 }
-#line 1572 "y.tab.c"
+#line 1603 "y.tab.c"
     break;
 
-  case 32: /* column_type: INT  */
-#line 240 "sql.y"
+  case 33: /* column_type: INT  */
+#line 252 "sql.y"
                         { (yyval.data_type_node) = make_data_type_node(T_INT); }
-#line 1578 "y.tab.c"
+#line 1609 "y.tab.c"
     break;
 
-  case 33: /* column_type: STRING  */
-#line 241 "sql.y"
+  case 34: /* column_type: STRING  */
+#line 253 "sql.y"
                         { (yyval.data_type_node) = make_data_type_node(T_STRING);}
-#line 1584 "y.tab.c"
+#line 1615 "y.tab.c"
     break;
 
-  case 34: /* column_type: BIT  */
-#line 242 "sql.y"
+  case 35: /* column_type: BIT  */
+#line 254 "sql.y"
                         { (yyval.data_type_node) = make_data_type_node(T_BIT); }
-#line 1590 "y.tab.c"
+#line 1621 "y.tab.c"
     break;
 
-  case 35: /* primary_key: PRIMARY KEY LEFTPAREN IDENTIFIER RIGHTPAREN  */
-#line 245 "sql.y"
+  case 36: /* primary_key: PRIMARY KEY LEFTPAREN IDENTIFIER RIGHTPAREN  */
+#line 257 "sql.y"
                 {
                     PrimaryKeyNode *primary_key_node = make_primary_key_node();
                     IdentNode *node = make_ident_node((yyvsp[-1].ident_node));
                     primary_key_node->primary_key_column = node;
                     (yyval.primary_key_node) = primary_key_node;
                 }
-#line 1601 "y.tab.c"
+#line 1632 "y.tab.c"
     break;
 
-  case 36: /* from_item: IDENTIFIER  */
-#line 254 "sql.y"
+  case 37: /* from_item: IDENTIFIER  */
+#line 266 "sql.y"
                 {
                     IdentNode *node = make_ident_node((yyvsp[0].ident_node));
                     (yyval.from_item_node) = make_from_item_node();
                     (yyval.from_item_node)->table = node;
                 }
-#line 1611 "y.tab.c"
+#line 1642 "y.tab.c"
     break;
 
-  case 37: /* value_items: value_item  */
-#line 262 "sql.y"
+  case 38: /* value_items: value_item  */
+#line 274 "sql.y"
                 {
                     ValueItemSetNode *node = make_value_item_set_node();
                     add_value_item(node, (yyvsp[0].value_item_node));
                     (yyval.value_item_set_node) = node;
                 }
-#line 1621 "y.tab.c"
+#line 1652 "y.tab.c"
     break;
 
-  case 38: /* value_items: value_items COMMA value_item  */
-#line 268 "sql.y"
+  case 39: /* value_items: value_items COMMA value_item  */
+#line 280 "sql.y"
                 {
                     (yyval.value_item_set_node) = (yyvsp[-2].value_item_set_node);
                     add_value_item((yyval.value_item_set_node), (yyvsp[0].value_item_node));
                 }
-#line 1630 "y.tab.c"
+#line 1661 "y.tab.c"
     break;
 
-  case 39: /* value_item: INTVALUE  */
-#line 275 "sql.y"
+  case 40: /* value_item: INTVALUE  */
+#line 287 "sql.y"
                 {
                     ValueItemNode *node = make_value_item_node();
                     IntValueNode *int_value_node = make_int_value_node((yyvsp[0].int_value_node));
@@ -1639,11 +1670,11 @@ yyreduce:
                     node->data_type = T_INT;
                     (yyval.value_item_node) = node;
                 }
-#line 1642 "y.tab.c"
+#line 1673 "y.tab.c"
     break;
 
-  case 40: /* value_item: QUOTE IDENTIFIER QUOTE  */
-#line 283 "sql.y"
+  case 41: /* value_item: QUOTE IDENTIFIER QUOTE  */
+#line 295 "sql.y"
                 {
                     ValueItemNode *node = make_value_item_node();
                     StringValueNode *string_value_node = make_string_value_node((yyvsp[-1].ident_node));
@@ -1651,11 +1682,11 @@ yyreduce:
                     node->data_type = T_STRING;
                     (yyval.value_item_node) = node;
                 }
-#line 1654 "y.tab.c"
+#line 1685 "y.tab.c"
     break;
 
-  case 41: /* value_item: QUOTE STRINGVALUE QUOTE  */
-#line 291 "sql.y"
+  case 42: /* value_item: QUOTE STRINGVALUE QUOTE  */
+#line 303 "sql.y"
                 {
                     ValueItemNode *node = make_value_item_node();
                     StringValueNode *string_value_node = make_string_value_node((yyvsp[-1].string_value_node));
@@ -1663,41 +1694,43 @@ yyreduce:
                     node->data_type = T_STRING;
                     (yyval.value_item_node) = node;
                 }
-#line 1666 "y.tab.c"
+#line 1697 "y.tab.c"
     break;
 
-  case 42: /* identifiers: ALL  */
-#line 301 "sql.y"
-                { 
-                    IdentNode *node = make_ident_node("*");
-                    (yyval.ident_set_node) = make_ident_set_node();
-                    add_ident((yyval.ident_set_node), node);
-                }
-#line 1676 "y.tab.c"
-    break;
-
-  case 43: /* identifiers: IDENTIFIER  */
-#line 307 "sql.y"
-                { 
-                    IdentNode *node = make_ident_node((yyvsp[0].ident_node));
-                    (yyval.ident_set_node) = make_ident_set_node();
-                    add_ident((yyval.ident_set_node), node);
-                }
-#line 1686 "y.tab.c"
-    break;
-
-  case 44: /* identifiers: identifiers COMMA IDENTIFIER  */
+  case 43: /* identifiers: ALL  */
 #line 313 "sql.y"
+                { 
+                    IdentSetNode *ident_set_node = make_ident_set_node();
+                    ident_set_node->all_column = true;
+                    (yyval.ident_set_node) = ident_set_node;
+                }
+#line 1707 "y.tab.c"
+    break;
+
+  case 44: /* identifiers: IDENTIFIER  */
+#line 319 "sql.y"
+                { 
+                    IdentSetNode *ident_set_node = make_ident_set_node();
+                    ident_set_node->all_column = false;
+                    IdentNode *node = make_ident_node((yyvsp[0].ident_node));
+                    add_ident(ident_set_node, node);
+                    (yyval.ident_set_node) = ident_set_node;
+                }
+#line 1719 "y.tab.c"
+    break;
+
+  case 45: /* identifiers: identifiers COMMA IDENTIFIER  */
+#line 327 "sql.y"
                 { 
                     (yyval.ident_set_node) = (yyvsp[-2].ident_set_node);
                     IdentNode *node = make_ident_node((yyvsp[0].ident_node));
                     add_ident((yyval.ident_set_node), node);
                 }
-#line 1696 "y.tab.c"
+#line 1729 "y.tab.c"
     break;
 
-  case 45: /* cond: IDENTIFIER op compare  */
-#line 321 "sql.y"
+  case 46: /* cond: IDENTIFIER op compare  */
+#line 335 "sql.y"
                 {
                     ConditionNode *cond_node = make_cond_node();
                     IdentNode *ident_node = make_ident_node((yyvsp[-2].ident_node));
@@ -1705,11 +1738,11 @@ yyreduce:
                     cond_node->opr_node = (yyvsp[-1].opr_node);
                     (yyval.cond_node) = cond_node;
                 }
-#line 1708 "y.tab.c"
+#line 1741 "y.tab.c"
     break;
 
-  case 46: /* cond: IDENTIFIER op compare conn cond  */
-#line 329 "sql.y"
+  case 47: /* cond: IDENTIFIER op compare conn cond  */
+#line 343 "sql.y"
                 {
                     ConditionNode *cond_node = make_cond_node();
                     IdentNode *ident_node = make_ident_node((yyvsp[-4].ident_node));
@@ -1717,79 +1750,156 @@ yyreduce:
                     cond_node->opr_node = (yyvsp[-3].opr_node);
                     (yyval.cond_node) = cond_node;
                 }
-#line 1720 "y.tab.c"
+#line 1753 "y.tab.c"
     break;
 
-  case 47: /* compare: IDENTIFIER  */
-#line 339 "sql.y"
+  case 48: /* compare: IDENTIFIER  */
+#line 353 "sql.y"
                 { 
                     IdentNode *node = make_ident_node((yyvsp[0].ident_node));
                 }
-#line 1728 "y.tab.c"
+#line 1761 "y.tab.c"
     break;
 
-  case 49: /* op: EQ  */
-#line 344 "sql.y"
+  case 50: /* op: EQ  */
+#line 358 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_EQ); }
-#line 1734 "y.tab.c"
+#line 1767 "y.tab.c"
     break;
 
-  case 50: /* op: NE  */
-#line 345 "sql.y"
+  case 51: /* op: NE  */
+#line 359 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_NE); }
-#line 1740 "y.tab.c"
+#line 1773 "y.tab.c"
     break;
 
-  case 51: /* op: GT  */
-#line 346 "sql.y"
+  case 52: /* op: GT  */
+#line 360 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_GT); }
-#line 1746 "y.tab.c"
+#line 1779 "y.tab.c"
     break;
 
-  case 52: /* op: GE  */
-#line 347 "sql.y"
+  case 53: /* op: GE  */
+#line 361 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_GE); }
-#line 1752 "y.tab.c"
+#line 1785 "y.tab.c"
     break;
 
-  case 53: /* op: LT  */
-#line 348 "sql.y"
+  case 54: /* op: LT  */
+#line 362 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_LT); }
-#line 1758 "y.tab.c"
+#line 1791 "y.tab.c"
     break;
 
-  case 54: /* op: LE  */
-#line 349 "sql.y"
+  case 55: /* op: LE  */
+#line 363 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_LE); }
-#line 1764 "y.tab.c"
+#line 1797 "y.tab.c"
     break;
 
-  case 55: /* op: IN  */
-#line 350 "sql.y"
+  case 56: /* op: IN  */
+#line 364 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_IN); }
-#line 1770 "y.tab.c"
+#line 1803 "y.tab.c"
     break;
 
-  case 56: /* op: LIKE  */
-#line 351 "sql.y"
+  case 57: /* op: LIKE  */
+#line 365 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_LIKE); }
-#line 1776 "y.tab.c"
+#line 1809 "y.tab.c"
     break;
 
-  case 57: /* conn: AND  */
-#line 354 "sql.y"
+  case 58: /* conn: AND  */
+#line 368 "sql.y"
                     { (yyval.conn_node) = make_conn_node(C_AND); }
-#line 1782 "y.tab.c"
+#line 1815 "y.tab.c"
     break;
 
-  case 58: /* conn: OR  */
-#line 355 "sql.y"
+  case 59: /* conn: OR  */
+#line 369 "sql.y"
                     { (yyval.conn_node) = make_conn_node(C_OR); }
-#line 1788 "y.tab.c"
+#line 1821 "y.tab.c"
+    break;
+
+  case 60: /* func: MAX LEFTPAREN function_value RIGHTPAREN  */
+#line 373 "sql.y"
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_MAX;
+                    function_node->value = (yyvsp[-1].function_value_node);
+                    (yyval.function_node) = function_node;
+                }
+#line 1832 "y.tab.c"
+    break;
+
+  case 61: /* func: MIN LEFTPAREN function_value RIGHTPAREN  */
+#line 380 "sql.y"
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_MIN;
+                    function_node->value = (yyvsp[-1].function_value_node);
+                    (yyval.function_node) = function_node;
+                }
+#line 1843 "y.tab.c"
+    break;
+
+  case 62: /* func: COUNT LEFTPAREN function_value RIGHTPAREN  */
+#line 387 "sql.y"
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_COUNT;
+                    function_node->value = (yyvsp[-1].function_value_node);
+                    (yyval.function_node) = function_node;
+                }
+#line 1854 "y.tab.c"
+    break;
+
+  case 63: /* func: SUM LEFTPAREN function_value RIGHTPAREN  */
+#line 394 "sql.y"
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_SUM;
+                    function_node->value = (yyvsp[-1].function_value_node);
+                    (yyval.function_node) = function_node;
+                }
+#line 1865 "y.tab.c"
+    break;
+
+  case 64: /* func: AVG LEFTPAREN function_value RIGHTPAREN  */
+#line 401 "sql.y"
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_AVG;
+                    function_node->value = (yyvsp[-1].function_value_node);
+                    (yyval.function_node) = function_node;
+                }
+#line 1876 "y.tab.c"
+    break;
+
+  case 65: /* function_value: INTVALUE  */
+#line 410 "sql.y"
+                {
+                    FunctionValueNode *node = make_function_value_node();
+                    IntValueNode *int_value_node = make_int_value_node((yyvsp[0].int_value_node));
+                    node->i_value = int_value_node;
+                    (yyval.function_value_node) = node;
+                }
+#line 1887 "y.tab.c"
+    break;
+
+  case 66: /* function_value: IDENTIFIER  */
+#line 417 "sql.y"
+                {
+                    FunctionValueNode *node = make_function_value_node();
+                    IdentNode *ident_node = make_ident_node((yyvsp[0].ident_node));
+                    node->id_value = ident_node;
+                    (yyval.function_value_node) = node;
+                }
+#line 1898 "y.tab.c"
     break;
 
 
-#line 1792 "y.tab.c"
+#line 1902 "y.tab.c"
 
       default: break;
     }
@@ -1982,5 +2092,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 370 "sql.y"
+#line 430 "sql.y"
 

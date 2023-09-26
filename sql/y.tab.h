@@ -77,7 +77,7 @@ extern int yydebug;
     MIN = 278,                     /* MIN  */
     COUNT = 279,                   /* COUNT  */
     SUM = 280,                     /* SUM  */
-    AVERAGE = 281,                 /* AVERAGE  */
+    AVG = 281,                     /* AVG  */
     INT = 282,                     /* INT  */
     STRING = 283,                  /* STRING  */
     BIT = 284,                     /* BIT  */
@@ -132,7 +132,7 @@ extern int yydebug;
 #define MIN 278
 #define COUNT 279
 #define SUM 280
-#define AVERAGE 281
+#define AVG 281
 #define INT 282
 #define STRING 283
 #define BIT 284
@@ -163,32 +163,34 @@ union YYSTYPE
 {
 #line 16 "sql.y"
 
-   char             *s_value;
-   int              i_value;
-   char             *keyword;
-   IntValueNode     *int_value_node;
-   StringValueNode  *string_value_node;
-   IdentNode        *ident_node;
-   IdentSetNode     *ident_set_node;
-   OprNode          *opr_node;
-   ConnNode         *conn_node;
-   DataTypeNode     *data_type_node;
-   ColumnDefNode    *column_def_node;
-   ColumnDefSetNode *column_def_set_node;
-   SelectItemsNode  *select_items_node;
-   ColumnSetNode    *column_set_node;
-   ValueItemNode    *value_item_node;
-   ValueItemSetNode *value_item_set_node;
-   PrimaryKeyNode   *primary_key_node;
-   FromItemNode     *from_item_node;
-   ConditionNode    *cond_node;
-   CreateTableNode  *create_table_node;
-   SelectNode       *select_node;
-   InsertNode       *insert_node;
-   DescribeNode     *describe_node;
-   ShowTablesNode   *show_table_node;
+   char                     *s_value;
+   int                      i_value;
+   char                     *keyword;
+   IntValueNode             *int_value_node;
+   StringValueNode          *string_value_node;
+   IdentNode                *ident_node;
+   IdentSetNode             *ident_set_node;
+   OprNode                  *opr_node;
+   ConnNode                 *conn_node;
+   DataTypeNode             *data_type_node;
+   ColumnDefNode            *column_def_node;
+   ColumnDefSetNode         *column_def_set_node;
+   SelectItemsNode          *select_items_node;
+   ColumnSetNode            *column_set_node;
+   ValueItemNode            *value_item_node;
+   ValueItemSetNode         *value_item_set_node;
+   FunctionValueNode        *function_value_node;
+   FunctionNode             *function_node;
+   PrimaryKeyNode           *primary_key_node;
+   FromItemNode             *from_item_node;
+   ConditionNode            *cond_node;
+   CreateTableNode          *create_table_node;
+   SelectNode               *select_node;
+   InsertNode               *insert_node;
+   DescribeNode             *describe_node;
+   ShowTablesNode           *show_table_node;
 
-#line 192 "y.tab.h"
+#line 194 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

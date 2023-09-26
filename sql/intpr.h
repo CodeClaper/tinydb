@@ -30,6 +30,14 @@ typedef enum {
 }DataType;
 
 typedef enum {
+    F_COUNT,
+    F_MAX,
+    F_MIN,
+    F_SUM,
+    F_AVG
+}FunctionType;
+
+typedef enum {
     C_AND,
     C_OR
 } ConnType; // connector type
@@ -56,6 +64,19 @@ typedef struct {
     char *name;
 }IdentNode;
 
+
+typedef struct {
+    union {
+      IntValueNode *i_value;
+      IdentNode *id_value;
+    };
+} FunctionValueNode;
+
+typedef struct {
+    FunctionType function_type;
+    FunctionValueNode *value;
+} FunctionNode;
+
 typedef struct {
     ConnType conn_type;
 } ConnNode;
@@ -69,12 +90,15 @@ typedef struct {
 } OprNode;
 
 typedef struct {
+    bool all_column;
     IdentNode **ident_node;
     uint32_t num;
 }IdentSetNode;
 
 typedef struct {
     IdentSetNode *ident_set_node;
+    FunctionNode *function_node;
+    bool is_function_node;
 }SelectItemsNode;
 
 typedef struct {
@@ -172,6 +196,13 @@ IdentSetNode *make_ident_set_node();
 
 // add a new ident node to set
 void add_ident(IdentSetNode *ident_set_node, IdentNode *ident_node);
+
+
+// make a function value node.
+FunctionValueNode *make_function_value_node();
+
+// make a functon node
+FunctionNode *make_function_node();
 
 // make a from item node.
 FromItemNode *make_from_item_node();

@@ -14,30 +14,32 @@ int yyerror(const char *s) {
 %} 
 %union 
 {
-   char             *s_value;
-   int              i_value;
-   char             *keyword;
-   IntValueNode     *int_value_node;
-   StringValueNode  *string_value_node;
-   IdentNode        *ident_node;
-   IdentSetNode     *ident_set_node;
-   OprNode          *opr_node;
-   ConnNode         *conn_node;
-   DataTypeNode     *data_type_node;
-   ColumnDefNode    *column_def_node;
-   ColumnDefSetNode *column_def_set_node;
-   SelectItemsNode  *select_items_node;
-   ColumnSetNode    *column_set_node;
-   ValueItemNode    *value_item_node;
-   ValueItemSetNode *value_item_set_node;
-   PrimaryKeyNode   *primary_key_node;
-   FromItemNode     *from_item_node;
-   ConditionNode    *cond_node;
-   CreateTableNode  *create_table_node;
-   SelectNode       *select_node;
-   InsertNode       *insert_node;
-   DescribeNode     *describe_node;
-   ShowTablesNode   *show_table_node;
+   char                     *s_value;
+   int                      i_value;
+   char                     *keyword;
+   IntValueNode             *int_value_node;
+   StringValueNode          *string_value_node;
+   IdentNode                *ident_node;
+   IdentSetNode             *ident_set_node;
+   OprNode                  *opr_node;
+   ConnNode                 *conn_node;
+   DataTypeNode             *data_type_node;
+   ColumnDefNode            *column_def_node;
+   ColumnDefSetNode         *column_def_set_node;
+   SelectItemsNode          *select_items_node;
+   ColumnSetNode            *column_set_node;
+   ValueItemNode            *value_item_node;
+   ValueItemSetNode         *value_item_set_node;
+   FunctionValueNode        *function_value_node;
+   FunctionNode             *function_node;
+   PrimaryKeyNode           *primary_key_node;
+   FromItemNode             *from_item_node;
+   ConditionNode            *cond_node;
+   CreateTableNode          *create_table_node;
+   SelectNode               *select_node;
+   InsertNode               *insert_node;
+   DescribeNode             *describe_node;
+   ShowTablesNode           *show_table_node;
 };
 %token NL COMMA SEMICOLON LEFTPAREN RIGHTPAREN QUOTE
 %token <keyword> CREATE SELECT INSERT UPDATE DELETE DESCRIBE
@@ -48,7 +50,7 @@ int yyerror(const char *s) {
 %token <keyword> TABLE
 %token <keyword> SHOW
 %token <keyword> TABLES
-%token <keyword> MAX MIN COUNT SUM AVERAGE
+%token <keyword> MAX MIN COUNT SUM AVG
 %token INT STRING BIT FLOAT DOUBLE DATE TIMESTAMP
 %token PRIMARY KEY
 %token EQ NE GT GE LT LE IN LIKE
@@ -70,6 +72,8 @@ int yyerror(const char *s) {
 %type <cond_node> cond
 %type <opr_node> op
 %type <conn_node> conn
+%type <function_value_node> function_value
+%type <function_node> func
 %type <select_node> statement_select
 %type <insert_node> statement_insert
 %type <create_table_node> statement_create_table
@@ -202,6 +206,14 @@ select_items:
                 {
                     SelectItemsNode *select_items_node = make_select_items_node();
                     select_items_node-> ident_set_node= $1;
+                    select_items_node->is_function_node = false;
+                    $$ = select_items_node;
+                }
+            | func
+                {
+                    SelectItemsNode *select_items_node = make_select_items_node();
+                    select_items_node->function_node= $1;
+                    select_items_node->is_function_node = true;
                     $$ = select_items_node;
                 }
             ;
@@ -299,15 +311,17 @@ value_item:
 identifiers: 
             ALL
                 { 
-                    IdentNode *node = make_ident_node("*");
-                    $$ = make_ident_set_node();
-                    add_ident($$, node);
+                    IdentSetNode *ident_set_node = make_ident_set_node();
+                    ident_set_node->all_column = true;
+                    $$ = ident_set_node;
                 }
             | IDENTIFIER 
                 { 
+                    IdentSetNode *ident_set_node = make_ident_set_node();
+                    ident_set_node->all_column = false;
                     IdentNode *node = make_ident_node($1);
-                    $$ = make_ident_set_node();
-                    add_ident($$, node);
+                    add_ident(ident_set_node, node);
+                    $$ = ident_set_node;
                 }
            | identifiers COMMA IDENTIFIER 
                 { 
@@ -354,12 +368,58 @@ conn:
             AND     { $$ = make_conn_node(C_AND); }
             | OR    { $$ = make_conn_node(C_OR); }
             ;
-func: 
-            MAX
-            | MIN
-            | COUNT
-            | SUM
-            | AVERAGE
+func:       
+            MAX LEFTPAREN function_value RIGHTPAREN
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_MAX;
+                    function_node->value = $3;
+                    $$ = function_node;
+                }
+            | MIN LEFTPAREN function_value RIGHTPAREN
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_MIN;
+                    function_node->value = $3;
+                    $$ = function_node;
+                }
+            | COUNT LEFTPAREN function_value RIGHTPAREN
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_COUNT;
+                    function_node->value = $3;
+                    $$ = function_node;
+                }
+            | SUM LEFTPAREN function_value RIGHTPAREN
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_SUM;
+                    function_node->value = $3;
+                    $$ = function_node;
+                }
+            | AVG LEFTPAREN function_value RIGHTPAREN
+                {
+                    FunctionNode *function_node = make_function_node();        
+                    function_node->function_type = F_AVG;
+                    function_node->value = $3;
+                    $$ = function_node;
+                }
+            ;
+function_value:
+            INTVALUE
+                {
+                    FunctionValueNode *node = make_function_value_node();
+                    IntValueNode *int_value_node = make_int_value_node($1);
+                    node->i_value = int_value_node;
+                    $$ = node;
+                }
+            | IDENTIFIER 
+                {
+                    FunctionValueNode *node = make_function_value_node();
+                    IdentNode *ident_node = make_ident_node($1);
+                    node->id_value = ident_node;
+                    $$ = node;
+                }
             ;
 into:
             INTO

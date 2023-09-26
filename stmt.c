@@ -34,9 +34,12 @@ ExecuteResult statement_insert(Statement *stmt) {
 
 ExecuteResult statement_select(Statement *statement) {
     assert(statement->statement_type == STMT_SELECT);
-    SelectResult *select_result = gen_select_result(statement->ast_node->select_node);
+    SelectParam *select_param = convert_select_param(statement->ast_node->select_node);
+    if (select_param == NULL)
+        return EXECUTE_FAIL;
+    SelectResult *select_result = gen_select_result(select_param);
     if (select_result) {
-        print_select_result_plain(select_result);
+        print_select_result_plain(select_result, select_param);
         free_select_result(select_result); 
     }
     return EXECUTE_SUCCESS;
