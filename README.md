@@ -1,36 +1,66 @@
 #### BackGround
 
-2023/07/28开始，尝试手动写一个面向对象的数据库内核@_@，简单的RoadMap如下
+​		Begin 2023-07-28, I tried to realise a simple object-oriented database engine, just for fun and the roadmap as follws:
 
-- [ ] B-Tree数据存储，分页储存
+- [ ] B-Tree data page store
 
-- [ ] 基于Lex&Yacc实现sql解析
-- [ ] 实现sql查询
-- [ ] 实现sql插入
-- [ ] 实现sql复杂查询
-- [ ] B+Tree索引存储
-- [ ] 实现视图功能
-- [ ] 实现MVVC
+- [ ] Based Lex&Yacc implement sql parser
+- [ ] Create a table using sql
+- [ ] Query data using sql
+- [ ] Insert data using sql
+- [ ] Query special column data using sql
+- [ ] Query data under condition using sql
+- [ ] B+Tree index store
+- [ ] Implement view
+- [ ] Implement MVCC
 
-#### Data Structre B+Tree B-Tree
-A db file is divided into a whole number pages.
 
-page includes meta data and cells.
+#### Object-oriented database
+​		Just like object-oriented language java, python, C#, object-oriented database support an another way to build data model 
+and it differs from tradition RDBS. For example, assuming we need to develop a campus personnel management system. We need to
+create two data model, Class model and Student model.
 
-Meta data includes node type, is root leaf node, parent pointer and cell number.
+```java
+class Class {
+	private String id;
+    private int age;
+    private int seniority;
+    private String subject;
+}
+```
 
-Cell is a Key-Value, key is index and value containes one row data in table.
+```java
+class Student {
+	private String id;
+    private String name;
+    private int sex;
+    private int age;
+    private String IDCard;
+}
+```
 
-TinyDb use B-Tree as disk data structre.
+​		
 
-Each node correspond to one page.
 
-There are two types nodes, leaf node and internal node.
+#### Data Structure B+Tree B-Tree
+- A db file is divided into a whole number pages.
 
-Only leaf node store table data.
+- page includes meta data and cells.
 
-Internal node store keys.
+- Meta data includes node type, is root leaf node, parent pointer and cell number.
 
-Root node also as leaf node, but does not store data.
+- Cell is a Key-Value, key is index and value containes one row data in table.
 
-Usually, root node is page 0.
+- TinyDb use B-Tree as disk data structre.
+
+- Each node correspond to one page.
+
+- There are two types nodes, leaf node and internal node.
+
+- Only leaf node store table data.
+
+- Internal node store keys.
+
+- Root node also as leaf node, but does not store data.
+
+- Usually, root node is page 0.
