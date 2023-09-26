@@ -109,6 +109,8 @@ SelectParam *convert_select_param(SelectNode *select_node) {
     select_param->table_name = strdup(get_table_name(select_node));
     select_param->is_function = select_node->select_items_node->is_function_node;
     Table *table = open_table(select_param->table_name);
+    if (table == NULL)
+        return NULL;
     if (select_param->is_function)
         memcpy(select_param->function_node, select_node->select_items_node->function_node, sizeof(FunctionNode));
     else {

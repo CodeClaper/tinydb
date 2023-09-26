@@ -7,14 +7,13 @@
 #include "token.h"
 #include "input.h"
 #include "stmt.h"
+#include "free.h"
 
 char *data_dir;
-InputBuffer *input_buffer;
 
 // init variable
 void init_variable() {
     data_dir = "./data/";
-    input_buffer = malloc(sizeof(InputBuffer));
 }
 
 // print prompt
@@ -41,12 +40,20 @@ int main(void) {
     init_variable();
     while(true) {
         print_prompt();
-        read_input(input_buffer);
-        if(meta_statment(input_buffer->input))
+        InputBuffer *input_buffer = read_input();
+        if (input_buffer->input_length == 0) {
+            free_input_buffer(input_buffer);
             continue;
+        }
+        if(meta_statment(input_buffer->input)) {
+            free_input_buffer(input_buffer);
+            continue;
+        }
         Statement *statement = parse(input_buffer->input);
-        if (statement == NULL)
+        if (statement == NULL) {
+            free_input_buffer(input_buffer);
             continue;
+        }
         switch(statement->statement_type) {
             case STMT_CREATE_TABLE:
                 statement_create_table(statement);
@@ -70,6 +77,7 @@ int main(void) {
                 statement_show_tables(statement);
                 break;
         }
+        free_input_buffer(input_buffer);
     }
     return 0;
 }

@@ -39,3 +39,12 @@ void free_select_result(SelectResult *select_result) {
         free(select_result);
     }
 }
+
+// free input buffer.
+void free_input_buffer(InputBuffer *input_buffer) {
+    if (input_buffer != NULL) {
+        if (input_buffer->input != NULL)
+            free(input_buffer->input);
+        free(input_buffer);
+    }
+}
