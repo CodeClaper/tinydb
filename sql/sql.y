@@ -133,6 +133,7 @@ statement_select:
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
                     select_node->from_item_node = $4;
+                    select_node->condition_node = $6;
                     $$ = select_node;
                 }
             | select select_items FROM from_item statement_end
@@ -331,20 +332,24 @@ identifiers:
                 }
            ;
 cond: 
-            IDENTIFIER op compare
+            IDENTIFIER op value_item
                 {
                     ConditionNode *cond_node = make_cond_node();
                     IdentNode *ident_node = make_ident_node($1);
                     cond_node->column = ident_node;
                     cond_node->opr_node = $2;
+                    cond_node->compare = $3;
                     $$ = cond_node;
                 }
-            | IDENTIFIER op compare conn cond
+            | IDENTIFIER op value_item conn cond
                 {
                     ConditionNode *cond_node = make_cond_node();
                     IdentNode *ident_node = make_ident_node($1);
                     cond_node->column = ident_node;
                     cond_node->opr_node = $2;
+                    cond_node->compare = $3;
+                    cond_node->conn_node = $4;
+                    cond_node->next = $5;
                     $$ = cond_node;
                 }
             ;
@@ -353,7 +358,8 @@ compare:
                 { 
                     IdentNode *node = make_ident_node($1);
                 }
-            | INTVALUE;
+            | INTVALUE
+            ;
 op: 
             EQ      { $$ = make_opr_node(O_EQ); }
             | NE    { $$ = make_opr_node(O_NE); }

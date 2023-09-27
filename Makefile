@@ -6,7 +6,11 @@ run: ${PROP}
 	gcc ${PROP} -o ${PROMT} -w
 debug: ${PROP}
 	gcc -g ${PROP} -o ${PROMT} -w -D DEBUG
+info: ${PROP}
+	cloc ./
 test: ${PROMT}
 	rspec test/insert.rb	
+install: tinydb
+	install tinydb /usr/bin 
 clean:
 	rm -r -f *.o ${PROMT} core.*

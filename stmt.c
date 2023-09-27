@@ -18,7 +18,6 @@
 #include "show.h"
 #include "free.h"
 
-
 // Create a table
 ExecuteResult statement_create_table(Statement *stmt) {
     assert(stmt->statement_type == STMT_CREATE_TABLE);
@@ -34,12 +33,12 @@ ExecuteResult statement_insert(Statement *stmt) {
 
 ExecuteResult statement_select(Statement *statement) {
     assert(statement->statement_type == STMT_SELECT);
-    SelectParam *select_param = convert_select_param(statement->ast_node->select_node);
-    if (select_param == NULL)
+    QueryParam *query_param = convert_query_param(statement->ast_node->select_node);
+    if (query_param == NULL)
         return EXECUTE_FAIL;
-    SelectResult *select_result = gen_select_result(select_param);
+    SelectResult *select_result = gen_select_result(query_param);
     if (select_result) {
-        print_select_result_plain(select_result, select_param);
+        print_select_result_plain(select_result, query_param);
         free_select_result(select_result); 
     }
     return EXECUTE_SUCCESS;

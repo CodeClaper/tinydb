@@ -13,7 +13,7 @@ char *data_dir;
 
 // init variable
 void init_variable() {
-    data_dir = "./data/";
+    data_dir = "/home/zc/data/";
 }
 
 // print prompt

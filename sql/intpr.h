@@ -140,6 +140,7 @@ typedef struct {
 typedef struct S_ConditionNode {
     IdentNode *column; 
     OprNode *opr_node;
+    ValueItemNode *compare;
     ConnNode *conn_node;
     struct S_ConditionNode *next;
 } ConditionNode;
