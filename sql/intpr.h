@@ -1,6 +1,6 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #ifndef INTPR_H
 #define INTPR_H
@@ -8,180 +8,174 @@
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 
 typedef enum {
-    O_EQ,
-    O_NE,
-    O_GT,
-    O_GE,
-    O_LT,
-    O_LE,
-    O_IN,
-    O_LIKE
+  O_EQ,
+  O_NE,
+  O_GT,
+  O_GE,
+  O_LT,
+  O_LE,
+  O_IN,
+  O_LIKE
 } OpType; // operator type
 
 typedef enum {
-    T_BIT,
-    T_CHAR,
-    T_INT,
-    T_DOUBLE,
-    T_FLOAT,
-    T_STRING,
-    T_DATE,
-    T_TIMESTAMP
-}DataType;
+  T_BIT,
+  T_CHAR,
+  T_INT,
+  T_DOUBLE,
+  T_FLOAT,
+  T_STRING,
+  T_DATE,
+  T_TIMESTAMP
+} DataType;
+
+typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
+
+typedef enum { C_OR, C_AND } ConnType; // connector type
 
 typedef enum {
-    F_COUNT,
-    F_MAX,
-    F_MIN,
-    F_SUM,
-    F_AVG
-}FunctionType;
-
-typedef enum {
-    C_AND,
-    C_OR
-} ConnType; // connector type
-
-typedef enum {
-    CREATE_TABLE_STMT,
-    SELECT_STMT,
-    INSERT_STMT,
-    UPDATE_STMT,
-    DELETE_STMT,
-    DESCRIBE_STMT,
-    SHOW_TABLES_STMT
+  CREATE_TABLE_STMT,
+  SELECT_STMT,
+  INSERT_STMT,
+  UPDATE_STMT,
+  DELETE_STMT,
+  DESCRIBE_STMT,
+  SHOW_TABLES_STMT
 } StatementType; // statement type
 
 typedef struct {
-    int i_value;
-}IntValueNode; 
+  int i_value;
+} IntValueNode;
 
 typedef struct {
-    char *s_value;
-}StringValueNode;
+  char *s_value;
+} StringValueNode;
 
 typedef struct {
-    char *name;
-}IdentNode;
-
+  char *name;
+} IdentNode;
 
 typedef struct {
-    union {
-      IntValueNode *i_value;
-      IdentNode *id_value;
-    };
+  union {
+    IntValueNode *i_value;
+    IdentNode *id_value;
+  };
 } FunctionValueNode;
 
 typedef struct {
-    FunctionType function_type;
-    FunctionValueNode *value;
+  FunctionType function_type;
+  FunctionValueNode *value;
 } FunctionNode;
 
 typedef struct {
-    ConnType conn_type;
+  ConnType conn_type;
 } ConnNode;
 
 typedef struct {
-    DataType data_type;
+  DataType data_type;
 } DataTypeNode;
 
 typedef struct {
-   OpType op_type;  
+  OpType op_type;
 } OprNode;
 
 typedef struct {
-    bool all_column;
-    IdentNode **ident_node;
-    uint32_t num;
-}IdentSetNode;
+  bool all_column;
+  IdentNode **ident_node;
+  uint32_t num;
+} IdentSetNode;
 
 typedef struct {
-    IdentSetNode *ident_set_node;
-    FunctionNode *function_node;
-    bool is_function_node;
-}SelectItemsNode;
+  IdentSetNode *ident_set_node;
+  FunctionNode *function_node;
+  bool is_function_node;
+} SelectItemsNode;
 
 typedef struct {
-    IdentNode *column_name;
-    DataTypeNode *column_type;
-}ColumnDefNode;
+  IdentNode *column_name;
+  DataTypeNode *column_type;
+} ColumnDefNode;
 
 typedef struct {
-    ColumnDefNode **column_def;
-    uint32_t column_size;
-}ColumnDefSetNode;
-
+  ColumnDefNode **column_def;
+  uint32_t column_size;
+} ColumnDefSetNode;
 
 typedef struct {
-    IdentNode *primary_key_column;
+  IdentNode *primary_key_column;
 } PrimaryKeyNode;
 
 typedef struct {
-    IdentSetNode *ident_set_node;
-}ColumnSetNode;
+  IdentSetNode *ident_set_node;
+} ColumnSetNode;
 
 typedef struct {
-   DataType data_type;
-   union {
-      IntValueNode *i_value;
-      StringValueNode *s_value;
-   };
-}ValueItemNode;
+  DataType data_type;
+  union {
+    IntValueNode *i_value;
+    StringValueNode *s_value;
+  };
+} ValueItemNode;
 
 typedef struct {
-    ValueItemNode **value_item_node;
-    uint32_t num;
-}ValueItemSetNode;
+  ValueItemNode **value_item_node;
+  uint32_t num;
+} ValueItemSetNode;
 
 typedef struct {
-    IdentNode *table;
-}FromItemNode;
+  IdentNode *table;
+} FromItemNode;
 
-typedef struct S_ConditionNode {
-    IdentNode *column; 
-    OprNode *opr_node;
-    ValueItemNode *compare;
-    ConnNode *conn_node;
-    struct S_ConditionNode *next;
+typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
+
+typedef struct ConditionNode {
+  IdentNode *column;
+  OprNode *opr_node;
+  ValueItemNode *compare;
+  ConnNode *conn_node;
+  struct ConditionNode *next;
+  struct ConditionNode *left;
+  struct ConditionNode *right;
+  ConditionNodeType type;
 } ConditionNode;
 
 typedef struct {
-    IdentNode *table_name;
-    ColumnDefSetNode *column_def_set_node;
-    PrimaryKeyNode *primary_key_node;
-}CreateTableNode;
+  IdentNode *table_name;
+  ColumnDefSetNode *column_def_set_node;
+  PrimaryKeyNode *primary_key_node;
+} CreateTableNode;
 
 typedef struct {
-    SelectItemsNode *select_items_node; 
-    FromItemNode *from_item_node;
-    ConditionNode *condition_node;
-}SelectNode;
-
-typedef struct { 
-    bool if_ignore_columns;
-    FromItemNode *from_item_node;
-    ColumnSetNode *columns_set_node; 
-    ValueItemSetNode *value_item_set_node;
-}InsertNode;
+  SelectItemsNode *select_items_node;
+  FromItemNode *from_item_node;
+  ConditionNode *condition_node;
+} SelectNode;
 
 typedef struct {
-   FromItemNode *from_item_node; 
-}DescribeNode;
-
-typedef struct{
-
-}ShowTablesNode;
+  bool if_ignore_columns;
+  FromItemNode *from_item_node;
+  ColumnSetNode *columns_set_node;
+  ValueItemSetNode *value_item_set_node;
+} InsertNode;
 
 typedef struct {
-    StatementType statement_type;
-    union {
-        CreateTableNode *create_table_node;
-        SelectNode *select_node;
-        InsertNode *insert_node;
-        DescribeNode *describe_node;
-        ShowTablesNode *show_tables_node;
-    };
-}ASTNode;
+  FromItemNode *from_item_node;
+} DescribeNode;
+
+typedef struct {
+
+} ShowTablesNode;
+
+typedef struct {
+  StatementType statement_type;
+  union {
+    CreateTableNode *create_table_node;
+    SelectNode *select_node;
+    InsertNode *insert_node;
+    DescribeNode *describe_node;
+    ShowTablesNode *show_tables_node;
+  };
+} ASTNode;
 
 // make an int value node.
 IntValueNode *make_int_value_node(int i);
@@ -197,7 +191,6 @@ IdentSetNode *make_ident_set_node();
 
 // add a new ident node to set
 void add_ident(IdentSetNode *ident_set_node, IdentNode *ident_node);
-
 
 // make a function value node.
 FunctionValueNode *make_function_value_node();
@@ -254,7 +247,8 @@ ColumnDefSetNode *make_column_def_set_node();
 PrimaryKeyNode *make_primary_key_node();
 
 // add column def node to set.
-void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
+void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node,
+                           ColumnDefNode *column_def_node);
 
 // make a describe node.
 DescribeNode *make_describe_node();

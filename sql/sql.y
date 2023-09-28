@@ -339,6 +339,7 @@ cond:
                     cond_node->column = ident_node;
                     cond_node->opr_node = $2;
                     cond_node->compare = $3;
+                    cond_node->type = EXEC_CONDITION;
                     $$ = cond_node;
                 }
             | IDENTIFIER op value_item conn cond
@@ -350,6 +351,7 @@ cond:
                     cond_node->compare = $3;
                     cond_node->conn_node = $4;
                     cond_node->next = $5;
+                    cond_node->type = EXEC_CONDITION;
                     $$ = cond_node;
                 }
             ;

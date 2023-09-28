@@ -11,6 +11,7 @@
 #include "meta.h"
 #include "common.h"
 #include "misc.h"
+#include "cond.h"
 #include "sql/intpr.h"
 
 static char *get_table_name(SelectNode *select_node) {
@@ -140,6 +141,7 @@ QueryParam *convert_query_param(SelectNode *select_node) {
             }
         }
     }
+    query_param->condition_node = tree(select_node->condition_node);
     return query_param;
 }
 

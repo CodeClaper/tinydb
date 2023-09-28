@@ -760,9 +760,9 @@ static const yytype_int16 yyrline[] =
      112,   120,   131,   139,   148,   156,   167,   175,   181,   182,
      185,   188,   191,   194,   197,   200,   203,   206,   213,   222,
      230,   236,   243,   253,   254,   255,   257,   266,   274,   280,
-     287,   295,   303,   313,   319,   327,   335,   344,   364,   365,
-     366,   367,   368,   369,   370,   371,   374,   375,   378,   385,
-     392,   399,   406,   415,   422,   431,   434
+     287,   295,   303,   313,   319,   327,   335,   345,   366,   367,
+     368,   369,   370,   371,   372,   373,   376,   377,   380,   387,
+     394,   401,   408,   417,   424,   433,   436
 };
 #endif
 
@@ -1734,13 +1734,14 @@ yyreduce:
                     cond_node->column = ident_node;
                     cond_node->opr_node = (yyvsp[-1].opr_node);
                     cond_node->compare = (yyvsp[0].value_item_node);
+                    cond_node->type = EXEC_CONDITION;
                     (yyval.cond_node) = cond_node;
                 }
-#line 1739 "y.tab.c"
+#line 1740 "y.tab.c"
     break;
 
   case 47: /* cond: IDENTIFIER op value_item conn cond  */
-#line 345 "sql.y"
+#line 346 "sql.y"
                 {
                     ConditionNode *cond_node = make_cond_node();
                     IdentNode *ident_node = make_ident_node((yyvsp[-4].ident_node));
@@ -1749,150 +1750,151 @@ yyreduce:
                     cond_node->compare = (yyvsp[-2].value_item_node);
                     cond_node->conn_node = (yyvsp[-1].conn_node);
                     cond_node->next = (yyvsp[0].cond_node);
+                    cond_node->type = EXEC_CONDITION;
                     (yyval.cond_node) = cond_node;
                 }
-#line 1754 "y.tab.c"
+#line 1756 "y.tab.c"
     break;
 
   case 48: /* op: EQ  */
-#line 364 "sql.y"
+#line 366 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_EQ); }
-#line 1760 "y.tab.c"
+#line 1762 "y.tab.c"
     break;
 
   case 49: /* op: NE  */
-#line 365 "sql.y"
+#line 367 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_NE); }
-#line 1766 "y.tab.c"
+#line 1768 "y.tab.c"
     break;
 
   case 50: /* op: GT  */
-#line 366 "sql.y"
+#line 368 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_GT); }
-#line 1772 "y.tab.c"
+#line 1774 "y.tab.c"
     break;
 
   case 51: /* op: GE  */
-#line 367 "sql.y"
+#line 369 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_GE); }
-#line 1778 "y.tab.c"
+#line 1780 "y.tab.c"
     break;
 
   case 52: /* op: LT  */
-#line 368 "sql.y"
+#line 370 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_LT); }
-#line 1784 "y.tab.c"
+#line 1786 "y.tab.c"
     break;
 
   case 53: /* op: LE  */
-#line 369 "sql.y"
+#line 371 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_LE); }
-#line 1790 "y.tab.c"
+#line 1792 "y.tab.c"
     break;
 
   case 54: /* op: IN  */
-#line 370 "sql.y"
+#line 372 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_IN); }
-#line 1796 "y.tab.c"
+#line 1798 "y.tab.c"
     break;
 
   case 55: /* op: LIKE  */
-#line 371 "sql.y"
+#line 373 "sql.y"
                     { (yyval.opr_node) = make_opr_node(O_LIKE); }
-#line 1802 "y.tab.c"
+#line 1804 "y.tab.c"
     break;
 
   case 56: /* conn: AND  */
-#line 374 "sql.y"
+#line 376 "sql.y"
                     { (yyval.conn_node) = make_conn_node(C_AND); }
-#line 1808 "y.tab.c"
+#line 1810 "y.tab.c"
     break;
 
   case 57: /* conn: OR  */
-#line 375 "sql.y"
+#line 377 "sql.y"
                     { (yyval.conn_node) = make_conn_node(C_OR); }
-#line 1814 "y.tab.c"
+#line 1816 "y.tab.c"
     break;
 
   case 58: /* func: MAX LEFTPAREN function_value RIGHTPAREN  */
-#line 379 "sql.y"
+#line 381 "sql.y"
                 {
                     FunctionNode *function_node = make_function_node();        
                     function_node->function_type = F_MAX;
                     function_node->value = (yyvsp[-1].function_value_node);
                     (yyval.function_node) = function_node;
                 }
-#line 1825 "y.tab.c"
+#line 1827 "y.tab.c"
     break;
 
   case 59: /* func: MIN LEFTPAREN function_value RIGHTPAREN  */
-#line 386 "sql.y"
+#line 388 "sql.y"
                 {
                     FunctionNode *function_node = make_function_node();        
                     function_node->function_type = F_MIN;
                     function_node->value = (yyvsp[-1].function_value_node);
                     (yyval.function_node) = function_node;
                 }
-#line 1836 "y.tab.c"
+#line 1838 "y.tab.c"
     break;
 
   case 60: /* func: COUNT LEFTPAREN function_value RIGHTPAREN  */
-#line 393 "sql.y"
+#line 395 "sql.y"
                 {
                     FunctionNode *function_node = make_function_node();        
                     function_node->function_type = F_COUNT;
                     function_node->value = (yyvsp[-1].function_value_node);
                     (yyval.function_node) = function_node;
                 }
-#line 1847 "y.tab.c"
+#line 1849 "y.tab.c"
     break;
 
   case 61: /* func: SUM LEFTPAREN function_value RIGHTPAREN  */
-#line 400 "sql.y"
+#line 402 "sql.y"
                 {
                     FunctionNode *function_node = make_function_node();        
                     function_node->function_type = F_SUM;
                     function_node->value = (yyvsp[-1].function_value_node);
                     (yyval.function_node) = function_node;
                 }
-#line 1858 "y.tab.c"
+#line 1860 "y.tab.c"
     break;
 
   case 62: /* func: AVG LEFTPAREN function_value RIGHTPAREN  */
-#line 407 "sql.y"
+#line 409 "sql.y"
                 {
                     FunctionNode *function_node = make_function_node();        
                     function_node->function_type = F_AVG;
                     function_node->value = (yyvsp[-1].function_value_node);
                     (yyval.function_node) = function_node;
                 }
-#line 1869 "y.tab.c"
+#line 1871 "y.tab.c"
     break;
 
   case 63: /* function_value: INTVALUE  */
-#line 416 "sql.y"
+#line 418 "sql.y"
                 {
                     FunctionValueNode *node = make_function_value_node();
                     IntValueNode *int_value_node = make_int_value_node((yyvsp[0].int_value_node));
                     node->i_value = int_value_node;
                     (yyval.function_value_node) = node;
                 }
-#line 1880 "y.tab.c"
+#line 1882 "y.tab.c"
     break;
 
   case 64: /* function_value: IDENTIFIER  */
-#line 423 "sql.y"
+#line 425 "sql.y"
                 {
                     FunctionValueNode *node = make_function_value_node();
                     IdentNode *ident_node = make_ident_node((yyvsp[0].ident_node));
                     node->id_value = ident_node;
                     (yyval.function_value_node) = node;
                 }
-#line 1891 "y.tab.c"
+#line 1893 "y.tab.c"
     break;
 
 
-#line 1895 "y.tab.c"
+#line 1897 "y.tab.c"
 
       default: break;
     }
@@ -2085,5 +2087,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 436 "sql.y"
+#line 438 "sql.y"
 

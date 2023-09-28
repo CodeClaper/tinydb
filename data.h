@@ -101,6 +101,7 @@ typedef struct {
     MetaColumn **meta_columns;
     uint32_t column_size;
     FunctionNode *function_node;
+    ConditionNode *condition_node;
 }QueryParam;
 
 typedef struct {
