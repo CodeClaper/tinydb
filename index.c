@@ -4,7 +4,7 @@
 // get key by column type
 uint32_t define_key(void *value, MetaColumn *meta_column) {
     switch(meta_column->column_type) {
-        case T_BIT:
+        case T_BOOL:
         case T_FLOAT:
         case T_DOUBLE:
         case T_INT:

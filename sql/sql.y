@@ -51,7 +51,7 @@ int yyerror(const char *s) {
 %token <keyword> SHOW
 %token <keyword> TABLES
 %token <keyword> MAX MIN COUNT SUM AVG
-%token INT STRING BIT FLOAT DOUBLE DATE TIMESTAMP
+%token INT STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token PRIMARY KEY
 %token EQ NE GT GE LT LE IN LIKE
 %token AND OR
@@ -252,7 +252,7 @@ column_def:
 column_type:
            INT          { $$ = make_data_type_node(T_INT); }
            | STRING     { $$ = make_data_type_node(T_STRING);}
-           | BIT        { $$ = make_data_type_node(T_BIT); }
+           | BOOL        { $$ = make_data_type_node(T_BOOL); }
 primary_key:
            PRIMARY KEY LEFTPAREN IDENTIFIER RIGHTPAREN
                 {

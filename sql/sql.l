@@ -25,7 +25,7 @@ key                     return KEY;
 int                     return INT;
 string                  return STRING;
 date                    return DATE;
-bit                     return BIT;
+bool                    return BOOL;
 timestamp               return TIMESTAMP;
 [*]                     return ALL;
 [,]                     return COMMA;

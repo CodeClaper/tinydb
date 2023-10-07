@@ -52,7 +52,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             return (char *)value_item_node->s_value->s_value;
         case T_INT:
             return &(value_item_node->i_value->i_value);
-        case T_BIT:
+        case T_BOOL:
         case T_DOUBLE:
         case T_FLOAT:
         case T_DATE:

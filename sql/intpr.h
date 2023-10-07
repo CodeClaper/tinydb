@@ -19,7 +19,7 @@ typedef enum {
 } OpType; // operator type
 
 typedef enum {
-  T_BIT,
+  T_BOOL,
   T_CHAR,
   T_INT,
   T_DOUBLE,

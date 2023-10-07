@@ -24,11 +24,7 @@ static ConnType find_conn_type(ConditionNode *condition_node) {
         case LOGIC_CONDITION:
             return find_conn_type(condition_node->right);
         case EXEC_CONDITION:
-            {
-                if (condition_node->conn_node == NULL) 
-                    fatals("Conditon '%s' conn node cant`t be null in method [find_conn_type]", condition_node->column->name);
-                return condition_node->conn_node->conn_type;
-            }
+            return condition_node->conn_node->conn_type;
     }
 }
 
@@ -75,4 +71,3 @@ ConditionNode *tree(ConditionNode *head) {
     ConditionNode *change = replace(head, highest, merge);
     return tree(change);
 }
-

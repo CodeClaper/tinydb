@@ -107,7 +107,7 @@ typedef struct {
 typedef struct {
     char *table_name;
     Row **row;
-    uint32_t row_len;
+    uint32_t row_size;
 }SelectResult;
 
 #endif

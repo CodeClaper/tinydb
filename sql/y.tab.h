@@ -80,7 +80,7 @@ extern int yydebug;
     AVG = 281,                     /* AVG  */
     INT = 282,                     /* INT  */
     STRING = 283,                  /* STRING  */
-    BIT = 284,                     /* BIT  */
+    BOOL = 284,                    /* BOOL  */
     FLOAT = 285,                   /* FLOAT  */
     DOUBLE = 286,                  /* DOUBLE  */
     DATE = 287,                    /* DATE  */
@@ -135,7 +135,7 @@ extern int yydebug;
 #define AVG 281
 #define INT 282
 #define STRING 283
-#define BIT 284
+#define BOOL 284
 #define FLOAT 285
 #define DOUBLE 286
 #define DATE 287

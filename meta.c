@@ -18,7 +18,7 @@ char *data_type_name(DataType data_type) {
 // column type length
 uint32_t column_type_length(DataType column_type) {
   switch (column_type) {
-  case T_BIT:
+  case T_BOOL:
     return 2;
   case T_CHAR:
     return sizeof(char);

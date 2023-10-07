@@ -36,7 +36,7 @@ ExecuteResult statement_select(Statement *statement) {
     QueryParam *query_param = convert_query_param(statement->ast_node->select_node);
     if (query_param == NULL)
         return EXECUTE_FAIL;
-    SelectResult *select_result = gen_select_result(query_param);
+    SelectResult *select_result = cond_exec(query_param);
     if (select_result) {
         print_select_result_plain(select_result, query_param);
         free_select_result(select_result); 

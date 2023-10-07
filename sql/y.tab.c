@@ -153,7 +153,7 @@ extern int yydebug;
     AVG = 281,                     /* AVG  */
     INT = 282,                     /* INT  */
     STRING = 283,                  /* STRING  */
-    BIT = 284,                     /* BIT  */
+    BOOL = 284,                    /* BOOL  */
     FLOAT = 285,                   /* FLOAT  */
     DOUBLE = 286,                  /* DOUBLE  */
     DATE = 287,                    /* DATE  */
@@ -208,7 +208,7 @@ extern int yydebug;
 #define AVG 281
 #define INT 282
 #define STRING 283
-#define BIT 284
+#define BOOL 284
 #define FLOAT 285
 #define DOUBLE 286
 #define DATE 287
@@ -312,7 +312,7 @@ enum yysymbol_kind_t
   YYSYMBOL_AVG = 26,                       /* AVG  */
   YYSYMBOL_INT = 27,                       /* INT  */
   YYSYMBOL_STRING = 28,                    /* STRING  */
-  YYSYMBOL_BIT = 29,                       /* BIT  */
+  YYSYMBOL_BOOL = 29,                      /* BOOL  */
   YYSYMBOL_FLOAT = 30,                     /* FLOAT  */
   YYSYMBOL_DOUBLE = 31,                    /* DOUBLE  */
   YYSYMBOL_DATE = 32,                      /* DATE  */
@@ -782,7 +782,7 @@ static const char *const yytname[] =
   "SEMICOLON", "LEFTPAREN", "RIGHTPAREN", "QUOTE", "CREATE", "SELECT",
   "INSERT", "UPDATE", "DELETE", "DESCRIBE", "FROM", "WHERE", "INTO",
   "VALUES", "TABLE", "SHOW", "TABLES", "MAX", "MIN", "COUNT", "SUM", "AVG",
-  "INT", "STRING", "BIT", "FLOAT", "DOUBLE", "DATE", "TIMESTAMP",
+  "INT", "STRING", "BOOL", "FLOAT", "DOUBLE", "DATE", "TIMESTAMP",
   "PRIMARY", "KEY", "EQ", "NE", "GT", "GE", "LT", "LE", "IN", "LIKE",
   "AND", "OR", "ALL", "IDENTIFIER", "INTVALUE", "STRINGVALUE", "$accept",
   "statements", "statement", "statement_create_table", "statement_select",
@@ -1612,9 +1612,9 @@ yyreduce:
 #line 1612 "y.tab.c"
     break;
 
-  case 35: /* column_type: BIT  */
+  case 35: /* column_type: BOOL  */
 #line 255 "sql.y"
-                        { (yyval.data_type_node) = make_data_type_node(T_BIT); }
+                         { (yyval.data_type_node) = make_data_type_node(T_BOOL); }
 #line 1618 "y.tab.c"
     break;
 

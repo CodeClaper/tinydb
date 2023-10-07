@@ -32,7 +32,7 @@ void free_select_result(SelectResult *select_result) {
     if (select_result != NULL) {
         if (select_result->table_name != NULL)
             free(select_result->table_name);
-        for(uint32_t i = 0; i < select_result->row_len; i++) {
+        for(uint32_t i = 0; i < select_result->row_size; i++) {
             Row *row = *(select_result->row + i);
             free_row(row);
         }

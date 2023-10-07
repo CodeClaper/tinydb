@@ -14,3 +14,6 @@ void print_select_result_plain(SelectResult *select_result, QueryParam *query_pa
 
 // print select result plain format.
 void print_select_result_count(SelectResult *select_result);
+
+// condiiton process
+SelectResult *cond_exec(QueryParam *query_param);

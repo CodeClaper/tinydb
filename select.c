@@ -12,6 +12,8 @@
 #include "common.h"
 #include "misc.h"
 #include "cond.h"
+#include "row.h"
+#include "opr.h"
 #include "sql/intpr.h"
 
 static char *get_table_name(SelectNode *select_node) {
@@ -29,7 +31,83 @@ static bool if_exist(QueryParam *query_param, MetaColumn *meta_column) {
     return false;
 }
 
-// generate select row.
+// find meta column by column name, return NULL if not exist
+static MetaColumn *find_meta_column_by_name(MetaTable *meta_table, char *column_name) {
+    for(uint32_t i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (strcmp(meta_column->column_name, column_name) == 0) {
+            return meta_column;
+        }
+    }
+    return NULL;
+}
+
+static void *get_value(ValueItemNode *value_item_node) {
+    switch(value_item_node->data_type) {
+        case T_STRING:
+            return value_item_node->s_value;
+        case T_INT:
+            return value_item_node->i_value;
+        default:
+            return NULL;
+    }
+}
+
+//Check if include the internal node.
+static bool include_internal_node(uint32_t min_key, uint32_t max_key, uint32_t target_key, OpType op_type) {
+    switch(op_type) {
+        case O_EQ:
+            return min_key < target_key && target_key <= max_key;
+        case O_NE:
+            return !(min_key < target_key && target_key <= max_key);
+        case O_GT:
+            return max_key > target_key;
+        case O_GE:
+            return max_key >= target_key;
+        case O_LT:
+            return target_key > min_key;
+        case O_LE:
+            return target_key > min_key;
+        case O_IN:
+        case O_LIKE:
+            fatal("not support");
+            
+    }
+    return true;
+}
+
+// check if include the leaf node.
+static bool include_leaf_node(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
+    ConditionNode *condition_node = query_param->condition_node;
+    if (condition_node == NULL)
+        return true;
+    uint32_t off_set = 0;
+    for(uint32_t i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (strcmp(meta_column->column_name, condition_node->column->name) == 0) {
+            void *value = destinct + off_set;
+            void *target = get_value(condition_node->compare);
+            return eval(condition_node->opr_node->op_type, value, target, meta_column->column_type);
+        }
+        off_set += meta_column->column_length;
+    }
+    return false;
+}
+
+//Get meta column by condition name
+static MetaColumn *get_cond_meta_column(QueryParam *query_param) {
+    if (query_param->condition_node == NULL)
+        return NULL;
+    char *col_name = query_param->condition_node->column->name;
+    for(uint32_t i = 0; i < query_param->column_size; i++) {
+        MetaColumn *meta_column = *(query_param->meta_columns + i);
+        if (strcmp(meta_column->column_name, col_name) == 0)
+            return meta_column;
+    }
+    return NULL;
+}
+
+//Generate select row.
 static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
     Row *row = malloc(sizeof(Row));
     if (row == NULL)
@@ -52,22 +130,35 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     return row;
 }
 
-// select work through leaf node
+//Select work through leaf node
 static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table) {
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
     uint32_t row_size = calc_table_row_length(table);
     for (uint32_t i = 0; i < cell_num; i++) {
         void *destinct = get_leaf_node_cell_value(leaf_node, row_size, i); 
-        select_result->row = realloc(select_result->row, sizeof(Row *) * (select_result->row_len + 1));
-        *(select_result->row + select_result->row_len)  = generate_row(destinct, query_param, table->meta_table);
-        select_result->row_len++;
+        if (!include_leaf_node(destinct, query_param, table->meta_table))
+            continue;
+        Row *row = generate_row(destinct, query_param, table->meta_table);
+        select_result->row = realloc(select_result->row, sizeof(Row *) * (select_result->row_size + 1));
+        *(select_result->row + select_result->row_size) = row;
+        select_result->row_size++;
     }
 }
 
 // select work through internal node
 static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table) {
+    MetaColumn *cond_meta_column = get_cond_meta_column(query_param);
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
     for(int32_t i = 0; i < keys_num; i++) {
+        // check if index column, and avoid full text 
+        if (cond_meta_column != NULL && cond_meta_column->is_primary) {
+            uint32_t max_key = get_internal_node_keys(internal_node, i);
+            uint32_t min_key = i == 0 ? 0 : get_internal_node_keys(internal_node, i - 1);
+            ConditionNode *condition_node = query_param->condition_node;
+            uint32_t compare_value = *(uint32_t *)get_value(condition_node->compare);
+            if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_node->op_type))
+                continue;
+        }
         uint32_t page_num = get_internal_node_child(internal_node, i);
         void *node = get_page(table->pager, page_num);
         switch (get_node_type(node)) {
@@ -90,17 +181,6 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
             select_from_internal_node(select_result, query_param, right_child, table);
             break;
     }
-}
-
-// find meta column by column name, return NULL if not exist
-static MetaColumn *find_meta_column_by_name(MetaTable *meta_table, char *column_name) {
-    for(uint32_t i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_name) == 0) {
-            return meta_column;
-        }
-    }
-    return NULL;
 }
 
 // convert from select node to select param
@@ -141,7 +221,7 @@ QueryParam *convert_query_param(SelectNode *select_node) {
             }
         }
     }
-    query_param->condition_node = tree(select_node->condition_node);
+    query_param->condition_node = tree(select_node->condition_node); // generate condition tree.
     return query_param;
 }
 
@@ -151,7 +231,7 @@ SelectResult *gen_select_result(QueryParam *query_param) {
     SelectResult *select_result = malloc(sizeof(SelectResult));
     if (select_result == NULL)
         MALLOC_ERROR;
-    select_result->row_len = 0;
+    select_result->row_size = 0;
     select_result->row = malloc(0);
     select_result->table_name = strdup(query_param->table_name);
     Table *table = open_table(query_param->table_name);
@@ -195,9 +275,9 @@ void print_select_result_beauty(SelectResult *select_result) {
     if (table == NULL)
         return;
     fprintf(stdout, "[");
-    if (select_result->row_len > 0)
+    if (select_result->row_size > 0)
         fprintf(stdout, "\n");
-    for (i = 0; i < select_result->row_len; i++) {
+    for (i = 0; i < select_result->row_size; i++) {
         Row *row = *(select_result->row + i);
         fprintf(stdout, "\t{"); 
         if (row->column_len > 0)
@@ -212,20 +292,20 @@ void print_select_result_beauty(SelectResult *select_result) {
             else
                 fprintf(stdout, "\n");
         }
-        if (i < select_result->row_len - 1)
+        if (i < select_result->row_size - 1)
             fprintf(stdout, "\t},\n"); 
         else
             fprintf(stdout, "\t}\n"); 
     }
     fprintf(stdout, "]\n");
-    fprintf(stdout, "Successfully select %d rows.\n", select_result->row_len);
+    fprintf(stdout, "Successfully select %d rows.\n", select_result->row_size);
 }
 
 
 // print select result plain format.
 void print_select_result_plain(SelectResult *select_result, QueryParam *query_param) {
     fprintf(stdout, "[");
-    for (uint32_t i = 0; i < select_result->row_len; i++) {
+    for (uint32_t i = 0; i < select_result->row_size; i++) {
         Row *row = *(select_result->row + i);
         fprintf(stdout, "{"); 
         for (uint32_t j = 0; j < row->column_len; j++) {
@@ -237,16 +317,68 @@ void print_select_result_plain(SelectResult *select_result, QueryParam *query_pa
                 fprintf(stdout, ", ");
         }
         fprintf(stdout, "}"); 
-        if (i < select_result->row_len - 1)
+        if (i < select_result->row_size - 1)
             fprintf(stdout, ", ");
     }
     fprintf(stdout, "]\n");
-    fprintf(stdout, "Successfully select %d rows.\n", select_result->row_len);
+    fprintf(stdout, "Successfully select %d rows.\n", select_result->row_size);
 }
 
 
 
 // print select result plain format.
 void print_select_result_count(SelectResult *select_result) {
-    fprintf(stdout, "%d\n", select_result->row_len);
+    fprintf(stdout, "%d\n", select_result->row_size);
+}
+
+
+//***********************logic controller*******************************
+
+QueryParam *new_query_param(QueryParam *query_param, ConditionNode *new_condition) {
+    query_param->condition_node = new_condition;
+    return query_param;
+}
+
+//And loigc condition process
+SelectResult *and_logic_cond_proc(QueryParam *query_param) {
+    ConditionNode *condition_node = query_param->condition_node;
+    SelectResult *left_select_result = cond_exec(new_query_param(query_param, condition_node->left));
+    SelectResult *right_select_result = cond_exec(new_query_param(query_param, condition_node->right));
+    return reduce(left_select_result, right_select_result);
+}
+
+//Or logic condition process
+SelectResult *or_logic_cond_proc(QueryParam *query_param) {
+    ConditionNode *condition_node = query_param->condition_node;
+    SelectResult *left_select_result = cond_exec(new_query_param(query_param, condition_node->left));
+    SelectResult *right_select_result = cond_exec(new_query_param(query_param, condition_node->right));
+    return merge(left_select_result, right_select_result);
+}
+
+//Logic condition process
+SelectResult *logic_cond_proc(QueryParam *query_param) {
+    ConditionNode *condition_node = query_param->condition_node;
+    switch(condition_node->conn_node->conn_type) {
+        case C_AND:
+            return and_logic_cond_proc(query_param);
+        case C_OR:
+            return or_logic_cond_proc(query_param);
+    }
+}
+
+//Exec condition process
+SelectResult *exec_cond_proc(QueryParam *query_param) {
+    return gen_select_result(query_param);
+}
+
+SelectResult *cond_exec(QueryParam *query_param) {
+    ConditionNode *condition_node = query_param->condition_node;
+    if (condition_node == NULL)
+        return gen_select_result(query_param);
+    switch(condition_node->type) {
+        case LOGIC_CONDITION:
+            return logic_cond_proc(query_param);
+        case EXEC_CONDITION:
+            return exec_cond_proc(query_param);
+    }
 }
