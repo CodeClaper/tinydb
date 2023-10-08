@@ -1,4 +1,5 @@
 #include "data.h"
+#include "copy.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,9 +21,7 @@ SelectResult *merge(SelectResult *first_result, SelectResult *sec_result) {
         uint32_t key = row->key;
         if (!check_if_exists(key, first_result)) {
             first_result->row = realloc(first_result->row, sizeof(Row *) * (first_result->row_size + 1));
-            Row *new_row = malloc(sizeof(Row));
-            memcpy(new_row, row, sizeof(Row));
-            *(first_result->row + first_result->row_size) = new_row;
+            *(first_result->row + first_result->row_size) = copy_row(row);
             first_result->row_size++;
         }
     }
@@ -33,16 +32,15 @@ SelectResult *merge(SelectResult *first_result, SelectResult *sec_result) {
 SelectResult *reduce(SelectResult *first_result, SelectResult *sec_result){
     SelectResult *return_result = malloc(sizeof(SelectResult));
     return_result->row_size = 0;
-    return_result->table_name = first_result->table_name;
+    return_result->table_name = malloc(strlen(first_result->table_name) + 1);
+    strcpy(return_result->table_name, first_result->table_name);
     return_result->row = malloc(0);
     for(uint32_t i = 0; i < sec_result->row_size; i++) {
         Row *row = *(sec_result->row + i);
         uint32_t key = row->key;
         if (check_if_exists(key, first_result)) {
             return_result->row = realloc(return_result->row, sizeof(Row *) * (return_result->row_size + 1));
-            Row *new_row = malloc(sizeof(Row));
-            memcpy(new_row, row, sizeof(Row));
-            *(return_result->row + return_result->row_size) = new_row;
+            *(return_result->row + return_result->row_size) = copy_row(row);
             return_result->row_size++;
         }
     }

@@ -33,6 +33,8 @@ typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
 
 typedef enum { C_OR, C_AND } ConnType; // connector type
 
+typedef enum { V_INT, V_IDENT, V_ALL } FunctionValueType; // value type.
+
 typedef enum {
   CREATE_TABLE_STMT,
   SELECT_STMT,
@@ -56,6 +58,7 @@ typedef struct {
 } IdentNode;
 
 typedef struct {
+  FunctionValueType value_type;
   union {
     IntValueNode *i_value;
     IdentNode *id_value;

@@ -14,6 +14,8 @@
 #include "cond.h"
 #include "row.h"
 #include "opr.h"
+#include "copy.h"
+#include "free.h"
 #include "sql/intpr.h"
 
 static char *get_table_name(SelectNode *select_node) {
@@ -42,12 +44,13 @@ static MetaColumn *find_meta_column_by_name(MetaTable *meta_table, char *column_
     return NULL;
 }
 
-static void *get_value(ValueItemNode *value_item_node) {
+//Get value from value item node.
+static void *get_value_from_value_item_node(ValueItemNode *value_item_node) {
     switch(value_item_node->data_type) {
         case T_STRING:
-            return value_item_node->s_value;
+            return value_item_node->s_value->s_value;
         case T_INT:
-            return value_item_node->i_value;
+            return &value_item_node->i_value->i_value;
         default:
             return NULL;
     }
@@ -86,7 +89,7 @@ static bool include_leaf_node(void *destinct, QueryParam *query_param, MetaTable
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, condition_node->column->name) == 0) {
             void *value = destinct + off_set;
-            void *target = get_value(condition_node->compare);
+            void *target = get_value_from_value_item_node(condition_node->compare);
             return eval(condition_node->opr_node->op_type, value, target, meta_column->column_type);
         }
         off_set += meta_column->column_length;
@@ -118,10 +121,14 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     uint32_t off_set = 0;
     for(uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
+        if (meta_column->is_primary) {
+            row->key = *(uint32_t *)(destinct + off_set);
+        }
         if (if_exist(query_param, meta_column)) {
             KeyValue *key_value = malloc(sizeof(KeyValue));
             key_value->key = strdup(meta_column->column_name);
             key_value->value = destinct + off_set;
+            key_value->data_type = meta_column->column_type;
             *(row->data + row->column_len) = key_value;
             row->column_len++;
         }
@@ -155,7 +162,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
             uint32_t max_key = get_internal_node_keys(internal_node, i);
             uint32_t min_key = i == 0 ? 0 : get_internal_node_keys(internal_node, i - 1);
             ConditionNode *condition_node = query_param->condition_node;
-            uint32_t compare_value = *(uint32_t *)get_value(condition_node->compare);
+            uint32_t compare_value = *(uint32_t *)get_value_from_value_item_node(condition_node->compare);
             if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_node->op_type))
                 continue;
         }
@@ -249,19 +256,20 @@ SelectResult *gen_select_result(QueryParam *query_param) {
     return select_result;
 }
 
-static void print_row_value(void *value, MetaColumn *meta_column) {
-    switch(meta_column->column_type) {
+// print key value
+static void print_row_value(KeyValue *key_value) {
+    switch(key_value->data_type) {
         case T_INT:
-            fprintf(stdout, "%d", *(uint32_t *)value);
+            fprintf(stdout, "%d", *(uint32_t *)key_value->value);
             break;
         case T_STRING:
-            fprintf(stdout, "\"%s\"", (char *)value);
+            fprintf(stdout, "\"%s\"", (char *)key_value->value);
             break;
         case T_FLOAT:
-            fprintf(stdout, "%f", *(float *)value);
+            fprintf(stdout, "%f", *(float *)key_value->value);
             break;
         case T_DOUBLE:
-            fprintf(stdout, "%f", *(double *)value);
+            fprintf(stdout, "%f", *(double *)key_value->value);
             break;
         default:
             fprintf(stdout, "not support data type");
@@ -286,7 +294,7 @@ void print_select_result_beauty(SelectResult *select_result) {
             KeyValue *key_value = *(row->data + j);
             MetaColumn *meta_column = table->meta_table->meta_column[j];
             fprintf(stdout, "\t\t%s:\t", key_value->key);
-            print_row_value(key_value->value, meta_column);
+            print_row_value(key_value);
             if (j < row->column_len - 1)
                 fprintf(stdout, ",\n");
             else
@@ -312,7 +320,7 @@ void print_select_result_plain(SelectResult *select_result, QueryParam *query_pa
             KeyValue *key_value = *(row->data + j);
             MetaColumn *meta_column = *(query_param->meta_columns + j);
             fprintf(stdout, "\"%s\": ", key_value->key);
-            print_row_value(key_value->value, meta_column);
+            print_row_value(key_value);
             if (j < row->column_len - 1) 
                 fprintf(stdout, ", ");
         }
@@ -335,8 +343,9 @@ void print_select_result_count(SelectResult *select_result) {
 //***********************logic controller*******************************
 
 QueryParam *new_query_param(QueryParam *query_param, ConditionNode *new_condition) {
-    query_param->condition_node = new_condition;
-    return query_param;
+    QueryParam *query_param_copy = copy_query_param(query_param);
+    query_param_copy->condition_node = new_condition;
+    return query_param_copy;
 }
 
 //And loigc condition process
@@ -344,7 +353,11 @@ SelectResult *and_logic_cond_proc(QueryParam *query_param) {
     ConditionNode *condition_node = query_param->condition_node;
     SelectResult *left_select_result = cond_exec(new_query_param(query_param, condition_node->left));
     SelectResult *right_select_result = cond_exec(new_query_param(query_param, condition_node->right));
-    return reduce(left_select_result, right_select_result);
+    new_query_param(query_param, condition_node);
+    SelectResult *result = reduce(left_select_result, right_select_result);
+    free_select_result(left_select_result); 
+    free_select_result(right_select_result);
+    return result;
 }
 
 //Or logic condition process
@@ -352,7 +365,10 @@ SelectResult *or_logic_cond_proc(QueryParam *query_param) {
     ConditionNode *condition_node = query_param->condition_node;
     SelectResult *left_select_result = cond_exec(new_query_param(query_param, condition_node->left));
     SelectResult *right_select_result = cond_exec(new_query_param(query_param, condition_node->right));
-    return merge(left_select_result, right_select_result);
+    new_query_param(query_param, condition_node);
+    SelectResult *result = merge(left_select_result, right_select_result);
+    free_select_result(right_select_result); 
+    return result;
 }
 
 //Logic condition process

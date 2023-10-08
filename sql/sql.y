@@ -419,6 +419,7 @@ function_value:
                     FunctionValueNode *node = make_function_value_node();
                     IntValueNode *int_value_node = make_int_value_node($1);
                     node->i_value = int_value_node;
+                    node->value_type = V_INT;
                     $$ = node;
                 }
             | IDENTIFIER 
@@ -426,6 +427,13 @@ function_value:
                     FunctionValueNode *node = make_function_value_node();
                     IdentNode *ident_node = make_ident_node($1);
                     node->id_value = ident_node;
+                    node->value_type = V_IDENT;
+                    $$ = node;
+                }
+            | ALL
+                {
+                    FunctionValueNode *node = make_function_value_node();
+                    node->value_type = V_ALL;
                     $$ = node;
                 }
             ;

@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *data_type_name_list[] = { "bit", "char", "int", "double", "float", "string", "date", "timestamp" };
+static char *data_type_name_list[] = { "bool", "char", "int", "double", "float", "string", "date", "timestamp" };
 
 // get data type name.
 char *data_type_name(DataType data_type) {

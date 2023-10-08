@@ -2,26 +2,26 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+
 // free KeyValue
 void free_key_value(KeyValue *key_value) {
-    if (key_value != NULL) {
+    if (key_value) {
 #ifdef DEBUG
     printf("address of key: 0x%p\n", key_value->key);
 #endif
-        free(key_value->key);
-        if (key_value->value != NULL)
-            free(key_value->value);
+        if (key_value->key)
+            free(key_value->key);
         free(key_value);
     } 
 }
 
 // free Row.
 void free_row(Row *row) {
-    if (row != NULL) {
+    if (row) {
         if (row->table_name)
             free(row->table_name);
         for(uint32_t i = 0; i < row->column_len; i++) {
-            // free_key_value((KeyValue *)(row->data + i));
+            free_key_value(*(row->data + i));
         }
         free(row);
     }

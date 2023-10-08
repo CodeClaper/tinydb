@@ -85,6 +85,7 @@ typedef struct {
 typedef struct {
     char *key;
     void *value;
+    DataType data_type;
 }KeyValue;
 
 typedef struct {
