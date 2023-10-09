@@ -250,8 +250,7 @@ ColumnDefSetNode *make_column_def_set_node();
 PrimaryKeyNode *make_primary_key_node();
 
 // add column def node to set.
-void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node,
-                           ColumnDefNode *column_def_node);
+void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
 
 // make a describe node.
 DescribeNode *make_describe_node();
@@ -276,8 +275,5 @@ void set_show_tables_ast_node(ShowTablesNode *show_table_node);
 
 // get an ASTNode
 ASTNode *get_ast_node();
-
-// free ast node memory.
-void free_ast_node(ASTNode *node);
 
 #endif

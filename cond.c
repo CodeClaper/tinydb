@@ -1,6 +1,8 @@
 #include "cond.h"
 #include "common.h"
 #include "misc.h"
+#include "copy.h"
+#include "free.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +33,7 @@ static ConnType find_conn_type(ConditionNode *condition_node) {
 // binary tree
 static ConditionNode *bin_tree(ConditionNode *left, ConditionNode *right) {
     ConditionNode *condition_node = malloc(sizeof(ConditionNode));
+    memset(condition_node, 0, sizeof(ConditionNode));
     condition_node->type = LOGIC_CONDITION;
     condition_node->conn_node = make_conn_node(find_conn_type(left));
     condition_node->left = left;

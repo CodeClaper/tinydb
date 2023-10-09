@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "intpr.h"
+#include "../free.h"
 
 
 static ASTNode *root = NULL;
@@ -14,36 +15,34 @@ static ASTNode *root = NULL;
 // make an int value node.
 IntValueNode *make_int_value_node(int i) {
     IntValueNode *int_value_node = malloc(sizeof(IntValueNode));
+    memset(int_value_node, 0, sizeof(IntValueNode));
     int_value_node->i_value = i;
     return int_value_node;
 }
 
 StringValueNode *make_string_value_node(char *s) {
     StringValueNode *string_value_node = malloc(sizeof(StringValueNode));
+    memset(string_value_node, 0, sizeof(StringValueNode));
     string_value_node->s_value = malloc(strlen(s) + 1);
     memset(string_value_node->s_value, 0, strlen(s) + 1);
-    strcpy(string_value_node->s_value, strdup(s));
-#ifdef DEBUG
-    printf("STRINGVALUE: %s\n", string_value_node->s_value);
-#endif
+    strcpy(string_value_node->s_value, s);
     return string_value_node;
 }
 
 // make an ident node.
 IdentNode *make_ident_node(char *s) {
     IdentNode *ident_node = malloc(sizeof(IdentNode));
+    memset(ident_node, 0, sizeof(IdentNode));
     ident_node->name = malloc(strlen(s) + 1);
     memset(ident_node->name, 0, strlen(s) + 1);
-    strcpy(ident_node->name, strdup(s));
-#ifdef DEBUG
-    printf("IDENT: %s\n", ident_node->name);
-#endif
+    strcpy(ident_node->name, s);
     return ident_node;
 }
 
 // make an ident set node.
 IdentSetNode *make_ident_set_node() {
     IdentSetNode *ident_set_node = malloc(sizeof(IdentSetNode));
+    memset(ident_set_node, 0, sizeof(IdentSetNode));
     ident_set_node->num = 0;
     ident_set_node->ident_node = malloc(0);
     return ident_set_node;
@@ -52,12 +51,14 @@ IdentSetNode *make_ident_set_node() {
 // make a function value node.
 FunctionValueNode *make_function_value_node() {
     FunctionValueNode *function_value_node = malloc(sizeof(FunctionValueNode));
+    memset(function_value_node, 0, sizeof(FunctionValueNode));
     return function_value_node;
 }
 
 // make a functon node
 FunctionNode *make_function_node() {
     FunctionNode *function_node = malloc(sizeof(FunctionNode));
+    memset(function_node, 0, sizeof(FunctionNode));
     return function_node;
 }
 
@@ -71,29 +72,34 @@ void add_ident(IdentSetNode *ident_set_node, IdentNode *ident_node) {
 // make a from item node.
 FromItemNode *make_from_item_node() {
     FromItemNode *from_item_node = malloc(sizeof(FromItemNode));
+    memset(from_item_node, 0, sizeof(FromItemNode));
     return from_item_node;
 }
 
 // make a select items node.
 SelectItemsNode *make_select_items_node() {
     SelectItemsNode *select_items_node = malloc(sizeof(SelectItemsNode));
+    memset(select_items_node, 0, sizeof(SelectItemsNode));
     return select_items_node;
 }
 
 // make a column set node.
 ColumnSetNode *make_column_set_node() {
     ColumnSetNode *column_set_node = malloc(sizeof(ColumnSetNode));
+    memset(column_set_node, 0, sizeof(ColumnSetNode));
     return column_set_node;
 }
 
 // make a value item node.
 ValueItemNode *make_value_item_node() {
     ValueItemNode *value_item_node = malloc(sizeof(ValueItemNode));
+    memset(value_item_node, 0, sizeof(ValueItemNode));
     return value_item_node;
 }
 
 ValueItemSetNode *make_value_item_set_node() {
     ValueItemSetNode *node = malloc(sizeof(ValueItemSetNode));
+    memset(node, 0, sizeof(ValueItemSetNode));
     node->value_item_node = malloc(0);
     node->num = 0;
     return node;
@@ -109,12 +115,14 @@ void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node) {
 // make a condition node.
 ConditionNode *make_cond_node() {
     ConditionNode *cond_node = malloc(sizeof(ConditionNode));
+    memset(cond_node, 0, sizeof(ConditionNode));
     return cond_node;
 }
 
 // make a operator node.
 OprNode *make_opr_node(OpType op_type) {
     OprNode *opr_node = malloc(sizeof(OprNode));
+    memset(opr_node, 0, sizeof(OprNode));
     opr_node->op_type = op_type;
     return opr_node;
 }
@@ -122,6 +130,7 @@ OprNode *make_opr_node(OpType op_type) {
 // make a connnection node.
 ConnNode *make_conn_node(ConnType conn_type) {
     ConnNode *conn_node = malloc(sizeof(ConnNode));
+    memset(conn_node, 0, sizeof(ConnNode));
     conn_node->conn_type = conn_type;
     return conn_node;
 }
@@ -129,6 +138,7 @@ ConnNode *make_conn_node(ConnType conn_type) {
 // make a data type node.
 DataTypeNode *make_data_type_node(DataType data_type) {
     DataTypeNode *data_type_node = malloc(sizeof(DataTypeNode));
+    memset(data_type_node, 0, sizeof(DataTypeNode));
     data_type_node->data_type = data_type;
     return data_type_node;
 }
@@ -136,12 +146,14 @@ DataTypeNode *make_data_type_node(DataType data_type) {
 // make a column def node.
 ColumnDefNode *make_column_def_node() {
     ColumnDefNode *column_def_node = malloc(sizeof(ColumnDefNode));
+    memset(column_def_node, 0, sizeof(ColumnDefNode));
     return column_def_node;
 }
 
 // make a column def set node.
 ColumnDefSetNode *make_column_def_set_node() {
     ColumnDefSetNode *column_def_set_node = malloc(sizeof(ColumnDefSetNode));
+    memset(column_def_set_node, 0, sizeof(ColumnDefSetNode));
     column_def_set_node->column_def = malloc(0);
     column_def_set_node->column_size = 0;
     return column_def_set_node;
@@ -157,36 +169,42 @@ void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode
 // make a primary key node.
 PrimaryKeyNode *make_primary_key_node() {
     PrimaryKeyNode *primary_key_node = malloc(sizeof(PrimaryKeyNode));
+    memset(primary_key_node, 0, sizeof(PrimaryKeyNode));
     return primary_key_node;
 }
 
 // make a select node.
 SelectNode *make_select_node() {
     SelectNode *select_node = malloc(sizeof(SelectNode));
+    memset(select_node, 0, sizeof(SelectNode)); 
     return select_node;
 }
 
 // make an insert node.
 InsertNode *make_insert_node() {
     InsertNode *insert_node = malloc(sizeof(InsertNode));
+    memset(insert_node, 0, sizeof(InsertNode));
     return insert_node;
 }
 
 // make a create table node.
 CreateTableNode *make_create_table_node() {
     CreateTableNode *create_table_node = malloc(sizeof(CreateTableNode));
+    memset(create_table_node, 0, sizeof(CreateTableNode));
     return create_table_node;
 }
 
 // make a describe node.
 DescribeNode *make_describe_node() {
     DescribeNode *describe_node = malloc(sizeof(DescribeNode));
+    memset(describe_node, 0, sizeof(DescribeNode));
     return describe_node;
 }
 
 // make a shwo table node.
 ShowTablesNode *make_show_tables_node() {
     ShowTablesNode *show_tables_node = malloc(sizeof(ShowTablesNode));
+    memset(show_tables_node, 0, sizeof(ShowTablesNode));
     return show_tables_node;
 }
 
@@ -257,6 +275,7 @@ ASTNode *get_ast_node() {
 
 //****************************** free ****************************************
 
+/**
 void free_ident_node(IdentNode *ident_node) {
     if (ident_node !=NULL) {
         free(ident_node->name);
@@ -426,3 +445,4 @@ void free_ast_node(ASTNode *node) {
     }
     free(node);
 }
+**/

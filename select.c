@@ -115,6 +115,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     Row *row = malloc(sizeof(Row));
     if (row == NULL)
         MALLOC_ERROR;
+    memset(row, 0, sizeof(Row));
     row->column_len = 0;
     row->table_name = strdup(query_param->table_name);
     row->data = malloc(sizeof(KeyValue *) * query_param->column_size);
@@ -127,7 +128,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
         if (if_exist(query_param, meta_column)) {
             KeyValue *key_value = malloc(sizeof(KeyValue));
             key_value->key = strdup(meta_column->column_name);
-            key_value->value = destinct + off_set;
+            key_value->value = copy_value(destinct + off_set, meta_column->column_type);
             key_value->data_type = meta_column->column_type;
             *(row->data + row->column_len) = key_value;
             row->column_len++;
@@ -137,7 +138,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     return row;
 }
 
-//Select work through leaf node
+//Select through leaf node
 static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table) {
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
     uint32_t row_size = calc_table_row_length(table);
@@ -152,7 +153,7 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
     }
 }
 
-// select work through internal node
+// select through internal node
 static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table) {
     MetaColumn *cond_meta_column = get_cond_meta_column(query_param);
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
@@ -193,15 +194,20 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
 // convert from select node to select param
 QueryParam *convert_query_param(SelectNode *select_node) {
     QueryParam *query_param = malloc(sizeof(QueryParam));
+    memset(query_param, 0, sizeof(QueryParam));
     query_param->table_name = strdup(get_table_name(select_node));
     query_param->is_function = select_node->select_items_node->is_function_node;
     Table *table = open_table(query_param->table_name);
     if (table == NULL)
         return NULL;
-    if (query_param->is_function)
+    if (query_param->is_function) 
+    {
         memcpy(query_param->function_node, select_node->select_items_node->function_node, sizeof(FunctionNode));
-    else {
-        if (select_node->select_items_node->ident_set_node->all_column) {
+    } 
+    else 
+    {
+        if (select_node->select_items_node->ident_set_node->all_column)
+        {
             MetaTable *meta_table = table->meta_table;
             query_param->column_size = meta_table->column_size;
             query_param->meta_columns = malloc(sizeof(MetaTable *) * meta_table->column_size);
@@ -211,7 +217,9 @@ QueryParam *convert_query_param(SelectNode *select_node) {
                 memset(*(query_param->meta_columns + i), 0, sizeof(MetaColumn));
                 memcpy(*(query_param->meta_columns + i), meta_column, sizeof(MetaColumn));
             }
-        } else {
+        } 
+        else 
+        {
             query_param->column_size = select_node->select_items_node->ident_set_node->num;
             query_param->meta_columns = malloc(0);
             for(int i = 0; i < query_param->column_size; i++) {
@@ -333,28 +341,33 @@ void print_select_result_plain(SelectResult *select_result, QueryParam *query_pa
 }
 
 
-
 // print select result plain format.
 void print_select_result_count(SelectResult *select_result) {
     fprintf(stdout, "%d\n", select_result->row_size);
 }
 
-
-//***********************logic controller*******************************
-
-QueryParam *new_query_param(QueryParam *query_param, ConditionNode *new_condition) {
+//Generate new query param and replace condition node.
+static QueryParam *new_query_param(QueryParam *query_param, ConditionNode *new_condition) {
     QueryParam *query_param_copy = copy_query_param(query_param);
-    query_param_copy->condition_node = new_condition;
+    ConditionNode *old_condition_node = query_param_copy->condition_node;
+    query_param_copy->condition_node = copy_condition_node(new_condition); // replace new conditon node.
+    free_condition_node(old_condition_node); // free old conditon node.
     return query_param_copy;
 }
 
 //And loigc condition process
 SelectResult *and_logic_cond_proc(QueryParam *query_param) {
     ConditionNode *condition_node = query_param->condition_node;
-    SelectResult *left_select_result = cond_exec(new_query_param(query_param, condition_node->left));
-    SelectResult *right_select_result = cond_exec(new_query_param(query_param, condition_node->right));
-    new_query_param(query_param, condition_node);
+    // copy new query param
+    QueryParam *left_query_param = new_query_param(query_param, condition_node->left);
+    QueryParam *right_query_param = new_query_param(query_param, condition_node->right);
+    // Separately calulate result and reduce
+    SelectResult *left_select_result = query_with_condition(left_query_param);
+    SelectResult *right_select_result = query_with_condition(right_query_param);
     SelectResult *result = reduce(left_select_result, right_select_result);
+    // Free 
+    free_query_param(left_query_param);
+    free_query_param(right_query_param);
     free_select_result(left_select_result); 
     free_select_result(right_select_result);
     return result;
@@ -363,10 +376,16 @@ SelectResult *and_logic_cond_proc(QueryParam *query_param) {
 //Or logic condition process
 SelectResult *or_logic_cond_proc(QueryParam *query_param) {
     ConditionNode *condition_node = query_param->condition_node;
-    SelectResult *left_select_result = cond_exec(new_query_param(query_param, condition_node->left));
-    SelectResult *right_select_result = cond_exec(new_query_param(query_param, condition_node->right));
-    new_query_param(query_param, condition_node);
+    // copy new query param
+    QueryParam *left_query_param = new_query_param(query_param, condition_node->left);
+    QueryParam *right_query_param = new_query_param(query_param, condition_node->right);
+    // Separately calulate result and merge
+    SelectResult *left_select_result = query_with_condition(left_query_param);
+    SelectResult *right_select_result = query_with_condition(right_query_param);
     SelectResult *result = merge(left_select_result, right_select_result);
+    // Free
+    free_query_param(left_query_param);
+    free_query_param(right_query_param);
     free_select_result(right_select_result); 
     return result;
 }
@@ -387,7 +406,9 @@ SelectResult *exec_cond_proc(QueryParam *query_param) {
     return gen_select_result(query_param);
 }
 
-SelectResult *cond_exec(QueryParam *query_param) {
+
+//Query with condition
+SelectResult *query_with_condition(QueryParam *query_param) {
     ConditionNode *condition_node = query_param->condition_node;
     if (condition_node == NULL)
         return gen_select_result(query_param);

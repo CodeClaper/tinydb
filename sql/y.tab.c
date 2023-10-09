@@ -80,7 +80,7 @@ int yywrap() {
 }
 
 int yyerror(const char *s) {
-    fprintf(stderr, "Sql parse error, near by'%s'.\n", yylval);
+    fprintf(stderr, "Sql parse error, near by '%s'.\n", yylval);
 }
 
 #line 86 "y.tab.c"

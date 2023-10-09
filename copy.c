@@ -18,6 +18,7 @@ void *copy_value(void *value, DataType data_type) {
         case T_STRING:
             {
                 char *new_value = malloc(strlen(value) + 1);
+                memset(new_value, 0, strlen(value) + 1);
                 strcpy(new_value, value);
                 return new_value;
             }
@@ -31,9 +32,12 @@ void *copy_value(void *value, DataType data_type) {
 
 // Copy Key value pair
 KeyValue *copy_key_value(KeyValue *key_value) {
+    if (key_value == NULL)
+        return NULL;
     KeyValue *key_value_copy = malloc(sizeof(KeyValue));
     if (key_value_copy == NULL)
         MALLOC_ERROR;
+    memset(key_value_copy, 0, sizeof(KeyValue));
     key_value_copy->key = malloc(strlen(key_value->key) + 1);
     strcpy(key_value_copy->key, key_value->key);
     key_value_copy->value = copy_value(key_value->value, key_value->data_type);
@@ -43,9 +47,12 @@ KeyValue *copy_key_value(KeyValue *key_value) {
 
 //Copy row
 Row *copy_row(Row *row) {
+    if (row == NULL)
+        return NULL;
     Row *row_copy = malloc(sizeof(Row));
     if (row_copy == NULL)
         MALLOC_ERROR;
+    memset(row_copy, 0, sizeof(Row));
     row_copy->key = row->key;
     row_copy->column_len = row->column_len;
     row_copy->table_name = malloc(strlen(row->table_name) + 1);
@@ -57,20 +64,43 @@ Row *copy_row(Row *row) {
     return row_copy;
 }
 
+//Copy meta column.
+MetaColumn *copy_meta_column(MetaColumn *meta_column) {
+    if (meta_column == NULL)
+        return NULL;
+    MetaColumn *meta_column_copy = malloc(sizeof(MetaColumn));
+    if (meta_column_copy == NULL)
+        MALLOC_ERROR;
+    memset(meta_column_copy, 0, sizeof(MetaColumn));
+    meta_column_copy->is_primary = meta_column->is_primary;
+    meta_column_copy->column_type = meta_column->column_type;
+    meta_column_copy->column_length = meta_column->column_length;
+    for(uint32_t i = 0; i < MAX_COLUMN_NAME_LEN; i++) {
+        meta_column_copy->column_name[i] = meta_column->column_name[i];
+    }
+    return meta_column_copy;
+} 
+
 //Copy int value node.
 IntValueNode *copy_int_value_node(IntValueNode *int_value_node) {
+    if (int_value_node == NULL)
+        return NULL;
     IntValueNode *int_value_node_copy = malloc(sizeof(IntValueNode));
     if (int_value_node_copy == NULL)
         MALLOC_ERROR;
+    memset(int_value_node_copy, 0, sizeof(IntValueNode));
     int_value_node_copy->i_value = int_value_node->i_value;
     return int_value_node_copy;
 }
 
 //Copy string value node.
 StringValueNode *copy_string_value_node(StringValueNode *string_value_node) {
+    if (string_value_node == NULL)
+        return NULL;
     StringValueNode *string_value_node_copy = malloc(sizeof(StringValueNode));
     if (string_value_node_copy == NULL)
         MALLOC_ERROR;
+    memset(string_value_node_copy, 0, sizeof(StringValueNode));
     string_value_node_copy->s_value = malloc(strlen(string_value_node->s_value) + 1);
     strcpy(string_value_node_copy->s_value, string_value_node->s_value);
     return string_value_node_copy;
@@ -78,9 +108,12 @@ StringValueNode *copy_string_value_node(StringValueNode *string_value_node) {
 
 //Copy ident node.
 IdentNode *copy_ident_node(IdentNode *ident_node) {
+    if (ident_node == NULL)
+        return NULL;
     IdentNode *ident_node_copy = malloc(sizeof(IdentNode));
     if (ident_node_copy == NULL)
         MALLOC_ERROR;
+    memset(ident_node_copy, 0, sizeof(IdentNode));
     ident_node_copy->name = malloc(strlen(ident_node->name) + 1);
     strcpy(ident_node_copy->name, ident_node->name);
     return ident_node_copy;
@@ -88,9 +121,12 @@ IdentNode *copy_ident_node(IdentNode *ident_node) {
 
 //Copy value item node.
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
+    if (value_item_node == NULL)
+        return NULL;
     ValueItemNode *value_item_node_copy = malloc(sizeof(ValueItemNode));
     if (value_item_node_copy == NULL)
         MALLOC_ERROR;
+    memset(value_item_node_copy, 0, sizeof(ValueItemNode));
     value_item_node_copy->data_type = value_item_node->data_type;
     switch(value_item_node->data_type) {
         case T_INT:
@@ -107,9 +143,12 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
 
 //Copy function value node.
 FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_node) {
+    if (function_value_node == NULL)
+        return NULL;
     FunctionValueNode *function_value_node_copy = malloc(sizeof(FunctionValueNode));
     if (function_value_node_copy == NULL)
         MALLOC_ERROR;
+    memset(function_value_node_copy, 0, sizeof(FunctionValueNode));
     function_value_node_copy->value_type = function_value_node->value_type;
     switch(function_value_node->value_type) {
         case V_INT:
@@ -126,9 +165,12 @@ FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_no
 
 //Copy function node.
 FunctionNode *copy_function_node(FunctionNode *function_node) {
+    if (function_node == NULL)
+        return NULL;
     FunctionNode *function_node_copy = malloc(sizeof(FunctionNode));
     if (function_node_copy == NULL)
         MALLOC_ERROR;
+    memset(function_node_copy, 0, sizeof(FunctionNode));
     function_node_copy->function_type = function_node->function_type;
     function_node_copy->value = copy_function_value_node(function_node->value);
     return function_node_copy;
@@ -136,27 +178,36 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
 
 //Copy opr node.
 OprNode *copy_opr_node(OprNode *opr_node) {
+    if (opr_node == NULL)
+        return NULL;
     OprNode *opr_node_copy = malloc(sizeof(OprNode));
     if (opr_node_copy == NULL)
         MALLOC_ERROR;
+    memset(opr_node_copy, 0, sizeof(OprNode));
     opr_node_copy->op_type = opr_node->op_type;
     return opr_node_copy;
 }
 
 //Copy conn node.
 ConnNode *copy_conn_node(ConnNode *conn_node) {
+    if (conn_node == NULL)
+        return NULL;
     ConnNode *conn_node_copy = malloc(sizeof(ConnNode));
     if (conn_node_copy == NULL)
         MALLOC_ERROR;
+    memset(conn_node_copy, 0, sizeof(ConnNode));
     conn_node_copy->conn_type = conn_node->conn_type;
     return conn_node_copy;
 }
 
 //Copy condition node.
 ConditionNode *copy_condition_node(ConditionNode *condition_node) {
+    if (condition_node == NULL)
+        return NULL;
     ConditionNode *condition_node_copy = malloc(sizeof(ConditionNode));
     if (condition_node_copy == NULL)
         MALLOC_ERROR;
+    memset(condition_node_copy, 0, sizeof(ConditionNode));
     condition_node_copy->type = condition_node->type;
     if (condition_node->left)
         condition_node_copy->left = copy_condition_node(condition_node->left);
@@ -172,6 +223,7 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
             condition_node_copy->column = copy_ident_node(condition_node->column);
             condition_node_copy->opr_node = copy_opr_node(condition_node->opr_node);
             condition_node_copy->compare = copy_value_item_node(condition_node->compare);
+            condition_node_copy->conn_node = copy_conn_node(condition_node->conn_node);
             break;
     }
     return condition_node_copy;
@@ -179,14 +231,21 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
 
 //Copy query param.
 QueryParam *copy_query_param(QueryParam *query_param) {
+    if (query_param == NULL)
+        return NULL;
     QueryParam *query_param_copy = malloc(sizeof(QueryParam));
     if (query_param_copy == NULL)
         MALLOC_ERROR;
+    memset(query_param_copy, 0, sizeof(QueryParam));
     query_param_copy->table_name = malloc(strlen(query_param->table_name) + 1);
     strcpy(query_param_copy->table_name, query_param->table_name);
     query_param_copy->is_function = query_param->is_function;
     query_param_copy->column_size = query_param->column_size;
     query_param_copy->function_node = copy_function_node(query_param->function_node);
-    
+    query_param_copy->condition_node = copy_condition_node(query_param->condition_node); 
+    query_param_copy->meta_columns = malloc(sizeof(MetaColumn *) * query_param->column_size);
+    for (uint32_t i = 0; i < query_param->column_size; i++) {
+        *(query_param_copy->meta_columns + i) = copy_meta_column(*(query_param->meta_columns + i));
+    }
     return query_param_copy;
 }
