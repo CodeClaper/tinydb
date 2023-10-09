@@ -3,12 +3,12 @@ PROP=node.c token.c table.c pager.c misc.c stmt.c meta.c \
 		utils.c free.c cond.c row.c opr.c copy.c \
 		./sql/lex.yy.c ./sql/y.tab.c ./sql/intpr.c main.c
 PROMT=tinydb
-CFLAGS=-std=c99
+CFLAGS=-w -lreadline -ltinfo
 
 run: ${PROP}
-	gcc ${PROP} -o ${PROMT} -w
+	gcc ${PROP} -o ${PROMT} ${CFLAGS}
 debug: ${PROP}
-	gcc -g ${PROP} -o ${PROMT} -w -D DEBUG
+	gcc -g ${PROP} -o ${PROMT} ${CFLAGS} -D DEBUG
 info: ${PROP}
 	cloc ./
 test: ${PROMT}

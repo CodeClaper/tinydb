@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,8 @@
 #include "input.h"
 #include "stmt.h"
 #include "free.h"
+#include <readline/readline.h>
+#include <readline/history.h>
 
 char *data_dir;
 
@@ -21,6 +24,7 @@ void print_prompt() {
     printf("tinydb > "); 
 }
 
+//Execute meta stament.
 bool meta_statment(char *input) {
     if (strcmp("exit", input) == 0) {
         printf("Goodbye.\n");
@@ -32,26 +36,39 @@ bool meta_statment(char *input) {
             system("clear");
         #endif
         return true;
-    } 
+    } else if (strcmp("history", input) == 0) {
+        HIST_ENTRY** hist_entry = history_list();
+        if (hist_entry == NULL) {
+            fprintf(stdout, "Empty.\n");
+            return true;
+        }
+        HIST_ENTRY *hist;
+        for (uint32_t i = 0; (hist = *(hist_entry + i)) != NULL; i++ ) {
+            fprintf(stdout, "%d\t%s\n", (i + 1), hist->line);
+        }
+        return true;
+    }
     return false;
 }
 
 int main(void) {
     init_variable();
     while(true) {
-        print_prompt();
-        InputBuffer *input_buffer = read_input();
-        if (input_buffer->input_length == 0) {
-            free_input_buffer(input_buffer);
+        char *sql = readline("tinydb > ");
+        if (is_empty(sql)) {
+            add_history(sql);
+            free(sql);
             continue;
         }
-        if(meta_statment(input_buffer->input)) {
-            free_input_buffer(input_buffer);
+        if(meta_statment(sql)) {
+            add_history(sql);
+            free(sql);
             continue;
         }
-        Statement *statement = parse(input_buffer->input);
+        Statement *statement = parse(sql);
         if (statement == NULL) {
-            free_input_buffer(input_buffer);
+            add_history(sql);
+            free(sql);
             continue;
         }
         switch(statement->statement_type) {
@@ -77,7 +94,8 @@ int main(void) {
                 statement_show_tables(statement);
                 break;
         }
-        free_input_buffer(input_buffer);
+        add_history(sql);
+        free(sql);
     }
     return 0;
 }
