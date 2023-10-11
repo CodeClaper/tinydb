@@ -17,8 +17,8 @@ Pager *open_pager(char *table_file_path){
     }
     int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (file_descriptor == -1) {
-        fprintf(stderr, "open table file fail.\n");
-        return NULL;
+        fprintf(stderr, "Open table file fail.\n");
+        exit(EXIT_FAILURE);
     }
     off_t file_length = lseek(file_descriptor, 0, SEEK_END);
     pager->file_descriptor = file_descriptor;

@@ -49,13 +49,17 @@ Statement *adapt(ASTNode *node) {
 
 // parse token
 Statement *parse(char *input) {
+    if (input == NULL)
+        return NULL;
     char *state = malloc(strlen(input) + 1);
     sprintf(state, "%s%c", input, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(state);
     if(yyparse() == 0) {
         ASTNode *node = get_ast_node();
+        free(state);
         return adapt(node);
     } else {
+        free(state);
         return NULL;
     }
 }

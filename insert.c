@@ -12,9 +12,9 @@
 #include "pager.h"
 #include "insert.h"
 #include "index.h"
+#include "free.h"
 
-
-// check if key already exists in db
+//Check if key already exists in db
 static bool check_duplicate_key(Cursor *cursor, uint32_t key) {
     void *node = get_page(cursor->table->pager, cursor->page_num);
     uint32_t row_length = calc_table_row_length(cursor->table);
@@ -22,11 +22,12 @@ static bool check_duplicate_key(Cursor *cursor, uint32_t key) {
     return target == key;
 }
 
-// get table name in select node.
+//Get table name in select node.
 static char *get_table_name(InsertNode *insert_node) {
     return insert_node->from_item_node->table->name;
 }
 
+//Get column number of insert statement.
 static uint32_t get_insert_column_size(InsertNode *insert_node, MetaTable *meta_table) {
     if (insert_node->if_ignore_columns)
         return meta_table->column_size;
@@ -34,10 +35,12 @@ static uint32_t get_insert_column_size(InsertNode *insert_node, MetaTable *meta_
         return insert_node->columns_set_node->ident_set_node->num;
 }
 
+//Get value number
 static uint32_t get_value_size(InsertNode *insert_node) {
     return insert_node->value_item_set_node->num;
 }
 
+//Get column name.
 static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable *meta_table) {
     if (insert_node->if_ignore_columns)
         return meta_table->meta_column[index]->column_name;
@@ -45,6 +48,7 @@ static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable 
         return ((IdentNode *)(insert_node->columns_set_node->ident_set_node->ident_node + index))->name;
 }
 
+//Get column value.
 static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
     ValueItemNode* value_item_node = *(insert_node->value_item_set_node->value_item_node + index);
     switch(meta_column->column_type) {
@@ -64,13 +68,13 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     return NULL;
 }
 
-// generate insert row
+//Generate insert row
 static Row *generate_insert_row(InsertNode *insert_node) {
     uint32_t i, column_len;
     Row *row = malloc(sizeof(Row));
     if (NULL == row) 
         MALLOC_ERROR;
-    row->table_name = get_table_name(insert_node);
+    row->table_name = strdup(get_table_name(insert_node));
     Table *table = open_table(row->table_name);
     if (table == NULL) {
         return NULL;
@@ -100,17 +104,18 @@ static Row *generate_insert_row(InsertNode *insert_node) {
             row->key = define_key(key_value->value, meta_column);
         }
         *(row->data + i) = key_value;
-        printf("");
     }
     return row;
 }
 
-// execute insert statement.
+//Execute insert statement.
 ExecuteResult exec_insert_statement(InsertNode *insert_node) {
     Row *row = generate_insert_row(insert_node);
     if (row == NULL)
-        return EXIT_FAILURE;
+        return EXECUTE_FAIL;
     Table *table = open_table(row->table_name);
+    if (table == NULL)
+        return EXECUTE_FAIL;
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key)) {
@@ -118,8 +123,10 @@ ExecuteResult exec_insert_statement(InsertNode *insert_node) {
         return EXECUTE_DUPLICATE_KEY;
     }
     insert_leaf_node(cursor, row);
-    fprintf(stdout, "Successfully insert 1 row data.\n");
     // free memeory
+    free_cursor(cursor);
+    free_row(row);
+    fprintf(stdout, "Successfully insert 1 row data.\n");
     return EXECUTE_SUCCESS;    
 }
 

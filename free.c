@@ -72,6 +72,29 @@ void free_meta_column(MetaColumn *meta_column) {
     }
 }
 
+//Free meta table.
+void free_meta_table(MetaTable *meta_table) {
+    if (meta_table) {
+        if (meta_table->table_name) {
+            free(meta_table->table_name);
+        }
+    }
+}
+
+//Free table
+void free_table(Table *table) {
+     
+}
+
+//Free cursor
+void free_cursor(Cursor *cursor) {
+    if (cursor) {
+        // use table for cache, not free.
+        free_table(cursor->table);
+        free(cursor);
+    }
+} 
+
 //Free int value node.
 void free_int_value_node(IntValueNode *int_value_node) {
     if (int_value_node)
@@ -322,3 +345,4 @@ void free_query_param(QueryParam *query_param) {
         free(query_param);
     }
 }
+

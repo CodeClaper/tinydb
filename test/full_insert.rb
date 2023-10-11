@@ -12,9 +12,11 @@ def run_script(commands)
      pipe.close_write
      raw_output = pipe.gets(nil)
    end
-   raw_output.split("\n")
+   raw_output.split("\n").each do |msg|
+        puts msg
+   end
 end
-`rm -f data/test.dbt`
+##`rm -f data/test.dbt`
 run_script(["create table test (id int, name string, age int, address string, primary key(id));"])
 insert_script = (1..1000).map do |i|
    "insert into test values (#{100 + i}, 'zhangsan', 20, 'beijing');"

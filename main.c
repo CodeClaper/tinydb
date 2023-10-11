@@ -29,7 +29,7 @@ bool meta_statment(char *input) {
     if (strcmp("exit", input) == 0) {
         printf("Goodbye.\n");
         exit(EXIT_SUCCESS);
-    } else if (strcmp("clear", input) == 0) {
+    } else if (strcmp("clear", input) == 0 || strcmp("cls", input) == 0) {
         #ifdef _WIN32
             system("cls");
         #else

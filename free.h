@@ -15,6 +15,15 @@ void free_input_buffer(InputBuffer *input_buffer);
 //Free meta column.
 void free_meta_column(MetaColumn *meta_column);
 
+//Free meta table.
+void free_meta_table(MetaTable *meta_table);
+
+//Free table
+void free_table(Table *table);
+
+//Free cursor
+void free_cursor(Cursor *cursor);
+
 //Free int value node.
 void free_int_value_node(IntValueNode *int_value_node);
 

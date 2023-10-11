@@ -69,7 +69,6 @@ typedef struct {
     uint32_t column_size;
 } MetaTable;
 
-
 typedef struct {
     Pager *pager;
     uint32_t root_page_num;

@@ -31,6 +31,7 @@ InputBuffer *read_input() {
 
 //Check if empty string.
 bool is_empty(char *s) {
+    if (s == NULL) return true;
     size_t size = strlen(s);
     if (size == 0)
         return true;
