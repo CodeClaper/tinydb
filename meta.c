@@ -73,12 +73,13 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
 
 // get table meta info
 MetaTable *get_meta_table(Table *table, char *table_name) {
+  if (table_name == NULL) 
+    fatal("Input table name can`t be null.");
   MetaTable *meta_table = malloc(sizeof(MetaTable));
   if (meta_table == NULL)
     MALLOC_ERROR;
   void *root_node = get_page(table->pager, table->root_page_num);
   uint32_t column_size = get_column_size(root_node);
-
   meta_table->table_name = strdup(table_name);
   meta_table->column_size = column_size;
   size_t meta_column_size = sizeof(MetaColumn);

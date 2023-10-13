@@ -16,7 +16,6 @@ uint32_t define_key(void *value, MetaColumn *meta_column) {
         case T_DATE:
         case T_TIMESTAMP:
             break;
-
     }
     return -1;
 }

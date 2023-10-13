@@ -18,6 +18,7 @@
 #include "free.h"
 #include "sql/intpr.h"
 
+//Get table name.
 static char *get_table_name(SelectNode *select_node) {
     return select_node->from_item_node->table->name;
 }
@@ -73,7 +74,7 @@ static bool include_internal_node(uint32_t min_key, uint32_t max_key, uint32_t t
             return target_key > min_key;
         case O_IN:
         case O_LIKE:
-            fatal("not support");
+            fatal("Not implement yet.");
             
     }
     return true;
@@ -300,7 +301,6 @@ void print_select_result_beauty(SelectResult *select_result) {
             fprintf(stdout, "\n");
         for (j = 0; j < row->column_len; j++) {
             KeyValue *key_value = *(row->data + j);
-            MetaColumn *meta_column = table->meta_table->meta_column[j];
             fprintf(stdout, "\t\t%s:\t", key_value->key);
             print_row_value(key_value);
             if (j < row->column_len - 1)
@@ -339,7 +339,6 @@ void print_select_result_plain(SelectResult *select_result, QueryParam *query_pa
     fprintf(stdout, "]\n");
     fprintf(stdout, "Successfully select %d rows.\n", select_result->row_size);
 }
-
 
 // print select result plain format.
 void print_select_result_count(SelectResult *select_result) {

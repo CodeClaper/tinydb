@@ -42,6 +42,7 @@ typedef struct {
 typedef enum {
     EXECUTE_SUCCESS,
     EXECUTE_FAIL,
+    EXECUTE_SQL_ERROR,
     EXECUTE_TABLE_EXIST_FAIL,
     EXECUTE_TABLE_CREATE_FAIL,
     EXECUTE_TABLE_DROP_FAIL,
@@ -94,7 +95,6 @@ typedef struct {
     uint32_t column_len;
 }Row;
 
-
 typedef struct {
     char *table_name;
     bool is_function;
@@ -109,5 +109,11 @@ typedef struct {
     Row **row;
     uint32_t row_size;
 }SelectResult;
+
+typedef struct {
+    char *json_data;
+    uint32_t len;
+    ExecuteResult result;
+}Output;
 
 #endif

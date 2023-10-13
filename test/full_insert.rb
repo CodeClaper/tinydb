@@ -1,7 +1,7 @@
  
 def run_script(commands) 
    raw_output = nil
-   IO.popen("./tinydb", "r+") do |pipe|
+   IO.popen("./tinydb-cli", "r+") do |pipe|
      commands.each do |command|
        begin
          pipe.puts command
@@ -17,7 +17,7 @@ def run_script(commands)
    end
 end
 ##`rm -f data/test.dbt`
-run_script(["create table test (id int, name string, age int, address string, primary key(id));"])
+#run_script(["create table test (id int, name string, age int, address string, primary key(id));"])
 insert_script = (1..1000).map do |i|
    "insert into test values (#{100 + i}, 'zhangsan', 20, 'beijing');"
 end

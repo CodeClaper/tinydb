@@ -1,3 +1,4 @@
+#include <netinet/in.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,8 +10,12 @@
 #include "input.h"
 #include "stmt.h"
 #include "free.h"
-#include <readline/readline.h>
-#include <readline/history.h>
+#include "server.h"
+#include "common.h"
+#include "misc.h"
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <pthread.h>
 
 char *data_dir;
 
@@ -24,78 +29,25 @@ void print_prompt() {
     printf("tinydb > "); 
 }
 
-//Execute meta stament.
-bool meta_statment(char *input) {
-    if (strcmp("exit", input) == 0) {
-        printf("Goodbye.\n");
-        exit(EXIT_SUCCESS);
-    } else if (strcmp("clear", input) == 0 || strcmp("cls", input) == 0) {
-        #ifdef _WIN32
-            system("cls");
-        #else
-            system("clear");
-        #endif
-        return true;
-    } else if (strcmp("history", input) == 0) {
-        HIST_ENTRY** hist_entry = history_list();
-        if (hist_entry == NULL) {
-            fprintf(stdout, "Empty.\n");
-            return true;
-        }
-        HIST_ENTRY *hist;
-        for (uint32_t i = 0; (hist = *(hist_entry + i)) != NULL; i++ ) {
-            fprintf(stdout, "%d\t%s\n", (i + 1), hist->line);
-        }
-        return true;
-    }
-    return false;
-}
-
 int main(void) {
     init_variable();
+    int server_socket = -1;
+    int client_secket = -1;
+    u_short port = 4080;
+    struct sockaddr_in *client_name = malloc(sizeof(struct sockaddr_in));
+    socklen_t client_name_len = sizeof(*client_name);
+    pthread_t new_thread;
+    server_socket = startup(port);
+    printf("Tinydb server start up successfully. and listen port %d \n", port);
     while(true) {
-        char *sql = readline("tinydb > ");
-        if (is_empty(sql)) {
-            add_history(sql);
-            free(sql);
-            continue;
+        client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
+        if (client_name_len == -1)
+            fatal("Socket accept fail.");
+        else
+            printf("Client connect successfully.\n");
+        if (pthread_create(&new_thread, NULL, (void *)accept_request, (void *)(intptr_t)client_secket) != 0) {
+            fatal("Create new thread fail.");
         }
-        if(meta_statment(sql)) {
-            add_history(sql);
-            free(sql);
-            continue;
-        }
-        Statement *statement = parse(sql);
-        if (statement == NULL) {
-            add_history(sql);
-            free(sql);
-            continue;
-        }
-        switch(statement->statement_type) {
-            case STMT_CREATE_TABLE:
-                statement_create_table(statement);
-                break;
-            case STMT_INSERT:
-                statement_insert(statement); 
-                break; 
-            case STMT_SELECT:
-                statement_select(statement); 
-                break; 
-            case STMT_UPDATE:
-                statement_update(statement); 
-                break; 
-            case STMT_DELETE:
-                statement_delete(statement); 
-                break; 
-            case STMT_DESCRIBE:
-                statement_describe(statement);
-                break;
-            case STMT_SHOW_TABLES:
-                statement_show_tables(statement);
-                break;
-        }
-        add_history(sql);
-        free(sql);
     }
     return 0;
 }
