@@ -13,6 +13,7 @@
 #include "insert.h"
 #include "index.h"
 #include "free.h"
+#include "log.h"
 
 //Check if key already exists in db
 static bool check_duplicate_key(Cursor *cursor, uint32_t key) {
@@ -96,8 +97,8 @@ static Row *generate_insert_row(InsertNode *insert_node) {
 #endif
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
         if (meta_column == NULL) {
-            fprintf(stderr, "Inner error, not find meta column info by name '%s'", key_value->key);
-            exit(1);
+            log_error_s("Inner error, not find meta column info by name '%s'", key_value->key);
+            return NULL;
         }
         key_value->value = get_column_value(insert_node, i, meta_column);
         if (meta_column->is_primary) {
@@ -119,14 +120,13 @@ ExecuteResult exec_insert_statement(InsertNode *insert_node) {
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key)) {
-        fprintf(stderr, "key '%d' already exists, not allow duplicate key. \n", row->key);
+        log_error_d("key '%d' already exists, not allow duplicate key.", row->key);
         return EXECUTE_DUPLICATE_KEY;
     }
     insert_leaf_node(cursor, row);
     // free memeory
     free_cursor(cursor);
     free_row(row);
-    fprintf(stdout, "Successfully insert 1 row data.\n");
     return EXECUTE_SUCCESS;    
 }
 

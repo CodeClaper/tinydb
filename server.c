@@ -108,6 +108,7 @@ void accept_request(void *arg) {
         Output *out = statement(buf);   
         send_out_put(client, out);
     }
+    clear_error();
     close(client);
     printf("Client disconnect.\n");
 }

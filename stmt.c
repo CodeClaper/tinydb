@@ -37,6 +37,7 @@ static void statement_create_table(Statement *stmt, Output *out) {
 static void statement_insert(Statement *stmt, Output *out) {
     assert(stmt->statement_type == STMT_INSERT);
     out->result = exec_insert_statement(stmt->ast_node->insert_node);
+    print_data(out, "Successfully insert 1 row data.");
 }
 
 static void statement_select(Statement *statement, Output *out) {
