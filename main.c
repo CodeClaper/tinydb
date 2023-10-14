@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <pthread.h>
 #include "data.h"
 #include "defs.h"
 #include "token.h"
@@ -13,9 +16,7 @@
 #include "server.h"
 #include "common.h"
 #include "misc.h"
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <pthread.h>
+#include "log.h"
 
 char *data_dir;
 
@@ -31,6 +32,7 @@ void print_prompt() {
 
 int main(void) {
     init_variable();
+    log_init(); // init log
     int server_socket = -1;
     int client_secket = -1;
     u_short port = 4080;

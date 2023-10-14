@@ -36,13 +36,13 @@ static bool meta_statment(char *input) {
     return false;
 }
 
-void loop_recv(int server_fd) {
+void receive(int server_fd) {
     uint32_t len;
     recv(server_fd, &len, sizeof(len), 0);
     char *buff = malloc(len + 1);
     memset(buff, 0, len + 1);
     recv(server_fd, buff, len, 0);
-    printf("Server message: %s\n", buff);
+    printf("%s\n", buff);
 }
 
 int main() {
@@ -83,7 +83,7 @@ int main() {
             fprintf(stderr, "Send fail.");
             exit(1);
         }
-        loop_recv(sock_fd);
+        receive(sock_fd);
         add_history(sql);
         free(sql);
         free(input);

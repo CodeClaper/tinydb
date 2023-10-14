@@ -16,6 +16,8 @@
 #include "opr.h"
 #include "copy.h"
 #include "free.h"
+#include "output.h"
+#include "log.h"
 #include "sql/intpr.h"
 
 //Get table name.
@@ -199,8 +201,9 @@ QueryParam *convert_query_param(SelectNode *select_node) {
     query_param->table_name = strdup(get_table_name(select_node));
     query_param->is_function = select_node->select_items_node->is_function_node;
     Table *table = open_table(query_param->table_name);
-    if (table == NULL)
+    if (table == NULL) {
         return NULL;
+    }
     if (query_param->is_function) 
     {
         memcpy(query_param->function_node, select_node->select_items_node->function_node, sizeof(FunctionNode));
@@ -338,6 +341,26 @@ void print_select_result_plain(SelectResult *select_result, QueryParam *query_pa
     }
     fprintf(stdout, "]\n");
     fprintf(stdout, "Successfully select %d rows.\n", select_result->row_size);
+}
+
+//Genetate output.
+void put_select_result(SelectResult *select_result, QueryParam *query_param, Output *out_put) {
+    uint32_t buff_size = BUFF_SIZE;
+    print_data(out_put, strdup("["));
+    for (uint32_t i = 0; i < select_result->row_size; i++) {
+        Row *row = *(select_result->row + i);
+        print_data(out_put, strdup("{")); 
+        for (uint32_t j = 0; j < row->column_len; j++) {
+            KeyValue *key_value = *(row->data + j);
+            print_data(out_put, get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type));
+            if (j < row->column_len - 1) 
+                print_data(out_put,strdup(", "));
+        }
+        print_data(out_put, strdup("}")); 
+        if (i < select_result->row_size - 1)
+            print_data(out_put, strdup(", "));
+    }
+    print_data(out_put, strdup("]"));
 }
 
 // print select result plain format.

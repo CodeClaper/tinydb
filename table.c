@@ -5,6 +5,7 @@
 #include "misc.h"
 #include "node.h"
 #include "pager.h"
+#include "log.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -75,11 +76,9 @@ ExecuteResult create_table(MetaTable *meta_table) {
   }
   free(file_path);
   close(descr);
-  printf("Table '%s' created successfully.\n", meta_table->table_name);
   for (uint32_t i = 0; i < meta_table->column_size; i++) {
     free(meta_table->meta_column[i]);
   }
-  free(meta_table);
   free(root_node);
   return EXECUTE_SUCCESS;
 }
@@ -88,7 +87,7 @@ ExecuteResult create_table(MetaTable *meta_table) {
 Table *open_table(char *table_name) {
   char *file_path = table_file_path(table_name);
   if (!table_file_exist(file_path)) {
-    fprintf(stderr, "Table '%s' not exists. \n", table_name);
+    log_error_s( "Table '%s' not exists.", table_name);
     return NULL;
   }
   Table *cache_table = find_cache_table(table_name);

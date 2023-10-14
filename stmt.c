@@ -20,12 +20,17 @@
 #include "free.h"
 #include "input.h"
 #include "output.h"
+#include "log.h"
 
 // Create a table
 static void statement_create_table(Statement *stmt, Output *out) {
     assert(stmt->statement_type == STMT_CREATE_TABLE);
     MetaTable *meta_table = gen_meta_table(stmt->ast_node->create_table_node);
     out->result = create_table(meta_table);
+    if (out->result == EXECUTE_SUCCESS) {
+        print_data_s(out, "Table '%s' created successfully.", meta_table->table_name);
+    }
+    free(meta_table);
 }
 
 // execute insert statment
@@ -42,11 +47,11 @@ static void statement_select(Statement *statement, Output *out) {
         return;
     }
     SelectResult *select_result = query_with_condition(query_param);
-    free_query_param(query_param);
     if (select_result) {
-        put_select_result(out, select_result, query_param);
+        put_select_result(select_result, query_param, out);
         free_select_result(select_result); 
     }
+    free_query_param(query_param);
 }
 
 static void statement_update(Statement *statement, Output *out) {
@@ -59,16 +64,19 @@ static void statement_delete(Statement *statement, Output *out) {
 
 static void statement_describe(Statement *statement, Output *out) {
     assert(statement->statement_type == STMT_DESCRIBE); 
-    out->result = EXECUTE_SUCCESS;
+    out->result = print_describe_info(statement->ast_node->describe_node, out);
 }
 
 static void statement_show_tables(Statement *statement, Output *out) {
     assert(statement->statement_type == STMT_SHOW_TABLES); 
     TableList *table_list = gen_table_list();
     if (table_list != NULL) {
-        print_show_table(stdout, table_list);
+        print_show_table(table_list, out);
+        out->result = EXECUTE_SUCCESS;
+    } else {
+        log_error("Inner error");
+        out->result = EXECUTE_FAIL;
     }
-    out->result = EXECUTE_SUCCESS;
 }
 
 // statement
@@ -77,6 +85,7 @@ Output *statement(char *sql) {
     if (out == NULL)
         MALLOC_ERROR;
     memset(out, 0, sizeof(Output));
+    out->buffer_size = BUFF_SIZE;
     if (is_empty(sql)) {
         out->result = EXECUTE_SQL_ERROR;
         return out;

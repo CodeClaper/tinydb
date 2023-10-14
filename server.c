@@ -2,8 +2,8 @@
 #include "common.h"
 #include "misc.h"
 #include "stmt.h"
-#include <asm-generic/socket.h>
-#include <ctype.h>
+#include "log.h"
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,11 +58,19 @@ static int get_line(int sock, char *buf, int size)
     return(i);
 }
 
+//Send out 
 void send_out_put(int client, Output *out) {
-    if (out->len > 0) {
-        send(client, &out->len, sizeof(out->len), 0);
-        send(client, out->json_data, out->len, 0);
-        printf("%s\n", out->json_data);
+    if (out->result == EXECUTE_SUCCESS) {
+        uint32_t len = strlen(out->json_data) + 1;
+        send(client, &len, sizeof(len), 0);
+        send(client, out->json_data, len, 0);
+    } else {
+        char *error_msg = get_current_error();
+        if (error_msg) {
+            uint32_t len = strlen(error_msg) + 1;
+            send(client, &len, sizeof(len), 0);
+            send(client, error_msg, len, 0);
+        }
     }
 }
 
@@ -97,7 +105,6 @@ void accept_request(void *arg) {
     char buf[1024];
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
-        printf("%s\n", buf);
         Output *out = statement(buf);   
         send_out_put(client, out);
     }

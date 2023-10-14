@@ -12,4 +12,4 @@ typedef struct {
 TableList *gen_table_list();
 
 // print show table.
-void print_show_table(FILE *file, TableList *table_list);
+void print_show_table(TableList *table_list, Output *out);

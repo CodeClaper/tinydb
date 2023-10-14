@@ -3,14 +3,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include "intpr.h"
+#include "../log.h"
 
 int yywrap() {
     return 1;
 }
 
 int yyerror(const char *s) {
-    fprintf(stderr, "Sql parse error, near by '%s'.\n", yylval);
+    char *str = malloc(100);
+    memset(str, 0, 100);
+    sprintf(str, "Sql parse error, near by '%s'.", yylval);
+    log_error(str);
 }
+
 %} 
 %union 
 {

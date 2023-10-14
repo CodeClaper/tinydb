@@ -57,21 +57,22 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
     return NULL;
 }
 
-//Print out
-void print_out(Output *out, char *word, uint32_t *buff_size) {
-    int len = strlen(word);
-    out->len += len;
+//Print out data
+void print_data(Output *out, char *word) {
+    uint32_t len, increase_len;
     if (out->json_data == NULL) {
-        out->json_data = malloc(*buff_size);
-        memset(out->json_data, 0, *buff_size);
-        sprintf(out->json_data, "%s" , word);
+        out->json_data = malloc(out->buffer_size);
+        memset(out->json_data, 0, out->buffer_size);
+        sprintf(out->json_data, "%s", word);
         return;
     } 
-    if (out->len >= *buff_size) {
-        *buff_size += BUFF_SIZE;
+    increase_len = strlen(word);
+    len = strlen(out->json_data) + increase_len;
+    if (len >= out->buffer_size) {
+        out->buffer_size += BUFF_SIZE;
         char *temp = out->json_data;
-        out->json_data = malloc(*buff_size);
-        memset(out->json_data, 0, *buff_size);
+        out->json_data = malloc(out->buffer_size);
+        memset(out->json_data, 0, out->buffer_size);
         sprintf(out->json_data, "%s%s" , temp, word);
         free(temp);
         return;
@@ -80,22 +81,46 @@ void print_out(Output *out, char *word, uint32_t *buff_size) {
     free(word);
 }  
 
-//Genetate output.
-void put_select_result(Output *out_put, SelectResult *select_result, QueryParam *query_param) {
-    uint32_t buff_size = BUFF_SIZE;
-    print_out(out_put, "[", &buff_size);
-    for (uint32_t i = 0; i < select_result->row_size; i++) {
-        Row *row = *(select_result->row + i);
-        print_out(out_put, "{", &buff_size); 
-        for (uint32_t j = 0; j < row->column_len; j++) {
-            KeyValue *key_value = *(row->data + j);
-            print_out(out_put, get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type), &buff_size);
-            if (j < row->column_len - 1) 
-                print_out(out_put, ", ", &buff_size);
-        }
-        print_out(out_put, "}", &buff_size); 
-        if (i < select_result->row_size - 1)
-            print_out(out_put, ", ", &buff_size);
+//Print out data
+void print_data_s(Output *out, char *format, char *value) {
+    uint32_t len = strlen(format) +  strlen(value);
+    char *msg = malloc(len);
+    memset(msg, 0, len);
+    sprintf(msg, format, value);
+    print_data(out, msg);
+}  
+
+//Print out data
+void print_data_d(Output *out, char *format, int value) {
+    uint32_t len = strlen(format) +  100;
+    char *msg = malloc(len);
+    memset(msg, 0, len);
+    sprintf(msg, format, value);
+    print_data(out, msg);
+}  
+
+//Print out message
+void print_message(Output *out, char *word) {
+    uint32_t len, increase_len;
+    if (out->message == NULL) {
+        out->message = malloc(out->buffer_size);
+        memset(out->message, 0, out->buffer_size);
+        sprintf(out->message, "%s", word);
+        return;
+    } 
+    increase_len = strlen(word);
+    len = strlen(out->message) + increase_len;
+    if (len >= out->buffer_size) {
+        out->buffer_size += BUFF_SIZE;
+        char *temp = out->message;
+        out->message = malloc(out->buffer_size);
+        memset(out->message, 0, out->buffer_size);
+        sprintf(out->message, "%s%s" , temp, word);
+        free(temp);
+        return;
     }
-    print_out(out_put, "]", &buff_size);
-}
+    sprintf(out->message, "%s%s", out->message, word);
+    free(word);
+}  
+
+

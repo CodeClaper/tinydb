@@ -3,10 +3,11 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
-#include "show.h"
 #include "common.h"
+#include "output.h"
 #include "misc.h"
 #include "utils.h"
+#include "show.h"
 
 // gen table list.
 TableList *gen_table_list() {
@@ -37,15 +38,15 @@ TableList *gen_table_list() {
 }
 
 // print show table.
-void print_show_table(FILE *file, TableList *table_list) {
+void print_show_table(TableList *table_list, Output *out) {
     uint32_t i;
-    fprintf(file, "[");
+    print_data(out, strdup("["));
     for (i = 0; i < table_list->count; i++) {
         char *table_name = *(table_list->table_name_list + i);
-        fprintf(file, "\"%s\"", table_name);
+        print_data_s(out, "\"%s\"", table_name);
         if (i < table_list->count -1)
-            fprintf(file, ", ");
+            print_data(out, strdup(", "));
     } 
-    fprintf(file, "]\n");
+    print_data(out, strdup("]"));
 }
 

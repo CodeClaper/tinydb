@@ -113,7 +113,8 @@ typedef struct {
 
 typedef struct {
     char *json_data;
-    uint32_t len;
+    char *message;
+    uint32_t buffer_size;
     ExecuteResult result;
 }Output;
 
