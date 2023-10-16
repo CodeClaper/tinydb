@@ -19,9 +19,6 @@
 
 // Get table file path.
 static char *table_file_path(char *table_name) {
-#ifdef DEBUG
-  printf("TABLE NAME: %s\n", table_name);
-#endif
   if (table_name == NULL) {
     fprintf(stderr, "Inner error, table name can`t be NULL.\n");
     exit(EXIT_FAILURE);

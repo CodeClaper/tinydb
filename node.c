@@ -377,6 +377,8 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num, ui
     set_parent_pointer(right_child, table->root_page_num);
     set_node_type(root, INTERNAL_NODE);
     set_internal_node_keys_num(root, 1);
+    uint32_t max_key = get_max_key(left_child, row_len);
+    set_internal_node_keys(root, 0, max_key);
     set_internal_node_child(root, 0, next_unused_page_num);
     set_internal_node_right_child(root, right_child_page_num);
 

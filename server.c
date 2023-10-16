@@ -59,19 +59,26 @@ static int get_line(int sock, char *buf, int size)
 }
 
 //Send out 
-void send_out_put(int client, Output *out) {
+size_t send_out_put(int client, Output *out) {
     if (out->result == EXECUTE_SUCCESS) {
         uint32_t len = strlen(out->json_data) + 1;
-        send(client, &len, sizeof(len), 0);
-        send(client, out->json_data, len, 0);
+        size_t send_size = send(client, &len, sizeof(len), 0);
+        if (send_size > 0)
+            return send(client, out->json_data, len, 0);
+        else
+            return send_size;
     } else {
         char *error_msg = get_current_error();
         if (error_msg) {
             uint32_t len = strlen(error_msg) + 1;
-            send(client, &len, sizeof(len), 0);
-            send(client, error_msg, len, 0);
+            size_t send_size = send(client, &len, sizeof(len), 0);
+            if (send_size > 0)
+                return send(client, error_msg, len, 0);
+            else
+                return send_size;
         }
     }
+    return -1;
 }
 
 //Start up the server.
@@ -106,7 +113,9 @@ void accept_request(void *arg) {
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
         Output *out = statement(buf);   
-        send_out_put(client, out);
+        size_t send_size = send_out_put(client, out);
+        if (send_size < 0)
+            break;
     }
     clear_error();
     close(client);

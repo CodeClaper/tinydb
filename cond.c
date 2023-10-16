@@ -74,3 +74,15 @@ ConditionNode *tree(ConditionNode *head) {
     ConditionNode *change = replace(head, highest, merge);
     return tree(change);
 }
+
+//Tree shound ignore the next node.
+void clean_next(ConditionNode *head) {
+    if (head) {
+        if (head->left) 
+            clean_next(head->left);
+        if (head->right)
+            clean_next(head->right);
+        if (head->next)
+            head->next = NULL;
+    }
+}

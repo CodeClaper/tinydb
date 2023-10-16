@@ -9,6 +9,16 @@
 #include <unistd.h>
 #include <pthread.h>
 
+
+void receive(int server_fd) {
+    uint32_t len;
+    recv(server_fd, &len, sizeof(len), 0);
+    char *buff = malloc(len + 1);
+    memset(buff, 0, len + 1);
+    recv(server_fd, buff, len, 0);
+    printf("%s\n", buff);
+}
+
 int main() {
     int sock_fd;
     pthread_t new_thread;
@@ -35,6 +45,9 @@ int main() {
             fprintf(stderr, "Send fail.");
             exit(1);
         }
+        receive(sock_fd);
         free(sql);
     }
+    getchar();
+    close(sock_fd);
 }

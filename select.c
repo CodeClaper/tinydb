@@ -161,7 +161,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     MetaColumn *cond_meta_column = get_cond_meta_column(query_param);
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
     for(int32_t i = 0; i < keys_num; i++) {
-        // check if index column, and avoid full text 
+        // check if index column to avoid full text scanning.
         if (cond_meta_column != NULL && cond_meta_column->is_primary) {
             uint32_t max_key = get_internal_node_keys(internal_node, i);
             uint32_t min_key = i == 0 ? 0 : get_internal_node_keys(internal_node, i - 1);
@@ -240,7 +240,9 @@ QueryParam *convert_query_param(SelectNode *select_node) {
             }
         }
     }
-    query_param->condition_node = tree(select_node->condition_node); // generate condition tree.
+    ConditionNode *condition_node_copy = copy_condition_node(select_node->condition_node);
+    query_param->condition_node = tree(condition_node_copy); // generate condition tree.
+    clean_next(query_param->condition_node);
     return query_param;
 }
 

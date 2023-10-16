@@ -19,9 +19,6 @@ void free_value(void *value, DataType data_type) {
 //Free KeyValue
 void free_key_value(KeyValue *key_value) {
     if (key_value) {
-#ifdef DEBUG
-    printf("address of key: 0x%p\n", key_value->key);
-#endif
         if (key_value->key)
             free(key_value->key);
         free_value(key_value->value, key_value->data_type);
@@ -341,6 +338,7 @@ void free_query_param(QueryParam *query_param) {
             free_meta_column(*(query_param->meta_columns + i));
         }
         free(query_param->meta_columns);
+        free_condition_node(query_param->condition_node);
         free_function_node(query_param->function_node);
         free(query_param);
     }

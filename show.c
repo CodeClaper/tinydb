@@ -25,9 +25,6 @@ TableList *gen_table_list() {
             if (entry->d_type == 8 && strstr(entry->d_name, ".dbt") != NULL) {
                 table_list->table_name_list = realloc(table_list->table_name_list, sizeof(char *) * (table_list->count + 1));
                 char *table_name = replace(entry->d_name, ".dbt", "");
-#ifdef DEBUG
-                printf("%s, on line: %d\n", table_name, __LINE__);
-#endif
                 *(table_list->table_name_list + table_list->count) = table_name;
                 table_list->count++;
             }
