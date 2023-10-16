@@ -27,6 +27,9 @@ void free_cursor(Cursor *cursor);
 //Free int value node.
 void free_int_value_node(IntValueNode *int_value_node);
 
+//Free bool value node.
+void free_bool_value_node(BoolValueNode *bool_value_node);
+
 //Free string value node.
 void free_string_value_node(StringValueNode *string_value_node);
 

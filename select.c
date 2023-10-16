@@ -54,9 +54,12 @@ static void *get_value_from_value_item_node(ValueItemNode *value_item_node) {
             return value_item_node->s_value->s_value;
         case T_INT:
             return &value_item_node->i_value->i_value;
+        case T_BOOL:
+            return &value_item_node->b_value->b_value;
         default:
-            return NULL;
+            fatal("Not implemet yet.");
     }
+    return NULL;
 }
 
 //Check if include the internal node.

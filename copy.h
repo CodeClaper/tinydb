@@ -12,6 +12,9 @@ Row *copy_row(Row *row);
 //Copy int value node.
 IntValueNode *copy_int_value_node(IntValueNode *int_value_node);
 
+//Copy bool value node.
+BoolValueNode *copy_bool_value_node(BoolValueNode *bool_value_node);
+
 //Copy string value node.
 StringValueNode *copy_string_value_node(StringValueNode *string_value_node);
 

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +59,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_INT:
             return &(value_item_node->i_value->i_value);
         case T_BOOL:
+            return &(value_item_node->b_value->b_value);
         case T_DOUBLE:
         case T_FLOAT:
         case T_DATE:

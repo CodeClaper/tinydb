@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "intpr.h"
+#include "y.tab.h"
 #include "../log.h"
 
 int yywrap() {
@@ -23,6 +25,7 @@ int yyerror(const char *s) {
    int                      i_value;
    char                     *keyword;
    IntValueNode             *int_value_node;
+   BoolValueNode            *bool_value_node;
    StringValueNode          *string_value_node;
    IdentNode                *ident_node;
    IdentSetNode             *ident_set_node;
@@ -56,6 +59,7 @@ int yyerror(const char *s) {
 %token <keyword> SHOW
 %token <keyword> TABLES
 %token <keyword> MAX MIN COUNT SUM AVG
+%token <keyword> TRUE FALSE
 %token INT STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token PRIMARY KEY
 %token EQ NE GT GE LT LE IN LIKE
@@ -63,6 +67,7 @@ int yyerror(const char *s) {
 %token ALL
 %token <ident_node>IDENTIFIER
 %token <int_value_node>INTVALUE
+%type <bool_value_node>BOOLVALUE
 %token <string_value_node>STRINGVALUE
 %type <ident_set_node> identifiers
 %type <data_type_node> column_type
@@ -297,6 +302,13 @@ value_item:
                     node->data_type = T_INT;
                     $$ = node;
                 }
+            | BOOLVALUE
+                {
+                    ValueItemNode *node = make_value_item_node();
+                    node->b_value = $1;
+                    node->data_type = T_BOOL;
+                    $$ = node;
+                }
             | QUOTE IDENTIFIER QUOTE 
                 {
                     ValueItemNode *node = make_value_item_node();
@@ -311,6 +323,18 @@ value_item:
                     StringValueNode *string_value_node = make_string_value_node($2);
                     node->s_value = string_value_node;
                     node->data_type = T_STRING;
+                    $$ = node;
+                }
+            ;
+BOOLVALUE:
+            TRUE
+                {
+                    BoolValueNode *node = make_bool_value_node(true);
+                    $$ = node;
+                }
+            | FALSE
+                {
+                    BoolValueNode *node = make_bool_value_node(false);
                     $$ = node;
                 }
             ;

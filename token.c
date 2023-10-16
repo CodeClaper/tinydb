@@ -51,7 +51,8 @@ Statement *adapt(ASTNode *node) {
 Statement *parse(char *input) {
     if (input == NULL)
         return NULL;
-    char *state = malloc(strlen(input) + 1);
+    char *state = malloc(strlen(input) + 2);
+    memset(state, 0, strlen(input) + 2);
     sprintf(state, "%s%c", input, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(state);
     if(yyparse() == 0) {

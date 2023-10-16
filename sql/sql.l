@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include "intpr.h"
 #include "y.tab.h"
@@ -44,6 +45,8 @@ min                     return MIN;
 sum                     return SUM;
 count                   return COUNT;
 avg                     return AVG;
+true                    return TRUE;
+false                   return FALSE;
 [a-zA-Z][a-zA-Z0-9]*    { yylval.s_value = strdup(yytext); return IDENTIFIER;} 
 [0-9]+                  { yylval.i_value = atoi(yytext); return INTVALUE;}
 [a-zA-Z0-9]+            { yylval.s_value = strdup(yytext); return STRINGVALUE;} 

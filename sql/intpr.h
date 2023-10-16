@@ -50,6 +50,10 @@ typedef struct {
 } IntValueNode;
 
 typedef struct {
+  bool b_value;
+} BoolValueNode;
+
+typedef struct {
   char *s_value;
 } StringValueNode;
 
@@ -117,6 +121,7 @@ typedef struct {
   union {
     IntValueNode *i_value;
     StringValueNode *s_value;
+    BoolValueNode *b_value;
   };
 } ValueItemNode;
 
@@ -182,6 +187,9 @@ typedef struct {
 
 // make an int value node.
 IntValueNode *make_int_value_node(int i);
+
+// make a bool value node.
+BoolValueNode *make_bool_value_node(bool b);
 
 // make a string value node.
 StringValueNode *make_string_value_node(char *s);

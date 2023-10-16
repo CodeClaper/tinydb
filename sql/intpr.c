@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -20,6 +21,15 @@ IntValueNode *make_int_value_node(int i) {
     return int_value_node;
 }
 
+// make a bool value node.
+BoolValueNode *make_bool_value_node(bool b) {
+    BoolValueNode *bool_value_node = malloc(sizeof(BoolValueNode));
+    memset(bool_value_node, 0, sizeof(BoolValueNode));
+    bool_value_node->b_value = b;
+    return bool_value_node;
+}
+
+// make a string bool value node.
 StringValueNode *make_string_value_node(char *s) {
     StringValueNode *string_value_node = malloc(sizeof(StringValueNode));
     memset(string_value_node, 0, sizeof(StringValueNode));
@@ -104,6 +114,7 @@ ValueItemSetNode *make_value_item_set_node() {
     node->num = 0;
     return node;
 }
+
 // add value item into set.
 void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node) {
     node->value_item_node = realloc(node->value_item_node, sizeof(ValueItemNode *) * (node->num + 1));

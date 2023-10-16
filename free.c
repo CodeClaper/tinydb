@@ -98,6 +98,12 @@ void free_int_value_node(IntValueNode *int_value_node) {
         free(int_value_node);
 }
 
+//Free bool value node.
+void free_bool_value_node(BoolValueNode *bool_value_node) {
+    if (bool_value_node)
+        free(bool_value_node);
+}
+
 //Free string value node.
 void free_string_value_node(StringValueNode *string_value_node) {
     if (string_value_node) {
@@ -126,6 +132,9 @@ void free_value_item_node(ValueItemNode *value_item_node) {
                 break;
             case T_STRING:
                 free_string_value_node(value_item_node->s_value);
+                break;
+            case T_BOOL:
+                free_bool_value_node(value_item_node->b_value);
                 break;
             default:
                 fatal("Not implement yet.");

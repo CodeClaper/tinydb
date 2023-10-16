@@ -78,29 +78,31 @@ extern int yydebug;
     COUNT = 279,                   /* COUNT  */
     SUM = 280,                     /* SUM  */
     AVG = 281,                     /* AVG  */
-    INT = 282,                     /* INT  */
-    STRING = 283,                  /* STRING  */
-    BOOL = 284,                    /* BOOL  */
-    FLOAT = 285,                   /* FLOAT  */
-    DOUBLE = 286,                  /* DOUBLE  */
-    DATE = 287,                    /* DATE  */
-    TIMESTAMP = 288,               /* TIMESTAMP  */
-    PRIMARY = 289,                 /* PRIMARY  */
-    KEY = 290,                     /* KEY  */
-    EQ = 291,                      /* EQ  */
-    NE = 292,                      /* NE  */
-    GT = 293,                      /* GT  */
-    GE = 294,                      /* GE  */
-    LT = 295,                      /* LT  */
-    LE = 296,                      /* LE  */
-    IN = 297,                      /* IN  */
-    LIKE = 298,                    /* LIKE  */
-    AND = 299,                     /* AND  */
-    OR = 300,                      /* OR  */
-    ALL = 301,                     /* ALL  */
-    IDENTIFIER = 302,              /* IDENTIFIER  */
-    INTVALUE = 303,                /* INTVALUE  */
-    STRINGVALUE = 304              /* STRINGVALUE  */
+    TRUE = 282,                    /* TRUE  */
+    FALSE = 283,                   /* FALSE  */
+    INT = 284,                     /* INT  */
+    STRING = 285,                  /* STRING  */
+    BOOL = 286,                    /* BOOL  */
+    FLOAT = 287,                   /* FLOAT  */
+    DOUBLE = 288,                  /* DOUBLE  */
+    DATE = 289,                    /* DATE  */
+    TIMESTAMP = 290,               /* TIMESTAMP  */
+    PRIMARY = 291,                 /* PRIMARY  */
+    KEY = 292,                     /* KEY  */
+    EQ = 293,                      /* EQ  */
+    NE = 294,                      /* NE  */
+    GT = 295,                      /* GT  */
+    GE = 296,                      /* GE  */
+    LT = 297,                      /* LT  */
+    LE = 298,                      /* LE  */
+    IN = 299,                      /* IN  */
+    LIKE = 300,                    /* LIKE  */
+    AND = 301,                     /* AND  */
+    OR = 302,                      /* OR  */
+    ALL = 303,                     /* ALL  */
+    IDENTIFIER = 304,              /* IDENTIFIER  */
+    INTVALUE = 305,                /* INTVALUE  */
+    STRINGVALUE = 306              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -133,40 +135,43 @@ extern int yydebug;
 #define COUNT 279
 #define SUM 280
 #define AVG 281
-#define INT 282
-#define STRING 283
-#define BOOL 284
-#define FLOAT 285
-#define DOUBLE 286
-#define DATE 287
-#define TIMESTAMP 288
-#define PRIMARY 289
-#define KEY 290
-#define EQ 291
-#define NE 292
-#define GT 293
-#define GE 294
-#define LT 295
-#define LE 296
-#define IN 297
-#define LIKE 298
-#define AND 299
-#define OR 300
-#define ALL 301
-#define IDENTIFIER 302
-#define INTVALUE 303
-#define STRINGVALUE 304
+#define TRUE 282
+#define FALSE 283
+#define INT 284
+#define STRING 285
+#define BOOL 286
+#define FLOAT 287
+#define DOUBLE 288
+#define DATE 289
+#define TIMESTAMP 290
+#define PRIMARY 291
+#define KEY 292
+#define EQ 293
+#define NE 294
+#define GT 295
+#define GE 296
+#define LT 297
+#define LE 298
+#define IN 299
+#define LIKE 300
+#define AND 301
+#define OR 302
+#define ALL 303
+#define IDENTIFIER 304
+#define INTVALUE 305
+#define STRINGVALUE 306
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 21 "sql.y"
+#line 23 "sql.y"
 
    char                     *s_value;
    int                      i_value;
    char                     *keyword;
    IntValueNode             *int_value_node;
+   BoolValueNode            *bool_value_node;
    StringValueNode          *string_value_node;
    IdentNode                *ident_node;
    IdentSetNode             *ident_set_node;
@@ -190,7 +195,7 @@ union YYSTYPE
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 
-#line 194 "y.tab.h"
+#line 199 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

@@ -28,7 +28,7 @@ ExecuteResult print_describe_info(DescribeNode *describe_node, Output *out) {
         print_data(out, strdup(", "));
         print_data(out, get_key_value_pair_str("type", data_type_name(meta_column->column_type), T_STRING));
         print_data(out, strdup(", "));
-        print_data(out, get_key_value_pair_str("key", &meta_column->is_primary, T_BOOL));
+        print_data(out, get_key_value_pair_str("primary key", &meta_column->is_primary, T_BOOL));
         print_data(out, strdup(", "));
         print_data(out, get_key_value_pair_str("size", &meta_column->column_length, T_INT));
         print_data(out, strdup("}"));

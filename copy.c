@@ -93,6 +93,18 @@ IntValueNode *copy_int_value_node(IntValueNode *int_value_node) {
     return int_value_node_copy;
 }
 
+//Copy bool value node.
+BoolValueNode *copy_bool_value_node(BoolValueNode *bool_value_node) {
+    if (bool_value_node == NULL)
+        return NULL;
+    BoolValueNode *bool_value_node_copy = malloc(sizeof(BoolValueNode));
+    if (bool_value_node_copy == NULL)
+        MALLOC_ERROR;
+    memset(bool_value_node_copy, 0, sizeof(BoolValueNode));
+    bool_value_node_copy->b_value = bool_value_node->b_value;
+    return bool_value_node_copy;
+}
+
 //Copy string value node.
 StringValueNode *copy_string_value_node(StringValueNode *string_value_node) {
     if (string_value_node == NULL)
@@ -134,6 +146,9 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
             break;
         case T_STRING:
             value_item_node_copy->s_value = copy_string_value_node(value_item_node->s_value);
+            break;
+        case T_BOOL:
+            value_item_node_copy->b_value = copy_bool_value_node(value_item_node->b_value);
             break;
         default:
             fatal("Not implement yet.");
