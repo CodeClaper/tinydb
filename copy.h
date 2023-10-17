@@ -39,5 +39,8 @@ ConnNode *copy_conn_node(ConnNode *conn_node);
 //Copy condition node.
 ConditionNode *copy_condition_node(ConditionNode *condition_node);
 
+//Copy select items node.
+SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node);
+
 //Copy query param.
 QueryParam *copy_query_param(QueryParam *query_param);

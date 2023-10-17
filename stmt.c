@@ -20,6 +20,7 @@
 #include "free.h"
 #include "input.h"
 #include "output.h"
+#include "check.h"
 #include "log.h"
 
 // Create a table
@@ -43,14 +44,15 @@ static void statement_insert(Statement *stmt, Output *out) {
 static void statement_select(Statement *statement, Output *out) {
     assert(statement->statement_type == STMT_SELECT);
     QueryParam *query_param = convert_query_param(statement->ast_node->select_node);
-    if (query_param == NULL) {
-        out->result = EXECUTE_FAIL;
+    if (query_param == NULL) 
         return;
-    }
-    SelectResult *select_result = query_with_condition(query_param);
-    if (select_result) {
-        put_select_result(select_result, query_param, out);
-        free_select_result(select_result); 
+    if (check_query_param(query_param)) {
+        SelectResult *select_result = query_with_condition(query_param);
+        if (select_result) {
+            put_select_result(select_result, query_param, out);
+            free_select_result(select_result); 
+            out->result = EXECUTE_SUCCESS;
+        }
     }
     free_query_param(query_param);
 }
@@ -87,6 +89,7 @@ Output *statement(char *sql) {
         MALLOC_ERROR;
     memset(out, 0, sizeof(Output));
     out->buffer_size = BUFF_SIZE;
+    out->result = EXECUTE_FAIL;
     if (is_empty(sql)) {
         out->result = EXECUTE_SQL_ERROR;
         return out;

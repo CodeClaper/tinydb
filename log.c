@@ -42,6 +42,18 @@ void log_error_s(char *format, char *s) {
 #endif
 }
 
+//Error for string format
+void log_error_s_s(char *format, char *s1, char *s2) {
+    int len = strlen(format) + strlen(s1) + strlen(s2);
+    char *msg = malloc(len);
+    memset(msg, 0, len);
+    sprintf(msg, format, s1, s2);
+    pthread_setspecific(key, (void *)msg);
+#ifdef DEBUG
+    fprintf(stderr, "%s\n", msg);
+#endif
+}
+
 //Error for int format
 void log_error_d(char *format, int i) {
     int len = strlen(format) + 20;

@@ -18,6 +18,7 @@
 #include "free.h"
 #include "output.h"
 #include "log.h"
+#include "index.h"
 #include "sql/intpr.h"
 
 //Get table name.
@@ -25,26 +26,42 @@ static char *get_table_name(SelectNode *select_node) {
     return select_node->from_item_node->table->name;
 }
 
-// checkout if meta column exist in select param
-static bool if_exist(QueryParam *query_param, MetaColumn *meta_column) {
-    for(uint32_t i = 0; i < query_param->column_size; i++) {
-        MetaColumn *current = *(query_param->meta_columns + i);
-        if (strcmp(current->column_name, meta_column->column_name) == 0) {
-            return true;
-        }
+
+// find meta column index, return NULL if not exist
+static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_t index) {
+    SelectItemsNode *select_items_node = query_param->select_items;
+    Table *table = open_table(query_param->table_name);
+    if (select_items_node->ident_set_node->all_column) {
+        return table->meta_table->meta_column[index];
+    } else {
+        IdentNode *ident_node = *(select_items_node->ident_set_node->ident_node + index);
+        return get_meta_column_by_name(table->meta_table, ident_node->name);
     }
-    return false;
 }
 
-// find meta column by column name, return NULL if not exist
-static MetaColumn *find_meta_column_by_name(MetaTable *meta_table, char *column_name) {
+static uint32_t calc_off_set(QueryParam *query_param, char *column_name) {
+    SelectItemsNode *select_items_node = query_param->select_items;
+    Table *table = open_table(query_param->table_name);
+    MetaTable *meta_table = table->meta_table;
+    uint32_t off_set = 0;
     for(uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_name) == 0) {
-            return meta_column;
-        }
+        if (strcmp(meta_column->column_name, column_name) == 0)
+            break;
+        off_set += meta_column->column_length;
     }
-    return NULL;
+    return off_set;
+}
+
+//Get query param column size.
+static uint32_t get_query_columns_num(QueryParam *query_param) {
+    SelectItemsNode *select_items_node = query_param->select_items;
+    if (select_items_node->ident_set_node->all_column) {
+        Table *table = open_table(query_param->table_name);
+        return table->meta_table->column_size;
+    } else {
+        return select_items_node->ident_set_node->num;
+    }
 }
 
 //Get value from value item node.
@@ -105,15 +122,12 @@ static bool include_leaf_node(void *destinct, QueryParam *query_param, MetaTable
 
 //Get meta column by condition name
 static MetaColumn *get_cond_meta_column(QueryParam *query_param) {
-    if (query_param->condition_node == NULL)
+    ConditionNode *condition_node = query_param->condition_node;
+    if (condition_node == NULL)
         return NULL;
-    char *col_name = query_param->condition_node->column->name;
-    for(uint32_t i = 0; i < query_param->column_size; i++) {
-        MetaColumn *meta_column = *(query_param->meta_columns + i);
-        if (strcmp(meta_column->column_name, col_name) == 0)
-            return meta_column;
-    }
-    return NULL;
+    Table *table = open_table(query_param->table_name);
+    MetaTable *meta_table = table->meta_table;
+    return get_meta_column_by_name(meta_table, query_param->condition_node->column->name);
 }
 
 //Generate select row.
@@ -122,25 +136,35 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     if (row == NULL)
         MALLOC_ERROR;
     memset(row, 0, sizeof(Row));
-    row->column_len = 0;
+    Table *table = open_table(query_param->table_name);
+    if (table == NULL)
+        return NULL;
+    row->column_len = get_query_columns_num(query_param);
     row->table_name = strdup(query_param->table_name);
-    row->data = malloc(sizeof(KeyValue *) * query_param->column_size);
-    uint32_t off_set = 0;
-    for(uint32_t i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-        if (meta_column->is_primary) {
-            row->key = *(uint32_t *)(destinct + off_set);
-        }
-        if (if_exist(query_param, meta_column)) {
+    // define row data. 
+    row->data = malloc(sizeof(KeyValue *) * row->column_len);
+    bool is_function = query_param->select_items->is_function_node;
+    if (is_function)
+    {
+
+    } 
+    else
+    {
+        for (uint32_t i = 0; i < row->column_len; i++) {
+            MetaColumn *meta_column = find_select_item_meta_column(query_param, i);     
             KeyValue *key_value = malloc(sizeof(KeyValue));
+            memset(key_value, 0, sizeof(KeyValue));
+            uint32_t off_set = calc_off_set(query_param, meta_column->column_name);
             key_value->key = strdup(meta_column->column_name);
             key_value->value = copy_value(destinct + off_set, meta_column->column_type);
             key_value->data_type = meta_column->column_type;
-            *(row->data + row->column_len) = key_value;
-            row->column_len++;
+            *(row->data + i) = key_value;
         }
-        off_set += meta_column->column_length;
     }
+    //define row key
+    MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
+    uint32_t priamry_key_set_off = calc_off_set(query_param, primary_key_meta_column->column_name);
+    row->key = *(uint32_t *)copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type);
     return row;
 }
 
@@ -202,47 +226,7 @@ QueryParam *convert_query_param(SelectNode *select_node) {
     QueryParam *query_param = malloc(sizeof(QueryParam));
     memset(query_param, 0, sizeof(QueryParam));
     query_param->table_name = strdup(get_table_name(select_node));
-    query_param->is_function = select_node->select_items_node->is_function_node;
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL) {
-        return NULL;
-    }
-    if (query_param->is_function) 
-    {
-        memcpy(query_param->function_node, select_node->select_items_node->function_node, sizeof(FunctionNode));
-    } 
-    else 
-    {
-        if (select_node->select_items_node->ident_set_node->all_column)
-        {
-            MetaTable *meta_table = table->meta_table;
-            query_param->column_size = meta_table->column_size;
-            query_param->meta_columns = malloc(sizeof(MetaTable *) * meta_table->column_size);
-            for(int i = 0; i < meta_table->column_size; i++) {
-                MetaColumn *meta_column = meta_table->meta_column[i];
-                *(query_param->meta_columns + i) = malloc(sizeof(MetaColumn));
-                memset(*(query_param->meta_columns + i), 0, sizeof(MetaColumn));
-                memcpy(*(query_param->meta_columns + i), meta_column, sizeof(MetaColumn));
-            }
-        } 
-        else 
-        {
-            query_param->column_size = select_node->select_items_node->ident_set_node->num;
-            query_param->meta_columns = malloc(0);
-            for(int i = 0; i < query_param->column_size; i++) {
-                IdentNode *current = *(select_node->select_items_node->ident_set_node->ident_node + i);
-                MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, current->name);
-                if (meta_column == NULL) {
-                    fprintf(stderr, "Column '%s' dost not exist in table '%s'\n", current->name, query_param->table_name);
-                    return NULL;
-                }
-                query_param->meta_columns = realloc(query_param->meta_columns, sizeof(MetaColumn *) * (i + 1));
-                *(query_param->meta_columns + i) = malloc(sizeof(MetaColumn));
-                memset(*(query_param->meta_columns + i), 0, sizeof(MetaColumn));
-                memcpy(*(query_param->meta_columns + i), meta_column, sizeof(MetaColumn));
-            }
-        }
-    }
+    query_param->select_items = copy_select_items_node(select_node->select_items_node);
     ConditionNode *condition_node_copy = copy_condition_node(select_node->condition_node);
     query_param->condition_node = tree(condition_node_copy); // generate condition tree.
     clean_next(query_param->condition_node);
@@ -334,7 +318,6 @@ void print_select_result_plain(SelectResult *select_result, QueryParam *query_pa
         fprintf(stdout, "{"); 
         for (uint32_t j = 0; j < row->column_len; j++) {
             KeyValue *key_value = *(row->data + j);
-            MetaColumn *meta_column = *(query_param->meta_columns + j);
             fprintf(stdout, "\"%s\": ", key_value->key);
             print_row_value(key_value);
             if (j < row->column_len - 1) 

@@ -98,10 +98,7 @@ typedef struct {
 
 typedef struct {
     char *table_name;
-    bool is_function;
-    MetaColumn **meta_columns;
-    uint32_t column_size;
-    FunctionNode *function_node;
+    SelectItemsNode *select_items;
     ConditionNode *condition_node;
 }QueryParam;
 

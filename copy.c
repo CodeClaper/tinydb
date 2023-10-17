@@ -127,8 +127,25 @@ IdentNode *copy_ident_node(IdentNode *ident_node) {
         MALLOC_ERROR;
     memset(ident_node_copy, 0, sizeof(IdentNode));
     ident_node_copy->name = malloc(strlen(ident_node->name) + 1);
+    memset(ident_node_copy->name, 0, strlen(ident_node->name) + 1);
     strcpy(ident_node_copy->name, ident_node->name);
     return ident_node_copy;
+}
+
+//Copy ident set node.
+IdentSetNode *copy_ident_set_node(IdentSetNode *ident_set_node) {
+    IdentSetNode *ident_set_node_copy = malloc(sizeof(IdentSetNode));
+    if (ident_set_node == NULL)
+        MALLOC_ERROR;
+    ident_set_node_copy->num = ident_set_node->num;
+    ident_set_node_copy->all_column = ident_set_node->all_column;
+    ident_set_node_copy->ident_node = malloc(sizeof(IdentNode *) * ident_set_node->num);
+    if (ident_set_node->all_column == false) {
+        for (uint32_t i = 0; i < ident_set_node_copy->num; i++) {
+            *(ident_set_node_copy->ident_node + i) = copy_ident_node(*(ident_set_node->ident_node + i));
+        }
+    }
+    return ident_set_node_copy;
 }
 
 //Copy value item node.
@@ -244,6 +261,20 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     return condition_node_copy;
 }
 
+//Copy select items node.
+SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
+    if (select_items_node == NULL)
+        return NULL;
+    SelectItemsNode *select_items_node_copy = malloc(sizeof(SelectItemsNode));
+    if (select_items_node_copy == NULL)
+        MALLOC_ERROR;
+    memset(select_items_node_copy, 0, sizeof(SelectItemsNode));
+    select_items_node_copy->is_function_node = select_items_node->is_function_node;
+    select_items_node_copy->function_node = copy_function_node(select_items_node->function_node);
+    select_items_node_copy->ident_set_node = copy_ident_set_node(select_items_node->ident_set_node);
+    return select_items_node_copy;
+}
+
 //Copy query param.
 QueryParam *copy_query_param(QueryParam *query_param) {
     if (query_param == NULL)
@@ -253,14 +284,9 @@ QueryParam *copy_query_param(QueryParam *query_param) {
         MALLOC_ERROR;
     memset(query_param_copy, 0, sizeof(QueryParam));
     query_param_copy->table_name = malloc(strlen(query_param->table_name) + 1);
+    memset(query_param_copy->table_name, 0, strlen(query_param->table_name) + 1);
     strcpy(query_param_copy->table_name, query_param->table_name);
-    query_param_copy->is_function = query_param->is_function;
-    query_param_copy->column_size = query_param->column_size;
-    query_param_copy->function_node = copy_function_node(query_param->function_node);
     query_param_copy->condition_node = copy_condition_node(query_param->condition_node); 
-    query_param_copy->meta_columns = malloc(sizeof(MetaColumn *) * query_param->column_size);
-    for (uint32_t i = 0; i < query_param->column_size; i++) {
-        *(query_param_copy->meta_columns + i) = copy_meta_column(*(query_param->meta_columns + i));
-    }
+    query_param_copy->select_items = copy_select_items_node(query_param->select_items);
     return query_param_copy;
 }

@@ -340,15 +340,14 @@ void free_condition_node(ConditionNode *condition_node) {
     }
 }
 
+
 //Free query param.
 void free_query_param(QueryParam *query_param) {
     if(query_param) {
-        for (uint32_t i = 0; i < query_param->column_size; i++) {
-            free_meta_column(*(query_param->meta_columns + i));
-        }
-        free(query_param->meta_columns);
+        free_select_items_node(query_param->select_items);
         free_condition_node(query_param->condition_node);
-        free_function_node(query_param->function_node);
+        if (query_param->table_name)
+            free(query_param->table_name);
         free(query_param);
     }
 }
