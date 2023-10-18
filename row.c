@@ -1,14 +1,19 @@
 #include "data.h"
 #include "copy.h"
+#include "opr.h"
+#include "table.h"
+#include "index.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 // check if a key exist in select result rows
-static bool check_if_exists(uint32_t key, SelectResult *select_result) {
+static bool check_if_exists(void *key, SelectResult *select_result) {
+    Table *table = open_table(select_result->table_name);
+    MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     for(uint32_t i = 0; i < select_result->row_size; i++) {
         Row *row = *(select_result->row + i);
-        if (row->key == key)
+        if (equal(row->key, key, primary_key_meta_column->column_type))
             return true;
     }
     return false;
@@ -18,7 +23,7 @@ static bool check_if_exists(uint32_t key, SelectResult *select_result) {
 SelectResult *merge(SelectResult *first_result, SelectResult *sec_result) {
     for(uint32_t i = 0; i < sec_result->row_size; i++) {
         Row *row = *(sec_result->row + i);
-        uint32_t key = row->key;
+        void* key = row->key;
         if (!check_if_exists(key, first_result)) {
             first_result->row = realloc(first_result->row, sizeof(Row *) * (first_result->row_size + 1));
             *(first_result->row + first_result->row_size) = copy_row(row);
@@ -37,7 +42,7 @@ SelectResult *reduce(SelectResult *first_result, SelectResult *sec_result){
     return_result->row = malloc(0);
     for(uint32_t i = 0; i < sec_result->row_size; i++) {
         Row *row = *(sec_result->row + i);
-        uint32_t key = row->key;
+        void *key = row->key;
         if (check_if_exists(key, first_result)) {
             return_result->row = realloc(return_result->row, sizeof(Row *) * (return_result->row_size + 1));
             *(return_result->row + return_result->row_size) = copy_row(row);

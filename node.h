@@ -1,4 +1,5 @@
 #include "data.h"
+#include <stdint.h>
 
 // get node type
 NodeType get_node_type(void *node);
@@ -25,22 +26,22 @@ uint32_t get_internal_node_keys_num(void *node);
 uint32_t get_internal_node_right_child(void *node);
 
 // get keys number in the node by index
-uint32_t get_internal_node_keys(void *node, uint32_t index);
+void* get_internal_node_keys(void *node, uint32_t index, uint32_t key_len);
 
 // get child value in the node by index
-uint32_t get_internal_node_child(void *node, uint32_t index);
+uint32_t get_internal_node_child(void *node, uint32_t index, uint32_t key_len);
 
 // get internal node child page num
-uint32_t get_internal_node_cell_child_page_num(void *node, uint32_t key, uint32_t keys_num);
+uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, DataType primary_key_data_type);
 
 // get leaf node cell key
-uint32_t get_leaf_node_cell_key(void *node, uint32_t index, uint32_t row_len);
+void *get_leaf_node_cell_key(void *node, uint32_t index, uint32_t key_len,uint32_t value_len);
 
 // get leaf node cell value pointer
-void *get_leaf_node_cell_value(void *node, uint32_t row_len, uint32_t index);
+void *get_leaf_node_cell_value(void *node, uint32_t key_len, uint32_t value_len, uint32_t index);
 
 // get leaf node cell index
-uint32_t get_leaf_node_cell_index(void *node, uint32_t key, uint32_t cell_num, uint32_t row_len);
+uint32_t get_leaf_node_cell_index(void *node, void *key, uint32_t cell_num, uint32_t key_len, uint32_t value_len, DataType key_data_type);
 
 // get index meta column pointer
 void *get_meta_column_pointer(void *root_node, uint32_t index);

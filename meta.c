@@ -5,14 +5,16 @@
 #include "pager.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static char *data_type_name_list[] = { "bool", "char", "int", "double", "float", "string", "date", "timestamp" };
+static char *data_type_name_list[] = {"bool",  "char",   "int",  "double",
+                                      "float", "string", "date", "timestamp"};
 
 // get data type name.
 char *data_type_name(DataType data_type) {
-    return data_type_name_list[data_type];
+  return data_type_name_list[data_type];
 }
 
 // column type length
@@ -49,13 +51,23 @@ uint32_t calc_table_row_length(Table *table) {
   return len;
 }
 
+//calculate primary key lenght. if not exist primary key , return -1;
+uint32_t calc_primary_key_length(Table *table) {
+   for (int i = 0; i < table->meta_table->column_size; i++) {
+     MetaColumn *meta_column = (table->meta_table->meta_column[i]);
+     if (meta_column->is_primary)
+         return meta_column->column_length;
+   }
+   fatal("Not found primary key.");
+   return -1;
+}
+
 // get index column meta info
-MetaColumn *get_meta_column(void *root_node, uint32_t index) {
+MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index) {
   uint32_t column_size = get_column_size(root_node);
   if (index >= column_size) {
-    fprintf(stderr, "Try to fetch colum number out of bounds: %d >= %d", index,
-            column_size);
-    exit(1);
+     fprintf(stderr, "Exceed the maxinum column size: [%d]", column_size);   
+     exit(1);
   }
   void *destination = get_meta_column_pointer(root_node, index);
   return deserialize_meta_column(destination);
@@ -73,7 +85,7 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
 
 // get table meta info
 MetaTable *get_meta_table(Table *table, char *table_name) {
-  if (table_name == NULL) 
+  if (table_name == NULL)
     fatal("Input table name can`t be null.");
   MetaTable *meta_table = malloc(sizeof(MetaTable));
   if (meta_table == NULL)
@@ -85,7 +97,8 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
   size_t meta_column_size = sizeof(MetaColumn);
   for (int i = 0; i < column_size; i++) {
     meta_table->meta_column[i] = malloc(meta_column_size);
-    memcpy(meta_table->meta_column[i], get_meta_column(root_node, i), meta_column_size);
+    memcpy(meta_table->meta_column[i], get_meta_column_by_index(root_node, i),
+           meta_column_size);
   }
   return meta_table;
 }

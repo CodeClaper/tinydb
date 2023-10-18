@@ -90,7 +90,7 @@ typedef struct {
 }KeyValue;
 
 typedef struct {
-    uint32_t key;
+    void *key;
     char *table_name;
     KeyValue **data;
     uint32_t column_len;

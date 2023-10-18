@@ -26,7 +26,6 @@ static char *get_table_name(SelectNode *select_node) {
     return select_node->from_item_node->table->name;
 }
 
-
 // find meta column index, return NULL if not exist
 static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_t index) {
     SelectItemsNode *select_items_node = query_param->select_items;
@@ -80,20 +79,20 @@ static void *get_value_from_value_item_node(ValueItemNode *value_item_node) {
 }
 
 //Check if include the internal node.
-static bool include_internal_node(uint32_t min_key, uint32_t max_key, uint32_t target_key, OpType op_type) {
+static bool include_internal_node(void *min_key, void *max_key, void *target_key, OpType op_type, DataType key_data_type) {
     switch(op_type) {
         case O_EQ:
-            return min_key < target_key && target_key <= max_key;
+            return less(min_key, target_key, key_data_type) && less_equal(target_key, max_key, key_data_type);
         case O_NE:
-            return !(min_key < target_key && target_key <= max_key);
+            return !(less(min_key, target_key, key_data_type) && less_equal(target_key, max_key, key_data_type));
         case O_GT:
-            return max_key > target_key;
+            return greater(max_key, target_key, key_data_type);
         case O_GE:
-            return max_key >= target_key;
+            return greater_equal(max_key, target_key, key_data_type);
         case O_LT:
-            return target_key > min_key;
+            return greater(target_key, min_key, key_data_type);
         case O_LE:
-            return target_key > min_key;
+            return greater(target_key, min_key, key_data_type);
         case O_IN:
         case O_LIKE:
             fatal("Not implement yet.");
@@ -164,16 +163,17 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     //define row key
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t priamry_key_set_off = calc_off_set(query_param, primary_key_meta_column->column_name);
-    row->key = *(uint32_t *)copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type);
+    row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type);
     return row;
 }
 
 //Select through leaf node
 static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table) {
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
-    uint32_t row_size = calc_table_row_length(table);
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
     for (uint32_t i = 0; i < cell_num; i++) {
-        void *destinct = get_leaf_node_cell_value(leaf_node, row_size, i); 
+        void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, i); 
         if (!include_leaf_node(destinct, query_param, table->meta_table))
             continue;
         Row *row = generate_row(destinct, query_param, table->meta_table);
@@ -187,17 +187,19 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table) {
     MetaColumn *cond_meta_column = get_cond_meta_column(query_param);
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
+    uint32_t key_len = calc_primary_key_length(table);
+    MetaColumn *priamry_key_meta_column = get_primary_key_meta_column(table->meta_table);
     for(int32_t i = 0; i < keys_num; i++) {
         // check if index column to avoid full text scanning.
         if (cond_meta_column != NULL && cond_meta_column->is_primary) {
-            uint32_t max_key = get_internal_node_keys(internal_node, i);
-            uint32_t min_key = i == 0 ? 0 : get_internal_node_keys(internal_node, i - 1);
+            void *max_key = get_internal_node_keys(internal_node, i, key_len);
+            void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);
             ConditionNode *condition_node = query_param->condition_node;
-            uint32_t compare_value = *(uint32_t *)get_value_from_value_item_node(condition_node->compare);
-            if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_node->op_type))
+            void* compare_value = get_value_from_value_item_node(condition_node->compare);
+            if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_node->op_type, priamry_key_meta_column->column_type))
                 continue;
         }
-        uint32_t page_num = get_internal_node_child(internal_node, i);
+        uint32_t page_num = get_internal_node_child(internal_node, i, key_len);
         void *node = get_page(table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:

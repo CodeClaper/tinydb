@@ -16,13 +16,6 @@
 #include "free.h"
 #include "log.h"
 
-//Check if key already exists in db
-static bool check_duplicate_key(Cursor *cursor, uint32_t key) {
-    void *node = get_page(cursor->table->pager, cursor->page_num);
-    uint32_t row_length = calc_table_row_length(cursor->table);
-    uint32_t target = get_leaf_node_cell_key(node, cursor->cell_num, row_length);
-    return target == key;
-}
 
 //Get table name in select node.
 static char *get_table_name(InsertNode *insert_node) {
@@ -104,7 +97,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         }
         key_value->value = get_column_value(insert_node, i, meta_column);
         if (meta_column->is_primary) {
-            row->key = define_key(key_value->value, meta_column);
+            row->key = key_value->value;
         }
         *(row->data + i) = key_value;
     }
@@ -119,10 +112,11 @@ ExecuteResult exec_insert_statement(InsertNode *insert_node) {
     Table *table = open_table(row->table_name);
     if (table == NULL)
         return EXECUTE_FAIL;
+    MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key)) {
-        log_error_d("key '%d' already exists, not allow duplicate key.", row->key);
+        log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
         return EXECUTE_DUPLICATE_KEY;
     }
     insert_leaf_node(cursor, row);

@@ -2,10 +2,17 @@
 #include "misc.h"
 #include "opr.h"
 #include "./sql/intpr.h"
+#include <stdbool.h>
 #include <string.h>
 
 // Equal operation.
-static bool equal(void *source, void *target, DataType data_type) {
+bool equal(void *source, void *target, DataType data_type) {
+    if (source == NULL && target == NULL) 
+        return true;
+    else if (source != NULL && target == NULL) 
+        return false;
+    else if (source == NULL && target != NULL)
+        return false;
     switch(data_type) {
         case T_BOOL:
             return *(bool *)source == *(bool *)target;
@@ -27,7 +34,13 @@ static bool equal(void *source, void *target, DataType data_type) {
 }
 
 // Not equal operation.
-static bool not_equal(void *source, void *target, DataType data_type) {
+bool not_equal(void *source, void *target, DataType data_type) {
+    if (source == NULL && target == NULL) 
+        return false;
+    else if (source != NULL && target == NULL) 
+        return true;
+    else if (source == NULL && target != NULL)
+        return true;
     switch(data_type) {
         case T_BOOL:
             return *(bool *)source != *(bool *)target;
@@ -49,7 +62,13 @@ static bool not_equal(void *source, void *target, DataType data_type) {
 }
 
 // Not equal operation.
-static bool greater(void *source, void *target, DataType data_type) {
+bool greater(void *source, void *target, DataType data_type) {
+    if (source == NULL && target == NULL) 
+        return false;
+    else if (source != NULL && target == NULL) 
+        return true;
+    else if (source == NULL && target != NULL)
+        return false;
     switch(data_type) {
         case T_CHAR:
             return *(char *)source > *(char *)target;
@@ -70,7 +89,13 @@ static bool greater(void *source, void *target, DataType data_type) {
 }
 
 // Not equal operation.
-static bool greater_equal(void *source, void *target, DataType data_type) {
+bool greater_equal(void *source, void *target, DataType data_type) {
+    if (source == NULL && target == NULL) 
+        return true;
+    else if (source != NULL && target == NULL) 
+        return true;
+    else if (source == NULL && target != NULL)
+        return false;
     switch(data_type) {
         case T_CHAR:
             return *(char *)source >= *(char *)target;
@@ -91,7 +116,13 @@ static bool greater_equal(void *source, void *target, DataType data_type) {
 }
 
 // Not equal operation.
-static bool less(void *source, void *target, DataType data_type) {
+bool less(void *source, void *target, DataType data_type) {
+    if (source == NULL && target == NULL) 
+        return false;
+    else if (source != NULL && target == NULL) 
+        return false;
+    else if (source == NULL && target != NULL)
+        return true;
     switch(data_type) {
         case T_CHAR:
             return *(char *)source < *(char *)target;
@@ -112,7 +143,13 @@ static bool less(void *source, void *target, DataType data_type) {
 }
 
 // Not equal operation.
-static bool less_equal(void *source, void *target, DataType data_type) {
+bool less_equal(void *source, void *target, DataType data_type) {
+    if (source == NULL && target == NULL) 
+        return true;
+    else if (source != NULL && target == NULL) 
+        return false;
+    else if (source == NULL && target != NULL)
+        return true;
     switch(data_type) {
         case T_CHAR:
             return *(char *)source <= *(char *)target;

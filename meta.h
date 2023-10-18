@@ -9,6 +9,9 @@ uint32_t column_type_length(DataType column_type);
 // calculate the length of table row
 uint32_t calc_table_row_length(Table *table);
 
+//calculate primary key lenght. if not exist primary key , return -1;
+uint32_t calc_primary_key_length(Table *table);
+
 // get table meta info
 MetaTable *get_meta_table(Table *table, char *table_name);
 
