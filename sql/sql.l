@@ -1,9 +1,14 @@
 %{
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include "intpr.h"
 #include "y.tab.h"
+#include "../log.h"
+
+int lineno = 1;
+void yyerror(const char *s);
 %}
 %%
 create                  return CREATE;
@@ -49,7 +54,15 @@ true                    return TRUE;
 false                   return FALSE;
 [a-zA-Z][a-zA-Z0-9]*    { yylval.s_value = strdup(yytext); return IDENTIFIER;} 
 [0-9]+                  { yylval.i_value = atoi(yytext); return INTVALUE;}
-[a-zA-Z0-9]+            { yylval.s_value = strdup(yytext); return STRINGVALUE;} 
-\n                      return NL;
+'[^'\n]*'	            { yylval.s_value = strdup(yytext); return STRINGVALUE;} 
+\n                      { lineno++; return NL;}
 [ \t]   /* igonore space */
+"--".*$		;	/* comment */
 %%
+
+void yyerror(const char *s) {
+    char *str = malloc(100);
+    memset(str, 0, 100);
+	sprintf(str, "Line%d: %s at '%s'", lineno, s, yytext);
+    log_error(str);
+}

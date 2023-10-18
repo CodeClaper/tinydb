@@ -5,18 +5,11 @@
 #include <stdbool.h>
 #include "intpr.h"
 #include "y.tab.h"
-#include "../log.h"
 
 int yywrap() {
     return 1;
 }
 
-int yyerror(const char *s) {
-    char *str = malloc(100);
-    memset(str, 0, 100);
-    sprintf(str, "Sql parse error, near by '%s'.", yylval);
-    log_error(str);
-}
 
 %} 
 %union 
