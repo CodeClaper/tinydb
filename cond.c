@@ -26,7 +26,7 @@ static ConnType find_conn_type(ConditionNode *condition_node) {
         case LOGIC_CONDITION:
             return find_conn_type(condition_node->right);
         case EXEC_CONDITION:
-            return condition_node->conn_node->conn_type;
+            return condition_node->conn_type;
     }
 }
 
@@ -35,7 +35,7 @@ static ConditionNode *bin_tree(ConditionNode *left, ConditionNode *right) {
     ConditionNode *condition_node = malloc(sizeof(ConditionNode));
     memset(condition_node, 0, sizeof(ConditionNode));
     condition_node->type = LOGIC_CONDITION;
-    condition_node->conn_node = make_conn_node(find_conn_type(left));
+    condition_node->conn_type =find_conn_type(left);
     condition_node->left = left;
     condition_node->right = right;
     left = NULL;

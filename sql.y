@@ -10,31 +10,26 @@ int yywrap() {
     return 1;
 }
 
-
 %} 
 %union 
 {
    char                     *s_value;
    int                      i_value;
+   bool                     b_value;
    char                     *keyword;
-   IntValueNode             *int_value_node;
-   BoolValueNode            *bool_value_node;
-   StringValueNode          *string_value_node;
-   IdentNode                *ident_node;
-   IdentSetNode             *ident_set_node;
-   OprNode                  *opr_node;
-   ConnNode                 *conn_node;
-   DataTypeNode             *data_type_node;
+   DataType                 data_type;
+   OprType                  opr_type;
+   ConnType                 conn_type;
    ColumnDefNode            *column_def_node;
    ColumnDefSetNode         *column_def_set_node;
    SelectItemsNode          *select_items_node;
+   ColumnNode               *column_node;
    ColumnSetNode            *column_set_node;
    ValueItemNode            *value_item_node;
    ValueItemSetNode         *value_item_set_node;
    FunctionValueNode        *function_value_node;
    FunctionNode             *function_node;
    PrimaryKeyNode           *primary_key_node;
-   FromItemNode             *from_item_node;
    ConditionNode            *cond_node;
    CreateTableNode          *create_table_node;
    SelectNode               *select_node;
@@ -42,191 +37,200 @@ int yywrap() {
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 };
-%token NL COMMA SEMICOLON LEFTPAREN RIGHTPAREN QUOTE
+
+%token NL
 %token <keyword> CREATE SELECT INSERT UPDATE DELETE DESCRIBE
 %token <keyword> FROM
 %token <keyword> WHERE
 %token <keyword> INTO
+%token <keyword> SET
 %token <keyword> VALUES
 %token <keyword> TABLE
 %token <keyword> SHOW
 %token <keyword> TABLES
 %token <keyword> MAX MIN COUNT SUM AVG
 %token <keyword> TRUE FALSE
-%token INT STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
-%token PRIMARY KEY
-%token EQ NE GT GE LT LE IN LIKE
-%token AND OR
-%token ALL
-%token <ident_node>IDENTIFIER
-%token <int_value_node>INTVALUE
-%type <bool_value_node>BOOLVALUE
-%token <string_value_node>STRINGVALUE
-%type <ident_set_node> identifiers
-%type <data_type_node> column_type
+%token <keyword> NOT
+%token <keyword> NULLX
+%token <keyword> INT STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
+%token <keyword> PRIMARY KEY
+%token <keyword> EQ NE GT GE LT LE IN LIKE
+%token <keyword> AND OR
+%token <keyword> ALL
+%token <keyword> COMMA SEMICOLON QUOTE POINT LEFTPAREN RIGHTPAREN
+%token <s_value> IDENTIFIER
+%token <i_value> INTVALUE
+%token <s_value> STRINGVALUE
+%type <b_value> BOOLVALUE
+%type <s_value> table
 %type <select_items_node> select_items 
+%type <column_node> column
 %type <column_set_node> columns 
-%type <from_item_node> from_item
 %type <value_item_node> value_item
 %type <value_item_set_node> value_items
 %type <column_def_node> column_def
 %type <column_def_set_node> column_defs
-%type <primary_key_node> primary_key
+%type <primary_key_node> primary_key_statement
 %type <cond_node> cond
-%type <opr_node> op
-%type <conn_node> conn
+%type <conn_type> conn
+%type <data_type> data_type
+%type <opr_type> opr
 %type <function_value_node> function_value
-%type <function_node> func
-%type <select_node> statement_select
-%type <insert_node> statement_insert
-%type <create_table_node> statement_create_table
-%type <describe_node> statement_describe
-%type <show_table_node> statement_show_tables
+%type <function_node> function
+%type <select_node> select_statement
+%type <insert_node> insert_statement
+%type <create_table_node> create_table_statement
+%type <describe_node> describe_statement
+%type <show_table_node> show_tables_statement
 
 %%
 statements: 
             statement 
             | statements statement
-            | statements error
+            | statements
             ;
 statement: 
-            statement_create_table
+            create_table_statement
                 {
                    set_create_table_ast_node($1); 
                 }
-            |statement_select 
+            |select_statement 
                 {
                     set_select_ast_node($1);
                 }
-            | statement_insert 
+            | insert_statement 
                 {
                     set_insert_ast_node($1);
                 }
-            | statement_describe
+            | statement_update
+                {
+
+                }
+            | describe_statement
                 {
                     set_describe_ast_node($1);
                 }
-            | statement_show_tables 
+            | show_tables_statement 
                 {
                     set_show_tables_ast_node($1);
                 }
             ;
-statement_create_table: 
-            create table IDENTIFIER LEFTPAREN column_defs RIGHTPAREN statement_end
+create_table_statement: 
+            CREATE TABLE table LEFTPAREN column_defs RIGHTPAREN end
                 {
                     CreateTableNode *create_table_node = make_create_table_node();
-                    IdentNode *node = make_ident_node($3);
-                    create_table_node->table_name = node;
+                    create_table_node->table_name = $3;
                     create_table_node->column_def_set_node = $5;
                     $$ = create_table_node;
                 }
-            | create table IDENTIFIER LEFTPAREN column_defs COMMA primary_key RIGHTPAREN statement_end
+            | CREATE TABLE table LEFTPAREN column_defs COMMA primary_key_statement RIGHTPAREN end
                 {
                     CreateTableNode *create_table_node = make_create_table_node();
-                    IdentNode *node = make_ident_node($3);
-                    create_table_node->table_name = node;
+                    create_table_node->table_name = $3;
                     create_table_node->column_def_set_node = $5;
                     create_table_node->primary_key_node = $7;
                     $$ = create_table_node;
                 }
             ;
-statement_select:
-            select select_items FROM from_item WHERE cond statement_end
+select_statement:
+            SELECT select_items FROM table WHERE cond  end
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
-                    select_node->from_item_node = $4;
+                    select_node->table_name = $4;
                     select_node->condition_node = $6;
                     $$ = select_node;
                 }
-            | select select_items FROM from_item statement_end
+            | SELECT select_items FROM table end
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
-                    select_node->from_item_node = $4;
+                    select_node->table_name = $4;
                     $$ = select_node;
                 }
             ;
-statement_insert: 
-            insert into from_item values LEFTPAREN value_items RIGHTPAREN statement_end
+insert_statement: 
+            INSERT INTO table VALUES LEFTPAREN value_items RIGHTPAREN end
                 {
                     InsertNode *node = make_insert_node();
-                    node->if_ignore_columns = true;
-                    node->from_item_node = $3;
+                    node->all_column = true;
+                    node->table_name = $3;
                     node->value_item_set_node = $6;
                     $$ = node;
                 }
-            | insert into from_item LEFTPAREN columns RIGHTPAREN values LEFTPAREN value_items RIGHTPAREN statement_end
+            | INSERT INTO table LEFTPAREN columns RIGHTPAREN VALUES LEFTPAREN value_items RIGHTPAREN end
                 {
                     InsertNode *node = make_insert_node();
-                    node->if_ignore_columns = false;
-                    node->from_item_node = $3;
+                    node->all_column = false;
+                    node->table_name = $3;
                     node->columns_set_node = $5;
                     node->value_item_set_node = $9;
                     $$ = node;
                 }
             ;
-statement_describe:
-            describe from_item statement_end
+statement_update:
+            UPDATE TABLE table SET assignments end
+                {
+                    
+                }
+            | UPDATE TABLE table SET assignments WHERE cond end
+                {
+
+                }
+            ;
+describe_statement:
+            DESCRIBE table end
                 {
                     DescribeNode *node = make_describe_node();
-                    node->from_item_node = $2;
+                    node->table_name = strdup($2);
                     $$ = node;
                 }
             ;
-statement_show_tables:
-            show tables statement_end
+show_tables_statement:
+            SHOW TABLES end
                 {
                     $$ = make_show_tables_node();
                 }
             ;
-statement_end:
-            NL
-            | SEMICOLON NL
-            ;
-create:
-            CREATE
-            ;
-select: 
-            SELECT 
-            ;
-insert:     
-            INSERT
-            ;
-table:      
-            TABLE
-            ;
-describe:
-            DESCRIBE
-            ;
-show:       
-            SHOW
-            ;
-tables:     
-            TABLES
-            ;
 select_items: 
-            identifiers
+            columns
                 {
                     SelectItemsNode *select_items_node = make_select_items_node();
-                    select_items_node-> ident_set_node= $1;
-                    select_items_node->is_function_node = false;
+                    select_items_node->type = SELECT_COLUMNS;
+                    select_items_node->column_set_node= $1;
                     $$ = select_items_node;
                 }
-            | func
+            | function
                 {
                     SelectItemsNode *select_items_node = make_select_items_node();
-                    select_items_node->function_node= $1;
-                    select_items_node->is_function_node = true;
+                    select_items_node->type = SELECT_FUNCTION;
+                    select_items_node->function_node = $1;
                     $$ = select_items_node;
+                }
+            | ALL 
+                {
+                    SelectItemsNode *select_items_node = make_select_items_node();
+                    select_items_node->type = SELECT_ALL;
+                    $$ = select_items_node;
+                }
+            ;
+table:       
+            IDENTIFIER     
+                {
+                    $$ = $1;
                 }
             ;
 columns:
-            identifiers 
+            column
                 {
                     ColumnSetNode *column_set_node = make_column_set_node();
-                    column_set_node -> ident_set_node = $1;
+                    add_column_to_set(column_set_node, $1);
                     $$ = column_set_node;
+                }
+            | columns COMMA column
+                {
+                    $$ = $1;
+                    add_column_to_set($$, $3);
                 }
             ;
 column_defs:
@@ -243,34 +247,57 @@ column_defs:
                 }
             ;
 column_def:
-           IDENTIFIER column_type
+           column data_type
                 {
                     ColumnDefNode *column_def_node = make_column_def_node();
-                    IdentNode *node = make_ident_node($1);
-                    column_def_node->column_name = node;
-                    column_def_node->column_type = $2;
+                    column_def_node->column = $1;
+                    column_def_node->data_type = $2;
+                    column_def_node->is_primary = false;
+                    column_def_node->allow_null = false;
+                    $$ = column_def_node;
+                }
+            | column data_type NOT NULLX
+                {
+                    ColumnDefNode *column_def_node = make_column_def_node();
+                    column_def_node->column = $1;
+                    column_def_node->data_type = $2;
+                    column_def_node->is_primary = false;
+                    column_def_node->allow_null = true;
                     $$ = column_def_node;
                 }
            ;
-column_type:
-           INT          { $$ = make_data_type_node(T_INT); }
-           | STRING     { $$ = make_data_type_node(T_STRING);}
-           | BOOL        { $$ = make_data_type_node(T_BOOL); }
-primary_key:
-           PRIMARY KEY LEFTPAREN IDENTIFIER RIGHTPAREN
+data_type:
+           INT          { $$ = T_INT; }
+           | STRING     { $$ = T_STRING; }
+           | BOOL       { $$ = T_BOOL; }
+           | FLOAT      { $$ = T_FLOAT; }  
+           | DOUBLE     { $$ = T_DOUBLE; }
+           | TIMESTAMP  { $$ = T_TIMESTAMP; }
+           | DATE       { $$ = T_DATE; }
+           ;
+primary_key_statement:
+           PRIMARY KEY LEFTPAREN column RIGHTPAREN
                 {
                     PrimaryKeyNode *primary_key_node = make_primary_key_node();
-                    IdentNode *node = make_ident_node($4);
-                    primary_key_node->primary_key_column = node;
+                    primary_key_node->column = $4;
                     $$ = primary_key_node;
                 }
            ;
-from_item: 
+column: 
             IDENTIFIER
                 {
-                    IdentNode *node = make_ident_node($1);
-                    $$ = make_from_item_node();
-                    $$->table = node;
+                    ColumnNode *column_node = make_column_node();
+                    column_node->column_name = strdup($1);
+                    column_node->exist_table_name = false;
+                    $$ = column_node;
+                }
+            | IDENTIFIER POINT IDENTIFIER
+                {
+                    ColumnNode *column_node = make_column_node();
+                    column_node->column_name = strdup($1);
+                    column_node->table_name = strdup($3);
+                    column_node->exist_table_name = true;
+                    $$ = column_node;
                 }
             ;
 value_items:
@@ -290,8 +317,7 @@ value_item:
             INTVALUE
                 {
                     ValueItemNode *node = make_value_item_node();
-                    IntValueNode *int_value_node = make_int_value_node($1);
-                    node->i_value = int_value_node;
+                    node->i_value = $1;
                     node->data_type = T_INT;
                     $$ = node;
                 }
@@ -302,19 +328,10 @@ value_item:
                     node->data_type = T_BOOL;
                     $$ = node;
                 }
-            | QUOTE IDENTIFIER QUOTE 
+            | STRINGVALUE 
                 {
                     ValueItemNode *node = make_value_item_node();
-                    StringValueNode *string_value_node = make_string_value_node($2);
-                    node->s_value = string_value_node;
-                    node->data_type = T_STRING;
-                    $$ = node;
-                }
-            | QUOTE STRINGVALUE QUOTE 
-                {
-                    ValueItemNode *node = make_value_item_node();
-                    StringValueNode *string_value_node = make_string_value_node($2);
-                    node->s_value = string_value_node;
+                    node->s_value = $1;
                     node->data_type = T_STRING;
                     $$ = node;
                 }
@@ -322,83 +339,57 @@ value_item:
 BOOLVALUE:
             TRUE
                 {
-                    BoolValueNode *node = make_bool_value_node(true);
-                    $$ = node;
+                    $$ = true;
                 }
             | FALSE
                 {
-                    BoolValueNode *node = make_bool_value_node(false);
-                    $$ = node;
+                    $$ = false;
                 }
             ;
-identifiers: 
-            ALL
-                { 
-                    IdentSetNode *ident_set_node = make_ident_set_node();
-                    ident_set_node->all_column = true;
-                    $$ = ident_set_node;
-                }
-            | IDENTIFIER 
-                { 
-                    IdentSetNode *ident_set_node = make_ident_set_node();
-                    ident_set_node->all_column = false;
-                    IdentNode *node = make_ident_node($1);
-                    add_ident(ident_set_node, node);
-                    $$ = ident_set_node;
-                }
-           | identifiers COMMA IDENTIFIER 
-                { 
-                    $$ = $1;
-                    IdentNode *node = make_ident_node($3);
-                    add_ident($$, node);
-                }
+assignments:
+           assignment
+           | assignments COMMA assignment
            ;
+assignment:
+		  IDENTIFIER EQ value_item
+          ;
 cond: 
-            IDENTIFIER op value_item
+            column opr value_item
                 {
                     ConditionNode *cond_node = make_cond_node();
-                    IdentNode *ident_node = make_ident_node($1);
-                    cond_node->column = ident_node;
-                    cond_node->opr_node = $2;
-                    cond_node->compare = $3;
+                    cond_node->column = $1;
+                    cond_node->opr_type = $2;
+                    cond_node->value = $3;
                     cond_node->type = EXEC_CONDITION;
                     $$ = cond_node;
                 }
-            | IDENTIFIER op value_item conn cond
+            | column opr value_item conn cond
                 {
                     ConditionNode *cond_node = make_cond_node();
-                    IdentNode *ident_node = make_ident_node($1);
-                    cond_node->column = ident_node;
-                    cond_node->opr_node = $2;
-                    cond_node->compare = $3;
-                    cond_node->conn_node = $4;
+                    cond_node->column = $1;
+                    cond_node->opr_type = $2;
+                    cond_node->value = $3;
+                    cond_node->conn_type = $4;
                     cond_node->next = $5;
                     cond_node->type = EXEC_CONDITION;
                     $$ = cond_node;
                 }
             ;
-compare: 
-            IDENTIFIER 
-                { 
-                    IdentNode *node = make_ident_node($1);
-                }
-            | INTVALUE
-            ;
-op: 
-            EQ      { $$ = make_opr_node(O_EQ); }
-            | NE    { $$ = make_opr_node(O_NE); }
-            | GT    { $$ = make_opr_node(O_GT); }
-            | GE    { $$ = make_opr_node(O_GE); }
-            | LT    { $$ = make_opr_node(O_LT); }
-            | LE    { $$ = make_opr_node(O_LE); }
-            | IN    { $$ = make_opr_node(O_IN); }
-            | LIKE  { $$ = make_opr_node(O_LIKE); }
+opr: 
+            EQ      { $$ = O_EQ; }
+            | NE    { $$ = O_NE; }
+            | GT    { $$ = O_GT; }
+            | GE    { $$ = O_GE; }
+            | LT    { $$ = O_LT; }
+            | LE    { $$ = O_LE; }
+            | IN    { $$ = O_IN; }
+            | LIKE  { $$ = O_LIKE; }
             ;
 conn: 
-            AND     { $$ = make_conn_node(C_AND); }
-            | OR    { $$ = make_conn_node(C_OR); }
+            AND     { $$ = C_AND; }
+            | OR    { $$ = C_OR; }
             ;
-func:       
+function:       
             MAX LEFTPAREN function_value RIGHTPAREN
                 {
                     FunctionNode *function_node = make_function_node();        
@@ -439,17 +430,15 @@ function_value:
             INTVALUE
                 {
                     FunctionValueNode *node = make_function_value_node();
-                    IntValueNode *int_value_node = make_int_value_node($1);
-                    node->i_value = int_value_node;
+                    node->i_value = $1;
                     node->value_type = V_INT;
                     $$ = node;
                 }
-            | IDENTIFIER 
+            | column 
                 {
                     FunctionValueNode *node = make_function_value_node();
-                    IdentNode *ident_node = make_ident_node($1);
-                    node->id_value = ident_node;
-                    node->value_type = V_IDENT;
+                    node->column = $1;
+                    node->value_type = V_COLUMN;
                     $$ = node;
                 }
             | ALL
@@ -459,10 +448,8 @@ function_value:
                     $$ = node;
                 }
             ;
-into:
-            INTO
-            ;
-values:     
-            VALUES
+end:        
+            NL
+            | SEMICOLON NL
             ;
 %%

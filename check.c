@@ -7,23 +7,23 @@
 #include <string.h>
 
 //Check ident not.
-static bool check_ident_node(MetaTable *meta_table, IdentNode *ident_node) {
+static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, ident_node->name) == 0)
+        if (strcmp(meta_column->column_name, column_node->column_name) == 0)
             return true;
     }
-    log_error_s_s("Unknown column '%s' in table '%s'", ident_node->name, meta_table->table_name);
+    log_error_s_s("Unknown column '%s' in table '%s'", column_node->column_name, meta_table->table_name);
     return false;
 }
 
-//Check select items
+//Check select items if exist int meta column
 static bool check_select_items(SelectItemsNode *select_items_node, MetaTable *meta_table) {
-    if (select_items_node->is_function_node || select_items_node->ident_set_node->all_column)
+    if (select_items_node->type == SELECT_FUNCTION || select_items_node->type == SELECT_ALL)
         return true;
-    for (uint32_t i = 0; i < select_items_node->ident_set_node->num; i++) {
-        IdentNode *ident_node = *(select_items_node->ident_set_node->ident_node + i);
-        if (!check_ident_node(meta_table, ident_node))
+    for (uint32_t i = 0; i < select_items_node->column_set_node->size; i++) {
+        ColumnNode *column_node = *(select_items_node->column_set_node->columns + i);
+        if (!check_column_node(meta_table, column_node))
             return false;
     }
     return true;
@@ -40,7 +40,7 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
             }
         case EXEC_CONDITION:
             {
-                return check_ident_node(meta_table, condition_node->column);
+                return check_column_node(meta_table, condition_node->column);
             }
     }
 }

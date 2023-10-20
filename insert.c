@@ -19,15 +19,15 @@
 
 //Get table name in select node.
 static char *get_table_name(InsertNode *insert_node) {
-    return insert_node->from_item_node->table->name;
+    return insert_node->table_name;
 }
 
 //Get column number of insert statement.
 static uint32_t get_insert_column_size(InsertNode *insert_node, MetaTable *meta_table) {
-    if (insert_node->if_ignore_columns)
+    if (insert_node->all_column)
         return meta_table->column_size;
     else 
-        return insert_node->columns_set_node->ident_set_node->num;
+        return insert_node->columns_set_node->size;
 }
 
 //Get value number
@@ -37,30 +37,31 @@ static uint32_t get_value_size(InsertNode *insert_node) {
 
 //Get column name.
 static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable *meta_table) {
-    if (insert_node->if_ignore_columns)
+    if (insert_node->all_column)
         return meta_table->meta_column[index]->column_name;
     else 
-        return ((IdentNode *)(insert_node->columns_set_node->ident_set_node->ident_node + index))->name;
+        return ((ColumnNode *)(insert_node->columns_set_node->columns + index))->column_name;
 }
 
 //Get column value.
 static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
     ValueItemNode* value_item_node = *(insert_node->value_item_set_node->value_item_node + index);
     switch(meta_column->column_type) {
-        case T_STRING:
-            return (char *)value_item_node->s_value->s_value;
-        case T_INT:
-            return &(value_item_node->i_value->i_value);
-        case T_BOOL:
-            return &(value_item_node->b_value->b_value);
-        case T_DOUBLE:
-        case T_FLOAT:
-        case T_DATE:
         case T_CHAR:
+        case T_STRING:
+            return (char *)value_item_node->s_value;
+        case T_INT:
+            return &(value_item_node->i_value);
+        case T_BOOL:
+            return &(value_item_node->b_value);
+        case T_DOUBLE:
+            return &(value_item_node->d_value);
+        case T_FLOAT:
+            return &(value_item_node->d_value);
+        case T_DATE:
         case T_TIMESTAMP:
-            fatal("not support type.");
+            fatal("Not support type.");
     }
-    fprintf(stderr, "Unspported column type. \n");
     return NULL;
 }
 

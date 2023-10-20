@@ -20,4 +20,4 @@ bool less(void *source, void *target, DataType data_type);
 bool less_equal(void *source, void *target, DataType data_type);
 
 // Eval
-bool eval(OpType op_type, void *source, void *target, DataType data_type);
+bool eval(OprType op_type, void *source, void *target, DataType data_type);

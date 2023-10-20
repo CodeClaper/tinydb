@@ -1,7 +1,7 @@
 #include "common.h"
 #include "misc.h"
 #include "opr.h"
-#include "./sql/intpr.h"
+#include "intpr.h"
 #include <stdbool.h>
 #include <string.h>
 
@@ -170,7 +170,7 @@ bool less_equal(void *source, void *target, DataType data_type) {
 }
 
 // Eval
-bool eval(OpType op_type, void *source, void *target, DataType data_type) {
+bool eval(OprType op_type, void *source, void *target, DataType data_type) {
     switch(op_type) {
         case O_EQ:
             return equal(source, target, data_type);

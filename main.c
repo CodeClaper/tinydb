@@ -51,5 +51,6 @@ int main(void) {
             fatal("Create new thread fail.");
         }
     }
+    destroy_log();
     return 0;
 }

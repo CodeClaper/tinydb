@@ -1,8 +1,8 @@
 #include "token.h"
 #include "common.h"
 #include "misc.h"
-#include "sql/intpr.h"
-#include "sql/y.tab.h"
+#include "intpr.h"
+#include "y.tab.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

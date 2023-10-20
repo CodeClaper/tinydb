@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
-#include "sql/intpr.h"
+#include "intpr.h"
 
 #ifndef DATA_H
 #define DATA_H

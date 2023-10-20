@@ -19,22 +19,27 @@
 #include "output.h"
 #include "log.h"
 #include "index.h"
-#include "sql/intpr.h"
+#include "intpr.h"
 
 //Get table name.
 static char *get_table_name(SelectNode *select_node) {
-    return select_node->from_item_node->table->name;
+    return select_node->table_name;
 }
 
 // find meta column index, return NULL if not exist
 static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_t index) {
     SelectItemsNode *select_items_node = query_param->select_items;
     Table *table = open_table(query_param->table_name);
-    if (select_items_node->ident_set_node->all_column) {
-        return table->meta_table->meta_column[index];
-    } else {
-        IdentNode *ident_node = *(select_items_node->ident_set_node->ident_node + index);
-        return get_meta_column_by_name(table->meta_table, ident_node->name);
+    switch(select_items_node->type) {
+        case SELECT_ALL:
+            return table->meta_table->meta_column[index];
+        case SELECT_COLUMNS: 
+            {
+                ColumnNode *column_node = *(select_items_node->column_set_node->columns + index);
+                return get_meta_column_by_name(table->meta_table, column_node->column_name);
+            }
+        case SELECT_FUNCTION:
+            return NULL;
     }
 }
 
@@ -55,11 +60,16 @@ static uint32_t calc_off_set(QueryParam *query_param, char *column_name) {
 //Get query param column size.
 static uint32_t get_query_columns_num(QueryParam *query_param) {
     SelectItemsNode *select_items_node = query_param->select_items;
-    if (select_items_node->ident_set_node->all_column) {
-        Table *table = open_table(query_param->table_name);
-        return table->meta_table->column_size;
-    } else {
-        return select_items_node->ident_set_node->num;
+    switch(select_items_node->type) {
+        case SELECT_ALL:
+            {
+                Table *table = open_table(query_param->table_name);
+                return table->meta_table->column_size;
+            }
+        case SELECT_COLUMNS:
+            return select_items_node->column_set_node->size;
+        case SELECT_FUNCTION:
+            return 1;
     }
 }
 
@@ -67,11 +77,15 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
 static void *get_value_from_value_item_node(ValueItemNode *value_item_node) {
     switch(value_item_node->data_type) {
         case T_STRING:
-            return value_item_node->s_value->s_value;
+            return value_item_node->s_value;
         case T_INT:
-            return &value_item_node->i_value->i_value;
+            return &value_item_node->i_value;
         case T_BOOL:
-            return &value_item_node->b_value->b_value;
+            return &value_item_node->b_value;
+        case T_FLOAT:
+            return &value_item_node->f_value;
+        case T_DOUBLE:
+            return &value_item_node->d_value;
         default:
             fatal("Not implemet yet.");
     }
@@ -79,8 +93,8 @@ static void *get_value_from_value_item_node(ValueItemNode *value_item_node) {
 }
 
 //Check if include the internal node.
-static bool include_internal_node(void *min_key, void *max_key, void *target_key, OpType op_type, DataType key_data_type) {
-    switch(op_type) {
+static bool include_internal_node(void *min_key, void *max_key, void *target_key, OprType opr_type, DataType key_data_type) {
+    switch(opr_type) {
         case O_EQ:
             return less(min_key, target_key, key_data_type) && less_equal(target_key, max_key, key_data_type);
         case O_NE:
@@ -109,10 +123,10 @@ static bool include_leaf_node(void *destinct, QueryParam *query_param, MetaTable
     uint32_t off_set = 0;
     for(uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, condition_node->column->name) == 0) {
+        if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
             void *value = destinct + off_set;
-            void *target = get_value_from_value_item_node(condition_node->compare);
-            return eval(condition_node->opr_node->op_type, value, target, meta_column->column_type);
+            void *target = get_value_from_value_item_node(condition_node->value);
+            return eval(condition_node->opr_type, value, target, meta_column->column_type);
         }
         off_set += meta_column->column_length;
     }
@@ -126,7 +140,7 @@ static MetaColumn *get_cond_meta_column(QueryParam *query_param) {
         return NULL;
     Table *table = open_table(query_param->table_name);
     MetaTable *meta_table = table->meta_table;
-    return get_meta_column_by_name(meta_table, query_param->condition_node->column->name);
+    return get_meta_column_by_name(meta_table, query_param->condition_node->column->column_name);
 }
 
 //Generate select row.
@@ -142,7 +156,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     row->table_name = strdup(query_param->table_name);
     // define row data. 
     row->data = malloc(sizeof(KeyValue *) * row->column_len);
-    bool is_function = query_param->select_items->is_function_node;
+    bool is_function = query_param->select_items->type == SELECT_FUNCTION;
     if (is_function)
     {
 
@@ -195,8 +209,8 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
             void *max_key = get_internal_node_keys(internal_node, i, key_len);
             void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);
             ConditionNode *condition_node = query_param->condition_node;
-            void* compare_value = get_value_from_value_item_node(condition_node->compare);
-            if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_node->op_type, priamry_key_meta_column->column_type))
+            void* compare_value = get_value_from_value_item_node(condition_node->value);
+            if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_type, priamry_key_meta_column->column_type))
                 continue;
         }
         uint32_t page_num = get_internal_node_child(internal_node, i, key_len);
@@ -405,7 +419,7 @@ SelectResult *or_logic_cond_proc(QueryParam *query_param) {
 //Logic condition process
 SelectResult *logic_cond_proc(QueryParam *query_param) {
     ConditionNode *condition_node = query_param->condition_node;
-    switch(condition_node->conn_node->conn_type) {
+    switch(condition_node->conn_type) {
         case C_AND:
             return and_logic_cond_proc(query_param);
         case C_OR:

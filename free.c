@@ -78,6 +78,31 @@ void free_meta_table(MetaTable *meta_table) {
     }
 }
 
+//Free column
+void free_column_node(ColumnNode *column_node) {
+    if (column_node) {
+        if (column_node->exist_table_name) {
+            if (column_node->table_name)
+                free(column_node->table_name);
+        }
+        if (column_node->column_name)
+            free(column_node->column_name);
+        free(column_node);
+    }
+
+}
+
+//Free column set node.
+void free_column_set_node(ColumnSetNode *column_set_node) {
+    if (column_set_node) {
+        for (uint32_t i = 0; i < column_set_node->size; i++) {
+            free_column_node(*(column_set_node->columns + i));
+        }
+        free(column_set_node->columns);
+        free(column_set_node);
+    }
+}
+
 //Free table
 void free_table(Table *table) {
      
@@ -92,49 +117,21 @@ void free_cursor(Cursor *cursor) {
     }
 } 
 
-//Free int value node.
-void free_int_value_node(IntValueNode *int_value_node) {
-    if (int_value_node)
-        free(int_value_node);
-}
-
-//Free bool value node.
-void free_bool_value_node(BoolValueNode *bool_value_node) {
-    if (bool_value_node)
-        free(bool_value_node);
-}
-
-//Free string value node.
-void free_string_value_node(StringValueNode *string_value_node) {
-    if (string_value_node) {
-        if (string_value_node->s_value)
-            free(string_value_node->s_value);
-        free(string_value_node);
-    }
-}
-
-//Free ident node.
-void free_ident_node(IdentNode *ident_node) {
-    if (ident_node) {
-        if(ident_node->name)
-            free(ident_node->name);
-        free(ident_node);
-    }
-}
-
-
 //Free value item node.
 void free_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node) {
         switch(value_item_node->data_type) {
             case T_INT:
-                free_int_value_node(value_item_node->i_value);
+            case T_BOOL:
+            case T_CHAR:
+            case T_FLOAT:
+            case T_DOUBLE:
                 break;
             case T_STRING:
-                free_string_value_node(value_item_node->s_value);
-                break;
-            case T_BOOL:
-                free_bool_value_node(value_item_node->b_value);
+                {
+                    if (value_item_node->s_value)
+                        free(value_item_node->s_value);
+                }
                 break;
             default:
                 fatal("Not implement yet.");
@@ -148,12 +145,10 @@ void free_function_value_node(FunctionValueNode *function_value_node) {
     if (function_value_node) {
         switch(function_value_node->value_type) {
            case V_INT:
-                free_int_value_node(function_value_node->i_value);
-                break;
-           case V_IDENT:
-                free_ident_node(function_value_node->id_value);
-                break;
            case V_ALL:
+                break;
+           case V_COLUMN:
+                free_column_node(function_value_node->column);
                 break;
         }
         free(function_value_node);
@@ -168,41 +163,21 @@ void free_function_node(FunctionNode *function_node) {
     } 
 }
 
-//Free Opr Node.
-void free_opr_node(OprNode *opr_node) {
-    if (opr_node)
-        free(opr_node);
-}
-
-//Free conn node.
-void free_conn_node(ConnNode *conn_node) {
-    if (conn_node)
-        free(conn_node);
-}
-
-
-//Free data type node
-void free_data_type_node(DataTypeNode *data_type_node) {
-    if (data_type_node != NULL)
-        free(data_type_node);
-}
-
 //Free column def node
 void free_column_def_node(ColumnDefNode *column_def_node) {
-    if (column_def_node != NULL) {
-        free_ident_node(column_def_node->column_name);
-        free_data_type_node(column_def_node->column_type);
+    if (column_def_node) {
+        free_column_node(column_def_node->column);
         free(column_def_node);
     }
 }
 
 //Free column def set node.
 void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
-    if (column_def_set_node != NULL) {
-        for(uint32_t i = 0; i < column_def_set_node->column_size; i++) {
-            free_column_def_node(*(column_def_set_node->column_def + i));
+    if (column_def_set_node) {
+        for(uint32_t i = 0; i < column_def_set_node->size; i++) {
+            free_column_def_node(*(column_def_set_node->column_defs + i));
         }
-        free(column_def_set_node->column_def);
+        free(column_def_set_node->column_defs);
         free(column_def_set_node);
     } 
 }
@@ -219,50 +194,29 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
 }
 
 
-//Free ident set node.
-void free_ident_set_node(IdentSetNode *ident_set_node) {
-    if (ident_set_node) {
-        for(uint32_t i = 0; i < ident_set_node->num; i++) {
-            free_ident_node(*(ident_set_node->ident_node + i));
-        }
-        free(ident_set_node->ident_node);
-        free(ident_set_node);
-    }
-}
-
 
 //Free primary key node.
 void free_primary_key_node(PrimaryKeyNode *primary_key_node) {
     if (primary_key_node != NULL) {
-        free_ident_node(primary_key_node->primary_key_column);
+        free_column_node(primary_key_node->column);
         free(primary_key_node);
-    }
-}
-
-//Free column set node.
-void free_column_set_node(ColumnSetNode *column_set_node) {
-    if (column_set_node != NULL) {
-        free_ident_set_node(column_set_node->ident_set_node);
-        free(column_set_node);
     }
 }
 
 //Free select items node.
 void free_select_items_node(SelectItemsNode *select_items_node) {
     if (select_items_node) {
-        if (select_items_node->is_function_node)
-            free_function_node(select_items_node->function_node);
-        else
-            free_ident_set_node(select_items_node->ident_set_node);
+        switch(select_items_node->type) {
+            case SELECT_FUNCTION:
+                free_function_node(select_items_node->function_node);
+                break;
+            case SELECT_COLUMNS:
+                free_column_set_node(select_items_node->column_set_node);
+                break;
+            case SELECT_ALL:
+                break;
+        }
         free(select_items_node);
-    }
-}
-
-//Free from item node.
-void free_from_item_node(FromItemNode *from_item_node) {
-    if (from_item_node) {
-        free_ident_node(from_item_node->table);
-        free(from_item_node);
     }
 }
 
@@ -270,7 +224,8 @@ void free_from_item_node(FromItemNode *from_item_node) {
 void free_select_node(SelectNode *select_node) {
     if (select_node) {
         free_select_items_node(select_node->select_items_node);
-        free_from_item_node(select_node->from_item_node);
+        if (select_node->table_name) 
+            free(select_node->table_name);
         free_condition_node(select_node->condition_node);
         free(select_node);
     }
@@ -279,8 +234,9 @@ void free_select_node(SelectNode *select_node) {
 //Free insert node.
 void free_insert_node(InsertNode *insert_node) {
     if (insert_node != NULL) {
-        free_from_item_node(insert_node->from_item_node);
-        if (!insert_node->if_ignore_columns)
+        if (insert_node->table_name)
+            free(insert_node->table_name);
+        if (!insert_node->all_column)
             free_column_set_node(insert_node->columns_set_node);
         free_value_item_set_node(insert_node->value_item_set_node);
         free(insert_node);
@@ -290,11 +246,18 @@ void free_insert_node(InsertNode *insert_node) {
 //Free create table node.
 void free_create_table_node(CreateTableNode *create_table_node) {
     if (create_table_node != NULL) {
-        free_ident_node(create_table_node->table_name);
+        if (create_table_node->table_name)
+            free(create_table_node->table_name);
         free_column_def_set_node(create_table_node->column_def_set_node);
         free_primary_key_node(create_table_node->primary_key_node);
         free(create_table_node);
     }
+}
+
+//Free show tables node.
+void free_show_tables_node(ShowTablesNode *show_table_node) {
+    if (show_table_node)
+        free(show_table_node);
 }
 
 //Free ASTNode.
@@ -314,6 +277,7 @@ void free_ast_node(ASTNode *node) {
         case DESCRIBE_STMT:
             break;
         case SHOW_TABLES_STMT:
+            free_show_tables_node(node->show_tables_node);
             break;
     }
     free(node);
@@ -324,13 +288,10 @@ void free_condition_node(ConditionNode *condition_node) {
     if (condition_node) {
         switch(condition_node->type) {
             case LOGIC_CONDITION:
-                free_conn_node(condition_node->conn_node);
                 break;
             case EXEC_CONDITION:
-                free_ident_node(condition_node->column);
-                free_opr_node(condition_node->opr_node);
-                free_value_item_node(condition_node->compare);
-                free_conn_node(condition_node->conn_node);
+                free_column_node(condition_node->column);
+                free_value_item_node(condition_node->value);
                 break;
         }
         free_condition_node(condition_node->left);

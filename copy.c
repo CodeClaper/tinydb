@@ -81,71 +81,40 @@ MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     return meta_column_copy;
 } 
 
-//Copy int value node.
-IntValueNode *copy_int_value_node(IntValueNode *int_value_node) {
-    if (int_value_node == NULL)
+//Copy column node.
+ColumnNode *copy_column_node(ColumnNode *column_node) {
+    if (column_node == NULL)
         return NULL;
-    IntValueNode *int_value_node_copy = malloc(sizeof(IntValueNode));
-    if (int_value_node_copy == NULL)
+    ColumnNode *column_node_copy = malloc(sizeof(ColumnNode));
+    if (column_node_copy == NULL)
         MALLOC_ERROR;
-    memset(int_value_node_copy, 0, sizeof(IntValueNode));
-    int_value_node_copy->i_value = int_value_node->i_value;
-    return int_value_node_copy;
-}
-
-//Copy bool value node.
-BoolValueNode *copy_bool_value_node(BoolValueNode *bool_value_node) {
-    if (bool_value_node == NULL)
-        return NULL;
-    BoolValueNode *bool_value_node_copy = malloc(sizeof(BoolValueNode));
-    if (bool_value_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(bool_value_node_copy, 0, sizeof(BoolValueNode));
-    bool_value_node_copy->b_value = bool_value_node->b_value;
-    return bool_value_node_copy;
-}
-
-//Copy string value node.
-StringValueNode *copy_string_value_node(StringValueNode *string_value_node) {
-    if (string_value_node == NULL)
-        return NULL;
-    StringValueNode *string_value_node_copy = malloc(sizeof(StringValueNode));
-    if (string_value_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(string_value_node_copy, 0, sizeof(StringValueNode));
-    string_value_node_copy->s_value = malloc(strlen(string_value_node->s_value) + 1);
-    strcpy(string_value_node_copy->s_value, string_value_node->s_value);
-    return string_value_node_copy;
-}
-
-//Copy ident node.
-IdentNode *copy_ident_node(IdentNode *ident_node) {
-    if (ident_node == NULL)
-        return NULL;
-    IdentNode *ident_node_copy = malloc(sizeof(IdentNode));
-    if (ident_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(ident_node_copy, 0, sizeof(IdentNode));
-    ident_node_copy->name = malloc(strlen(ident_node->name) + 1);
-    memset(ident_node_copy->name, 0, strlen(ident_node->name) + 1);
-    strcpy(ident_node_copy->name, ident_node->name);
-    return ident_node_copy;
-}
-
-//Copy ident set node.
-IdentSetNode *copy_ident_set_node(IdentSetNode *ident_set_node) {
-    IdentSetNode *ident_set_node_copy = malloc(sizeof(IdentSetNode));
-    if (ident_set_node == NULL)
-        MALLOC_ERROR;
-    ident_set_node_copy->num = ident_set_node->num;
-    ident_set_node_copy->all_column = ident_set_node->all_column;
-    ident_set_node_copy->ident_node = malloc(sizeof(IdentNode *) * ident_set_node->num);
-    if (ident_set_node->all_column == false) {
-        for (uint32_t i = 0; i < ident_set_node_copy->num; i++) {
-            *(ident_set_node_copy->ident_node + i) = copy_ident_node(*(ident_set_node->ident_node + i));
-        }
+    memset(column_node_copy, 0, sizeof(ColumnNode));
+    column_node_copy->exist_table_name = column_node->exist_table_name;
+    if (column_node_copy->exist_table_name) {
+        column_node_copy->table_name = malloc(strlen(column_node->table_name) + 1);
+        memset(column_node_copy->table_name, 0, strlen(column_node->table_name) + 1);
+        strcpy(column_node_copy->table_name, column_node->table_name);
     }
-    return ident_set_node_copy;
+    column_node_copy->column_name = malloc(strlen(column_node->column_name) + 1);
+    memset(column_node_copy->column_name, 0, strlen(column_node->column_name) + 1);
+    strcpy(column_node_copy->column_name, column_node->column_name);
+    return column_node_copy;
+}
+
+//Copy column set node.
+ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
+    if (column_set_node == NULL)
+        return NULL;
+    ColumnSetNode *column_set_node_copy = malloc(sizeof(ColumnSetNode));
+    if (column_set_node_copy == NULL)
+        MALLOC_ERROR;
+    memset(column_set_node_copy, 0, sizeof(ColumnSetNode));
+    column_set_node_copy->size = column_set_node->size;
+    column_set_node_copy->columns = malloc(sizeof(ColumnNode *) * column_set_node_copy->size);
+    for (uint32_t i = 0; i < column_set_node_copy->size; i++) {
+        *(column_set_node_copy->columns + i) = copy_column_node(*(column_set_node->columns + i));
+    }
+    return column_set_node_copy;
 }
 
 //Copy value item node.
@@ -159,13 +128,19 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     value_item_node_copy->data_type = value_item_node->data_type;
     switch(value_item_node->data_type) {
         case T_INT:
-            value_item_node_copy->i_value = copy_int_value_node(value_item_node->i_value);
+            value_item_node_copy->i_value = value_item_node->i_value;
             break;
         case T_STRING:
-            value_item_node_copy->s_value = copy_string_value_node(value_item_node->s_value);
+            value_item_node_copy->s_value = strdup(value_item_node->s_value);
             break;
         case T_BOOL:
-            value_item_node_copy->b_value = copy_bool_value_node(value_item_node->b_value);
+            value_item_node_copy->b_value = value_item_node->b_value;
+            break;
+        case T_FLOAT:
+            value_item_node_copy->f_value = value_item_node->f_value;
+            break;
+        case T_DOUBLE:
+            value_item_node_copy->d_value = value_item_node->d_value;
             break;
         default:
             fatal("Not implement yet.");
@@ -184,10 +159,10 @@ FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_no
     function_value_node_copy->value_type = function_value_node->value_type;
     switch(function_value_node->value_type) {
         case V_INT:
-            function_value_node_copy->i_value = copy_int_value_node(function_value_node->i_value);
+            function_value_node_copy->i_value = function_value_node->i_value;
             break;
-        case V_IDENT:
-            function_value_node_copy->id_value = copy_ident_node(function_value_node->id_value);
+        case V_COLUMN:
+            function_value_node_copy->column = copy_column_node(function_value_node->column);
             break;
         case V_ALL:
             break;
@@ -208,30 +183,6 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
     return function_node_copy;
 }
 
-//Copy opr node.
-OprNode *copy_opr_node(OprNode *opr_node) {
-    if (opr_node == NULL)
-        return NULL;
-    OprNode *opr_node_copy = malloc(sizeof(OprNode));
-    if (opr_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(opr_node_copy, 0, sizeof(OprNode));
-    opr_node_copy->op_type = opr_node->op_type;
-    return opr_node_copy;
-}
-
-//Copy conn node.
-ConnNode *copy_conn_node(ConnNode *conn_node) {
-    if (conn_node == NULL)
-        return NULL;
-    ConnNode *conn_node_copy = malloc(sizeof(ConnNode));
-    if (conn_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(conn_node_copy, 0, sizeof(ConnNode));
-    conn_node_copy->conn_type = conn_node->conn_type;
-    return conn_node_copy;
-}
-
 //Copy condition node.
 ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     if (condition_node == NULL)
@@ -249,13 +200,13 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
         condition_node_copy->next = copy_condition_node(condition_node->next);
     switch(condition_node->type) {
         case LOGIC_CONDITION:
-            condition_node_copy->conn_node = copy_conn_node(condition_node->conn_node);
+            condition_node_copy->conn_type = condition_node->conn_type;
             break;
         case EXEC_CONDITION:
-            condition_node_copy->column = copy_ident_node(condition_node->column);
-            condition_node_copy->opr_node = copy_opr_node(condition_node->opr_node);
-            condition_node_copy->compare = copy_value_item_node(condition_node->compare);
-            condition_node_copy->conn_node = copy_conn_node(condition_node->conn_node);
+            condition_node_copy->column = copy_column_node(condition_node->column);
+            condition_node_copy->opr_type = condition_node->opr_type;
+            condition_node_copy->value = copy_value_item_node(condition_node->value);
+            condition_node_copy->conn_type = condition_node->conn_type;
             break;
     }
     return condition_node_copy;
@@ -269,9 +220,17 @@ SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
     if (select_items_node_copy == NULL)
         MALLOC_ERROR;
     memset(select_items_node_copy, 0, sizeof(SelectItemsNode));
-    select_items_node_copy->is_function_node = select_items_node->is_function_node;
-    select_items_node_copy->function_node = copy_function_node(select_items_node->function_node);
-    select_items_node_copy->ident_set_node = copy_ident_set_node(select_items_node->ident_set_node);
+    select_items_node_copy->type = select_items_node->type;
+    switch(select_items_node_copy->type) {
+        case SELECT_FUNCTION:
+            select_items_node_copy->function_node = copy_function_node(select_items_node->function_node);
+            break;
+        case SELECT_COLUMNS:
+            select_items_node_copy->column_set_node = copy_column_set_node(select_items_node->column_set_node);
+            break;
+        case SELECT_ALL:
+            break;
+    }
     return select_items_node_copy;
 }
 

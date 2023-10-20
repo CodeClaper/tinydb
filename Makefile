@@ -1,7 +1,7 @@
 PROG=cache.c cond.c conf.c copy.c create.c desc.c free.c index.c input.c\
 	 insert.c meta.c misc.c node.c opr.c output.c pager.c row.c select.c show.c stmt.c\
 	 table.c token.c utils.c server.c log.c check.c\
-	 ./sql/lex.yy.c ./sql/y.tab.c ./sql/intpr.c 
+	 lex.yy.c y.tab.c intpr.c 
 PROMT=tinydb
 CLIENT=tinydb-cli
 CFLAGS=-w -lreadline -ltinfo
@@ -13,6 +13,9 @@ tinydb: ${PROG}
 debug: ${PROG}
 	gcc ${PROG} main.c -o ${PROMT} ${DFLAGS}
 	gcc client.c input.c -o ${CLIENT} ${DFLAGS}
+sql: sql.y sql.l intpr.c
+	lex sql.l
+	yacc -d sql.y
 info: ${PRMT}
 	cloc ./
 test: ${PROMT}
@@ -20,5 +23,5 @@ test: ${PROMT}
 install: tinydb
 	install tinydb /usr/bin 
 clean:
-	rm -r -f ${OBJECT} ${PROMT} ${CLIENT} ./test/test_client core.*
+	rm -r -f ${OBJECT} ${PROMT} ${CLIENT} ./test/test_client core.*  lex.yy.c y.tab.c 
 .PHONY: clean

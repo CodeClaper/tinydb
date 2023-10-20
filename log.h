@@ -16,5 +16,5 @@ void log_error_d(char *format, int i);
 //Get current error.
 char *get_current_error();
 
-//Clear error
-void clear_error();
+//destroy log.
+void destroy_log();

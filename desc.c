@@ -9,7 +9,7 @@
 
 //Get table name.
 static char *get_table_name(DescribeNode *describe_node) {
-    return describe_node->from_item_node->table->name;
+    return describe_node->table_name;
 }
 
 // print into describe node.

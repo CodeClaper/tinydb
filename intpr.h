@@ -16,7 +16,7 @@ typedef enum {
   O_LE,
   O_IN,
   O_LIKE
-} OpType; // operator type
+} OprType; // operator type
 
 typedef enum {
   T_BOOL,
@@ -33,7 +33,9 @@ typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
 
 typedef enum { C_OR, C_AND } ConnType; // connector type
 
-typedef enum { V_INT, V_IDENT, V_ALL } FunctionValueType; // value type.
+typedef enum { V_INT, V_COLUMN, V_ALL } FunctionValueType; // value type.
+
+typedef enum { SELECT_COLUMNS, SELECT_FUNCTION, SELECT_ALL} SelectItemType;
 
 typedef enum {
   CREATE_TABLE_STMT,
@@ -46,26 +48,21 @@ typedef enum {
 } StatementType; // statement type
 
 typedef struct {
-  int i_value;
-} IntValueNode;
+    char *column_name;
+    bool exist_table_name;
+    char *table_name;
+}ColumnNode;
 
 typedef struct {
-  bool b_value;
-} BoolValueNode;
-
-typedef struct {
-  char *s_value;
-} StringValueNode;
-
-typedef struct {
-  char *name;
-} IdentNode;
+    ColumnNode **columns;
+    uint32_t size;
+} ColumnSetNode;
 
 typedef struct {
   FunctionValueType value_type;
   union {
-    IntValueNode *i_value;
-    IdentNode *id_value;
+    int32_t i_value;
+    ColumnNode *column;
   };
 } FunctionValueNode;
 
@@ -74,54 +71,37 @@ typedef struct {
   FunctionValueNode *value;
 } FunctionNode;
 
-typedef struct {
-  ConnType conn_type;
-} ConnNode;
 
 typedef struct {
-  DataType data_type;
-} DataTypeNode;
-
-typedef struct {
-  OpType op_type;
-} OprNode;
-
-typedef struct {
-  bool all_column;
-  IdentNode **ident_node;
-  uint32_t num;
-} IdentSetNode;
-
-typedef struct {
-  IdentSetNode *ident_set_node;
-  FunctionNode *function_node;
-  bool is_function_node;
+    ColumnSetNode *column_set_node;
+    FunctionNode *function_node;
+    SelectItemType type;
 } SelectItemsNode;
 
 typedef struct {
-  IdentNode *column_name;
-  DataTypeNode *column_type;
+    ColumnNode *column;
+    DataType data_type;
+    bool is_primary;
+    bool allow_null;
 } ColumnDefNode;
 
 typedef struct {
-  ColumnDefNode **column_def;
-  uint32_t column_size;
+  ColumnDefNode **column_defs;
+  uint32_t size;
 } ColumnDefSetNode;
 
 typedef struct {
-  IdentNode *primary_key_column;
+  ColumnNode *column;
 } PrimaryKeyNode;
-
-typedef struct {
-  IdentSetNode *ident_set_node;
-} ColumnSetNode;
 
 typedef struct {
   DataType data_type;
   union {
-    IntValueNode *i_value;
-    StringValueNode *s_value;
-    BoolValueNode *b_value;
+    int i_value;
+    bool b_value;
+    char *s_value;
+    float f_value;
+    double d_value;
   };
 } ValueItemNode;
 
@@ -130,17 +110,13 @@ typedef struct {
   uint32_t num;
 } ValueItemSetNode;
 
-typedef struct {
-  IdentNode *table;
-} FromItemNode;
-
 typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 
 typedef struct ConditionNode {
-  IdentNode *column;
-  OprNode *opr_node;
-  ValueItemNode *compare;
-  ConnNode *conn_node;
+  ColumnNode *column;
+  OprType opr_type;
+  ValueItemNode *value;
+  ConnType conn_type;
   struct ConditionNode *next;
   struct ConditionNode *left;
   struct ConditionNode *right;
@@ -148,26 +124,26 @@ typedef struct ConditionNode {
 } ConditionNode;
 
 typedef struct {
-  IdentNode *table_name;
+  char *table_name;
   ColumnDefSetNode *column_def_set_node;
   PrimaryKeyNode *primary_key_node;
 } CreateTableNode;
 
 typedef struct {
   SelectItemsNode *select_items_node;
-  FromItemNode *from_item_node;
+  char *table_name;
   ConditionNode *condition_node;
 } SelectNode;
 
 typedef struct {
-  bool if_ignore_columns;
-  FromItemNode *from_item_node;
-  ColumnSetNode *columns_set_node;
-  ValueItemSetNode *value_item_set_node;
+   bool all_column;
+   char *table_name;
+   ColumnSetNode *columns_set_node;
+   ValueItemSetNode *value_item_set_node;
 } InsertNode;
 
 typedef struct {
-  FromItemNode *from_item_node;
+    char *table_name;
 } DescribeNode;
 
 typedef struct {
@@ -185,23 +161,6 @@ typedef struct {
   };
 } ASTNode;
 
-// make an int value node.
-IntValueNode *make_int_value_node(int i);
-
-// make a bool value node.
-BoolValueNode *make_bool_value_node(bool b);
-
-// make a string value node.
-StringValueNode *make_string_value_node(char *s);
-
-// make an ident node.
-IdentNode *make_ident_node(char *s);
-
-// make an ident set node.
-IdentSetNode *make_ident_set_node();
-
-// add a new ident node to set
-void add_ident(IdentSetNode *ident_set_node, IdentNode *ident_node);
 
 // make a function value node.
 FunctionValueNode *make_function_value_node();
@@ -209,29 +168,23 @@ FunctionValueNode *make_function_value_node();
 // make a functon node
 FunctionNode *make_function_node();
 
-// make a from item node.
-FromItemNode *make_from_item_node();
-
 // make a select items node.
 SelectItemsNode *make_select_items_node();
 
 // make a select node.
 SelectNode *make_select_node();
 
+// make a column node.
+ColumnNode *make_column_node();
+
 // make a column set node.
 ColumnSetNode *make_column_set_node();
 
+// add column node to set.
+void add_column_to_set(ColumnSetNode *column_set_node, ColumnNode *column_node);
+
 // make a condition node.
 ConditionNode *make_cond_node();
-
-// make a operator node.
-OprNode *make_opr_node(OpType op_type);
-
-// make a connnection node.
-ConnNode *make_conn_node(ConnType conn_type);
-
-// make a data type node.
-DataTypeNode *make_data_type_node(DataType data_type);
 
 // make a create table node.
 CreateTableNode *make_create_table_node();

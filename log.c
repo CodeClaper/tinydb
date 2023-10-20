@@ -1,6 +1,7 @@
 #include "log.h"
 #include "data.h"
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,6 +11,7 @@ pthread_key_t key;
 static void key_destructor(void *value) {
     if (value)
         free(value);
+    printf("Execute Key Destruct");
 } 
 
 //Log init
@@ -71,7 +73,7 @@ char *get_current_error() {
     return (char *)pthread_getspecific(key); 
 }
 
-//Clear error
-void clear_error() {
+//destroy log.
+void destroy_log() {
     pthread_key_delete(key);
 }

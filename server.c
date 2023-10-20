@@ -117,7 +117,6 @@ void accept_request(void *arg) {
         if (send_size < 0)
             break;
     }
-    clear_error();
     close(client);
     printf("Client disconnect.\n");
 }
