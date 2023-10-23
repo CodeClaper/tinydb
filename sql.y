@@ -15,6 +15,7 @@ int yywrap() {
 {
    char                     *s_value;
    int                      i_value;
+   float                    f_value;
    bool                     b_value;
    char                     *keyword;
    DataType                 data_type;
@@ -60,6 +61,7 @@ int yywrap() {
 %token <keyword> COMMA SEMICOLON QUOTE POINT LEFTPAREN RIGHTPAREN
 %token <s_value> IDENTIFIER
 %token <i_value> INTVALUE
+%token <f_value> FLOATVALUE
 %token <s_value> STRINGVALUE
 %type <b_value> BOOLVALUE
 %type <s_value> table
@@ -333,6 +335,13 @@ value_item:
                     ValueItemNode *node = make_value_item_node();
                     node->s_value = $1;
                     node->data_type = T_STRING;
+                    $$ = node;
+                }
+            | FLOATVALUE 
+                {
+                    ValueItemNode *node = make_value_item_node();
+                    node->f_value = $1;
+                    node->data_type = T_FLOAT;
                     $$ = node;
                 }
             ;

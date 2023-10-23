@@ -106,7 +106,8 @@ extern int yydebug;
     RIGHTPAREN = 307,              /* RIGHTPAREN  */
     IDENTIFIER = 308,              /* IDENTIFIER  */
     INTVALUE = 309,                /* INTVALUE  */
-    STRINGVALUE = 310              /* STRINGVALUE  */
+    FLOATVALUE = 310,              /* FLOATVALUE  */
+    STRINGVALUE = 311              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -167,7 +168,8 @@ extern int yydebug;
 #define RIGHTPAREN 307
 #define IDENTIFIER 308
 #define INTVALUE 309
-#define STRINGVALUE 310
+#define FLOATVALUE 310
+#define STRINGVALUE 311
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -177,6 +179,7 @@ union YYSTYPE
 
    char                     *s_value;
    int                      i_value;
+   float                    f_value;
    bool                     b_value;
    char                     *keyword;
    DataType                 data_type;
@@ -199,7 +202,7 @@ union YYSTYPE
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 
-#line 203 "y.tab.h"
+#line 206 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

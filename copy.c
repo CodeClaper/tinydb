@@ -137,11 +137,17 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
             value_item_node_copy->b_value = value_item_node->b_value;
             break;
         case T_FLOAT:
-            value_item_node_copy->f_value = value_item_node->f_value;
-            break;
+            {
+                value_item_node_copy->i_value = value_item_node->i_value;
+                value_item_node_copy->f_value = value_item_node->f_value;
+                break;
+            }
         case T_DOUBLE:
-            value_item_node_copy->d_value = value_item_node->d_value;
-            break;
+            {
+                value_item_node_copy->i_value = value_item_node->i_value;
+                value_item_node_copy->d_value = value_item_node->d_value;
+                break;
+            }
         default:
             fatal("Not implement yet.");
     }

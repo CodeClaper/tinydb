@@ -13,6 +13,7 @@
 #include "pager.h"
 #include "insert.h"
 #include "index.h"
+#include "check.h"
 #include "free.h"
 #include "log.h"
 
@@ -55,9 +56,29 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_BOOL:
             return &(value_item_node->b_value);
         case T_DOUBLE:
-            return &(value_item_node->d_value);
-        case T_FLOAT:
-            return &(value_item_node->d_value);
+            {
+                switch(value_item_node->data_type) {
+                    case T_INT:
+                        value_item_node->d_value = value_item_node->i_value;
+                    case T_FLOAT:
+                        value_item_node->d_value = value_item_node->f_value;
+                    case T_DOUBLE:
+                        return &value_item_node->d_value;
+                    default:
+                        fatal("Data type error.");
+                }
+            }
+        case T_FLOAT: 
+            {
+                switch(value_item_node->data_type) {
+                    case T_INT:
+                        value_item_node->f_value = value_item_node->i_value;
+                    case T_FLOAT:
+                        return &value_item_node->f_value;
+                    default:
+                        fatal("Data type error.");
+                }
+            }
         case T_DATE:
         case T_TIMESTAMP:
             fatal("Not support type.");
@@ -107,6 +128,8 @@ static Row *generate_insert_row(InsertNode *insert_node) {
 
 //Execute insert statement.
 ExecuteResult exec_insert_statement(InsertNode *insert_node) {
+    if (!check_insert_node(insert_node))
+        return EXECUTE_FAIL;
     Row *row = generate_insert_row(insert_node);
     if (row == NULL)
         return EXECUTE_FAIL;

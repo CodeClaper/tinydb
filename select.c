@@ -74,18 +74,39 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
 }
 
 //Get value from value item node.
-static void *get_value_from_value_item_node(ValueItemNode *value_item_node) {
-    switch(value_item_node->data_type) {
+static void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type) {
+    switch(meta_data_type) {
         case T_STRING:
             return value_item_node->s_value;
         case T_INT:
             return &value_item_node->i_value;
         case T_BOOL:
             return &value_item_node->b_value;
-        case T_FLOAT:
-            return &value_item_node->f_value;
-        case T_DOUBLE:
-            return &value_item_node->d_value;
+        case T_FLOAT: 
+            {
+                switch(value_item_node->data_type) {
+                    case T_INT:
+                        value_item_node->f_value = value_item_node->i_value;
+                    case T_FLOAT:
+                        value_item_node->data_type = T_FLOAT;
+                        return &value_item_node->f_value;
+                    default:
+                        fatal("Data type error.");
+                }
+            }
+        case T_DOUBLE: 
+            {
+                switch(value_item_node->data_type) {
+                    case T_INT:
+                        value_item_node->d_value = value_item_node->i_value;
+                    case T_FLOAT:
+                        value_item_node->d_value = value_item_node->f_value;
+                    case T_DOUBLE:
+                        return &value_item_node->d_value;
+                    default:
+                        fatal("Data type error.");
+                }
+            }
         default:
             fatal("Not implemet yet.");
     }
@@ -110,7 +131,6 @@ static bool include_internal_node(void *min_key, void *max_key, void *target_key
         case O_IN:
         case O_LIKE:
             fatal("Not implement yet.");
-            
     }
     return true;
 }
@@ -118,14 +138,14 @@ static bool include_internal_node(void *min_key, void *max_key, void *target_key
 // check if include the leaf node.
 static bool include_leaf_node(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
     ConditionNode *condition_node = query_param->condition_node;
-    if (condition_node == NULL)
+    if (condition_node == NULL) // if not condition, just return true.
         return true;
     uint32_t off_set = 0;
     for(uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
             void *value = destinct + off_set;
-            void *target = get_value_from_value_item_node(condition_node->value);
+            void *target = get_value_from_value_item_node(condition_node->value, meta_column->column_type);
             return eval(condition_node->opr_type, value, target, meta_column->column_type);
         }
         off_set += meta_column->column_length;
@@ -209,7 +229,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
             void *max_key = get_internal_node_keys(internal_node, i, key_len);
             void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);
             ConditionNode *condition_node = query_param->condition_node;
-            void* compare_value = get_value_from_value_item_node(condition_node->value);
+            void* compare_value = get_value_from_value_item_node(condition_node->value, cond_meta_column->column_type);
             if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_type, priamry_key_meta_column->column_type))
                 continue;
         }
