@@ -102,13 +102,21 @@ static void *get_value_from_value_item_node(ValueItemNode *value_item_node, Data
                     case T_FLOAT:
                         value_item_node->d_value = value_item_node->f_value;
                     case T_DOUBLE:
+                        value_item_node->data_type = T_DOUBLE;
                         return &value_item_node->d_value;
                     default:
                         fatal("Data type error.");
                 }
             }
+        case T_TIMESTAMP:
+            {
+                if (value_item_node->data_type == T_STRING) {
+                    
+                }
+                break;
+            }
         default:
-            fatal("Not implemet yet.");
+            fatal("Not implement yet.");
     }
     return NULL;
 }

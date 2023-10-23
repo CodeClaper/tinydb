@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 #include "common.h"
 #include "misc.h"
 #include "table.h"
@@ -63,6 +64,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                     case T_FLOAT:
                         value_item_node->d_value = value_item_node->f_value;
                     case T_DOUBLE:
+                        value_item_node->data_type = T_DOUBLE;
                         return &value_item_node->d_value;
                     default:
                         fatal("Data type error.");
@@ -74,13 +76,29 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                     case T_INT:
                         value_item_node->f_value = value_item_node->i_value;
                     case T_FLOAT:
+                        value_item_node->data_type = T_FLOAT;
                         return &value_item_node->f_value;
                     default:
                         fatal("Data type error.");
                 }
             }
         case T_DATE:
-        case T_TIMESTAMP:
+        case T_TIMESTAMP: 
+            {
+                switch(value_item_node->data_type) {
+                    case T_STRING:
+                        {
+                            struct tm *tmp_time = malloc(sizeof(struct tm));
+                            strptime(value_item_node->s_value, "%Y/%m/%d %H:%M:%S", tmp_time);
+                            value_item_node->t_value = mktime(tmp_time);
+                        }
+                    case T_TIMESTAMP:
+                        value_item_node->data_type = T_TIMESTAMP;
+                        return &value_item_node->t_value;
+                    default:
+                        fatal("Data type error.");
+                }
+            }
             fatal("Not support type.");
     }
     return NULL;

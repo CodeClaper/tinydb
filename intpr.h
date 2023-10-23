@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #ifndef INTPR_H
 #define INTPR_H
@@ -102,6 +103,7 @@ typedef struct {
     char *s_value;
     float f_value;
     double d_value;
+    time_t t_value;
   };
 } ValueItemNode;
 

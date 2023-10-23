@@ -33,7 +33,7 @@ static bool if_convert_type(DataType source, DataType target) {
         case T_STRING:
             return target == T_CHAR || target == T_STRING;
         case T_TIMESTAMP:
-            return target == T_TIMESTAMP;
+            return target == T_TIMESTAMP || target == T_STRING;
         case T_DATE:
             return target == T_DATE;
     }

@@ -14,6 +14,7 @@ void *copy_value(void *value, DataType data_type) {
         case T_FLOAT:
         case T_DOUBLE:
         case T_CHAR:
+        case T_TIMESTAMP:
             return value;
         case T_STRING:
             {
@@ -23,7 +24,6 @@ void *copy_value(void *value, DataType data_type) {
                 return new_value;
             }
         case T_DATE:
-        case T_TIMESTAMP:
             fatal("Not implement yet.");
         default:
             return NULL;
@@ -137,17 +137,14 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
             value_item_node_copy->b_value = value_item_node->b_value;
             break;
         case T_FLOAT:
-            {
-                value_item_node_copy->i_value = value_item_node->i_value;
-                value_item_node_copy->f_value = value_item_node->f_value;
-                break;
-            }
+            value_item_node_copy->f_value = value_item_node->f_value;
+            break;
         case T_DOUBLE:
-            {
-                value_item_node_copy->i_value = value_item_node->i_value;
-                value_item_node_copy->d_value = value_item_node->d_value;
-                break;
-            }
+            value_item_node_copy->d_value = value_item_node->d_value;
+            break;
+        case T_TIMESTAMP:
+            value_item_node_copy->t_value = value_item_node->t_value;
+            break;
         default:
             fatal("Not implement yet.");
     }

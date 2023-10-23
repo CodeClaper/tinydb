@@ -126,6 +126,7 @@ void free_value_item_node(ValueItemNode *value_item_node) {
             case T_CHAR:
             case T_FLOAT:
             case T_DOUBLE:
+            case T_TIMESTAMP:
                 break;
             case T_STRING:
                 {

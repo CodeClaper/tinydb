@@ -1,11 +1,13 @@
 #include "output.h"
 #include "data.h"
+#include "misc.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 
 //Get key value pair string.
@@ -51,8 +53,19 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
                 sprintf(s, "\"%s\": %lf", key, *(double *)value);
                 return s;
             }
+        case T_TIMESTAMP: 
+            {
+                char temp[90];
+                uint32_t len = strlen(key) + 4 + 100; // key len + symbol len + value len. 
+                char *s = malloc(len);
+                time_t t = *(time_t *)value;
+                struct tm *tmp_time = localtime(&t);
+                strftime(temp, sizeof(temp), "%Y/%m/%d %H:%M:%S", tmp_time);
+                sprintf(s, "\"%s\": \"%s\"", key, temp);
+                return s;
+            }
         default:
-            fprintf(stdout, "not support data type");
+            fatal("Not support data type");
     }
     return NULL;
 }
