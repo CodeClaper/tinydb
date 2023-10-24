@@ -75,6 +75,18 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
 //Get value from value item node.
 static void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type) {
     switch(meta_data_type) {
+        case T_CHAR:
+            {
+                switch(value_item_node->data_type) {
+                    case T_STRING:
+                        value_item_node->c_value = *value_item_node->s_value;
+                    case T_CHAR:
+                        value_item_node->data_type = T_CHAR;
+                        return &value_item_node->c_value;
+                    default:
+                        fatal("Data type error.");
+                }
+            }
         case T_STRING:
             return value_item_node->s_value;
         case T_INT:

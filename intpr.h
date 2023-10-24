@@ -101,6 +101,7 @@ typedef struct {
     int i_value;
     bool b_value;
     char *s_value;
+    char c_value;
     float f_value;
     double d_value;
     time_t t_value;

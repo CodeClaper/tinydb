@@ -17,6 +17,7 @@ int yywrap() {
    int                      i_value;
    float                    f_value;
    bool                     b_value;
+   char                     c_value;
    char                     *keyword;
    DataType                 data_type;
    OprType                  opr_type;
@@ -53,7 +54,7 @@ int yywrap() {
 %token <keyword> TRUE FALSE
 %token <keyword> NOT
 %token <keyword> NULLX
-%token <keyword> INT STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
+%token <keyword> INT CHAR STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> PRIMARY KEY
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> AND OR
@@ -270,6 +271,7 @@ column_def:
            ;
 data_type:
            INT          { $$ = T_INT; }
+           | CHAR       { $$ = T_CHAR; }
            | STRING     { $$ = T_STRING; }
            | BOOL       { $$ = T_BOOL; }
            | FLOAT      { $$ = T_FLOAT; }  

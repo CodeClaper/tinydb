@@ -38,7 +38,7 @@ static bool if_convert_type(DataType source, DataType target, char *column_name)
             result = target == T_DOUBLE;
             break;
         case T_CHAR:
-            result = target == T_CHAR;
+            result = target == T_CHAR || target == T_STRING;
             break;
         case T_STRING:
             result = target == T_CHAR || target == T_STRING;
@@ -57,15 +57,26 @@ static bool if_convert_type(DataType source, DataType target, char *column_name)
 
 //Check value if valid.
 static bool check_value_valid(DataType data_type, void* value) {
+    if (value == NULL) {
+        log_error_s("Try to convert NULL '%s' to %s fail.", data_type_name(data_type));
+        return false;
+    }
     switch(data_type) {
         case T_BOOL:
         case T_INT:
         case T_FLOAT:
         case T_DOUBLE:
-        case T_CHAR:
         case T_STRING:
         case T_DATE:
             return true;
+        case T_CHAR: 
+            {
+                char *str = (char *)value;
+                size_t len = strlen(str);
+                if (len != 1)
+                    log_error_s("Try to convert value '%s' to char fail.", str);
+                return len == 1;
+            }
         case T_TIMESTAMP:
             {   
                 // when data type is tiemstamp, user`s input just a string.
@@ -100,6 +111,7 @@ static void *get_value(ValueItemNode *value_item_node) {
         case T_TIMESTAMP:
             return &value_item_node->t_value;
         case T_CHAR:
+            return &value_item_node->c_value;
         case T_DATE:
             fatal("Not implement yet.");
     }
@@ -181,10 +193,8 @@ bool check_insert_node(InsertNode *insert_node) {
         for (uint32_t i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name)) { // check data type
-                log_error_s("Data type convert fail for column '%s'", meta_column->column_name);
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name))  // check data type
                 return false;
-            }
             if (!check_value_valid(meta_column->column_type, get_value(value_item_node))) // checke value valid
                 return false;
         }

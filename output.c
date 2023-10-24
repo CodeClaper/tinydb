@@ -29,6 +29,14 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
                 sprintf(s, "\"%s\": %d", key, *(uint32_t *)value);
                 return s;
             }
+        case T_CHAR:
+            {
+                uint32_t len = strlen(key) + 6 + 1; // key len + symbol len + value len. 
+                char *s = malloc(len);
+                memset(s, 0, len);
+                sprintf(s, "\"%s\": \'%c\'", key, *(char *)value);
+                return s;
+            }
         case T_STRING:
             {
                 uint32_t len = strlen(key) + 6 + strlen(value); // key len + symbol len + value len. 

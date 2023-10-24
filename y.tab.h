@@ -79,35 +79,36 @@ extern int yydebug;
     NOT = 280,                     /* NOT  */
     NULLX = 281,                   /* NULLX  */
     INT = 282,                     /* INT  */
-    STRING = 283,                  /* STRING  */
-    BOOL = 284,                    /* BOOL  */
-    FLOAT = 285,                   /* FLOAT  */
-    DOUBLE = 286,                  /* DOUBLE  */
-    DATE = 287,                    /* DATE  */
-    TIMESTAMP = 288,               /* TIMESTAMP  */
-    PRIMARY = 289,                 /* PRIMARY  */
-    KEY = 290,                     /* KEY  */
-    EQ = 291,                      /* EQ  */
-    NE = 292,                      /* NE  */
-    GT = 293,                      /* GT  */
-    GE = 294,                      /* GE  */
-    LT = 295,                      /* LT  */
-    LE = 296,                      /* LE  */
-    IN = 297,                      /* IN  */
-    LIKE = 298,                    /* LIKE  */
-    AND = 299,                     /* AND  */
-    OR = 300,                      /* OR  */
-    ALL = 301,                     /* ALL  */
-    COMMA = 302,                   /* COMMA  */
-    SEMICOLON = 303,               /* SEMICOLON  */
-    QUOTE = 304,                   /* QUOTE  */
-    POINT = 305,                   /* POINT  */
-    LEFTPAREN = 306,               /* LEFTPAREN  */
-    RIGHTPAREN = 307,              /* RIGHTPAREN  */
-    IDENTIFIER = 308,              /* IDENTIFIER  */
-    INTVALUE = 309,                /* INTVALUE  */
-    FLOATVALUE = 310,              /* FLOATVALUE  */
-    STRINGVALUE = 311              /* STRINGVALUE  */
+    CHAR = 283,                    /* CHAR  */
+    STRING = 284,                  /* STRING  */
+    BOOL = 285,                    /* BOOL  */
+    FLOAT = 286,                   /* FLOAT  */
+    DOUBLE = 287,                  /* DOUBLE  */
+    DATE = 288,                    /* DATE  */
+    TIMESTAMP = 289,               /* TIMESTAMP  */
+    PRIMARY = 290,                 /* PRIMARY  */
+    KEY = 291,                     /* KEY  */
+    EQ = 292,                      /* EQ  */
+    NE = 293,                      /* NE  */
+    GT = 294,                      /* GT  */
+    GE = 295,                      /* GE  */
+    LT = 296,                      /* LT  */
+    LE = 297,                      /* LE  */
+    IN = 298,                      /* IN  */
+    LIKE = 299,                    /* LIKE  */
+    AND = 300,                     /* AND  */
+    OR = 301,                      /* OR  */
+    ALL = 302,                     /* ALL  */
+    COMMA = 303,                   /* COMMA  */
+    SEMICOLON = 304,               /* SEMICOLON  */
+    QUOTE = 305,                   /* QUOTE  */
+    POINT = 306,                   /* POINT  */
+    LEFTPAREN = 307,               /* LEFTPAREN  */
+    RIGHTPAREN = 308,              /* RIGHTPAREN  */
+    IDENTIFIER = 309,              /* IDENTIFIER  */
+    INTVALUE = 310,                /* INTVALUE  */
+    FLOATVALUE = 311,              /* FLOATVALUE  */
+    STRINGVALUE = 312              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -141,35 +142,36 @@ extern int yydebug;
 #define NOT 280
 #define NULLX 281
 #define INT 282
-#define STRING 283
-#define BOOL 284
-#define FLOAT 285
-#define DOUBLE 286
-#define DATE 287
-#define TIMESTAMP 288
-#define PRIMARY 289
-#define KEY 290
-#define EQ 291
-#define NE 292
-#define GT 293
-#define GE 294
-#define LT 295
-#define LE 296
-#define IN 297
-#define LIKE 298
-#define AND 299
-#define OR 300
-#define ALL 301
-#define COMMA 302
-#define SEMICOLON 303
-#define QUOTE 304
-#define POINT 305
-#define LEFTPAREN 306
-#define RIGHTPAREN 307
-#define IDENTIFIER 308
-#define INTVALUE 309
-#define FLOATVALUE 310
-#define STRINGVALUE 311
+#define CHAR 283
+#define STRING 284
+#define BOOL 285
+#define FLOAT 286
+#define DOUBLE 287
+#define DATE 288
+#define TIMESTAMP 289
+#define PRIMARY 290
+#define KEY 291
+#define EQ 292
+#define NE 293
+#define GT 294
+#define GE 295
+#define LT 296
+#define LE 297
+#define IN 298
+#define LIKE 299
+#define AND 300
+#define OR 301
+#define ALL 302
+#define COMMA 303
+#define SEMICOLON 304
+#define QUOTE 305
+#define POINT 306
+#define LEFTPAREN 307
+#define RIGHTPAREN 308
+#define IDENTIFIER 309
+#define INTVALUE 310
+#define FLOATVALUE 311
+#define STRINGVALUE 312
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -181,6 +183,7 @@ union YYSTYPE
    int                      i_value;
    float                    f_value;
    bool                     b_value;
+   char                     c_value;
    char                     *keyword;
    DataType                 data_type;
    OprType                  opr_type;
@@ -202,7 +205,7 @@ union YYSTYPE
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 
-#line 206 "y.tab.h"
+#line 209 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

@@ -30,6 +30,7 @@ values                  return VALUES;
 primary                 return PRIMARY;
 key                     return KEY;
 int                     return INT;
+char                    return CHAR;
 float                   return FLOAT;
 double                  return DOUBLE;
 string                  return STRING;
@@ -58,12 +59,20 @@ count                   return COUNT;
 avg                     return AVG;
 true                    return TRUE;
 false                   return FALSE;
-[a-zA-Z][a-zA-Z0-9_]*    { yylval.s_value = strdup(yytext); return IDENTIFIER;} 
+[a-zA-Z][a-zA-Z0-9_]*   { yylval.s_value = strdup(yytext); return IDENTIFIER;} 
 [0-9]+                  { yylval.i_value = atoi(yytext); return INTVALUE;}
 [0-9]+	|
 [0-9]+"."[0-9]* |
 "."[0-9]*	            { yylval.f_value = atof(yytext); return FLOATVALUE; }
-'[^'\n]*'	            { char *str = strtok(yytext, "\'"); yylval.s_value = strdup(str); return STRINGVALUE;} 
+'[^'\n]*'	            { 
+                            if (strcmp(yytext, "''") == 0)
+                                yylval.s_value = strdup(" ");
+                            else {
+                                char *str = strtok(yytext, "\'"); 
+                                yylval.s_value =  strdup(str); 
+                            }
+                            return STRINGVALUE;
+                        } 
 '[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
 [ \t]   /* igonore space */
