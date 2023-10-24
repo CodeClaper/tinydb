@@ -1,9 +1,10 @@
+#include <stdbool.h>
+#include <string.h>
+#include <time.h>
 #include "common.h"
 #include "misc.h"
 #include "opr.h"
 #include "intpr.h"
-#include <stdbool.h>
-#include <string.h>
 
 // Equal operation.
 bool equal(void *source, void *target, DataType data_type) {
@@ -26,8 +27,9 @@ bool equal(void *source, void *target, DataType data_type) {
             return *(double *)source == *(double *)target;
         case T_FLOAT:
             return *(float *)source == *(float *)target;
-        case T_DATE:
         case T_TIMESTAMP:
+            return *(time_t *)source == *(time_t *)target;
+        case T_DATE:
             fatal("Not supported data type");
     }
     return false;
@@ -54,8 +56,9 @@ bool not_equal(void *source, void *target, DataType data_type) {
             return *(double *)source != *(double *)target;
         case T_FLOAT:
             return *(float *)source != *(float *)target;
-        case T_DATE:
         case T_TIMESTAMP:
+            return *(time_t *)source != *(time_t *)target;
+        case T_DATE:
             fatal("Not supported data type");
     }
     return false;
@@ -80,9 +83,11 @@ bool greater(void *source, void *target, DataType data_type) {
             return *(double *)source > *(double *)target;
         case T_FLOAT:
             return *(float *)source > *(float *)target;
-        case T_BOOL:
-        case T_DATE:
         case T_TIMESTAMP:
+            return *(time_t *)source > *(time_t *)target;
+        case T_BOOL:
+            return *(bool *)source > *(bool *)target;
+        case T_DATE:
             fatal("not implement.");
     }
     return false;
@@ -107,9 +112,11 @@ bool greater_equal(void *source, void *target, DataType data_type) {
             return *(double *)source >= *(double *)target;
         case T_FLOAT:
             return *(float *)source >= *(float *)target;
-        case T_BOOL:
-        case T_DATE:
         case T_TIMESTAMP:
+            return *(time_t *)source >= *(time_t *)target;
+        case T_BOOL:
+            return *(bool *)source >= *(bool *)target;
+        case T_DATE:
             fatal("not implement.");
     }
     return false;
@@ -134,9 +141,11 @@ bool less(void *source, void *target, DataType data_type) {
             return *(double *)source < *(double *)target;
         case T_FLOAT:
             return *(float *)source < *(float *)target;
-        case T_BOOL:
-        case T_DATE:
         case T_TIMESTAMP:
+            return *(time_t *)source < *(time_t *)target;
+        case T_BOOL:
+            return *(bool *)source < *(bool *)target;
+        case T_DATE:
             fatal("not implement.");
     }
     return false;
@@ -161,9 +170,11 @@ bool less_equal(void *source, void *target, DataType data_type) {
             return *(double *)source <= *(double *)target;
         case T_FLOAT:
             return *(float *)source <= *(float *)target;
-        case T_BOOL:
-        case T_DATE:
         case T_TIMESTAMP:
+            return *(time_t *)source <= *(time_t *)target;
+        case T_BOOL:
+            return *(bool *)source <= *(bool *)target;
+        case T_DATE:
             fatal("not implement.");
     }
     return false;

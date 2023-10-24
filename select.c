@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include "select.h"
 #include "table.h"
 #include "pager.h"
@@ -110,8 +109,19 @@ static void *get_value_from_value_item_node(ValueItemNode *value_item_node, Data
             }
         case T_TIMESTAMP:
             {
-                if (value_item_node->data_type == T_STRING) {
-                    
+                switch(value_item_node->data_type)
+                {
+                    case T_STRING:
+                        {
+                            struct tm *tmp_time = malloc(sizeof(struct tm));
+                            strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                            value_item_node->t_value = mktime(tmp_time);
+                            value_item_node->data_type = T_TIMESTAMP;
+                        }
+                    case T_TIMESTAMP:
+                        return &value_item_node->t_value;
+                    default:
+                        fatal("Data type error.");
                 }
                 break;
             }

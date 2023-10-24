@@ -60,7 +60,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
                 char *s = malloc(len);
                 time_t t = *(time_t *)value;
                 struct tm *tmp_time = localtime(&t);
-                strftime(temp, sizeof(temp), "%Y/%m/%d %H:%M:%S", tmp_time);
+                strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
                 sprintf(s, "\"%s\": \"%s\"", key, temp);
                 return s;
             }

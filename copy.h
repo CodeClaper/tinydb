@@ -9,6 +9,9 @@ KeyValue *copy_key_value(KeyValue *key_value);
 //Copy row
 Row *copy_row(Row *row);
 
+//Copy meta column.
+MetaColumn *copy_meta_column(MetaColumn *meta_column);
+
 //Copy value item node.
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node);
 

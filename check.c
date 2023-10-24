@@ -1,11 +1,14 @@
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include <regex.h>
 #include "check.h"
 #include "data.h"
 #include "table.h"
 #include "log.h"
 #include "meta.h"
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
+#include "misc.h"
 
 //Check ident not.
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
@@ -18,32 +21,96 @@ static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
     return false;
 }
 
-static bool if_convert_type(DataType source, DataType target) {
+//Check if type convert pass.
+static bool if_convert_type(DataType source, DataType target, char *column_name) {
+    bool result = true;
     switch(source) {
         case T_BOOL:
-            return target == T_BOOL;
+            result = target == T_BOOL;
+            break;
         case T_INT:
-            return target == T_INT;
+            result = target == T_INT;
+            break;
         case T_FLOAT:
-            return target == T_INT || target == T_FLOAT;
+            result = target == T_INT || target == T_FLOAT;
+            break;
         case T_DOUBLE:
-            return target == T_DOUBLE;
+            result = target == T_DOUBLE;
+            break;
         case T_CHAR:
-            return target == T_CHAR;
+            result = target == T_CHAR;
+            break;
         case T_STRING:
-            return target == T_CHAR || target == T_STRING;
+            result = target == T_CHAR || target == T_STRING;
+            break;
         case T_TIMESTAMP:
-            return target == T_TIMESTAMP || target == T_STRING;
+            result = target == T_TIMESTAMP || target == T_STRING;
+            break;
         case T_DATE:
-            return target == T_DATE;
+            result = target == T_DATE;
+            break;
     }
+    if (!result)
+       log_error_s("Data type convert fail for column '%s'", column_name);
+    return result;
+}
+
+//Check value if valid.
+static bool check_value_valid(DataType data_type, void* value) {
+    switch(data_type) {
+        case T_BOOL:
+        case T_INT:
+        case T_FLOAT:
+        case T_DOUBLE:
+        case T_CHAR:
+        case T_STRING:
+        case T_DATE:
+            return true;
+        case T_TIMESTAMP:
+            {   
+                // when data type is tiemstamp, user`s input just a string.
+                regex_t reegex;
+                int comp_result, exe_result;
+                // https://www.regular-expressions.info/gnu.html, and notice there`s not \\b.
+                comp_result = regcomp(&reegex, "^([0-9]{4})(-|/)(0[1-9]|1[0-2])(-|/)(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
+                assert(comp_result == 0);
+                exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
+                regfree(&reegex);
+                if (exe_result == REG_NOMATCH) {
+                    log_error_s("Try to convert value '%s' to timestamp fail.", (char *) value);
+                }
+                return exe_result == REG_NOERROR;
+            }
+    }
+
+}
+
+static void *get_value(ValueItemNode *value_item_node) {
+    switch(value_item_node->data_type) {
+        case T_INT:
+            return &value_item_node->i_value;
+        case T_BOOL:
+            return &value_item_node->b_value;
+        case T_STRING:
+            return value_item_node->s_value;
+        case T_FLOAT:
+            return &value_item_node->f_value;
+        case T_DOUBLE:
+            return &value_item_node->d_value;
+        case T_TIMESTAMP:
+            return &value_item_node->t_value;
+        case T_CHAR:
+        case T_DATE:
+            fatal("Not implement yet.");
+    }
+    return NULL;
 }
 
 //Check ident not.
 static bool check_value_item_node(MetaTable *meta_table, char *column_name ,ValueItemNode *value_item_node) {
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type)) 
+        if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name)) 
             return true;
     }
     log_error_s("Column '%s' data type error.", column_name);
@@ -73,7 +140,10 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
             }
         case EXEC_CONDITION:
             {
-                return check_column_node(meta_table, condition_node->column);
+                MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
+                return check_column_node(meta_table, condition_node->column) // check select column
+                    && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name) // check column type
+                        &&check_value_valid(meta_column->column_type, get_value(condition_node->value)); // check if value valid
             }
     }
 }
@@ -83,15 +153,6 @@ static bool check_column_set(ColumnSetNode *column_set_node, MetaTable *meta_tab
     for (uint32_t i = 0; i < column_set_node->size; i++) {
         ColumnNode *column_node = *(column_set_node->columns + i);
         if (!check_column_node(meta_table, column_node))
-            return false;
-    } 
-    return true;
-}
-
-static bool check_value_item_set(ValueItemSetNode *value_item_set_node, MetaTable *meta_table) {
-    for (uint32_t i = 0; i < value_item_set_node->num; i++) {
-        ValueItemNode *value_item_node = *(value_item_set_node->value_item_node + i);
-        if (!check_value_item_node(meta_table, "", value_item_node))
             return false;
     } 
     return true;
@@ -120,10 +181,12 @@ bool check_insert_node(InsertNode *insert_node) {
         for (uint32_t i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type)) {
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name)) { // check data type
                 log_error_s("Data type convert fail for column '%s'", meta_column->column_name);
                 return false;
             }
+            if (!check_value_valid(meta_column->column_type, get_value(value_item_node))) // checke value valid
+                return false;
         }
     } else {
         if (insert_node->columns_set_node->size != insert_node->value_item_set_node->num) {
@@ -134,10 +197,11 @@ bool check_insert_node(InsertNode *insert_node) {
             ColumnNode *column_node = *(insert_node->columns_set_node->columns + i);
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type)) {
-                log_error_s("Data type convert fail for column '%s'", meta_column->column_name);
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name)) { // check data type
                 return false;
             }
+            if (!check_value_valid(meta_column->column_type, get_value(value_item_node))) // check value valid
+                return false;
         }
     }
     return true;

@@ -89,7 +89,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                     case T_STRING:
                         {
                             struct tm *tmp_time = malloc(sizeof(struct tm));
-                            strptime(value_item_node->s_value, "%Y/%m/%d %H:%M:%S", tmp_time);
+                            strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                             value_item_node->t_value = mktime(tmp_time);
                         }
                     case T_TIMESTAMP:
