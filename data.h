@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
-#include "intpr.h"
 
 #ifndef DATA_H
 #define DATA_H
@@ -13,6 +12,166 @@
 #define MAX_COLUMN_SIZE 25 // max column size
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define BUFF_SIZE 1024
+
+#define MAX_COLUMN_SIZE 25
+#define MAX_COLUMN_NAME_LEN 30 // max column name length
+
+typedef enum {
+  O_EQ,
+  O_NE,
+  O_GT,
+  O_GE,
+  O_LT,
+  O_LE,
+  O_IN,
+  O_LIKE
+} OprType; // operator type
+
+typedef enum {
+  T_BOOL,
+  T_CHAR,
+  T_INT,
+  T_DOUBLE,
+  T_FLOAT,
+  T_STRING,
+  T_DATE,
+  T_TIMESTAMP
+} DataType;
+
+typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
+
+typedef enum { C_OR, C_AND } ConnType; // connector type
+
+typedef enum { V_INT, V_COLUMN, V_ALL } FunctionValueType; // value type.
+
+typedef enum { SELECT_COLUMNS, SELECT_FUNCTION, SELECT_ALL} SelectItemType;
+
+typedef enum {
+  CREATE_TABLE_STMT,
+  SELECT_STMT,
+  INSERT_STMT,
+  UPDATE_STMT,
+  DELETE_STMT,
+  DESCRIBE_STMT,
+  SHOW_TABLES_STMT
+} StatementType; // statement type
+
+typedef struct {
+    char *column_name;
+    bool exist_table_name;
+    char *table_name;
+}ColumnNode;
+
+typedef struct {
+    ColumnNode **columns;
+    uint32_t size;
+} ColumnSetNode;
+
+typedef struct {
+  FunctionValueType value_type;
+  union {
+    int32_t i_value;
+    ColumnNode *column;
+  };
+} FunctionValueNode;
+
+typedef struct {
+  FunctionType function_type;
+  FunctionValueNode *value;
+} FunctionNode;
+
+
+typedef struct {
+    ColumnSetNode *column_set_node;
+    FunctionNode *function_node;
+    SelectItemType type;
+} SelectItemsNode;
+
+typedef struct {
+    ColumnNode *column;
+    DataType data_type;
+    bool is_primary;
+    bool allow_null;
+} ColumnDefNode;
+
+typedef struct {
+  ColumnDefNode **column_defs;
+  uint32_t size;
+} ColumnDefSetNode;
+
+typedef struct {
+  ColumnNode *column;
+} PrimaryKeyNode;
+
+typedef struct {
+  DataType data_type;
+  union {
+    int i_value;
+    bool b_value;
+    char *s_value;
+    char c_value;
+    float f_value;
+    double d_value;
+    time_t t_value;
+  };
+} ValueItemNode;
+
+typedef struct {
+  ValueItemNode **value_item_node;
+  uint32_t num;
+} ValueItemSetNode;
+
+typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
+
+typedef struct ConditionNode {
+  ColumnNode *column;
+  OprType opr_type;
+  ValueItemNode *value;
+  ConnType conn_type;
+  struct ConditionNode *next;
+  struct ConditionNode *left;
+  struct ConditionNode *right;
+  ConditionNodeType type;
+} ConditionNode;
+
+typedef struct {
+  char *table_name;
+  ColumnDefSetNode *column_def_set_node;
+  PrimaryKeyNode *primary_key_node;
+} CreateTableNode;
+
+typedef struct {
+  SelectItemsNode *select_items_node;
+  char *table_name;
+  ConditionNode *condition_node;
+} SelectNode;
+
+typedef struct {
+   bool all_column;
+   char *table_name;
+   ColumnSetNode *columns_set_node;
+   ValueItemSetNode *value_item_set_node;
+} InsertNode;
+
+typedef struct {
+    char *table_name;
+} DescribeNode;
+
+typedef struct {
+
+} ShowTablesNode;
+
+typedef struct {
+  StatementType statement_type;
+  union {
+    CreateTableNode *create_table_node;
+    SelectNode *select_node;
+    InsertNode *insert_node;
+    DescribeNode *describe_node;
+    ShowTablesNode *show_tables_node;
+  };
+} ASTNode;
+
 
 typedef struct {
     char *input;
