@@ -82,7 +82,7 @@ false                   return FALSE;
 int yyerror(const char *s) {
     char *str = malloc(100);
     memset(str, 0, 100);
-	sprintf(str, "Line%d: %s at %s", lineno, s, yytext);
+	sprintf(str, "Line%d: %s at '%s'", lineno, s, yytext);
     log_error(str);
     return 0;
 }

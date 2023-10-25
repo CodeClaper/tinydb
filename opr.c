@@ -30,7 +30,7 @@ bool equal(void *source, void *target, DataType data_type) {
         case T_TIMESTAMP:
             return *(time_t *)source == *(time_t *)target;
         case T_DATE:
-            fatal("Not supported data type");
+            return *(time_t *)source == *(time_t *)target;
     }
     return false;
 }
@@ -59,7 +59,7 @@ bool not_equal(void *source, void *target, DataType data_type) {
         case T_TIMESTAMP:
             return *(time_t *)source != *(time_t *)target;
         case T_DATE:
-            fatal("Not supported data type");
+            return *(time_t *)source != *(time_t *)target;
     }
     return false;
 }
@@ -88,7 +88,7 @@ bool greater(void *source, void *target, DataType data_type) {
         case T_BOOL:
             return *(bool *)source > *(bool *)target;
         case T_DATE:
-            fatal("not implement.");
+            return *(time_t *)source > *(time_t *)target;
     }
     return false;
 }
@@ -117,7 +117,7 @@ bool greater_equal(void *source, void *target, DataType data_type) {
         case T_BOOL:
             return *(bool *)source >= *(bool *)target;
         case T_DATE:
-            fatal("not implement.");
+            return *(time_t *)source >= *(time_t *)target;
     }
     return false;
 }
@@ -146,7 +146,7 @@ bool less(void *source, void *target, DataType data_type) {
         case T_BOOL:
             return *(bool *)source < *(bool *)target;
         case T_DATE:
-            fatal("not implement.");
+            return *(time_t *)source < *(time_t *)target;
     }
     return false;
 }
@@ -175,7 +175,7 @@ bool less_equal(void *source, void *target, DataType data_type) {
         case T_BOOL:
             return *(bool *)source <= *(bool *)target;
         case T_DATE:
-            fatal("not implement.");
+            return *(time_t *)source <= *(time_t *)target;
     }
     return false;
 }

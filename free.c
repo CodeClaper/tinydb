@@ -127,6 +127,7 @@ void free_value_item_node(ValueItemNode *value_item_node) {
             case T_FLOAT:
             case T_DOUBLE:
             case T_TIMESTAMP:
+            case T_DATE:
                 break;
             case T_STRING:
                 {
@@ -134,8 +135,6 @@ void free_value_item_node(ValueItemNode *value_item_node) {
                         free(value_item_node->s_value);
                 }
                 break;
-            default:
-                fatal("Not implement yet.");
         }
         free(value_item_node);
     }

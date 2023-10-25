@@ -17,7 +17,6 @@ int yywrap() {
    int                      i_value;
    float                    f_value;
    bool                     b_value;
-   char                     c_value;
    char                     *keyword;
    DataType                 data_type;
    OprType                  opr_type;

@@ -15,6 +15,7 @@ void *copy_value(void *value, DataType data_type) {
         case T_DOUBLE:
         case T_CHAR:
         case T_TIMESTAMP:
+        case T_DATE:
             return value;
         case T_STRING:
             {
@@ -23,8 +24,6 @@ void *copy_value(void *value, DataType data_type) {
                 strcpy(new_value, value);
                 return new_value;
             }
-        case T_DATE:
-            fatal("Not implement yet.");
         default:
             return NULL;
     }    
@@ -127,6 +126,9 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     memset(value_item_node_copy, 0, sizeof(ValueItemNode));
     value_item_node_copy->data_type = value_item_node->data_type;
     switch(value_item_node->data_type) {
+        case T_CHAR:
+            value_item_node->c_value = value_item_node->c_value;
+            break;
         case T_INT:
             value_item_node_copy->i_value = value_item_node->i_value;
             break;
@@ -143,10 +145,9 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
             value_item_node_copy->d_value = value_item_node->d_value;
             break;
         case T_TIMESTAMP:
+        case T_DATE:
             value_item_node_copy->t_value = value_item_node->t_value;
             break;
-        default:
-            fatal("Not implement yet.");
     }
     return value_item_node_copy;
 }

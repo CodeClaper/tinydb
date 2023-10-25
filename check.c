@@ -47,7 +47,7 @@ static bool if_convert_type(DataType source, DataType target, char *column_name)
             result = target == T_TIMESTAMP || target == T_STRING;
             break;
         case T_DATE:
-            result = target == T_DATE;
+            result = target == T_DATE || target == T_STRING;
             break;
     }
     if (!result)
@@ -67,7 +67,6 @@ static bool check_value_valid(DataType data_type, void* value) {
         case T_FLOAT:
         case T_DOUBLE:
         case T_STRING:
-        case T_DATE:
             return true;
         case T_CHAR: 
             {
@@ -79,11 +78,26 @@ static bool check_value_valid(DataType data_type, void* value) {
             }
         case T_TIMESTAMP:
             {   
-                // when data type is tiemstamp, user`s input just a string.
+                // when data type is tiemstamp, user`s input just a string type.
                 regex_t reegex;
                 int comp_result, exe_result;
                 // https://www.regular-expressions.info/gnu.html, and notice there`s not \\b.
-                comp_result = regcomp(&reegex, "^([0-9]{4})(-|/)(0[1-9]|1[0-2])(-|/)(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
+                comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
+                assert(comp_result == 0);
+                exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
+                regfree(&reegex);
+                if (exe_result == REG_NOMATCH) {
+                    log_error_s("Try to convert value '%s' to timestamp fail.", (char *) value);
+                }
+                return exe_result == REG_NOERROR;
+            }
+        case T_DATE:
+            {
+                // when data type is date, user`s input just a string type.
+                regex_t reegex;
+                int comp_result, exe_result;
+                // https://www.regular-expressions.info/gnu.html, and notice there`s not \\b.
+                comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", REG_EXTENDED);
                 assert(comp_result == 0);
                 exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
                 regfree(&reegex);
@@ -113,7 +127,7 @@ static void *get_value(ValueItemNode *value_item_node) {
         case T_CHAR:
             return &value_item_node->c_value;
         case T_DATE:
-            fatal("Not implement yet.");
+            return &value_item_node->t_value;
     }
     return NULL;
 }

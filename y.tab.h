@@ -183,7 +183,6 @@ union YYSTYPE
    int                      i_value;
    float                    f_value;
    bool                     b_value;
-   char                     c_value;
    char                     *keyword;
    DataType                 data_type;
    OprType                  opr_type;
@@ -205,7 +204,7 @@ union YYSTYPE
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 
-#line 209 "y.tab.h"
+#line 208 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

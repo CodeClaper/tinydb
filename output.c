@@ -72,6 +72,17 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
                 sprintf(s, "\"%s\": \"%s\"", key, temp);
                 return s;
             }
+        case T_DATE: 
+            {
+                char temp[90];
+                uint32_t len = strlen(key) + 4 + 100; // key len + symbol len + value len. 
+                char *s = malloc(len);
+                time_t t = *(time_t *)value;
+                struct tm *tmp_time = localtime(&t);
+                strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
+                sprintf(s, "\"%s\": \"%s\"", key, temp);
+                return s;
+            }
         default:
             fatal("Not support data type");
     }

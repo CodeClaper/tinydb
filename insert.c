@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#define _XOPEN_SOURCE
+#define __USE_XOPEN
 #include <time.h>
 #include "common.h"
 #include "misc.h"
@@ -83,6 +85,24 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                 }
             }
         case T_DATE:
+            {
+                switch(value_item_node->data_type) {
+                    case T_STRING:
+                        {
+                            struct tm *tmp_time = malloc(sizeof(struct tm));
+                            strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
+                            tmp_time->tm_sec = 0;
+                            tmp_time->tm_min = 0;
+                            tmp_time->tm_hour = 0;
+                            value_item_node->data_type = T_DATE;
+                            value_item_node->t_value = mktime(tmp_time);
+                        }
+                    case T_DATE:
+                        return &value_item_node->t_value;
+                    default:
+                        fatal("Data type error.");
+                }
+            }
         case T_TIMESTAMP: 
             {
                 switch(value_item_node->data_type) {
@@ -90,16 +110,15 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                         {
                             struct tm *tmp_time = malloc(sizeof(struct tm));
                             strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                            value_item_node->data_type = T_TIMESTAMP;
                             value_item_node->t_value = mktime(tmp_time);
                         }
                     case T_TIMESTAMP:
-                        value_item_node->data_type = T_TIMESTAMP;
                         return &value_item_node->t_value;
                     default:
                         fatal("Data type error.");
                 }
             }
-            fatal("Not support type.");
     }
     return NULL;
 }
