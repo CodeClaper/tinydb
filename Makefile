@@ -1,5 +1,5 @@
 PROG=cache.c cond.c conf.c copy.c create.c desc.c free.c index.c input.c\
-	 insert.c meta.c misc.c node.c opr.c output.c pager.c row.c select.c show.c stmt.c\
+	 insert.c meta.c misc.c node.c opr.c output.c pager.c row.c select.c show.c stmt.c update.c\
 	 table.c token.c utils.c server.c log.c check.c\
 	 lex.yy.c y.tab.c intpr.c 
 PROMT=tinydb

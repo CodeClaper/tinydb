@@ -5,6 +5,8 @@ QueryParam *convert_query_param(SelectNode *select_node);
 
 // generate select reuslt.
 SelectResult *gen_select_result(QueryParam *query_param);
+//Get value from value item node.
+void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type);
 
 // print select result using beauty format.
 void print_select_result_beauty(SelectResult *select_result);

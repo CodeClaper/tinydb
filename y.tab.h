@@ -197,14 +197,17 @@ union YYSTYPE
    FunctionValueNode        *function_value_node;
    FunctionNode             *function_node;
    PrimaryKeyNode           *primary_key_node;
+   AssignmentNode           *assignment_node;
+   AssignmentSetNode        *assignment_set_node;
    ConditionNode            *cond_node;
    CreateTableNode          *create_table_node;
    SelectNode               *select_node;
    InsertNode               *insert_node;
+   UpdateNode               *update_node;
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 
-#line 208 "y.tab.h"
+#line 211 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

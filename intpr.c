@@ -87,6 +87,30 @@ ConditionNode *make_cond_node() {
     return cond_node;
 }
 
+// make an assignment node.
+AssignmentNode *make_assignment_node() {
+    AssignmentNode *assignment_node = malloc(sizeof(AssignmentNode));
+    memset(assignment_node, 0, sizeof(AssignmentNode));
+    return assignment_node;
+}
+
+
+// make an assignment set node.
+AssignmentSetNode *make_assignment_set_node() {
+    AssignmentSetNode *assignment_set_node = malloc(sizeof(AssignmentSetNode));
+    memset(assignment_set_node, 0, sizeof(AssignmentSetNode));
+    assignment_set_node->assignment_node = malloc(0);
+    assignment_set_node->num = 0;
+    return assignment_set_node;
+}
+
+// add assignment to set.
+void add_assignment_to_set(AssignmentSetNode *assignment_set_node, AssignmentNode *assignment_node) {
+    assignment_set_node->assignment_node = realloc(assignment_set_node->assignment_node, sizeof(AssignmentNode *) * (assignment_set_node->num + 1));
+    *(assignment_set_node->assignment_node + assignment_set_node->num) = assignment_node; 
+    assignment_set_node->num++;
+}
+
 // make a column def node.
 ColumnDefNode *make_column_def_node() {
     ColumnDefNode *column_def_node = malloc(sizeof(ColumnDefNode));
@@ -129,6 +153,13 @@ InsertNode *make_insert_node() {
     InsertNode *insert_node = malloc(sizeof(InsertNode));
     memset(insert_node, 0, sizeof(InsertNode));
     return insert_node;
+}
+
+// make an update node.
+UpdateNode *make_update_node() {
+    UpdateNode *update_node = malloc(sizeof(UpdateNode));
+    memset(update_node, 0, sizeof(UpdateNode));
+    return update_node;
 }
 
 // make a create table node.
@@ -174,6 +205,18 @@ void set_insert_ast_node(InsertNode *insert_node) {
     }
     root->statement_type = INSERT_STMT;
     root->insert_node = insert_node;
+}
+
+void set_update_ast_node(UpdateNode *update_node) {
+    if (root == NULL)
+        root = malloc(sizeof(ASTNode));
+    else {
+        ASTNode *temp = root;
+        root = malloc(sizeof(ASTNode));
+        free_ast_node(temp);
+    }
+    root->statement_type = UPDATE_STMT;
+    root->update_node = update_node;
 }
 
 void set_create_table_ast_node(CreateTableNode *create_table_node) {

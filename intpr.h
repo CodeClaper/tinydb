@@ -31,6 +31,15 @@ void add_column_to_set(ColumnSetNode *column_set_node, ColumnNode *column_node);
 // make a condition node.
 ConditionNode *make_cond_node();
 
+// make an assignment node.
+AssignmentNode *make_assignment_node();
+
+// make an assignment set node.
+AssignmentSetNode *make_assignment_set_node();
+
+// add assignment to set.
+void add_assignment_to_set(AssignmentSetNode *assignment_set_node, AssignmentNode *assignment_node);
+
 // make a create table node.
 CreateTableNode *make_create_table_node();
 
@@ -45,6 +54,9 @@ void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node);
 
 // make an insert node.
 InsertNode *make_insert_node();
+
+// make an update node.
+UpdateNode *make_update_node();
 
 // make a column def node.
 ColumnDefNode *make_column_def_node();
@@ -69,6 +81,9 @@ void set_select_ast_node(SelectNode *select_node);
 
 // set ASTNode;
 void set_insert_ast_node(InsertNode *insert_node);
+
+// Set UpdateNode;
+void set_update_ast_node(UpdateNode *update_node);
 
 // set ASTNode
 void set_create_table_ast_node(CreateTableNode *create_table_node);

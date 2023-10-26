@@ -64,15 +64,7 @@ false                   return FALSE;
 [0-9]+	|
 [0-9]+"."[0-9]* |
 "."[0-9]*	            { yylval.f_value = atof(yytext); return FLOATVALUE; }
-'[^'\n]*'	            { 
-                            if (strcmp(yytext, "''") == 0)
-                                yylval.s_value = strdup(" ");
-                            else {
-                                char *str = strtok(yytext, "\'"); 
-                                yylval.s_value =  strdup(str); 
-                            }
-                            return STRINGVALUE;
-                        } 
+'[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.s_value = strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.s_value =  strdup(str);} return STRINGVALUE;} 
 '[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
 [ \t]   /* igonore space */

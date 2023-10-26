@@ -230,3 +230,33 @@ bool check_insert_node(InsertNode *insert_node) {
     }
     return true;
 }
+
+// Check assignment set node
+static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, SelectResult *select_result, Table *table) { 
+    for (uint32_t i = 0; i < assignment_set_node->num; i++) {
+        AssignmentNode *assignment_node = *(assignment_set_node->assignment_node + i);
+        ColumnNode *column_node = assignment_node->column;
+        ValueItemNode *value_node = assignment_node->value;
+        assert(column_node != NULL);
+        MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
+        if (!check_column_node(table->meta_table, column_node) || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name) || !check_value_valid(meta_column->column_type, get_value(value_node)))
+            return false;
+        if (meta_column->is_primary) {
+            // It means to change the primary key, may cause duplicate key. 
+            // It need lost of operations, including checking if exists duaplicate key,
+            // and move cell postion order by key. So we implement it in the future.
+            log_error("Not support change the primay key temporarily.");
+            return false;
+        }
+    }
+    return true;
+}
+
+// check for update node. 
+bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
+    Table *table = open_table(update_node->table_name);
+    assert(table != NULL);
+    return check_assignment_set_node(update_node->assignment_set_node, select_result, table) 
+                 && check_condition_node(update_node->condition_node, table->meta_table);
+}
+

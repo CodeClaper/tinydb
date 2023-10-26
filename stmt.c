@@ -15,6 +15,7 @@
 #include "insert.h"
 #include "select.h"
 #include "create.h"
+#include "update.h"
 #include "desc.h"
 #include "show.h"
 #include "free.h"
@@ -45,8 +46,6 @@ static void statement_insert(Statement *stmt, Output *out) {
 static void statement_select(Statement *statement, Output *out) {
     assert(statement->statement_type == STMT_SELECT);
     QueryParam *query_param = convert_query_param(statement->ast_node->select_node);
-    if (query_param == NULL) 
-        return;
     if (check_query_param(query_param)) {
         SelectResult *select_result = query_with_condition(query_param);
         if (select_result) {
@@ -59,7 +58,8 @@ static void statement_select(Statement *statement, Output *out) {
 }
 
 static void statement_update(Statement *statement, Output *out) {
-    out->result = EXECUTE_SUCCESS;
+    assert(statement->statement_type == STMT_UPDATE);
+    out->result = exec_update_statment(statement->ast_node->update_node, out);
 }
 
 static void statement_delete(Statement *statement, Output *out) {

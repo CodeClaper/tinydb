@@ -76,7 +76,7 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
 }
 
 //Get value from value item node.
-static void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type) {
+void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type) {
     switch(meta_data_type) {
         case T_CHAR:
             {
@@ -311,7 +311,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     }
 }
 
-// convert from select node to select param
+// convert from select node to query param
 QueryParam *convert_query_param(SelectNode *select_node) {
     QueryParam *query_param = malloc(sizeof(QueryParam));
     memset(query_param, 0, sizeof(QueryParam));

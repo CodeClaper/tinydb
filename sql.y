@@ -31,10 +31,13 @@ int yywrap() {
    FunctionValueNode        *function_value_node;
    FunctionNode             *function_node;
    PrimaryKeyNode           *primary_key_node;
+   AssignmentNode           *assignment_node;
+   AssignmentSetNode        *assignment_set_node;
    ConditionNode            *cond_node;
    CreateTableNode          *create_table_node;
    SelectNode               *select_node;
    InsertNode               *insert_node;
+   UpdateNode               *update_node;
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 };
@@ -74,6 +77,8 @@ int yywrap() {
 %type <column_def_set_node> column_defs
 %type <primary_key_node> primary_key_statement
 %type <cond_node> cond
+%type <assignment_node> assignment
+%type <assignment_set_node> assignments
 %type <conn_type> conn
 %type <data_type> data_type
 %type <opr_type> opr
@@ -81,6 +86,7 @@ int yywrap() {
 %type <function_node> function
 %type <select_node> select_statement
 %type <insert_node> insert_statement
+%type <update_node> update_statement
 %type <create_table_node> create_table_statement
 %type <describe_node> describe_statement
 %type <show_table_node> show_tables_statement
@@ -104,9 +110,9 @@ statement:
                 {
                     set_insert_ast_node($1);
                 }
-            | statement_update
+            | update_statement
                 {
-
+                    set_update_ast_node($1);
                 }
             | describe_statement
                 {
@@ -170,14 +176,21 @@ insert_statement:
                     $$ = node;
                 }
             ;
-statement_update:
-            UPDATE TABLE table SET assignments end
+update_statement:
+            UPDATE table SET assignments end
                 {
-                    
+                    UpdateNode *node = make_update_node();
+                    node->table_name = $2;
+                    node->assignment_set_node = $4;
+                    $$ = node;
                 }
-            | UPDATE TABLE table SET assignments WHERE cond end
+            | UPDATE table SET assignments WHERE cond end
                 {
-
+                    UpdateNode *node = make_update_node();
+                    node->table_name = $2;
+                    node->assignment_set_node = $4;
+                    node->condition_node = $6;
+                    $$ = node;
                 }
             ;
 describe_statement:
@@ -358,10 +371,25 @@ BOOLVALUE:
             ;
 assignments:
            assignment
+                {
+                    AssignmentSetNode *node = make_assignment_set_node();
+                    add_assignment_to_set(node, $1);
+                    $$ = node;
+                }
            | assignments COMMA assignment
+                {
+                    add_assignment_to_set($1, $3);
+                    $$ = $1;
+                }
            ;
 assignment:
-		  IDENTIFIER EQ value_item
+		  column EQ value_item
+                {
+                    AssignmentNode *node = make_assignment_node();
+                    node->column = $1;
+                    node->value = $3;
+                    $$ = node;
+                }
           ;
 cond: 
             column opr value_item

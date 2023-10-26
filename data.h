@@ -46,6 +46,8 @@ typedef enum { V_INT, V_COLUMN, V_ALL } FunctionValueType; // value type.
 
 typedef enum { SELECT_COLUMNS, SELECT_FUNCTION, SELECT_ALL} SelectItemType;
 
+typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
+
 typedef enum {
   CREATE_TABLE_STMT,
   SELECT_STMT,
@@ -121,7 +123,15 @@ typedef struct {
   uint32_t num;
 } ValueItemSetNode;
 
-typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
+typedef struct {
+   ColumnNode *column; 
+   ValueItemNode *value;
+}AssignmentNode;
+
+typedef struct {
+    AssignmentNode **assignment_node;
+    uint32_t num;
+}AssignmentSetNode;
 
 typedef struct ConditionNode {
   ColumnNode *column;
@@ -154,6 +164,12 @@ typedef struct {
 } InsertNode;
 
 typedef struct {
+   char *table_name; 
+   AssignmentSetNode *assignment_set_node;
+   ConditionNode *condition_node;
+} UpdateNode;
+
+typedef struct {
     char *table_name;
 } DescribeNode;
 
@@ -167,11 +183,11 @@ typedef struct {
     CreateTableNode *create_table_node;
     SelectNode *select_node;
     InsertNode *insert_node;
+    UpdateNode *update_node;
     DescribeNode *describe_node;
     ShowTablesNode *show_tables_node;
   };
 } ASTNode;
-
 
 typedef struct {
     char *input;
