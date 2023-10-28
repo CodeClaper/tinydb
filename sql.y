@@ -38,6 +38,7 @@ int yywrap() {
    SelectNode               *select_node;
    InsertNode               *insert_node;
    UpdateNode               *update_node;
+   DeleteNode               *delete_node;
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 };
@@ -87,6 +88,7 @@ int yywrap() {
 %type <select_node> select_statement
 %type <insert_node> insert_statement
 %type <update_node> update_statement
+%type <delete_node> delete_statement
 %type <create_table_node> create_table_statement
 %type <describe_node> describe_statement
 %type <show_table_node> show_tables_statement
@@ -102,7 +104,7 @@ statement:
                 {
                    set_create_table_ast_node($1); 
                 }
-            |select_statement 
+            | select_statement 
                 {
                     set_select_ast_node($1);
                 }
@@ -113,6 +115,10 @@ statement:
             | update_statement
                 {
                     set_update_ast_node($1);
+                }
+            | delete_statement
+                {
+                    set_delete_ast_node($1);
                 }
             | describe_statement
                 {
@@ -190,6 +196,21 @@ update_statement:
                     node->table_name = $2;
                     node->assignment_set_node = $4;
                     node->condition_node = $6;
+                    $$ = node;
+                }
+            ;
+delete_statement:
+            DELETE FROM table end
+                {
+                    DeleteNode *node = make_delete_node();
+                    node->table_name = $3;
+                    $$ = node;
+                }
+            | DELETE FROM table WHERE cond end
+                {
+                    DeleteNode *node = make_delete_node();
+                    node->table_name = $3;
+                    node->condition_node = $5;
                     $$ = node;
                 }
             ;

@@ -301,6 +301,16 @@ void free_update_node(UpdateNode *update_node) {
     } 
 }
 
+//Free delete node.
+void free_delete_node(DeleteNode *delete_node) {
+    if (delete_node) {
+        if (delete_node->table_name)
+            free(delete_node->table_name);
+        free_condition_node(delete_node->condition_node);
+        free(delete_node);
+    } 
+}
+
 //Free create table node.
 void free_create_table_node(CreateTableNode *create_table_node) {
     if (create_table_node != NULL) {

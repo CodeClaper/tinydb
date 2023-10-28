@@ -12,10 +12,11 @@
 #include "table.h"
 #include "node.h"
 #include "meta.h"
-#include "insert.h"
-#include "select.h"
 #include "create.h"
+#include "select.h"
+#include "insert.h"
 #include "update.h"
+#include "delete.h"
 #include "desc.h"
 #include "show.h"
 #include "free.h"
@@ -63,7 +64,8 @@ static void statement_update(Statement *statement, Output *out) {
 }
 
 static void statement_delete(Statement *statement, Output *out) {
-    out->result = EXECUTE_SUCCESS;
+    assert(statement->statement_type == STMT_DELETE);
+    out->result = exec_delete_statement(statement->ast_node->delete_node, out);
 }
 
 static void statement_describe(Statement *statement, Output *out) {

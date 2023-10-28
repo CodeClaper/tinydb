@@ -52,23 +52,32 @@ ValueItemSetNode *make_value_item_set_node();
 // add value item into set.
 void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node);
 
-// make an insert node.
-InsertNode *make_insert_node();
-
-// make an update node.
-UpdateNode *make_update_node();
-
 // make a column def node.
 ColumnDefNode *make_column_def_node();
 
 // make a column def set node.
 ColumnDefSetNode *make_column_def_set_node();
 
+// add column def node to set.
+void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
+
 // make a primary key node.
 PrimaryKeyNode *make_primary_key_node();
 
-// add column def node to set.
-void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
+// make an insert node.
+InsertNode *make_insert_node();
+
+// make an update node.
+UpdateNode *make_update_node();
+
+// make an insert node.
+InsertNode *make_insert_node();
+
+// make an update node.
+UpdateNode *make_update_node();
+
+// make a delete node.
+DeleteNode *make_delete_node();
 
 // make a describe node.
 DescribeNode *make_describe_node();
@@ -82,8 +91,11 @@ void set_select_ast_node(SelectNode *select_node);
 // set ASTNode;
 void set_insert_ast_node(InsertNode *insert_node);
 
-// Set UpdateNode;
+// set ASTNode;
 void set_update_ast_node(UpdateNode *update_node);
+
+// set ASTNode;
+void set_delete_ast_node(DeleteNode *delete_node);
 
 // set ASTNode
 void set_create_table_ast_node(CreateTableNode *create_table_node);

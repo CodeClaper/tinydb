@@ -171,6 +171,11 @@ typedef struct {
 
 typedef struct {
     char *table_name;
+    ConditionNode *condition_node;
+}DeleteNode;
+
+typedef struct {
+    char *table_name;
 } DescribeNode;
 
 typedef struct {
@@ -184,6 +189,7 @@ typedef struct {
     SelectNode *select_node;
     InsertNode *insert_node;
     UpdateNode *update_node;
+    DeleteNode *delete_node;
     DescribeNode *describe_node;
     ShowTablesNode *show_tables_node;
   };

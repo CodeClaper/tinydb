@@ -204,10 +204,11 @@ union YYSTYPE
    SelectNode               *select_node;
    InsertNode               *insert_node;
    UpdateNode               *update_node;
+   DeleteNode               *delete_node;
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
 
-#line 211 "y.tab.h"
+#line 212 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

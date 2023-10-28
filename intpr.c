@@ -162,6 +162,13 @@ UpdateNode *make_update_node() {
     return update_node;
 }
 
+// make delete node.
+DeleteNode *make_delete_node() {
+    DeleteNode *delete_node = malloc(sizeof(DeleteNode));
+    memset(delete_node, 0, sizeof(DeleteNode));
+    return delete_node;
+}
+
 // make a create table node.
 CreateTableNode *make_create_table_node() {
     CreateTableNode *create_table_node = malloc(sizeof(CreateTableNode));
@@ -217,6 +224,18 @@ void set_update_ast_node(UpdateNode *update_node) {
     }
     root->statement_type = UPDATE_STMT;
     root->update_node = update_node;
+}
+
+void set_delete_ast_node(DeleteNode *delete_node) {
+    if (root == NULL)
+        root = malloc(sizeof(ASTNode));
+    else {
+        ASTNode *temp = root;
+        root = malloc(sizeof(ASTNode));
+        free_ast_node(temp);
+    }
+    root->statement_type = DELETE_STMT;
+    root->delete_node = delete_node;
 }
 
 void set_create_table_ast_node(CreateTableNode *create_table_node) {
