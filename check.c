@@ -7,7 +7,11 @@
 #include "data.h"
 #include "table.h"
 #include "log.h"
+#include "opr.h"
+#include "node.h"
+#include "pager.h"
 #include "meta.h"
+#include "index.h"
 #include "misc.h"
 
 //Check ident not.
@@ -110,7 +114,7 @@ static bool check_value_valid(DataType data_type, void* value) {
 
 }
 
-static void *get_value(ValueItemNode *value_item_node) {
+void *get_value(ValueItemNode *value_item_node) {
     switch(value_item_node->data_type) {
         case T_INT:
             return &value_item_node->i_value;
@@ -242,11 +246,30 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Se
         if (!check_column_node(table->meta_table, column_node) || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name) || !check_value_valid(meta_column->column_type, get_value(value_node)))
             return false;
         if (meta_column->is_primary) {
-            // It means to change the primary key, may cause duplicate key. 
-            // It need lost of operations, including checking if exists duaplicate key,
-            // and move cell postion order by key. So we implement it in the future.
-            log_error("Not support change the primay key temporarily.");
-            return false;
+            // It means to change the primary key column and may cause duplicate key. 
+            // Firstly, multirows absulutely case duplicate.
+            // Secondly, if priamry key is assigned to the old value, there is no influnece.
+            // Thirdly, if priamry key is assigned to different value, should check if key aleady exists, avoid cause duplicate.
+            if (select_result->row_size > 1) {
+                log_error("Duaplicate key not allowed");
+                return false;
+            }
+            if (select_result->row_size == 1) {
+                Row *row = *(select_result->row + 0);
+                void *old_key = row->key;
+                void *new_key = get_value(value_node);
+                if (equal(old_key, new_key, meta_column->column_type))
+                    continue; // although assignment is primary key, but value not change.
+                Cursor *cursor = define_cursor(table, new_key);
+                uint32_t value_len = calc_table_row_length(table);
+                uint32_t key_len = calc_primary_key_length(table);
+                void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
+                void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
+                if (equal(key, new_key, meta_column->column_type)) {
+                    log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(row->key, meta_column->column_type));
+                    return false;
+                }
+            }
         }
     }
     return true;

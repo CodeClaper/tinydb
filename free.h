@@ -1,5 +1,8 @@
 #include "data.h"
 
+//Copy value
+void free_value(void *value, DataType data_type);
+
 // free KeyValue
 void free_key_value(KeyValue *key_value);
 

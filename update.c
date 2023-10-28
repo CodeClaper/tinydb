@@ -4,11 +4,13 @@
 #include "select.h"
 #include "copy.h"
 #include "cond.h"
+#include "opr.h"
 #include "table.h"
 #include "pager.h"
 #include "node.h"
 #include "check.h"
 #include "output.h"
+#include "free.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -81,6 +83,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     key_value->value = &value->t_value;
                     break;
                 case T_STRING:
+                    free(key_value->value); // free old memory.
                     key_value->value = strdup(value->s_value);
                     break;
             }    
@@ -89,26 +92,42 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
 }
 
 // update row
-static void update_row(Row *row, AssignmentSetNode *assignment_set_node) {
+static void update_row(Row *row, AssignmentSetNode *assignment_set_node, Table *table) {
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
     for (uint32_t i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assign_node = *(assignment_set_node->assignment_node + i);
+        MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
         update_cell(row, assign_node);
+        if (meta_column->is_primary) { // it means to change primary key, and may casuse space movement.
+            void *old_key = row->key;
+            void *new_key = get_value(assign_node->value);
+            if (equal(old_key, new_key, meta_column->column_type)) {
+                continue; // key not change, just continue
+            } else {
+                Cursor *old_cursor = define_cursor(table, old_key);
+                clean_up_obsolute_cell(old_cursor); // make right cell forwar to covert old cell.
+                Cursor *new_cursor = define_cursor(table, new_key);
+                free_value(old_key, meta_column->column_type);
+                row->key = new_key;
+                insert_leaf_node(new_cursor, row); // re-insert into leaf node with new cursor.
+            }
+        } else { // non-key column, just update the cell value.
+            Cursor *cursor = define_cursor(table, row->key);
+            void *leaf_node = get_page(table->pager, cursor->page_num);
+            assert(get_node_type(leaf_node) == LEAF_NODE);
+            void *destination = serialize_row_data(row, table);
+            memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
+            flush_page(table->pager, cursor->page_num);
+        }
     }
 }
 
 // update rows
 static void update_rows(SelectResult *select_result, AssignmentSetNode *assignment_set_node, Table *table) {
-    uint32_t value_len = calc_table_row_length(table);
-    uint32_t key_len = calc_primary_key_length(table);
     for (uint32_t i = 0; i < select_result->row_size; i++) {
         Row *current_row = *(select_result->row + i);
-        update_row(current_row, assignment_set_node);
-        Cursor *cursor = define_cursor(table, current_row->key);
-        void *leaf_node = get_page(table->pager, cursor->page_num);
-        assert(get_node_type(leaf_node) == LEAF_NODE);
-        void *destination = serialize_row_data(current_row, table);
-        memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
-        flush_page(table->pager, cursor->page_num);
+        update_row(current_row, assignment_set_node, table);
     } 
 }
 

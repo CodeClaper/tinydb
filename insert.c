@@ -53,7 +53,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     switch(meta_column->column_type) {
         case T_CHAR:
         case T_STRING:
-            return (char *)value_item_node->s_value;
+            return strdup((char *)value_item_node->s_value);
         case T_INT:
             return &(value_item_node->i_value);
         case T_BOOL:
@@ -127,33 +127,27 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 static Row *generate_insert_row(InsertNode *insert_node) {
     uint32_t i, column_len;
     Row *row = malloc(sizeof(Row));
-    if (NULL == row) 
+    if (row == NULL) 
         MALLOC_ERROR;
     row->table_name = strdup(get_table_name(insert_node));
     Table *table = open_table(row->table_name);
-    if (table == NULL) {
+    if (table == NULL) 
         return NULL;
-    }
     MetaTable *meta_table = table->meta_table;
     column_len = get_insert_column_size(insert_node, meta_table);
-    if (column_len != get_value_size(insert_node)) {
-        fprintf(stderr,"Column count doesn't match value count.\n");
-        return NULL;
-    }
     row->data = malloc(sizeof(KeyValue *) * column_len);
     row->column_len = column_len;
     for(i = 0; i < column_len; i++) {
         KeyValue *key_value = malloc(sizeof(KeyValue));
+        memset(key_value, 0, sizeof(KeyValue));
         char *column_name = get_column_name(insert_node, i, meta_table);
         key_value->key = strdup(column_name);
-#ifdef DEBUG
-        printf("key: %s\n", key_value->key);
-#endif
-        MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
+        MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_name);
         if (meta_column == NULL) {
-            log_error_s("Inner error, not find meta column info by name '%s'", key_value->key);
+            log_error_s("Inner error, not find meta column info by name '%s'", column_name);
             return NULL;
         }
+        key_value->data_type = meta_column->column_type;
         key_value->value = get_column_value(insert_node, i, meta_column);
         if (meta_column->is_primary) {
             row->key = key_value->value;

@@ -330,10 +330,10 @@ void initial_internal_node(void *internal_node, bool is_root) {
 }
 
 // update internal node node key
-static void update_internal_node_key(void *leaf_node, void *old_key, void *new_key, uint32_t key_len, DataType key_data_type) {
-    uint32_t keys_num = get_internal_node_keys_num(leaf_node);  
-    uint32_t key_index = get_internal_node_key_index(leaf_node,  old_key, keys_num, key_len,key_data_type);
-    set_internal_node_keys(leaf_node, key_index, new_key, key_len);
+static void update_internal_node_key(void *internal_node, void *old_key, void *new_key, uint32_t key_len, DataType key_data_type) {
+    uint32_t keys_num = get_internal_node_keys_num(internal_node);  
+    uint32_t key_index = get_internal_node_key_index(internal_node,  old_key, keys_num, key_len, key_data_type);
+    set_internal_node_keys(internal_node, key_index, new_key, key_len);
 }
 
 // check if leaf node page overflow
@@ -430,6 +430,7 @@ static void insert_internal_node(Table *table, void *internal_node , uint32_t ne
 
 // when page if full, split and add leaf node into another page
 static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
+    // get cell key and value lenght.
     uint32_t key_len = calc_primary_key_length(cursor->table);
     uint32_t value_len = calc_table_row_length(cursor->table);
     uint32_t cell_length = key_len + value_len;
@@ -520,6 +521,39 @@ void insert_leaf_node(Cursor *cursor, Row *row) {
     }
 }
 
+// When cell obsolute, cover the old cell space, make space align .
+void clean_up_obsolute_cell(Cursor *obs_cursor) {
+    void *leaf_node = get_page(obs_cursor->table->pager, obs_cursor->page_num);
+    uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
+    uint32_t value_len = calc_table_row_length(obs_cursor->table);
+    uint32_t key_len = calc_primary_key_length(obs_cursor->table);
+    uint32_t cell_length = value_len + key_len;
+    if (obs_cursor->cell_num == cell_num - 1) {
+        // if old cell is the last one, just make it null.
+        memset(get_leaf_node_cell(leaf_node, key_len, value_len, cell_num - 1), 0, cell_length);
+        // the last cell has the max key, so if it`s parent node is internal node, need to repalce key
+        if (!is_root_node(leaf_node)) {
+            uint32_t parent_page = get_parent_pointer(leaf_node);
+            void *parent_node = get_page(obs_cursor->table->pager, parent_page);
+            void *obs_key = get_leaf_node_cell_key(leaf_node, obs_cursor->cell_num, key_len, value_len);
+            void *obs_previous_key = get_leaf_node_cell_key(leaf_node, obs_cursor->cell_num - 1, key_len, value_len);
+            MetaColumn *primary_key_meta_column = get_primary_key_meta_column(obs_cursor->table->meta_table);
+            update_internal_node_key(parent_node, obs_key, obs_previous_key, key_len, primary_key_meta_column->column_type);
+            flush_page(obs_cursor->table->pager, parent_page);
+        }
+    } else {
+        // move right cell forward to covert the obsolute cell sapce. 
+        for (uint32_t i = obs_cursor->cell_num; i < cell_num; i++) {
+            if (i != cell_num -1)
+                memcpy(get_leaf_node_cell(leaf_node, key_len, value_len, i), get_leaf_node_cell(leaf_node, key_len, value_len, i + 1), cell_length);
+            else  
+                memset(get_leaf_node_cell(leaf_node, key_len, value_len, i), 0, cell_length);
+        }
+    }
+    set_leaf_node_cell_num(leaf_node, cell_num -1);
+    flush_page(obs_cursor->table->pager, obs_cursor->page_num);
+}
+
 // deserialize meta column
 MetaColumn *deserialize_meta_column(void *destination) {
     MetaColumn *meta_column = malloc(sizeof(MetaColumn));
@@ -546,7 +580,7 @@ void *serialize_meta_column(MetaColumn *meta_column) {
     return destination;
 }
 
-static void *get_column_value(Row *row, MetaColumn *meta_column) {
+static void *get_row_value(Row *row, MetaColumn *meta_column) {
     char *column_name = meta_column->column_name;
     for(uint32_t i = 0; i < row->column_len; i++) {
         if (strcmp(column_name, row->data[i]->key) == 0) {
@@ -568,7 +602,7 @@ void *serialize_row_data(Row *row, Table *table) {
     uint32_t offset = 0;
     for(uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
-        void *value = get_column_value(row, meta_column);
+        void *value = get_row_value(row, meta_column);
         memcpy(destination + offset, value, meta_column->column_length);
         offset += meta_column->column_length;
     }

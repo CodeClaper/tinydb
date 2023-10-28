@@ -1,5 +1,8 @@
 #include "data.h"
 
+
+void *get_value(ValueItemNode *value_item_node);
+
 //Check query param.
 bool check_query_param(QueryParam *query_param);
 

@@ -193,8 +193,6 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
     }
 }
 
-
-
 //Free primary key node.
 void free_primary_key_node(PrimaryKeyNode *primary_key_node) {
     if (primary_key_node != NULL) {
@@ -220,6 +218,56 @@ void free_select_items_node(SelectItemsNode *select_items_node) {
     }
 }
 
+//Free assignment node.
+void free_assignment_node(AssignmentNode *assignment_node) {
+    if (assignment_node) {
+        free_column_node(assignment_node->column);
+        free_value_item_node(assignment_node->value);
+        free(assignment_node);
+    }
+}
+
+//Free assignment set node.
+void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
+    if (assignment_set_node) {
+        for (uint32_t i = 0; i < assignment_set_node->num; i++) {
+            free_assignment_node(*(assignment_set_node->assignment_node + i));
+        }
+        free(assignment_set_node->assignment_node);
+        free(assignment_set_node);
+    }
+}
+
+//Free condition node.
+void free_condition_node(ConditionNode *condition_node) {
+    if (condition_node) {
+        switch(condition_node->type) {
+            case LOGIC_CONDITION:
+                break;
+            case EXEC_CONDITION:
+                free_column_node(condition_node->column);
+                free_value_item_node(condition_node->value);
+                break;
+        }
+        free_condition_node(condition_node->left);
+        free_condition_node(condition_node->right);
+        free_condition_node(condition_node->next);
+        free(condition_node);
+    }
+}
+
+//Free query param.
+void free_query_param(QueryParam *query_param) {
+    if(query_param) {
+        free_select_items_node(query_param->select_items);
+        free_condition_node(query_param->condition_node);
+        if (query_param->table_name)
+            free(query_param->table_name);
+        free(query_param);
+    }
+}
+
+
 //Free select node.
 void free_select_node(SelectNode *select_node) {
     if (select_node) {
@@ -241,6 +289,16 @@ void free_insert_node(InsertNode *insert_node) {
         free_value_item_set_node(insert_node->value_item_set_node);
         free(insert_node);
     }
+}
+
+//Free update node.
+void free_update_node(UpdateNode *update_node) {
+    if (update_node) {
+        if (update_node->table_name)
+            free(update_node->table_name);
+        free_condition_node(update_node->condition_node);
+        free(update_node);
+    } 
 }
 
 //Free create table node.
@@ -270,6 +328,8 @@ void free_ast_node(ASTNode *node) {
             free_insert_node(node->insert_node);
             break;
         case UPDATE_STMT:
+            free_update_node(node->update_node);
+            break;
         case DELETE_STMT:
             break;
         case CREATE_TABLE_STMT:
@@ -281,35 +341,5 @@ void free_ast_node(ASTNode *node) {
             break;
     }
     free(node);
-}
-
-//Free condition node.
-void free_condition_node(ConditionNode *condition_node) {
-    if (condition_node) {
-        switch(condition_node->type) {
-            case LOGIC_CONDITION:
-                break;
-            case EXEC_CONDITION:
-                free_column_node(condition_node->column);
-                free_value_item_node(condition_node->value);
-                break;
-        }
-        free_condition_node(condition_node->left);
-        free_condition_node(condition_node->right);
-        free_condition_node(condition_node->next);
-        free(condition_node);
-    }
-}
-
-
-//Free query param.
-void free_query_param(QueryParam *query_param) {
-    if(query_param) {
-        free_select_items_node(query_param->select_items);
-        free_condition_node(query_param->condition_node);
-        if (query_param->table_name)
-            free(query_param->table_name);
-        free(query_param);
-    }
 }
 
