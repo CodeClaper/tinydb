@@ -1,14 +1,15 @@
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "index.h"
+#include "mem.h"
 #include "pager.h"
 #include "node.h"
 #include "meta.h"
 #include "opr.h"
 #include "common.h"
 #include "misc.h"
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 //Check if key already exists in db
@@ -45,22 +46,19 @@ char *get_key_str(void *key, DataType data_type) {
             }
         case T_INT:
             {
-                char *str = malloc(100);
-                memset(str, 0, 100);
+                char *str = db_malloc(100);
                 sprintf(str, "%d", *(uint32_t *)key);
                 return str;
             }
         case T_DOUBLE:
             {
-                char *str = malloc(100);
-                memset(str, 0, 100);
+                char *str = db_malloc(100);
                 sprintf(str, "%lf", *(double *)key);
                 return str;
             }
         case T_FLOAT:
             {
-                char *str = malloc(100);
-                memset(str, 0, 100);
+                char *str = db_malloc(100);
                 sprintf(str, "%f", *(float *)key);
                 return str;
             }

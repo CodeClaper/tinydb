@@ -7,14 +7,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "pager.h"
+#include "mem.h"
 #include "misc.h"
 
 //Open Pager
 Pager *open_pager(char *table_file_path){
-    Pager *pager = malloc(sizeof(Pager));
-    if (NULL == pager) {
-        fatal("Mallocate memory error");
-    }
+    Pager *pager = db_malloc(sizeof(Pager));
     int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (file_descriptor == -1) {
         fprintf(stderr, "Open table file fail.\n");
@@ -42,10 +40,7 @@ void *get_page(Pager *pager, int page_num) {
     }
     if (pager->pages[page_num] == NULL) {
         //Cache dismiss, allocate memory and load file.
-        void *page = malloc(PAGE_SIZE);
-        if (page == NULL) {
-           fatal("Allocate memory error.\n");
-        }
+        void *page = db_malloc(PAGE_SIZE);
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
         if (read_bytes == -1) {

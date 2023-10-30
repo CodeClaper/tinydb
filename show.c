@@ -1,22 +1,29 @@
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
+#include "show.h"
+#include "mem.h"
 #include "common.h"
 #include "output.h"
 #include "misc.h"
 #include "utils.h"
-#include "show.h"
+#include "mem.h"
+#include "free.h"
+
+#define KB_THRESHOLD 1024
+#define MB_THRESHOLD 1024 * KB_THRESHOLD
+#define GB_THRESHOLD 1024 * MB_THRESHOLD
+
 
 // gen table list.
-TableList *gen_table_list() {
+static TableList *gen_table_list() {
     DIR *dir;
     struct dirent *entry;
-    TableList *table_list = malloc(sizeof(TableList));
-    if (table_list == NULL)
-       MALLOC_ERROR;
-    table_list->table_name_list = malloc(0);
+    TableList *table_list = db_malloc(sizeof(TableList));
+    table_list->table_name_list = db_malloc(0);
     table_list->count = 0;
     if ((dir = opendir(data_dir)) ==NULL) {
         fatals("System error, not found '%d' dir", data_dir); 
@@ -35,7 +42,7 @@ TableList *gen_table_list() {
 }
 
 // print show table.
-void print_show_table(TableList *table_list, Output *out) {
+static void print_show_table(TableList *table_list, Output *out) {
     uint32_t i;
     print_data(out, strdup("["));
     for (i = 0; i < table_list->count; i++) {
@@ -45,5 +52,24 @@ void print_show_table(TableList *table_list, Output *out) {
             print_data(out, strdup(", "));
     } 
     print_data(out, strdup("]"));
+}
+
+// execute show statement.
+ExecuteResult exec_show_statement(ShowNode *show_node, Output *out) {
+    switch(show_node->type) {
+        case SHOW_TABLES:
+            {
+                TableList *table_list = gen_table_list();
+                print_show_table(table_list, out);
+                free_table_list(table_list);
+                break;
+            }
+        case SHOW_MEMORY:
+            {
+                print_data_d(out, "Db used memeory: %d", db_memesize()); 
+                break;
+            }
+    }
+    return EXECUTE_SUCCESS;
 }
 

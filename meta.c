@@ -1,13 +1,14 @@
-#include "meta.h"
-#include "common.h"
-#include "misc.h"
-#include "node.h"
-#include "pager.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "meta.h"
+#include "mem.h"
+#include "common.h"
+#include "misc.h"
+#include "node.h"
+#include "pager.h"
 
 static char *data_type_name_list[] = {"bool",  "char",   "int",  "double",
                                       "float", "string", "date", "timestamp"};
@@ -87,16 +88,14 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
 MetaTable *get_meta_table(Table *table, char *table_name) {
   if (table_name == NULL)
     fatal("Input table name can`t be null.");
-  MetaTable *meta_table = malloc(sizeof(MetaTable));
-  if (meta_table == NULL)
-    MALLOC_ERROR;
+  MetaTable *meta_table = db_malloc(sizeof(MetaTable));
   void *root_node = get_page(table->pager, table->root_page_num);
   uint32_t column_size = get_column_size(root_node);
   meta_table->table_name = strdup(table_name);
   meta_table->column_size = column_size;
   size_t meta_column_size = sizeof(MetaColumn);
   for (int i = 0; i < column_size; i++) {
-    meta_table->meta_column[i] = malloc(meta_column_size);
+    meta_table->meta_column[i] = db_malloc(meta_column_size);
     memcpy(meta_table->meta_column[i], get_meta_column_by_index(root_node, i),
            meta_column_size);
   }

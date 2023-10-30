@@ -1,6 +1,11 @@
+#include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include "update.h"
+#include "mem.h"
 #include "data.h"
 #include "meta.h"
-#include "update.h"
 #include "select.h"
 #include "copy.h"
 #include "cond.h"
@@ -11,22 +16,16 @@
 #include "check.h"
 #include "output.h"
 #include "free.h"
-#include <assert.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 // adapt to column set node.
 static ColumnSetNode *adapt_column_set_node(Table *table) {
     MetaTable *meta_table = table->meta_table;
-    ColumnSetNode *column_set_node = malloc(sizeof(ColumnSetNode));
-    memset(column_set_node, 0, sizeof(ColumnSetNode));
+    ColumnSetNode *column_set_node = db_malloc(sizeof(ColumnSetNode));
     column_set_node->size = meta_table->column_size;
-    column_set_node->columns = malloc(sizeof(ConditionNode *) * column_set_node->size);
+    column_set_node->columns = db_malloc(sizeof(ConditionNode *) * column_set_node->size);
     for (uint32_t i = 0; i < column_set_node->size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        ColumnNode *column_node = malloc(sizeof(ColumnNode));
-        memset(column_node, 0, sizeof(ColumnNode));
+        ColumnNode *column_node = db_malloc(sizeof(ColumnNode));
         column_node->exist_table_name = false;
         column_node->column_name = strdup(meta_column->column_name);
         *(column_set_node->columns + i) = column_node;
@@ -36,8 +35,7 @@ static ColumnSetNode *adapt_column_set_node(Table *table) {
 
 // adapt to select items node.
 static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *table) {
-    SelectItemsNode *select_items_node = malloc(sizeof(SelectItemsNode));
-    memset(select_items_node, 0, sizeof(SelectItemsNode));
+    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
     select_items_node->type = SELECT_COLUMNS;
     select_items_node->column_set_node = adapt_column_set_node(table);
     return select_items_node;
@@ -45,8 +43,7 @@ static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *
 
 // adapt to query param.
 static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
-    QueryParam *query_param = malloc(sizeof(QueryParam));
-    memset(query_param, 0, sizeof(QueryParam));
+    QueryParam *query_param = db_malloc(sizeof(QueryParam));
     query_param->table_name = strdup(update_node->table_name);
     query_param->select_items = adapt_select_items_node(update_node, table);
     ConditionNode *condition_node_copy = copy_condition_node(update_node->condition_node);
@@ -83,7 +80,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     key_value->value = &value->t_value;
                     break;
                 case T_STRING:
-                    free(key_value->value); // free old memory.
+                    db_free(key_value->value); // free old memory.
                     key_value->value = strdup(value->s_value);
                     break;
             }    

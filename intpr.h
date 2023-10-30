@@ -83,7 +83,7 @@ DeleteNode *make_delete_node();
 DescribeNode *make_describe_node();
 
 // make a shwo table node.
-ShowTablesNode *make_show_tables_node();
+ShowNode *make_show_node(ShowNodeType type);
 
 // make an ast node.
 ASTNode *make_ast_node();

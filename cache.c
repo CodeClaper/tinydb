@@ -1,10 +1,10 @@
-#include "cache.h"
-#include "free.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include "cache.h"
+#include "mem.h"
+#include "free.h"
 
 #define MAX_TABLE_CACHE_SIZE 100
 
@@ -17,8 +17,8 @@ static TableCache *table_cache;
 
 static void init() {
     if (table_cache == NULL) {
-        table_cache = malloc(sizeof(TableCache));
-        table_cache->table_list = malloc(0);
+        table_cache = db_malloc(sizeof(TableCache));
+        table_cache->table_list = db_malloc(0);
         table_cache->size = 0;
     }
 }

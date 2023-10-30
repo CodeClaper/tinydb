@@ -1,14 +1,3 @@
-#include "table.h"
-#include "cache.h"
-#include "common.h"
-#include "meta.h"
-#include "misc.h"
-#include "node.h"
-#include "pager.h"
-#include "log.h"
-#include "index.h"
-#include <errno.h>
-#include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,6 +6,18 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include "table.h"
+#include "mem.h"
+#include "cache.h"
+#include "common.h"
+#include "meta.h"
+#include "misc.h"
+#include "node.h"
+#include "pager.h"
+#include "log.h"
+#include "index.h"
 
 // Get table file path.
 static char *table_file_path(char *table_name) {
@@ -25,8 +26,7 @@ static char *table_file_path(char *table_name) {
     exit(EXIT_FAILURE);
   }
   int len = strlen(data_dir) + strlen(table_name) + strlen(".dbt") + 1;
-  char *file_path = malloc(len);
-  memset(file_path, 0, len);
+  char *file_path = db_malloc(len);
   sprintf(file_path, "%s%s%s", data_dir, table_name, ".dbt");
   return file_path;
 }
@@ -54,10 +54,7 @@ ExecuteResult create_table(MetaTable *meta_table) {
     fprintf(stderr, "Create table '%s' fail.\n", meta_table->table_name);
     return EXECUTE_TABLE_CREATE_FAIL;
   }
-  void *root_node = malloc(PAGE_SIZE);
-  if (root_node == NULL)
-    MALLOC_ERROR;
-  memset(root_node, 0, PAGE_SIZE);
+  void *root_node = db_malloc(PAGE_SIZE);
   // initialize root node
   initial_leaf_node(root_node, true);
   // set meta column
@@ -72,12 +69,12 @@ ExecuteResult create_table(MetaTable *meta_table) {
   if (w_size == -1) {
     fatald("Write table meta info error and errno", errno);
   }
-  free(file_path);
+  db_free(file_path);
   close(descr);
   for (uint32_t i = 0; i < meta_table->column_size; i++) {
-    free(meta_table->meta_column[i]);
+     db_free(meta_table->meta_column[i]);
   }
-  free(root_node);
+  db_free(root_node);
   return EXECUTE_SUCCESS;
 }
 
@@ -91,12 +88,7 @@ Table *open_table(char *table_name) {
   Table *cache_table = find_cache_table(table_name);
   if (cache_table)
     return cache_table;
-  Table *table = malloc(sizeof(Table));
-  if (NULL == table) {
-    table = malloc(sizeof(Table));
-    if (NULL == table)
-      MALLOC_ERROR;
-  }
+  Table *table = db_malloc(sizeof(Table));
   Pager *pager = open_pager(file_path);
   if (NULL == pager) {
     return NULL;
@@ -110,16 +102,13 @@ Table *open_table(char *table_name) {
   }
   table->meta_table = get_meta_table(table, table_name);
   add_cache_table(table);
-  free(file_path);
+  db_free(file_path);
   return table;
 }
 
 static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node,
                                        uint32_t page_num, void *key) {
-  Cursor *cursor = malloc(sizeof(Cursor));
-  if (NULL == cursor)
-    MALLOC_ERROR;
-  memset(cursor, 0, sizeof(Cursor));
+  Cursor *cursor = db_malloc(sizeof(Cursor));
   MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
   uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
   uint32_t row_len = calc_table_row_length(table);
@@ -167,7 +156,7 @@ ExecuteResult drop_table(char *table_name) {
     printf("Table '%s' deleted success.\n", table_name);
     return EXECUTE_SUCCESS;
   }
-  free(file_path);
+  db_free(file_path);
   fprintf(stderr, "Table '%s' deleted fail, error : %d", table_name, errno);
   return EXECUTE_TABLE_DROP_FAIL;
 }

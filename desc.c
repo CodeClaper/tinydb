@@ -1,11 +1,12 @@
-#include "desc.h"
-#include "table.h"
-#include "meta.h"
-#include "output.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "desc.h"
+#include "mem.h"
+#include "table.h"
+#include "meta.h"
+#include "output.h"
 
 //Get table name.
 static char *get_table_name(DescribeNode *describe_node) {

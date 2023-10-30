@@ -1,8 +1,3 @@
-#include "server.h"
-#include "common.h"
-#include "misc.h"
-#include "stmt.h"
-#include "log.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -11,6 +6,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include "server.h"
+#include "mem.h"
+#include "common.h"
+#include "misc.h"
+#include "stmt.h"
+#include "log.h"
 
 
 /**********************************************************************/
@@ -85,7 +86,7 @@ size_t send_out_put(int client, Output *out) {
 int startup(u_short port) {
     int httpd = 0;
     int on = 1;
-    struct sockaddr_in *address = malloc(sizeof(struct sockaddr_in));
+    struct sockaddr_in *address = sys_malloc(sizeof(struct sockaddr_in));
     httpd = socket(PF_INET, SOCK_STREAM, 0);
     if (httpd == -1)
         fatal("Create socket fail.");

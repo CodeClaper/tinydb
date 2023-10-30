@@ -48,6 +48,8 @@ typedef enum { SELECT_COLUMNS, SELECT_FUNCTION, SELECT_ALL} SelectItemType;
 
 typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 
+typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
+
 typedef enum {
   CREATE_TABLE_STMT,
   SELECT_STMT,
@@ -55,7 +57,7 @@ typedef enum {
   UPDATE_STMT,
   DELETE_STMT,
   DESCRIBE_STMT,
-  SHOW_TABLES_STMT
+  SHOW_STMT
 } StatementType; // statement type
 
 typedef struct {
@@ -179,8 +181,8 @@ typedef struct {
 } DescribeNode;
 
 typedef struct {
-
-} ShowTablesNode;
+    ShowNodeType type;
+} ShowNode;
 
 typedef struct {
   StatementType statement_type;
@@ -191,7 +193,7 @@ typedef struct {
     UpdateNode *update_node;
     DeleteNode *delete_node;
     DescribeNode *describe_node;
-    ShowTablesNode *show_tables_node;
+    ShowNode *show_node;
   };
 } ASTNode;
 
@@ -213,7 +215,7 @@ typedef enum {
     STMT_INSERT,
     STMT_DELETE,
     STMT_DESCRIBE,
-    STMT_SHOW_TABLES
+    STMT_SHOW
 }StamentType;
 
 typedef struct {
@@ -295,5 +297,20 @@ typedef struct {
     uint32_t buffer_size;
     ExecuteResult result;
 }Output;
+
+typedef struct {
+    char **table_name_list;
+    uint32_t count;
+}TableList;
+
+typedef struct {
+    void *ptr;
+    size_t size;
+}MEntry;
+
+typedef struct {
+    MEntry **entry_list;
+    uint32_t num;
+}MTable;
 
 #endif

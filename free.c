@@ -1,14 +1,15 @@
-#include "free.h"
-#include "misc.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include "free.h"
+#include "mem.h"
+#include "misc.h"
 
 //Copy value
 void free_value(void *value, DataType data_type) {
     if (value) {
         switch(data_type) {
             case T_STRING:
-                free(value);
+                db_free(value);
                 break;
             default:
                 break;
@@ -20,9 +21,9 @@ void free_value(void *value, DataType data_type) {
 void free_key_value(KeyValue *key_value) {
     if (key_value) {
         if (key_value->key)
-            free(key_value->key);
+            db_free(key_value->key);
         free_value(key_value->value, key_value->data_type);
-        free(key_value);
+        db_free(key_value);
     } 
 }
 
@@ -30,12 +31,12 @@ void free_key_value(KeyValue *key_value) {
 void free_row(Row *row) {
     if (row) {
         if (row->table_name)
-            free(row->table_name);
+            db_free(row->table_name);
         for(uint32_t i = 0; i < row->column_len; i++) {
             free_key_value(*(row->data + i));
         }
-        free(row->data);
-        free(row);
+        db_free(row->data);
+        db_free(row);
     }
 }
 
@@ -43,13 +44,13 @@ void free_row(Row *row) {
 void free_select_result(SelectResult *select_result) {
     if (select_result) {
         if (select_result->table_name != NULL)
-            free(select_result->table_name);
+            db_free(select_result->table_name);
         for(uint32_t i = 0; i < select_result->row_size; i++) {
             Row *row = *(select_result->row + i);
             free_row(row);
         }
-        free(select_result->row);
-        free(select_result);
+        db_free(select_result->row);
+        db_free(select_result);
     }
 }
 
@@ -57,15 +58,15 @@ void free_select_result(SelectResult *select_result) {
 void free_input_buffer(InputBuffer *input_buffer) {
     if (input_buffer != NULL) {
         if (input_buffer->input != NULL)
-            free(input_buffer->input);
-        free(input_buffer);
+            db_free(input_buffer->input);
+        db_free(input_buffer);
     }
 }
 
 //Free meta column.
 void free_meta_column(MetaColumn *meta_column) {
     if (meta_column) {
-        free(meta_column);
+        db_free(meta_column);
     }
 }
 
@@ -73,7 +74,7 @@ void free_meta_column(MetaColumn *meta_column) {
 void free_meta_table(MetaTable *meta_table) {
     if (meta_table) {
         if (meta_table->table_name) {
-            free(meta_table->table_name);
+            db_free(meta_table->table_name);
         }
     }
 }
@@ -83,11 +84,11 @@ void free_column_node(ColumnNode *column_node) {
     if (column_node) {
         if (column_node->exist_table_name) {
             if (column_node->table_name)
-                free(column_node->table_name);
+                db_free(column_node->table_name);
         }
         if (column_node->column_name)
-            free(column_node->column_name);
-        free(column_node);
+            db_free(column_node->column_name);
+        db_free(column_node);
     }
 
 }
@@ -98,8 +99,8 @@ void free_column_set_node(ColumnSetNode *column_set_node) {
         for (uint32_t i = 0; i < column_set_node->size; i++) {
             free_column_node(*(column_set_node->columns + i));
         }
-        free(column_set_node->columns);
-        free(column_set_node);
+        db_free(column_set_node->columns);
+        db_free(column_set_node);
     }
 }
 
@@ -113,7 +114,7 @@ void free_cursor(Cursor *cursor) {
     if (cursor) {
         // use table for cache, not free.
         free_table(cursor->table);
-        free(cursor);
+        db_free(cursor);
     }
 } 
 
@@ -132,11 +133,11 @@ void free_value_item_node(ValueItemNode *value_item_node) {
             case T_STRING:
                 {
                     if (value_item_node->s_value)
-                        free(value_item_node->s_value);
+                        db_free(value_item_node->s_value);
                 }
                 break;
         }
-        free(value_item_node);
+        db_free(value_item_node);
     }
 }
 
@@ -151,7 +152,7 @@ void free_function_value_node(FunctionValueNode *function_value_node) {
                 free_column_node(function_value_node->column);
                 break;
         }
-        free(function_value_node);
+        db_free(function_value_node);
     }
 }
 
@@ -159,7 +160,7 @@ void free_function_value_node(FunctionValueNode *function_value_node) {
 void free_function_node(FunctionNode *function_node) {
     if (function_node) {
         free_function_value_node(function_node->value);
-        free(function_node);
+        db_free(function_node);
     } 
 }
 
@@ -167,7 +168,7 @@ void free_function_node(FunctionNode *function_node) {
 void free_column_def_node(ColumnDefNode *column_def_node) {
     if (column_def_node) {
         free_column_node(column_def_node->column);
-        free(column_def_node);
+        db_free(column_def_node);
     }
 }
 
@@ -177,8 +178,8 @@ void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
         for(uint32_t i = 0; i < column_def_set_node->size; i++) {
             free_column_def_node(*(column_def_set_node->column_defs + i));
         }
-        free(column_def_set_node->column_defs);
-        free(column_def_set_node);
+        db_free(column_def_set_node->column_defs);
+        db_free(column_def_set_node);
     } 
 }
 
@@ -188,8 +189,8 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
         for(uint32_t i = 0; i < value_item_set_node->num; i++) {
             free_value_item_node(*(value_item_set_node->value_item_node + i));
         }
-        free(value_item_set_node->value_item_node);
-        free(value_item_set_node);
+        db_free(value_item_set_node->value_item_node);
+        db_free(value_item_set_node);
     }
 }
 
@@ -197,7 +198,7 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
 void free_primary_key_node(PrimaryKeyNode *primary_key_node) {
     if (primary_key_node != NULL) {
         free_column_node(primary_key_node->column);
-        free(primary_key_node);
+        db_free(primary_key_node);
     }
 }
 
@@ -214,7 +215,7 @@ void free_select_items_node(SelectItemsNode *select_items_node) {
             case SELECT_ALL:
                 break;
         }
-        free(select_items_node);
+        db_free(select_items_node);
     }
 }
 
@@ -223,7 +224,7 @@ void free_assignment_node(AssignmentNode *assignment_node) {
     if (assignment_node) {
         free_column_node(assignment_node->column);
         free_value_item_node(assignment_node->value);
-        free(assignment_node);
+        db_free(assignment_node);
     }
 }
 
@@ -233,8 +234,8 @@ void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
         for (uint32_t i = 0; i < assignment_set_node->num; i++) {
             free_assignment_node(*(assignment_set_node->assignment_node + i));
         }
-        free(assignment_set_node->assignment_node);
-        free(assignment_set_node);
+        db_free(assignment_set_node->assignment_node);
+        db_free(assignment_set_node);
     }
 }
 
@@ -252,7 +253,7 @@ void free_condition_node(ConditionNode *condition_node) {
         free_condition_node(condition_node->left);
         free_condition_node(condition_node->right);
         free_condition_node(condition_node->next);
-        free(condition_node);
+        db_free(condition_node);
     }
 }
 
@@ -262,8 +263,8 @@ void free_query_param(QueryParam *query_param) {
         free_select_items_node(query_param->select_items);
         free_condition_node(query_param->condition_node);
         if (query_param->table_name)
-            free(query_param->table_name);
-        free(query_param);
+            db_free(query_param->table_name);
+        db_free(query_param);
     }
 }
 
@@ -273,9 +274,9 @@ void free_select_node(SelectNode *select_node) {
     if (select_node) {
         free_select_items_node(select_node->select_items_node);
         if (select_node->table_name) 
-            free(select_node->table_name);
+            db_free(select_node->table_name);
         free_condition_node(select_node->condition_node);
-        free(select_node);
+        db_free(select_node);
     }
 }
 
@@ -283,11 +284,11 @@ void free_select_node(SelectNode *select_node) {
 void free_insert_node(InsertNode *insert_node) {
     if (insert_node != NULL) {
         if (insert_node->table_name)
-            free(insert_node->table_name);
+            db_free(insert_node->table_name);
         if (!insert_node->all_column)
             free_column_set_node(insert_node->columns_set_node);
         free_value_item_set_node(insert_node->value_item_set_node);
-        free(insert_node);
+        db_free(insert_node);
     }
 }
 
@@ -295,9 +296,9 @@ void free_insert_node(InsertNode *insert_node) {
 void free_update_node(UpdateNode *update_node) {
     if (update_node) {
         if (update_node->table_name)
-            free(update_node->table_name);
+            db_free(update_node->table_name);
         free_condition_node(update_node->condition_node);
-        free(update_node);
+        db_free(update_node);
     } 
 }
 
@@ -305,9 +306,9 @@ void free_update_node(UpdateNode *update_node) {
 void free_delete_node(DeleteNode *delete_node) {
     if (delete_node) {
         if (delete_node->table_name)
-            free(delete_node->table_name);
+            db_free(delete_node->table_name);
         free_condition_node(delete_node->condition_node);
-        free(delete_node);
+        db_free(delete_node);
     } 
 }
 
@@ -315,17 +316,17 @@ void free_delete_node(DeleteNode *delete_node) {
 void free_create_table_node(CreateTableNode *create_table_node) {
     if (create_table_node != NULL) {
         if (create_table_node->table_name)
-            free(create_table_node->table_name);
+            db_free(create_table_node->table_name);
         free_column_def_set_node(create_table_node->column_def_set_node);
         free_primary_key_node(create_table_node->primary_key_node);
-        free(create_table_node);
+        db_free(create_table_node);
     }
 }
 
 //Free show tables node.
-void free_show_tables_node(ShowTablesNode *show_table_node) {
-    if (show_table_node)
-        free(show_table_node);
+void free_show_tables_node(ShowNode *show_node) {
+    if (show_node)
+        db_free(show_node);
 }
 
 //Free ASTNode.
@@ -346,10 +347,20 @@ void free_ast_node(ASTNode *node) {
             break;
         case DESCRIBE_STMT:
             break;
-        case SHOW_TABLES_STMT:
-            free_show_tables_node(node->show_tables_node);
+        case SHOW_STMT:
+            free_show_tables_node(node->show_node);
             break;
     }
-    free(node);
+    db_free(node);
 }
 
+// Free table list
+void free_table_list(TableList *table_list) {
+    if (table_list) {
+        for (uint32_t i = 0; i < table_list->count; i++) {
+            db_free(*(table_list->table_name_list + i));
+        }
+        db_free(table_list->table_name_list);
+        db_free(table_list);
+    }
+}

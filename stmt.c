@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "stmt.h"
+#include "mem.h"
 #include "common.h"
 #include "misc.h"
 #include "token.h"
@@ -33,7 +35,7 @@ static void statement_create_table(Statement *stmt, Output *out) {
     if (out->result == EXECUTE_SUCCESS) {
         print_data_s(out, "Table '%s' created successfully.", meta_table->table_name);
     }
-    free(meta_table);
+    db_free(meta_table);
 }
 
 // execute insert statment
@@ -74,23 +76,15 @@ static void statement_describe(Statement *statement, Output *out) {
 }
 
 static void statement_show_tables(Statement *statement, Output *out) {
-    assert(statement->statement_type == STMT_SHOW_TABLES); 
-    TableList *table_list = gen_table_list();
-    if (table_list != NULL) {
-        print_show_table(table_list, out);
-        out->result = EXECUTE_SUCCESS;
-    } else {
-        log_error("Inner error");
-        out->result = EXECUTE_FAIL;
-    }
+    assert(statement->statement_type == STMT_SHOW); 
+    out->result = exec_show_statement(statement->ast_node->show_node, out);
 }
 
 // statement
 Output *statement(char *sql) {
-    Output *out = malloc(sizeof(Output));
-    if (out == NULL)
-        MALLOC_ERROR;
-    memset(out, 0, sizeof(Output));
+    clock_t start, end;
+    start = clock();
+    Output *out = db_malloc(sizeof(Output));
     out->buffer_size = BUFF_SIZE;
     out->result = EXECUTE_FAIL;
     if (is_empty(sql)) {
@@ -121,9 +115,11 @@ Output *statement(char *sql) {
         case STMT_DESCRIBE:
             statement_describe(statement, out);
             break;
-        case STMT_SHOW_TABLES:
+        case STMT_SHOW:
             statement_show_tables(statement, out);
             break;
     }
+    end = clock();
+    printf("Execution duration: %lfs.\n", (double)(end - start) /CLOCKS_PER_SEC);
     return out;
 }

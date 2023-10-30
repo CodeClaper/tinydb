@@ -1,12 +1,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #define _XOPEN_SOURCE
 #define __USE_XOPEN
 #include <time.h>
 #include "select.h"
+#include "mem.h"
 #include "table.h"
 #include "pager.h"
 #include "node.h"
@@ -128,10 +128,11 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
                 {
                     case T_STRING:
                         {
-                            struct tm *tmp_time = malloc(sizeof(struct tm));
+                            struct tm *tmp_time = db_malloc(sizeof(struct tm));
                             strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                             value_item_node->t_value = mktime(tmp_time);
                             value_item_node->data_type = T_TIMESTAMP;
+                            db_free(tmp_time);
                         }
                     case T_TIMESTAMP:
                         return &value_item_node->t_value;
@@ -146,13 +147,14 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
                 {
                     case T_STRING:
                         {
-                            struct tm *tmp_time = malloc(sizeof(struct tm));
+                            struct tm *tmp_time = db_malloc(sizeof(struct tm));
                             strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
                             tmp_time->tm_sec = 0;
                             tmp_time->tm_min = 0;
                             tmp_time->tm_hour = 0;
                             value_item_node->t_value = mktime(tmp_time);
                             value_item_node->data_type = T_DATE;
+                            db_free(tmp_time);
                         }
                     case T_DATE:
                         return &value_item_node->t_value;
@@ -219,17 +221,14 @@ static MetaColumn *get_cond_meta_column(QueryParam *query_param) {
 
 //Generate select row.
 static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
-    Row *row = malloc(sizeof(Row));
-    if (row == NULL)
-        MALLOC_ERROR;
-    memset(row, 0, sizeof(Row));
+    Row *row = db_malloc(sizeof(Row));
     Table *table = open_table(query_param->table_name);
     if (table == NULL)
         return NULL;
     row->column_len = get_query_columns_num(query_param);
     row->table_name = strdup(query_param->table_name);
     // define row data. 
-    row->data = malloc(sizeof(KeyValue *) * row->column_len);
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len);
     bool is_function = query_param->select_items->type == SELECT_FUNCTION;
     if (is_function)
     {
@@ -239,8 +238,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     {
         for (uint32_t i = 0; i < row->column_len; i++) {
             MetaColumn *meta_column = find_select_item_meta_column(query_param, i);     
-            KeyValue *key_value = malloc(sizeof(KeyValue));
-            memset(key_value, 0, sizeof(KeyValue));
+            KeyValue *key_value = db_malloc(sizeof(KeyValue));
             uint32_t off_set = calc_off_set(query_param, meta_column->column_name);
             key_value->key = strdup(meta_column->column_name);
             key_value->value = copy_value(destinct + off_set, meta_column->column_type);
@@ -265,7 +263,7 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         if (!include_leaf_node(destinct, query_param, table->meta_table))
             continue;
         Row *row = generate_row(destinct, query_param, table->meta_table);
-        select_result->row = realloc(select_result->row, sizeof(Row *) * (select_result->row_size + 1));
+        select_result->row = db_realloc(select_result->row, sizeof(Row *) * (select_result->row_size + 1));
         *(select_result->row + select_result->row_size) = row;
         select_result->row_size++;
     }
@@ -313,7 +311,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
 
 // convert from select node to query param
 QueryParam *convert_query_param(SelectNode *select_node) {
-    QueryParam *query_param = malloc(sizeof(QueryParam));
+    QueryParam *query_param = db_malloc(sizeof(QueryParam));
     memset(query_param, 0, sizeof(QueryParam));
     query_param->table_name = strdup(get_table_name(select_node));
     query_param->select_items = copy_select_items_node(select_node->select_items_node);
@@ -326,11 +324,9 @@ QueryParam *convert_query_param(SelectNode *select_node) {
  
 // generate select reuslt.
 SelectResult *gen_select_result(QueryParam *query_param) {
-    SelectResult *select_result = malloc(sizeof(SelectResult));
-    if (select_result == NULL)
-        MALLOC_ERROR;
+    SelectResult *select_result = db_malloc(sizeof(SelectResult));
     select_result->row_size = 0;
-    select_result->row = malloc(0);
+    select_result->row = db_malloc(0);
     select_result->table_name = strdup(query_param->table_name);
     Table *table = open_table(query_param->table_name);
     if (table == NULL)

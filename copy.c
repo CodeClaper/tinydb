@@ -1,10 +1,10 @@
+#include <stdint.h>
+#include <string.h>
 #include "copy.h"
 #include "data.h"
 #include "common.h"
 #include "misc.h"
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "mem.h"
 
 //Copy value
 void *copy_value(void *value, DataType data_type) {
@@ -19,8 +19,7 @@ void *copy_value(void *value, DataType data_type) {
             return value;
         case T_STRING:
             {
-                char *new_value = malloc(strlen(value) + 1);
-                memset(new_value, 0, strlen(value) + 1);
+                char *new_value = db_malloc(strlen(value) + 1);
                 strcpy(new_value, value);
                 return new_value;
             }
@@ -33,11 +32,8 @@ void *copy_value(void *value, DataType data_type) {
 KeyValue *copy_key_value(KeyValue *key_value) {
     if (key_value == NULL)
         return NULL;
-    KeyValue *key_value_copy = malloc(sizeof(KeyValue));
-    if (key_value_copy == NULL)
-        MALLOC_ERROR;
-    memset(key_value_copy, 0, sizeof(KeyValue));
-    key_value_copy->key = malloc(strlen(key_value->key) + 1);
+    KeyValue *key_value_copy = db_malloc(sizeof(KeyValue));
+    key_value_copy->key = db_malloc(strlen(key_value->key) + 1);
     strcpy(key_value_copy->key, key_value->key);
     key_value_copy->value = copy_value(key_value->value, key_value->data_type);
     key_value_copy->data_type = key_value->data_type;
@@ -48,15 +44,12 @@ KeyValue *copy_key_value(KeyValue *key_value) {
 Row *copy_row(Row *row) {
     if (row == NULL)
         return NULL;
-    Row *row_copy = malloc(sizeof(Row));
-    if (row_copy == NULL)
-        MALLOC_ERROR;
-    memset(row_copy, 0, sizeof(Row));
+    Row *row_copy = db_malloc(sizeof(Row));
     row_copy->key = row->key;
     row_copy->column_len = row->column_len;
-    row_copy->table_name = malloc(strlen(row->table_name) + 1);
+    row_copy->table_name = db_malloc(strlen(row->table_name) + 1);
     strcpy(row_copy->table_name, row->table_name);
-    row_copy->data = malloc(sizeof(KeyValue *) * row->column_len);
+    row_copy->data = db_malloc(sizeof(KeyValue *) * row->column_len);
     for(uint32_t i = 0; i < row->column_len; i++) {
         *(row_copy->data + i) = copy_key_value(*(row->data + i));
     }
@@ -67,10 +60,7 @@ Row *copy_row(Row *row) {
 MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     if (meta_column == NULL)
         return NULL;
-    MetaColumn *meta_column_copy = malloc(sizeof(MetaColumn));
-    if (meta_column_copy == NULL)
-        MALLOC_ERROR;
-    memset(meta_column_copy, 0, sizeof(MetaColumn));
+    MetaColumn *meta_column_copy = db_malloc(sizeof(MetaColumn));
     meta_column_copy->is_primary = meta_column->is_primary;
     meta_column_copy->column_type = meta_column->column_type;
     meta_column_copy->column_length = meta_column->column_length;
@@ -84,18 +74,13 @@ MetaColumn *copy_meta_column(MetaColumn *meta_column) {
 ColumnNode *copy_column_node(ColumnNode *column_node) {
     if (column_node == NULL)
         return NULL;
-    ColumnNode *column_node_copy = malloc(sizeof(ColumnNode));
-    if (column_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(column_node_copy, 0, sizeof(ColumnNode));
+    ColumnNode *column_node_copy = db_malloc(sizeof(ColumnNode));
     column_node_copy->exist_table_name = column_node->exist_table_name;
     if (column_node_copy->exist_table_name) {
-        column_node_copy->table_name = malloc(strlen(column_node->table_name) + 1);
-        memset(column_node_copy->table_name, 0, strlen(column_node->table_name) + 1);
+        column_node_copy->table_name = db_malloc(strlen(column_node->table_name) + 1);
         strcpy(column_node_copy->table_name, column_node->table_name);
     }
-    column_node_copy->column_name = malloc(strlen(column_node->column_name) + 1);
-    memset(column_node_copy->column_name, 0, strlen(column_node->column_name) + 1);
+    column_node_copy->column_name = db_malloc(strlen(column_node->column_name) + 1);
     strcpy(column_node_copy->column_name, column_node->column_name);
     return column_node_copy;
 }
@@ -104,12 +89,9 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
 ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
     if (column_set_node == NULL)
         return NULL;
-    ColumnSetNode *column_set_node_copy = malloc(sizeof(ColumnSetNode));
-    if (column_set_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(column_set_node_copy, 0, sizeof(ColumnSetNode));
+    ColumnSetNode *column_set_node_copy = db_malloc(sizeof(ColumnSetNode));
     column_set_node_copy->size = column_set_node->size;
-    column_set_node_copy->columns = malloc(sizeof(ColumnNode *) * column_set_node_copy->size);
+    column_set_node_copy->columns = db_malloc(sizeof(ColumnNode *) * column_set_node_copy->size);
     for (uint32_t i = 0; i < column_set_node_copy->size; i++) {
         *(column_set_node_copy->columns + i) = copy_column_node(*(column_set_node->columns + i));
     }
@@ -120,10 +102,7 @@ ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node == NULL)
         return NULL;
-    ValueItemNode *value_item_node_copy = malloc(sizeof(ValueItemNode));
-    if (value_item_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(value_item_node_copy, 0, sizeof(ValueItemNode));
+    ValueItemNode *value_item_node_copy = db_malloc(sizeof(ValueItemNode));
     value_item_node_copy->data_type = value_item_node->data_type;
     switch(value_item_node->data_type) {
         case T_CHAR:
@@ -156,10 +135,7 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
 FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_node) {
     if (function_value_node == NULL)
         return NULL;
-    FunctionValueNode *function_value_node_copy = malloc(sizeof(FunctionValueNode));
-    if (function_value_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(function_value_node_copy, 0, sizeof(FunctionValueNode));
+    FunctionValueNode *function_value_node_copy = db_malloc(sizeof(FunctionValueNode));
     function_value_node_copy->value_type = function_value_node->value_type;
     switch(function_value_node->value_type) {
         case V_INT:
@@ -178,10 +154,7 @@ FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_no
 FunctionNode *copy_function_node(FunctionNode *function_node) {
     if (function_node == NULL)
         return NULL;
-    FunctionNode *function_node_copy = malloc(sizeof(FunctionNode));
-    if (function_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(function_node_copy, 0, sizeof(FunctionNode));
+    FunctionNode *function_node_copy = db_malloc(sizeof(FunctionNode));
     function_node_copy->function_type = function_node->function_type;
     function_node_copy->value = copy_function_value_node(function_node->value);
     return function_node_copy;
@@ -191,10 +164,7 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
 ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     if (condition_node == NULL)
         return NULL;
-    ConditionNode *condition_node_copy = malloc(sizeof(ConditionNode));
-    if (condition_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(condition_node_copy, 0, sizeof(ConditionNode));
+    ConditionNode *condition_node_copy = db_malloc(sizeof(ConditionNode));
     condition_node_copy->type = condition_node->type;
     if (condition_node->left)
         condition_node_copy->left = copy_condition_node(condition_node->left);
@@ -220,10 +190,7 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
 SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
     if (select_items_node == NULL)
         return NULL;
-    SelectItemsNode *select_items_node_copy = malloc(sizeof(SelectItemsNode));
-    if (select_items_node_copy == NULL)
-        MALLOC_ERROR;
-    memset(select_items_node_copy, 0, sizeof(SelectItemsNode));
+    SelectItemsNode *select_items_node_copy = db_malloc(sizeof(SelectItemsNode));
     select_items_node_copy->type = select_items_node->type;
     switch(select_items_node_copy->type) {
         case SELECT_FUNCTION:
@@ -242,12 +209,8 @@ SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
 QueryParam *copy_query_param(QueryParam *query_param) {
     if (query_param == NULL)
         return NULL;
-    QueryParam *query_param_copy = malloc(sizeof(QueryParam));
-    if (query_param_copy == NULL)
-        MALLOC_ERROR;
-    memset(query_param_copy, 0, sizeof(QueryParam));
-    query_param_copy->table_name = malloc(strlen(query_param->table_name) + 1);
-    memset(query_param_copy->table_name, 0, strlen(query_param->table_name) + 1);
+    QueryParam *query_param_copy = db_malloc(sizeof(QueryParam));
+    query_param_copy->table_name = db_malloc(strlen(query_param->table_name) + 1);
     strcpy(query_param_copy->table_name, query_param->table_name);
     query_param_copy->condition_node = copy_condition_node(query_param->condition_node); 
     query_param_copy->select_items = copy_select_items_node(query_param->select_items);

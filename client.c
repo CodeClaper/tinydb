@@ -36,6 +36,12 @@ static bool meta_statment(char *input) {
     return false;
 }
 
+/**
+ * Protocol symbol
+ * META: message meta part
+ * END: message end symbol
+ *
+ */
 void receive(int server_fd) {
     uint32_t len;
     recv(server_fd, &len, sizeof(len), 0);

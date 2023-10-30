@@ -5,10 +5,11 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/types.h>
+#include "node.h"
+#include "mem.h"
 #include "common.h"
 #include "misc.h"
 #include "const.h"
-#include "node.h"
 #include "pager.h"
 #include "meta.h"
 #include "opr.h"
@@ -469,7 +470,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         if (i == cursor->cell_num) {
             void *serial_data = serialize_row_data(row, cursor->table);
             memcpy(destination, serial_data, value_len);
-            free(serial_data);
+            db_free(serial_data);
             set_leaf_node_cell_key(destination_node, index_in_node, key_len, value_len, row->key);
         } else if ( i > cursor->cell_num) {
             // make cell space
@@ -556,10 +557,7 @@ void clean_up_obsolute_cell(Cursor *obs_cursor) {
 
 // deserialize meta column
 MetaColumn *deserialize_meta_column(void *destination) {
-    MetaColumn *meta_column = malloc(sizeof(MetaColumn));
-    if (meta_column == NULL)
-        MALLOC_ERROR;
-    memset(meta_column, 0, sizeof(MetaColumn));
+    MetaColumn *meta_column = db_malloc(sizeof(MetaColumn));
     strcpy(meta_column->column_name, destination); 
     meta_column->column_type = (DataType)*(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE);
     meta_column->column_length = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE);
@@ -569,10 +567,7 @@ MetaColumn *deserialize_meta_column(void *destination) {
 
 // deserialize meta column
 void *serialize_meta_column(MetaColumn *meta_column) {
-    void *destination= malloc(ROOT_NODE_META_COLUMN_SIZE);
-    if (meta_column == NULL)
-        MALLOC_ERROR;
-    memset(destination, 0, ROOT_NODE_META_COLUMN_SIZE);
+    void *destination= db_malloc(ROOT_NODE_META_COLUMN_SIZE);
     strcpy(destination, meta_column->column_name);
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE) = (uint32_t) meta_column->column_type;
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE) = (uint32_t) meta_column->column_length;
@@ -594,10 +589,7 @@ static void *get_row_value(Row *row, MetaColumn *meta_column) {
 // serialize row data
 void *serialize_row_data(Row *row, Table *table) {
     uint32_t row_length = calc_table_row_length(table);
-    void *destination = malloc(row_length);
-    if (destination == NULL)
-        MALLOC_ERROR;
-    memset(destination, 0, row_length);
+    void *destination = db_malloc(row_length);
     MetaTable *meta_table = table->meta_table;
     uint32_t offset = 0;
     for(uint32_t i = 0; i < meta_table->column_size; i++) {

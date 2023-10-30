@@ -3,6 +3,7 @@
 #include <string.h>
 #include "create.h"
 #include "common.h"
+#include "mem.h"
 #include "misc.h"
 #include "meta.h"
 #include "log.h"
@@ -34,10 +35,7 @@ static bool if_primary_key_column(CreateTableNode *create_table_node, char *colu
 }
 
 static MetaColumn *get_meta_column(CreateTableNode *create_table_node, uint32_t index) {
-    MetaColumn *meta_column = malloc(sizeof(MetaColumn));
-    if (meta_column == NULL)
-        MALLOC_ERROR;
-    memset(meta_column, 0, sizeof(MetaColumn));
+    MetaColumn *meta_column = db_malloc(sizeof(MetaColumn));
     ColumnDefNode *column_def_node = *(create_table_node->column_def_set_node->column_defs + index);
     strcpy(meta_column->column_name, strdup(column_def_node->column->column_name)); 
     meta_column->column_type = column_def_node->data_type;
@@ -48,10 +46,7 @@ static MetaColumn *get_meta_column(CreateTableNode *create_table_node, uint32_t 
 
 // generate meta table by create table node
 MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
-    MetaTable *meta_table = malloc(sizeof(MetaTable));
-    if (meta_table == NULL)
-        MALLOC_ERROR;
-    memset(meta_table, 0, sizeof(MetaTable));
+    MetaTable *meta_table = db_malloc(sizeof(MetaTable));
     meta_table->table_name = get_table_name(crete_table_node);
     meta_table->column_size = get_column_size(crete_table_node);
     if (meta_table->column_size > MAX_COLUMN_SIZE) {

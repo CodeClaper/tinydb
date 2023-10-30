@@ -1,4 +1,7 @@
+#include <stdint.h>
+#include <string.h>
 #include "delete.h"
+#include "mem.h"
 #include "data.h"
 #include "table.h"
 #include "copy.h"
@@ -6,23 +9,18 @@
 #include "select.h"
 #include "output.h"
 #include "node.h"
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 // adapt to select items node.
 static SelectItemsNode *adapt_select_items_node() {
-    SelectItemsNode *select_items_node = malloc(sizeof(SelectItemsNode));
-    memset(select_items_node, 0, sizeof(SelectItemsNode));
+    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
     select_items_node->type = SELECT_ALL;
     return select_items_node;
 }
 
 // adapt to query param.
 static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
-    QueryParam *query_param = malloc(sizeof(QueryParam));
-    memset(query_param, 0, sizeof(QueryParam));
+    QueryParam *query_param = db_malloc(sizeof(QueryParam));
     query_param->table_name = strdup(delete_node->table_name);
     query_param->select_items = adapt_select_items_node();
     ConditionNode *condition_node_copy = copy_condition_node(delete_node->condition_node);

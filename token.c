@@ -1,13 +1,14 @@
-#include "data.h"
-#include "token.h"
-#include "common.h"
-#include "misc.h"
-#include "intpr.h"
-#include "y.tab.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "token.h"
+#include "mem.h"
+#include "data.h"
+#include "common.h"
+#include "misc.h"
+#include "intpr.h"
+#include "y.tab.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(void);
@@ -18,7 +19,7 @@ extern int yyparse(ASTNode *node);
 Statement *adapt(ASTNode *node) {
     if (node == NULL)
         return NULL;
-    Statement *statement = malloc(sizeof(Statement));
+    Statement *statement = db_malloc(sizeof(Statement));
     if (statement == NULL)
         MALLOC_ERROR;
     switch(node->statement_type) {
@@ -40,8 +41,8 @@ Statement *adapt(ASTNode *node) {
         case DESCRIBE_STMT:
             statement->statement_type = STMT_DESCRIBE;
             break;
-        case SHOW_TABLES_STMT:
-            statement->statement_type = STMT_SHOW_TABLES;
+        case SHOW_STMT:
+            statement->statement_type = STMT_SHOW;
             break;
     }
     statement->ast_node = node;
@@ -52,17 +53,15 @@ Statement *adapt(ASTNode *node) {
 Statement *parse(char *input) {
     if (input == NULL)
         return NULL;
-    char *state = malloc(strlen(input) + 2);
-    memset(state, 0, strlen(input) + 2);
+    char *state = db_malloc(strlen(input) + 2);
     sprintf(state, "%s%c", input, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(state);
-    ASTNode *node = malloc(sizeof(ASTNode));
-    memset(node, 0, sizeof(ASTNode));
+    ASTNode *node = db_malloc(sizeof(ASTNode));
     if(yyparse(node) == 0) {
-        free(state);
+        db_free(state);
         return adapt(node);
     } else {
-        free(state);
+        db_free(state);
         return NULL;
     }
 }

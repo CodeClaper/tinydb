@@ -266,7 +266,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Se
                 void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
                 void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
                 if (equal(key, new_key, meta_column->column_type)) {
-                    log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(row->key, meta_column->column_type));
+                    log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
                     return false;
                 }
             }

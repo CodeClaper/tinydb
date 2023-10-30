@@ -40,7 +40,7 @@ int yywrap() {
    UpdateNode               *update_node;
    DeleteNode               *delete_node;
    DescribeNode             *describe_node;
-   ShowTablesNode           *show_table_node;
+   ShowNode                 *show_node;
    ASTNode                  *ast_node;
 };
 
@@ -64,6 +64,7 @@ int yywrap() {
 %token <keyword> AND OR
 %token <keyword> ALL
 %token <keyword> COMMA SEMICOLON QUOTE POINT LEFTPAREN RIGHTPAREN
+%token <keyword> SYSTEM CONFIG MEMORY
 %token <s_value> IDENTIFIER
 %token <i_value> INTVALUE
 %token <f_value> FLOATVALUE
@@ -92,7 +93,7 @@ int yywrap() {
 %type <delete_node> delete_statement
 %type <create_table_node> create_table_statement
 %type <describe_node> describe_statement
-%type <show_table_node> show_tables_statement
+%type <show_node> show_statement
 %type <ast_node> statement;
 %parse-param {ASTNode *ast_node}
 
@@ -133,10 +134,10 @@ statement:
                     ast_node->statement_type = DESCRIBE_STMT;
                     ast_node->describe_node = $1;
                 }
-            | show_tables_statement 
+            | show_statement 
                 {
-                    ast_node->statement_type = SHOW_TABLES_STMT;
-                    ast_node->show_tables_node = $1;
+                    ast_node->statement_type = SHOW_STMT;
+                    ast_node->show_node = $1;
                 }
             ;
 create_table_statement: 
@@ -232,10 +233,14 @@ describe_statement:
                     $$ = node;
                 }
             ;
-show_tables_statement:
+show_statement:
             SHOW TABLES end
                 {
-                    $$ = make_show_tables_node();
+                    $$ = make_show_node(SHOW_TABLES);
+                }
+            | SHOW MEMORY end
+                {
+                    $$ = make_show_node(SHOW_MEMORY);
                 }
             ;
 select_items: 

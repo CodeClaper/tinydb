@@ -1,12 +1,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #define _XOPEN_SOURCE
 #define __USE_XOPEN
 #include <time.h>
+#include "insert.h"
+#include "mem.h"
 #include "common.h"
 #include "misc.h"
 #include "table.h"
@@ -14,7 +15,6 @@
 #include "node.h"
 #include "table.h"
 #include "pager.h"
-#include "insert.h"
 #include "index.h"
 #include "check.h"
 #include "free.h"
@@ -89,13 +89,14 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                 switch(value_item_node->data_type) {
                     case T_STRING:
                         {
-                            struct tm *tmp_time = malloc(sizeof(struct tm));
+                            struct tm *tmp_time = db_malloc(sizeof(struct tm));
                             strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
                             tmp_time->tm_sec = 0;
                             tmp_time->tm_min = 0;
                             tmp_time->tm_hour = 0;
                             value_item_node->data_type = T_DATE;
                             value_item_node->t_value = mktime(tmp_time);
+                            db_free(tmp_time);
                         }
                     case T_DATE:
                         return &value_item_node->t_value;
@@ -108,10 +109,11 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                 switch(value_item_node->data_type) {
                     case T_STRING:
                         {
-                            struct tm *tmp_time = malloc(sizeof(struct tm));
+                            struct tm *tmp_time = db_malloc(sizeof(struct tm));
                             strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                             value_item_node->data_type = T_TIMESTAMP;
                             value_item_node->t_value = mktime(tmp_time);
+                            db_free(tmp_time);
                         }
                     case T_TIMESTAMP:
                         return &value_item_node->t_value;
@@ -126,20 +128,17 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 //Generate insert row
 static Row *generate_insert_row(InsertNode *insert_node) {
     uint32_t i, column_len;
-    Row *row = malloc(sizeof(Row));
-    if (row == NULL) 
-        MALLOC_ERROR;
+    Row *row = db_malloc(sizeof(Row));
     row->table_name = strdup(get_table_name(insert_node));
     Table *table = open_table(row->table_name);
     if (table == NULL) 
         return NULL;
     MetaTable *meta_table = table->meta_table;
     column_len = get_insert_column_size(insert_node, meta_table);
-    row->data = malloc(sizeof(KeyValue *) * column_len);
+    row->data = db_malloc(sizeof(KeyValue *) * column_len);
     row->column_len = column_len;
     for(i = 0; i < column_len; i++) {
-        KeyValue *key_value = malloc(sizeof(KeyValue));
-        memset(key_value, 0, sizeof(KeyValue));
+        KeyValue *key_value = db_malloc(sizeof(KeyValue));
         char *column_name = get_column_name(insert_node, i, meta_table);
         key_value->key = strdup(column_name);
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_name);
