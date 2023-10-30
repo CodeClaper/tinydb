@@ -85,28 +85,6 @@ DescribeNode *make_describe_node();
 // make a shwo table node.
 ShowTablesNode *make_show_tables_node();
 
-// set ASTNode;
-void set_select_ast_node(SelectNode *select_node);
-
-// set ASTNode;
-void set_insert_ast_node(InsertNode *insert_node);
-
-// set ASTNode;
-void set_update_ast_node(UpdateNode *update_node);
-
-// set ASTNode;
-void set_delete_ast_node(DeleteNode *delete_node);
-
-// set ASTNode
-void set_create_table_ast_node(CreateTableNode *create_table_node);
-
-// set describe node ASTNode.
-void set_describe_ast_node(DescribeNode *describe_node);
-
-// set show tables node ASTNode.
-void set_show_tables_ast_node(ShowTablesNode *show_table_node);
-
-// get an ASTNode
-ASTNode *get_ast_node();
-
+// make an ast node.
+ASTNode *make_ast_node();
 #endif

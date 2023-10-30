@@ -1,3 +1,4 @@
+#include "data.h"
 #include "token.h"
 #include "common.h"
 #include "misc.h"
@@ -10,9 +11,9 @@
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(void);
-extern int yyparse(void);
 extern YY_BUFFER_STATE yy_scan_string(char *str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
+extern int yyparse(ASTNode *node);
 
 Statement *adapt(ASTNode *node) {
     if (node == NULL)
@@ -55,8 +56,9 @@ Statement *parse(char *input) {
     memset(state, 0, strlen(input) + 2);
     sprintf(state, "%s%c", input, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(state);
-    if(yyparse() == 0) {
-        ASTNode *node = get_ast_node();
+    ASTNode *node = malloc(sizeof(ASTNode));
+    memset(node, 0, sizeof(ASTNode));
+    if(yyparse(node) == 0) {
         free(state);
         return adapt(node);
     } else {

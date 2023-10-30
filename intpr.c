@@ -9,8 +9,6 @@
 #include "free.h"
 
 
-static ASTNode *root = NULL;
-
 //****************************** allocate ***************************************
 
 // make a function value node.
@@ -190,92 +188,10 @@ ShowTablesNode *make_show_tables_node() {
     return show_tables_node;
 }
 
-void set_select_ast_node(SelectNode *select_node) {
-    if (root == NULL)
-        root = malloc(sizeof(ASTNode));
-    else {
-        ASTNode *temp = root;
-        root = malloc(sizeof(ASTNode));
-        free_ast_node(temp);
-    }
-    root->statement_type = SELECT_STMT;
-    root->select_node = select_node;
-}
-
-void set_insert_ast_node(InsertNode *insert_node) {
-    if (root == NULL)
-        root = malloc(sizeof(ASTNode));
-    else {
-        ASTNode *temp = root;
-        root = malloc(sizeof(ASTNode));
-        free_ast_node(temp);
-    }
-    root->statement_type = INSERT_STMT;
-    root->insert_node = insert_node;
-}
-
-void set_update_ast_node(UpdateNode *update_node) {
-    if (root == NULL)
-        root = malloc(sizeof(ASTNode));
-    else {
-        ASTNode *temp = root;
-        root = malloc(sizeof(ASTNode));
-        free_ast_node(temp);
-    }
-    root->statement_type = UPDATE_STMT;
-    root->update_node = update_node;
-}
-
-void set_delete_ast_node(DeleteNode *delete_node) {
-    if (root == NULL)
-        root = malloc(sizeof(ASTNode));
-    else {
-        ASTNode *temp = root;
-        root = malloc(sizeof(ASTNode));
-        free_ast_node(temp);
-    }
-    root->statement_type = DELETE_STMT;
-    root->delete_node = delete_node;
-}
-
-void set_create_table_ast_node(CreateTableNode *create_table_node) {
-    if (root == NULL)
-        root = malloc(sizeof(ASTNode));
-    else {
-        ASTNode *temp = root;
-        root = malloc(sizeof(ASTNode));
-        free_ast_node(temp);
-    }
-    root->statement_type = CREATE_TABLE_STMT;
-    root->create_table_node = create_table_node;
-}
-
-void set_describe_ast_node(DescribeNode *describe_node) {
-    if (root == NULL)
-        root = malloc(sizeof(ASTNode));
-    else {
-        ASTNode *temp = root;
-        root = malloc(sizeof(ASTNode));
-        free_ast_node(temp);
-    }
-    root->statement_type = DESCRIBE_STMT;
-    root->describe_node = describe_node;
-}
-
-void set_show_tables_ast_node(ShowTablesNode *show_table_node) {
-    if (root == NULL)
-        root = malloc(sizeof(ASTNode));
-    else {
-        ASTNode *temp = root;
-        root = malloc(sizeof(ASTNode));
-        free_ast_node(temp);
-    }
-    root->statement_type = SHOW_TABLES_STMT;
-    root->show_tables_node = show_table_node;
-}
-
-
-ASTNode *get_ast_node() {
-    return root;
+// make an ast node.
+ASTNode *make_ast_node() {
+    ASTNode *ast_node = malloc(sizeof(ASTNode));
+    memset(ast_node, 0, sizeof(ASTNode));
+    return ast_node;
 }
 

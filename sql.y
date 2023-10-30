@@ -41,6 +41,7 @@ int yywrap() {
    DeleteNode               *delete_node;
    DescribeNode             *describe_node;
    ShowTablesNode           *show_table_node;
+   ASTNode                  *ast_node;
 };
 
 %token NL
@@ -92,6 +93,8 @@ int yywrap() {
 %type <create_table_node> create_table_statement
 %type <describe_node> describe_statement
 %type <show_table_node> show_tables_statement
+%type <ast_node> statement;
+%parse-param {ASTNode *ast_node}
 
 %%
 statements: 
@@ -102,31 +105,38 @@ statements:
 statement: 
             create_table_statement
                 {
-                   set_create_table_ast_node($1); 
+                    ast_node->statement_type = CREATE_TABLE_STMT;
+                    ast_node->create_table_node = $1;
                 }
             | select_statement 
                 {
-                    set_select_ast_node($1);
+                    ast_node->statement_type = SELECT_STMT;
+                    ast_node->select_node = $1;
                 }
             | insert_statement 
                 {
-                    set_insert_ast_node($1);
+                    ast_node->statement_type = INSERT_STMT;
+                    ast_node->insert_node = $1;
                 }
             | update_statement
                 {
-                    set_update_ast_node($1);
+                    ast_node->statement_type = UPDATE_STMT;
+                    ast_node->update_node = $1;
                 }
             | delete_statement
                 {
-                    set_delete_ast_node($1);
+                    ast_node->statement_type = DELETE_STMT;
+                    ast_node->delete_node = $1;
                 }
             | describe_statement
                 {
-                    set_describe_ast_node($1);
+                    ast_node->statement_type = DESCRIBE_STMT;
+                    ast_node->describe_node = $1;
                 }
             | show_tables_statement 
                 {
-                    set_show_tables_ast_node($1);
+                    ast_node->statement_type = SHOW_TABLES_STMT;
+                    ast_node->show_tables_node = $1;
                 }
             ;
 create_table_statement: 
