@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -11,6 +12,7 @@
 #include "common.h"
 #include "misc.h"
 #include "stmt.h"
+#include "free.h"
 #include "log.h"
 
 
@@ -59,27 +61,25 @@ static int get_line(int sock, char *buf, int size)
     return(i);
 }
 
-//Send out 
-size_t send_out_put(int client, Output *out) {
-    if (out->result == EXECUTE_SUCCESS) {
-        uint32_t len = strlen(out->json_data) + 1;
-        size_t send_size = send(client, &len, sizeof(len), 0);
-        if (send_size > 0)
-            return send(client, out->json_data, len, 0);
-        else
-            return send_size;
-    } else {
-        char *error_msg = get_current_error();
-        if (error_msg) {
-            uint32_t len = strlen(error_msg) + 1;
-            size_t send_size = send(client, &len, sizeof(len), 0);
-            if (send_size > 0)
-                return send(client, error_msg, len, 0);
-            else
-                return send_size;
-        }
+bool db_send(int client, const char *buff) {
+    size_t size = strlen(buff) + 1; 
+    if (send(client, &size, sizeof(size), 0) > 0) // first send buff size
+    {
+        if (send(client, buff, size, 0) > 0)
+            return 1;
     }
     return -1;
+}
+
+//Send out 
+bool send_out(int client, Output *out) {
+    if (out->result == EXECUTE_SUCCESS) 
+        return db_send(client, out->json_data)
+            && db_send(client, out->duration)
+            && db_send(client, "Over"); // 'Over' means these session is over.
+    else
+        return db_send(client, get_current_error()) 
+            && db_send(client, "Over");
 }
 
 //Start up the server.
@@ -114,7 +114,8 @@ void accept_request(void *arg) {
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
         Output *out = statement(buf);   
-        size_t send_size = send_out_put(client, out);
+        size_t send_size = send_out(client, out);
+        free_out_put(out);
         if (send_size < 0)
             break;
     }

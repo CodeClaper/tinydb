@@ -1,8 +1,10 @@
 #include <netinet/in.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -42,13 +44,19 @@ static bool meta_statment(char *input) {
  * END: message end symbol
  *
  */
-void receive(int server_fd) {
-    uint32_t len;
-    recv(server_fd, &len, sizeof(len), 0);
-    char *buff = malloc(len + 1);
-    memset(buff, 0, len + 1);
-    recv(server_fd, buff, len, 0);
-    printf("%s\n", buff);
+void db_receive(int server_fd) {
+    while(1) {
+        size_t len;
+        if (recv(server_fd, &len, sizeof(len), 0) < 0)
+            break;
+        char *buff = malloc(len + 1);
+        memset(buff, 0, len + 1);
+        if (recv(server_fd, buff, len, 0) < 0)
+            break;
+        if (strcasecmp("Over", buff) == 0)
+            break;
+        printf("%s\n", buff);
+    }
 }
 
 int main() {
@@ -89,7 +97,7 @@ int main() {
             fprintf(stderr, "Send fail.");
             exit(1);
         }
-        receive(sock_fd);
+        db_receive(sock_fd);
         add_history(sql);
         free(sql);
         free(input);
