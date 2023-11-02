@@ -19,9 +19,7 @@ extern int yyparse(ASTNode *node);
 Statement *adapt(ASTNode *node) {
     if (node == NULL)
         return NULL;
-    Statement *statement = db_malloc(sizeof(Statement));
-    if (statement == NULL)
-        MALLOC_ERROR;
+    Statement *statement = db_malloc2(sizeof(Statement), "Statement");
     switch(node->statement_type) {
         case CREATE_TABLE_STMT:
             statement->statement_type = STMT_CREATE_TABLE;
@@ -53,10 +51,10 @@ Statement *adapt(ASTNode *node) {
 Statement *parse(char *input) {
     if (input == NULL)
         return NULL;
-    char *state = db_malloc(strlen(input) + 2);
+    char *state = db_malloc2(strlen(input) + 2, "StrignValue");
     sprintf(state, "%s%c", input, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(state);
-    ASTNode *node = db_malloc(sizeof(ASTNode));
+    ASTNode *node = db_malloc2(sizeof(ASTNode), "ASTNode");
     if(yyparse(node) == 0) {
         db_free(state);
         return adapt(node);

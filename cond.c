@@ -32,7 +32,7 @@ static ConnType find_conn_type(ConditionNode *condition_node) {
 
 // binary tree
 static ConditionNode *bin_tree(ConditionNode *left, ConditionNode *right) {
-    ConditionNode *condition_node = db_malloc(sizeof(ConditionNode));
+    ConditionNode *condition_node = db_malloc2(sizeof(ConditionNode), "ConditionNode");
     condition_node->type = LOGIC_CONDITION;
     condition_node->conn_type =find_conn_type(left);
     condition_node->left = left;

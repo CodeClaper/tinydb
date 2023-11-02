@@ -46,19 +46,19 @@ char *get_key_str(void *key, DataType data_type) {
             }
         case T_INT:
             {
-                char *str = db_malloc(100);
+                char *str = db_malloc2(100, "Int String value");
                 sprintf(str, "%d", *(uint32_t *)key);
                 return str;
             }
         case T_DOUBLE:
             {
-                char *str = db_malloc(100);
+                char *str = db_malloc2(100, "Double String value");
                 sprintf(str, "%lf", *(double *)key);
                 return str;
             }
         case T_FLOAT:
             {
-                char *str = db_malloc(100);
+                char *str = db_malloc2(100, "Float String vlaue");
                 sprintf(str, "%f", *(float *)key);
                 return str;
             }

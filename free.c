@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "free.h"
 #include "mem.h"
+#include "table.h"
+#include "index.h"
 #include "misc.h"
 
 //Copy value
@@ -30,12 +32,14 @@ void free_key_value(KeyValue *key_value) {
 //Free Row.
 void free_row(Row *row) {
     if (row) {
-        if (row->table_name)
-            db_free(row->table_name);
         for(uint32_t i = 0; i < row->column_len; i++) {
             free_key_value(*(row->data + i));
         }
         db_free(row->data);
+        Table *table = open_table(row->table_name);
+        MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+        free_value(row->key, primary_meta_column->column_type);
+        db_free(row->table_name);
         db_free(row);
     }
 }
@@ -352,6 +356,26 @@ void free_ast_node(ASTNode *node) {
             break;
     }
     db_free(node);
+}
+
+
+// Free statment
+void free_statment(Statement *stmt) {
+    if (stmt) {
+        free_ast_node(stmt->ast_node);
+        db_free(stmt);
+    }
+}
+
+// Free output
+void free_out_put(Output *output) {
+    if (output) {
+        if (output->json_data)
+            db_free(output->json_data);
+        if (output->message)
+            db_free(output->message);
+        db_free(output);
+    } 
 }
 
 // Free table list

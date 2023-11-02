@@ -10,10 +10,7 @@
 #include "common.h"
 #include "misc.h"
 #include "token.h"
-#include "pager.h"
 #include "table.h"
-#include "node.h"
-#include "meta.h"
 #include "create.h"
 #include "select.h"
 #include "insert.h"
@@ -84,7 +81,7 @@ static void statement_show_tables(Statement *statement, Output *out) {
 Output *statement(char *sql) {
     clock_t start, end;
     start = clock();
-    Output *out = db_malloc(sizeof(Output));
+    Output *out = db_malloc2(sizeof(Output), "Output");
     out->buffer_size = BUFF_SIZE;
     out->result = EXECUTE_FAIL;
     if (is_empty(sql)) {
@@ -119,7 +116,8 @@ Output *statement(char *sql) {
             statement_show_tables(statement, out);
             break;
     }
+    free_statment(statement);
     end = clock();
-    printf("Execution duration: %lfs.\n", (double)(end - start) /CLOCKS_PER_SEC);
+    sprintf(out->duration, "Execution duration %lfs", (double)(end - start) / CLOCKS_PER_SEC);
     return out;
 }

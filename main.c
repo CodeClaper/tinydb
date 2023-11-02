@@ -20,14 +20,10 @@
 #include "log.h"
 
 char *data_dir;
-MTable *mtable;
 
 // init variable
 void init_variable() {
     data_dir = "/home/zc/data/";
-    mtable = sys_malloc(sizeof(MTable));
-    mtable->entry_list = sys_malloc(0);
-    mtable->num = 0;
 }
 
 // print prompt
@@ -37,6 +33,7 @@ void print_prompt() {
 
 int main(void) {
     init_variable();
+    init_mem();
     log_init(); // init log
     int server_socket = -1;
     int client_secket = -1;
@@ -56,6 +53,6 @@ int main(void) {
             fatal("Create new thread fail.");
         }
     }
-    destroy_log();
+    destroy_log(); // destroy log
     return 0;
 }

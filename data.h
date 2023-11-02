@@ -296,6 +296,7 @@ typedef struct {
     char *message;
     uint32_t buffer_size;
     ExecuteResult result;
+    char duration[1024];
 }Output;
 
 typedef struct {
@@ -303,14 +304,17 @@ typedef struct {
     uint32_t count;
 }TableList;
 
-typedef struct {
+typedef struct MEntry {
     void *ptr;
     size_t size;
+    char data_type_name[1024];
+    struct MEntry *next;
 }MEntry;
 
 typedef struct {
     MEntry **entry_list;
-    uint32_t num;
-}MTable;
+    uint32_t num; // number of entry list.
+    uint32_t capacity; // lenght of table cell.
+}MHashTable;
 
 #endif

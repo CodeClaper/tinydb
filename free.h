@@ -66,6 +66,12 @@ void free_create_table_node(CreateTableNode *create_table_node);
 //Free ASTNode.
 void free_ast_node(ASTNode *node);
 
+// Free statment
+void free_statment(Statement *stmt);
+
+// Free output
+void free_out_put(Output *output);
+
 //Free query param.
 void free_query_param(QueryParam *query_param);
 

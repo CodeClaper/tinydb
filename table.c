@@ -22,11 +22,11 @@
 // Get table file path.
 static char *table_file_path(char *table_name) {
   if (table_name == NULL) {
-    fprintf(stderr, "Inner error, table name can`t be NULL.\n");
-    exit(EXIT_FAILURE);
+        fprintf(stderr, "Inner error, table name can`t be NULL.\n");
+        exit(EXIT_FAILURE);
   }
   int len = strlen(data_dir) + strlen(table_name) + strlen(".dbt") + 1;
-  char *file_path = db_malloc(len);
+  char *file_path = db_malloc2(len, "String value");
   sprintf(file_path, "%s%s%s", data_dir, table_name, ".dbt");
   return file_path;
 }
@@ -40,75 +40,75 @@ static bool table_file_exist(char *table_file_path) {
 
 // Create a new table.
 ExecuteResult create_table(MetaTable *meta_table) {
-  if (meta_table == NULL) {
-    fprintf(stderr, "meta table can`t be NULL. \n");
-    exit(EXIT_FAILURE);
-  }
-  char *file_path = table_file_path(meta_table->table_name);
-  if (table_file_exist(file_path)) {
-    fprintf(stderr, "Table '%s' already exists. \n", meta_table->table_name);
-    return EXECUTE_TABLE_CREATE_FAIL;
-  }
-  int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
-  if (descr == -1) {
-    fprintf(stderr, "Create table '%s' fail.\n", meta_table->table_name);
-    return EXECUTE_TABLE_CREATE_FAIL;
-  }
-  void *root_node = db_malloc(PAGE_SIZE);
-  // initialize root node
-  initial_leaf_node(root_node, true);
-  // set meta column
-  set_column_size(root_node, meta_table->column_size);
-  for (uint32_t i = 0; i < meta_table->column_size; i++) {
-    MetaColumn *meta_column = (MetaColumn *)(meta_table->meta_column[i]);
-    void *destination = serialize_meta_column(meta_column);
-    set_meta_column(root_node, destination, i);
-  }
-  lseek(descr, 0, SEEK_SET);
-  ssize_t w_size = write(descr, root_node, PAGE_SIZE);
-  if (w_size == -1) {
-    fatald("Write table meta info error and errno", errno);
-  }
-  db_free(file_path);
-  close(descr);
-  for (uint32_t i = 0; i < meta_table->column_size; i++) {
-     db_free(meta_table->meta_column[i]);
-  }
-  db_free(root_node);
-  return EXECUTE_SUCCESS;
+    if (meta_table == NULL) {
+        fprintf(stderr, "meta table can`t be NULL. \n");
+        exit(EXIT_FAILURE);
+    }
+    char *file_path = table_file_path(meta_table->table_name);
+    if (table_file_exist(file_path)) {
+        fprintf(stderr, "Table '%s' already exists. \n", meta_table->table_name);
+        return EXECUTE_TABLE_CREATE_FAIL;
+    }
+    int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
+    if (descr == -1) {
+        fprintf(stderr, "Create table '%s' fail.\n", meta_table->table_name);
+        return EXECUTE_TABLE_CREATE_FAIL;
+    }
+    void *root_node = db_malloc2(PAGE_SIZE, "PAGE NODE");
+    // initialize root node
+    initial_leaf_node(root_node, true);
+    // set meta column
+    set_column_size(root_node, meta_table->column_size);
+    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+      MetaColumn *meta_column = (MetaColumn *)(meta_table->meta_column[i]);
+      void *destination = serialize_meta_column(meta_column);
+      set_meta_column(root_node, destination, i);
+    }
+    lseek(descr, 0, SEEK_SET);
+    ssize_t w_size = write(descr, root_node, PAGE_SIZE);
+    if (w_size == -1) {
+      fatald("Write table meta info error and errno", errno);
+    }
+    db_free(file_path);
+    close(descr);
+    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+       db_free(meta_table->meta_column[i]);
+    }
+    db_free(root_node);
+    return EXECUTE_SUCCESS;
 }
 
 // Open a table file.
 Table *open_table(char *table_name) {
-  char *file_path = table_file_path(table_name);
-  if (!table_file_exist(file_path)) {
-    log_error_s( "Table '%s' not exists.", table_name);
-    return NULL;
-  }
-  Table *cache_table = find_cache_table(table_name);
-  if (cache_table)
-    return cache_table;
-  Table *table = db_malloc(sizeof(Table));
-  Pager *pager = open_pager(file_path);
-  if (NULL == pager) {
-    return NULL;
-  }
-  table->pager = pager;
-  table->root_page_num = 0; // Define root page is first page.
-  if (pager->num_page == 0) {
-    // New db file and initialize page 0 as leaf node.
-    void *root_node = get_page(pager, 0);
-    initial_leaf_node(root_node, true);
-  }
-  table->meta_table = get_meta_table(table, table_name);
-  add_cache_table(table);
-  db_free(file_path);
-  return table;
+    Table *cache_table = find_cache_table(table_name);
+    if (cache_table)
+          return cache_table;
+    char *file_path = table_file_path(table_name);
+    if (!table_file_exist(file_path)) {
+          log_error_s( "Table '%s' not exists.", table_name);
+          db_free(file_path);
+          return NULL;
+    }
+    Table *table = db_malloc2(sizeof(Table), "Table");
+    Pager *pager = open_pager(file_path);
+    if (NULL == pager) 
+          return NULL;
+    table->pager = pager;
+    table->root_page_num = 0; // Define root page is first page.
+    if (pager->num_page == 0) {
+        // New db file and initialize page 0 as leaf node.
+        void *root_node = get_page(pager, 0);
+        initial_leaf_node(root_node, true);
+    }
+    table->meta_table = get_meta_table(table, table_name);
+    add_cache_table(table);
+    db_free(file_path);
+    return table;
 }
 
 static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node,
                                        uint32_t page_num, void *key) {
-  Cursor *cursor = db_malloc(sizeof(Cursor));
+  Cursor *cursor = db_malloc2(sizeof(Cursor), "Cursor");
   MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
   uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
   uint32_t row_len = calc_table_row_length(table);
@@ -149,12 +149,12 @@ Cursor *define_cursor(Table *table, void *key) {
 ExecuteResult drop_table(char *table_name) {
   char *file_path = table_file_path(table_name);
   if (!table_file_exist(file_path)) {
-    fprintf(stderr, "Table '%s' not exists. \n", table_name);
-    return EXECUTE_TABLE_DROP_FAIL;
+        fprintf(stderr, "Table '%s' not exists. \n", table_name);
+        return EXECUTE_TABLE_DROP_FAIL;
   }
   if (remove(file_path) == 0) {
-    printf("Table '%s' deleted success.\n", table_name);
-    return EXECUTE_SUCCESS;
+        printf("Table '%s' deleted success.\n", table_name);
+        return EXECUTE_SUCCESS;
   }
   db_free(file_path);
   fprintf(stderr, "Table '%s' deleted fail, error : %d", table_name, errno);

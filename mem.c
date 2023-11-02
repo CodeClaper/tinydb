@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,41 +9,240 @@
 #include "data.h"
 #include "defs.h"
 
+/**
+* Memory Manager Module
+*
+* Use HashTable data structure to store memory entry, 
+* for more fast effecive insertion and query operaton.
+* The capcity of HashTable grow by 2^n.
+*
+*/
+
+#define MAXIMUM_CAPACITY 1<<31
+#define MININUM_CAPACITY 1<<10
+#define DEFAULT_LOAD_FACTOR 0.75
+
+static MHashTable *mtable;
+static uint32_t max_value;
+
+static uint32_t hash_code(void *ptr) {
+    int a = (uintptr_t)ptr & 0xFFFFFFF;
+    /*return a ^ (a >> 16);*/
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+    return a;
+}
+
+uint32_t table_size_for(uint32_t cap) {
+        uint32_t n = cap - 1;
+        n |= n >> 1;
+        n |= n >> 2;
+        n |= n >> 4;
+        n |= n >> 8;
+        n |= n >> 16;
+        return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+}
+
+static uint32_t get_index(void *ptr, uint32_t capacity) {
+    return hash_code(ptr) % capacity;
+}
+
+// init mem
+void init_mem() {
+    mtable = sys_malloc(sizeof(MHashTable));
+    mtable->capacity = MININUM_CAPACITY; 
+    mtable->num = 0;
+    mtable->entry_list = sys_malloc(sizeof(void *) * mtable->capacity);
+}
+
+//expand capacity of HashTable
+void expand_capacity() {
+    uint32_t new_cap, old_cap, i;
+    old_cap = mtable->capacity;
+    if (old_cap >= MAXIMUM_CAPACITY)
+        return; // already max capacity, not allow to expand.
+    new_cap = mtable->capacity << 1;
+    new_cap = new_cap < MAXIMUM_CAPACITY ? new_cap : MAXIMUM_CAPACITY; // avoid to exceed the max 32_bit integer
+    MEntry **old_list = mtable->entry_list;
+    MEntry **new_list = sys_malloc(sizeof(void *) * new_cap);
+    for (i = 0; i < old_cap; i++) {
+        MEntry *current = old_list[i];
+        if (current) {
+            old_list[i] = NULL; 
+            if (current->next == NULL) // only itself
+                new_list[hash_code(current->ptr) & (new_cap - 1)] = current;
+            else {
+                // list chain
+                MEntry *loHead = NULL, *loTail = NULL;
+                MEntry *hiHead = NULL, *hiTail = NULL;
+                MEntry *next;
+                do {
+                    next = current->next;
+                    if ((hash_code(current->ptr) & old_cap) == 0) {
+                        if (loTail == NULL)
+                            loHead = current;
+                        else
+                            loTail->next = current;
+                        loTail = current;
+                    }
+                    else {
+                        if (hiTail == NULL)
+                            hiHead = current;
+                        else
+                            hiTail->next = current;
+                        hiTail = current;
+                    }
+                } while ((current = next) != NULL);
+                if (loTail != NULL) {
+                    loTail->next = NULL;
+                    new_list[i] = loHead;
+                }
+                if (hiTail != NULL) {
+                    hiTail->next = NULL;
+                    new_list[i + old_cap] = hiHead;
+                }
+            }
+        } 
+    }
+    mtable->entry_list = new_list;
+    mtable->capacity = new_cap;
+    free(old_list);
+}
+
+//shrink capacity of HashTable
+void shrink_capacity() {
+    uint32_t new_cap, old_cap, i;
+    old_cap = mtable->capacity;
+    if (old_cap <= MININUM_CAPACITY)
+        return; // already min capacity, not allow to shrink.
+    new_cap = mtable->capacity >> 1;
+    new_cap = new_cap < MININUM_CAPACITY ? MININUM_CAPACITY : new_cap;
+    MEntry **old_list = mtable->entry_list;
+    MEntry **new_list = sys_malloc(sizeof(void *) * (new_cap));
+    for (i = 0; i < mtable->capacity; i++) {
+        MEntry *current = old_list[i];
+        if (current) {
+            old_list[i] = NULL;
+            if (current) {
+                uint32_t index = hash_code(current->ptr) & (new_cap - 1);
+                MEntry *entry = new_list[index];
+                if (entry == NULL)
+                    new_list[index] = current;
+                else {
+                    while(entry->next) {
+                        entry = entry->next;
+                    }
+                    entry->next = current;
+                }
+            }
+        }
+    }
+    mtable->entry_list = new_list;
+    mtable->capacity = new_cap;
+    free(old_list);
+}
+
+// insert new entry
+void insert_entry(void *ptr, MEntry *entry) {
+    uint32_t index, treshold;
+    index = get_index(ptr, mtable->capacity);
+    MEntry *current = mtable->entry_list[index];
+    if (current == NULL)
+        mtable->entry_list[index] = entry; // first entry
+    else {
+        while(current->next) {
+            current = current->next;
+        }
+        current->next = entry;
+    }
+    mtable->num++;
+    treshold = mtable->capacity * DEFAULT_LOAD_FACTOR;
+    if (mtable->num > treshold)
+        expand_capacity();
+}
+
+// free entry
+static void free_entry(MEntry *entry, bool alread_free_ptr) {
+    if (entry) {
+        if (!alread_free_ptr)
+            free(entry->ptr);
+        free(entry);
+    }
+}
+
+// remove entry
+void remove_entry(void *ptr, bool alread_free_ptr) {
+    uint32_t index, treshold;
+    MEntry *first, *prev, *current;
+    index = get_index(ptr, mtable->capacity);
+    first = mtable->entry_list[index];
+    prev = first;
+    current = first;
+    if (current != NULL) {
+        if (first->ptr == ptr) {
+            mtable->entry_list[index] = first->next;
+            free_entry(current, alread_free_ptr);
+            mtable->num--;
+        } 
+        else {
+            while((current = current->next)) {
+                if (current->ptr == ptr) {
+                    prev->next = current->next;
+                    free_entry(current, alread_free_ptr);
+                    mtable->num--;
+                    break;
+                }
+                prev = current;
+            }
+        }
+    }
+    treshold = (mtable->capacity >> 1) * DEFAULT_LOAD_FACTOR;
+    if (mtable->num < treshold)
+        shrink_capacity();
+}
+
+// search entry
+MEntry *search_entry(void *ptr) {
+    uint32_t index = get_index(ptr, mtable->capacity);
+    MEntry *current = mtable->entry_list[index];
+    if (current != NULL) {
+        do {
+            if (current->ptr == ptr) 
+                return current;
+        } while ((current = current->next));
+    }
+    return NULL;
+}
+
 // register a MEntry
-static void register_entry(void *ptr, size_t size) {
+static void register_entry(void *ptr, size_t size, const char *data_type_name) {
     MEntry *entry = sys_malloc(sizeof(MEntry));
     entry->ptr = ptr;
     entry->size = size;
-    mtable->entry_list = sys_realloc(mtable->entry_list, sizeof(MEntry *) * (mtable->num + 1));
-    *(mtable->entry_list + mtable->num) = entry;
-    mtable->num++;
+    strcpy(entry->data_type_name, data_type_name == NULL ? "Unknown" : data_type_name);
+    insert_entry(ptr, entry);
 }
 
 // change MEntry`s size
-static void change_entry_size(void *prt, size_t resize) {
-    for (uint32_t i = 0; i < mtable->num; i++) {
-        MEntry *entry = *(mtable->entry_list + i);
-        if (entry->ptr == prt)
-            entry->size = resize;
-    } 
+static void change_entry(void *old_ptr, void* new_ptr ,size_t resize) {
+    if (old_ptr == new_ptr) {
+        MEntry *entry = search_entry(old_ptr);
+        assert(entry);
+        entry->ptr = new_ptr;
+        entry->size = resize;
+    } else {
+        remove_entry(old_ptr, true);
+        register_entry(new_ptr, resize, NULL);
+    }
 }
 
 // free MEntry
-static void unregister_entry(void *prt) {
-    for (uint32_t i = 0; i < mtable->num; i++) {
-        MEntry *entry = *(mtable->entry_list + i);
-        if (entry->ptr == prt) {
-            for (uint32_t j = i; j < mtable->num; j++) {
-                if (j != mtable->num - 1 )
-                    memcpy((mtable->entry_list + j), (mtable->entry_list + j + 1), sizeof(MEntry *));
-                else
-                    memset(mtable->entry_list + j, 0, sizeof(MEntry *));
-            }
-            free(entry);
-            mtable->num--;
-            break;
-        }
-    } 
+// first check if exist, only exists then free, avoid to double free.
+static void unregister_entry(void *ptr) {
+     remove_entry(ptr, false);
 }
 
 // system level mallocate
@@ -75,7 +275,19 @@ void *db_malloc(size_t size) {
         exit(EXIT_FAILURE);
     }
     memset(ret, 0, size);
-    register_entry(ret, size);
+    register_entry(ret, size, NULL);
+    return ret;
+}
+
+// database level mallocate.
+void *db_malloc2(size_t size, char *data_type_name) {
+    void *ret = malloc(size);
+    if (ret == NULL) {
+        fprintf(stderr, "Not enough to allocate.");
+        exit(EXIT_FAILURE);
+    }
+    memset(ret, 0, size);
+    register_entry(ret, size, data_type_name);
     return ret;
 }
 
@@ -86,25 +298,27 @@ void *db_realloc(void *ptr, size_t size) {
         fprintf(stderr, "Not enough to rallocate.");
         exit(EXIT_FAILURE);
     }
-    change_entry_size(ptr, size);
+    change_entry(ptr, ret, size);
     return ret;
 }
 
 // database level mememory free.
 void db_free(void *ptr) {
-    if (ptr) {
+    if (ptr)
         unregister_entry(ptr);
-        free(ptr);
-    }
 }
 
 // databese level mememory size.
 size_t db_memesize() {
     size_t total = 0;
-    for (uint32_t i = 0; i < mtable->num; i++) {
+    for (uint32_t i = 0; i < mtable->capacity; i++) {
         MEntry *entry = *(mtable->entry_list + i);
-        assert(entry);
-        total += entry->size;
+        while(entry) {
+            printf("%s\t", entry->data_type_name);
+            total += entry->size;
+            entry = entry->next;
+        }
     }
+    printf("\nTotal %d pointer and %ld byte memory not release, the mhashtabe capacity is %d entry number is %d.\n", mtable->num, total, mtable->capacity, mtable->num);
     return total;
 }
