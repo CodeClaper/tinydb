@@ -14,6 +14,8 @@
 #include <pthread.h>
 #include "input.h"
 
+#define MAX_BUFF_SIZE 1<<20
+
 //Execute meta stament.
 static bool meta_statment(char *input) {
     if (strcmp("clear", input) == 0 || strcmp("cls", input) == 0) {
@@ -49,13 +51,17 @@ void db_receive(int server_fd) {
         size_t len;
         if (recv(server_fd, &len, sizeof(len), 0) < 0)
             break;
+        if (len > MAX_BUFF_SIZE) {
+            fprintf(stderr, "Socket buffer is too large\n");
+            break;
+        }
         char *buff = malloc(len + 1);
         memset(buff, 0, len + 1);
         if (recv(server_fd, buff, len, 0) < 0)
             break;
         if (strcasecmp("Over", buff) == 0)
             break;
-        printf("%s\n", buff);
+        printf("%s", buff);
     }
 }
 

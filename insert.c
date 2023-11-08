@@ -19,6 +19,7 @@
 #include "check.h"
 #include "free.h"
 #include "log.h"
+#include "send.h"
 
 
 //Get table name in select node.
@@ -177,6 +178,7 @@ ExecuteResult exec_insert_statement(InsertNode *insert_node) {
     // free memeory
     free_cursor(cursor);
     free_row(row);
+    db_send("Successfully insert one row data.");
     return EXECUTE_SUCCESS;    
 }
 

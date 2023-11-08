@@ -1,20 +1,16 @@
-//Log init
-void log_init();
+#include "data.h"
 
-//Error
+/*Log for error level*/
 void log_error(char *msg);
 
-//Error for string format
+/*Log for error level with string format.*/
 void log_error_s(char *format, char *s);
 
-//Error for string format
+/*Log for error level with two strings format*/
 void log_error_s_s(char *format, char *s1, char *s2);
 
-//Error for int format
+/*Log for error level with a int string format*/
 void log_error_d(char *format, int i);
 
-//Get current error.
-char *get_current_error();
-
-//destroy log.
-void destroy_log();
+/*Log for error level with a float string format*/
+void log_error_f(char *format, float val);

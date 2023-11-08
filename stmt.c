@@ -18,106 +18,99 @@
 #include "delete.h"
 #include "desc.h"
 #include "show.h"
-#include "free.h"
 #include "input.h"
-#include "output.h"
-#include "check.h"
+#include "send.h"
 #include "log.h"
+#include "free.h"
 
-// Create a table
-static void statement_create_table(Statement *stmt, Output *out) {
+/*Create table Statement*/
+static ExecuteResult statement_create_table(Statement *stmt) {
     assert(stmt->statement_type == STMT_CREATE_TABLE);
-    MetaTable *meta_table = gen_meta_table(stmt->ast_node->create_table_node);
-    out->result = create_table(meta_table);
-    if (out->result == EXECUTE_SUCCESS) {
-        print_data_s(out, "Table '%s' created successfully.", meta_table->table_name);
-    }
-    db_free(meta_table);
+    return exec_create_table_statement(stmt->ast_node->create_table_node);
 }
 
-// execute insert statment
-static void statement_insert(Statement *stmt, Output *out) {
+/*Insert Statment*/
+static ExecuteResult statement_insert(Statement *stmt) {
     assert(stmt->statement_type == STMT_INSERT);
-    out->result = exec_insert_statement(stmt->ast_node->insert_node);
-    if (out->result == EXECUTE_SUCCESS)
-        print_data(out, "Successfully insert 1 row data.");
+    return exec_insert_statement(stmt->ast_node->insert_node);
 }
 
-static void statement_select(Statement *statement, Output *out) {
+/*Select Statement*/
+static ExecuteResult statement_select(Statement *statement) {
     assert(statement->statement_type == STMT_SELECT);
-    QueryParam *query_param = convert_query_param(statement->ast_node->select_node);
-    if (check_query_param(query_param)) {
-        SelectResult *select_result = query_with_condition(query_param);
-        if (select_result) {
-            put_select_result(select_result, query_param, out);
-            free_select_result(select_result); 
-            out->result = EXECUTE_SUCCESS;
-        }
-    }
-    free_query_param(query_param);
+    return exec_select_statement(statement->ast_node->select_node); 
 }
 
-static void statement_update(Statement *statement, Output *out) {
+/*Update statemetn*/
+static ExecuteResult statement_update(Statement *statement) {
     assert(statement->statement_type == STMT_UPDATE);
-    out->result = exec_update_statment(statement->ast_node->update_node, out);
+    return exec_update_statment(statement->ast_node->update_node);
 }
 
-static void statement_delete(Statement *statement, Output *out) {
+/*Delete Statement*/
+static ExecuteResult statement_delete(Statement *statement) {
     assert(statement->statement_type == STMT_DELETE);
-    out->result = exec_delete_statement(statement->ast_node->delete_node, out);
+    return exec_delete_statement(statement->ast_node->delete_node);
 }
 
-static void statement_describe(Statement *statement, Output *out) {
+/*Describe Statement*/
+static ExecuteResult statement_describe(Statement *statement) {
     assert(statement->statement_type == STMT_DESCRIBE); 
-    out->result = print_describe_info(statement->ast_node->describe_node, out);
+    return exec_describe_statement(statement->ast_node->describe_node);
 }
 
-static void statement_show_tables(Statement *statement, Output *out) {
+/*Show tables Statment*/
+static ExecuteResult statement_show(Statement *statement) {
     assert(statement->statement_type == STMT_SHOW); 
-    out->result = exec_show_statement(statement->ast_node->show_node, out);
+    return exec_show_statement(statement->ast_node->show_node);
 }
 
-// statement
-Output *statement(char *sql) {
+/*Execute statement
+ * Now supported statments:
+ * (1) SELECT
+ * (2) UPDATE
+ * (3) Insert
+ * (4) DELETE
+ * (5) CREATE TABLE
+ * (6) SHOW TABLES AND SHOW MEMORY
+ * (7) DESCRIBE TABLE
+ * */
+ExecuteResult statement(char *sql) {
     clock_t start, end;
+    ExecuteResult result;
     start = clock();
-    Output *out = db_malloc2(sizeof(Output), "Output");
-    out->buffer_size = BUFF_SIZE;
-    out->result = EXECUTE_FAIL;
-    if (is_empty(sql)) {
-        out->result = EXECUTE_SQL_ERROR;
-        return out;
-    }
+    if (is_empty(sql))
+        return EXECUTE_SQL_ERROR;
     Statement *statement = parse(sql);
-    if (statement == NULL) {
-        out->result = EXECUTE_SQL_ERROR;
-        return out;
-    }
+    if (statement == NULL)
+        return EXECUTE_SQL_ERROR;
     switch(statement->statement_type) {
         case STMT_CREATE_TABLE:
-            statement_create_table(statement, out);
+            result = statement_create_table(statement);
             break;
         case STMT_INSERT:
-            statement_insert(statement, out); 
+            result = statement_insert(statement); 
             break; 
         case STMT_SELECT:
-            statement_select(statement, out); 
+            result = statement_select(statement); 
             break; 
         case STMT_UPDATE:
-            statement_update(statement, out); 
+            result = statement_update(statement); 
             break; 
         case STMT_DELETE:
-            statement_delete(statement, out); 
+            result = statement_delete(statement); 
             break; 
         case STMT_DESCRIBE:
-            statement_describe(statement, out);
+            result = statement_describe(statement);
             break;
         case STMT_SHOW:
-            statement_show_tables(statement, out);
+            result = statement_show(statement);
             break;
     }
     free_statment(statement);
     end = clock();
-    sprintf(out->duration, "Execution duration %lfs", (double)(end - start) / CLOCKS_PER_SEC);
-    return out;
+    char buff[1024];
+    sprintf(buff, "Execution duration %lfs\n", (double)(end - start) / CLOCKS_PER_SEC);
+    db_send(buff);
+    return result;
 }

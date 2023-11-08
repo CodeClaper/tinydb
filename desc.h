@@ -1,5 +1,4 @@
 #include "data.h"
-#include "intpr.h"
 
-// print into describe node.
-ExecuteResult print_describe_info(DescribeNode *describe_node, Output *out);
+/*Print into describe node.*/
+ExecuteResult exec_describe_statement(DescribeNode *describe_node);

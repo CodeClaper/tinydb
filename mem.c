@@ -10,14 +10,27 @@
 #include "defs.h"
 
 /**
-* Memory Manager Module
+* Memory Manager Unit
 *
-* Use HashTable data structure to store memory entry, 
-* for more fast effecive insertion and query operaton.
-* The capcity of HashTable grow by 2^n.
-*
+* Memory Manager Unit(MMU) is designed to achieve unnified memory management.
+* We use db_malloc,db_realloc, db_free to repalce native diynamic memory function 
+* malloc, realloc and free. In this way, we can record every diynamic meomry usage 
+* info as a MEntry. MEntry will store in a HashTable data structure which called 
+* MHashTable. HashTable supports more effective insertion and query operation.
+* MMU provides this following capabities:
+* 1.Accurate memory usage data
+* 2.No memory leaking, no double free
+* 3.Robust against allocation failures
+* 4.Memory usage limit
 */
 
+/* =========================== HashTable Data structure ========================
+ * MHashTable is a array of MEntry, and the index is defined by hash of pointer
+ * in MEntry. When hash collision, the MEntry will transform to chain list. The
+ * new MEntry will insert at tail. If the number of MEntry exceed the treshold
+ * (treshold = capacity * DEFAULT_LOAD_FACTOR), MTable will automatically expand,
+ * In the same way, MTable will shrink when number below the treshold.
+ * ============================================================================*/
 #define MAXIMUM_CAPACITY 1<<31
 #define MININUM_CAPACITY 1<<10
 #define DEFAULT_LOAD_FACTOR 0.75

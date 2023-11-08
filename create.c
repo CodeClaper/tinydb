@@ -1,8 +1,11 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include "create.h"
 #include "common.h"
+#include "table.h"
+#include "send.h"
 #include "mem.h"
 #include "misc.h"
 #include "meta.h"
@@ -45,7 +48,7 @@ static MetaColumn *get_meta_column(CreateTableNode *create_table_node, uint32_t 
 }
 
 // generate meta table by create table node
-MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
+static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
     MetaTable *meta_table = db_malloc(sizeof(MetaTable));
     meta_table->table_name = get_table_name(crete_table_node);
     meta_table->column_size = get_column_size(crete_table_node);
@@ -57,4 +60,17 @@ MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
         meta_table->meta_column[i] = get_meta_column(crete_table_node, i);
     }
     return meta_table;
+}
+
+// execute create table statement.
+ExecuteResult exec_create_table_statement(CreateTableNode *create_table_node) {
+    char buff[1024];
+    MetaTable *meta_table = gen_meta_table(create_table_node);
+    ExecuteResult result = create_table(meta_table);
+    if (result == EXECUTE_SUCCESS) {
+        sprintf(buff, "Table %s created successfully", meta_table->table_name);
+        db_send(buff); 
+    }
+    db_free(meta_table);
+    return result;
 }

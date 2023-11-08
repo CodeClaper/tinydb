@@ -7,18 +7,18 @@
 #include "show.h"
 #include "mem.h"
 #include "common.h"
-#include "output.h"
 #include "misc.h"
 #include "utils.h"
 #include "mem.h"
 #include "free.h"
+#include "send.h"
 
 #define KB_THRESHOLD 1024
 #define MB_THRESHOLD 1024 * KB_THRESHOLD
 #define GB_THRESHOLD 1024 * MB_THRESHOLD
 
 
-// gen table list.
+/*Gen table list.*/
 static TableList *gen_table_list() {
     DIR *dir;
     struct dirent *entry;
@@ -42,31 +42,35 @@ static TableList *gen_table_list() {
 }
 
 // print show table.
-static void print_show_table(TableList *table_list, Output *out) {
+static void print_show_table(TableList *table_list) {
     uint32_t i;
-    print_data(out, strdup("["));
+    db_send("[");
     for (i = 0; i < table_list->count; i++) {
+        char buff[BUFF_SIZE];
         char *table_name = *(table_list->table_name_list + i);
-        print_data_s(out, "\"%s\"", table_name);
+        sprintf(buff, "\"%s\"", table_name);
+        db_send(buff);
         if (i < table_list->count -1)
-            print_data(out, strdup(", "));
+            db_send(", ");
     } 
-    print_data(out, strdup("]"));
+    db_send("]\n");
 }
 
-// execute show statement.
-ExecuteResult exec_show_statement(ShowNode *show_node, Output *out) {
+/*Execute show statement.*/
+ExecuteResult exec_show_statement(ShowNode *show_node) {
     switch(show_node->type) {
         case SHOW_TABLES:
             {
                 TableList *table_list = gen_table_list();
-                print_show_table(table_list, out);
+                print_show_table(table_list);
                 free_table_list(table_list);
                 break;
             }
         case SHOW_MEMORY:
             {
-                print_data_d(out, "Db used memeory: %d", db_memesize()); 
+                char buff[BUFF_SIZE];
+                sprintf(buff, "Db used memeory: %ld\n", db_memesize()); 
+                db_send(buff);
                 break;
             }
     }

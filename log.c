@@ -1,79 +1,46 @@
-#include "log.h"
-#include "data.h"
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "log.h"
+#include "data.h"
+#include "send.h"
 
-pthread_key_t key;
-
-//Destruct value
-static void key_destructor(void *value) {
-    if (value)
-        free(value);
-    printf("Execute Key Destruct");
-} 
-
-//Log init
-void log_init() {
-    pthread_key_create(&key, key_destructor);
+/*Log for error level*/
+void log_error(char *s) {
+    int len = strlen(s) + 1;
+    char buff[len];
+    sprintf(buff, "%s\n", s);
+    db_send(buff);    
 }
 
-//Info
-void log_info(char *msg) {
-
-}
-
-//Error
-void log_error(char *msg) {
-    pthread_setspecific(key, (void *)msg);
-#ifdef DEBUG
-    fprintf(stderr, "%s\n", msg);
-#endif
-}
-
-//Error for string format
+/*Log for error level with string format.*/
 void log_error_s(char *format, char *s) {
     int len = strlen(format) + strlen(s);
-    char *msg = malloc(len);
-    memset(msg, 0, len);
-    sprintf(msg, format, s);
-    pthread_setspecific(key, (void *)msg);
-#ifdef DEBUG
-    fprintf(stderr, "%s\n", msg);
-#endif
+    char buff[len];
+    sprintf(buff, format, s);
+    log_error(buff);
 }
 
-//Error for string format
+/*Log for error level with two strings format*/
 void log_error_s_s(char *format, char *s1, char *s2) {
     int len = strlen(format) + strlen(s1) + strlen(s2);
-    char *msg = malloc(len);
-    memset(msg, 0, len);
-    sprintf(msg, format, s1, s2);
-    pthread_setspecific(key, (void *)msg);
-#ifdef DEBUG
-    fprintf(stderr, "%s\n", msg);
-#endif
+    char buff[len];
+    sprintf(buff, format, s1, s2);
+    log_error(buff);
 }
 
-//Error for int format
-void log_error_d(char *format, int i) {
+/*Log for error level with a int string format*/
+void log_error_d(char *format, int val) {
     int len = strlen(format) + 20;
-    char *msg = malloc(len);
-    memset(msg, 0, len);
-    sprintf(msg, format, i);
-    pthread_setspecific(key, (void *)msg);
-#ifdef DEBUG
-    fprintf(stderr, "%s\n", msg);
-#endif
+    char buff[len];
+    sprintf(buff, format, val);
+    log_error(buff);
 }
 
-//Get current error.
-char *get_current_error() {
-    return (char *)pthread_getspecific(key); 
-}
-
-//destroy log.
-void destroy_log() {
-    pthread_key_delete(key);
+/*Log for error level with a float string format*/
+void log_error_f(char *format, float val) {
+    int len = strlen(format) + 20;
+    char buff[len];
+    sprintf(buff, format, val);
+    log_error(buff);
 }

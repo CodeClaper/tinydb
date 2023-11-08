@@ -14,10 +14,10 @@
 #include "pager.h"
 #include "node.h"
 #include "check.h"
-#include "output.h"
 #include "free.h"
+#include "send.h"
 
-// adapt to column set node.
+/*Adapt to column set node data type.*/
 static ColumnSetNode *adapt_column_set_node(Table *table) {
     MetaTable *meta_table = table->meta_table;
     ColumnSetNode *column_set_node = db_malloc(sizeof(ColumnSetNode));
@@ -33,7 +33,7 @@ static ColumnSetNode *adapt_column_set_node(Table *table) {
     return column_set_node;
 }
 
-// adapt to select items node.
+/*Adapt to select items node data type.*/
 static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *table) {
     SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
     select_items_node->type = SELECT_COLUMNS;
@@ -41,7 +41,7 @@ static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *
     return select_items_node;
 }
 
-// adapt to query param.
+/*Adapt to query param data type.*/
 static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
     QueryParam *query_param = db_malloc(sizeof(QueryParam));
     query_param->table_name = strdup(update_node->table_name);
@@ -51,7 +51,7 @@ static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
     return query_param;
 }
 
-// update cell
+/*Update cell*/
 static void update_cell(Row *row, AssignmentNode *assign_node) {
     for (uint32_t i = 0; i < row->column_len; i++) {
         KeyValue *key_value = *(row->data + i);
@@ -88,7 +88,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
     } 
 }
 
-// update row
+/*Update row*/
 static void update_row(Row *row, AssignmentSetNode *assignment_set_node, Table *table) {
     uint32_t value_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
@@ -96,11 +96,13 @@ static void update_row(Row *row, AssignmentSetNode *assignment_set_node, Table *
         AssignmentNode *assign_node = *(assignment_set_node->assignment_node + i);
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
         update_cell(row, assign_node);
-        if (meta_column->is_primary) { // it means to change primary key, and may casuse space movement.
+        if (meta_column->is_primary) { 
+            /*It means to change primary key, and may casuse space movement.*/
             void *old_key = row->key;
             void *new_key = get_value(assign_node->value);
             if (equal(old_key, new_key, meta_column->column_type)) {
-                continue; // key not change, just continue
+                /*Key not change, do nothing.*/
+                continue; 
             } else {
                 Cursor *old_cursor = define_cursor(table, old_key);
                 clean_up_obsolute_cell(old_cursor); // make right cell forwar to covert old cell.
@@ -109,7 +111,8 @@ static void update_row(Row *row, AssignmentSetNode *assignment_set_node, Table *
                 row->key = new_key;
                 insert_leaf_node(new_cursor, row); // re-insert into leaf node with new cursor.
             }
-        } else { // non-key column, just update the cell value.
+        } else { 
+            /*When it is non-key column, just update the cell value.*/
             Cursor *cursor = define_cursor(table, row->key);
             void *leaf_node = get_page(table->pager, cursor->page_num);
             assert(get_node_type(leaf_node) == LEAF_NODE);
@@ -120,7 +123,7 @@ static void update_row(Row *row, AssignmentSetNode *assignment_set_node, Table *
     }
 }
 
-// update rows
+/*update rows*/
 static void update_rows(SelectResult *select_result, AssignmentSetNode *assignment_set_node, Table *table) {
     for (uint32_t i = 0; i < select_result->row_size; i++) {
         Row *current_row = *(select_result->row + i);
@@ -128,18 +131,20 @@ static void update_rows(SelectResult *select_result, AssignmentSetNode *assignme
     } 
 }
 
-// execute update statment. 
-ExecuteResult exec_update_statment(UpdateNode *update_node, Output *out) {
+/*Execute update statment.*/
+ExecuteResult exec_update_statment(UpdateNode *update_node) {
+    char buff[BUFF_SIZE];
     Table *table = open_table(update_node->table_name);
     if (table == NULL)
         return EXECUTE_TABLE_OPEN_FAIL;
-    // first, query under condition and get rows that satisfy to update.
+    /*First, query under condition and get rows that satisfy to update*/
     QueryParam *query_param = adapt_query_param(update_node, table);
     SelectResult *select_result = query_with_condition(query_param);
     if (!check_update_node(update_node, select_result)) // check if valid
         return EXECUTE_FAIL;
-    // second, update queried rows.
+    /*second, update queried rows.*/
     update_rows(select_result, update_node->assignment_set_node, table);
-    print_data_d(out, "Successfully updated %d row data.", select_result->row_size);
+    sprintf(buff, "Successfully updated %d row data.\n", select_result->row_size);
+    db_send(buff);
     return EXECUTE_SUCCESS;
 }

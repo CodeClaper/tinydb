@@ -18,23 +18,24 @@
 #include "common.h"
 #include "misc.h"
 #include "log.h"
+#include "send.h"
 
 char *data_dir;
 
-// init variable
-void init_variable() {
+// init
+static void init() {
     data_dir = "/home/zc/data/";
+    init_mem(); // init mmu
+    init_send();
 }
 
-// print prompt
-void print_prompt() { 
-    printf("tinydb > "); 
+// end
+static void end() {
+    destroy_send();
 }
 
 int main(void) {
-    init_variable();
-    init_mem();
-    log_init(); // init log
+    init();
     int server_socket = -1;
     int client_secket = -1;
     u_short port = 4080;
@@ -53,6 +54,6 @@ int main(void) {
             fatal("Create new thread fail.");
         }
     }
-    destroy_log(); // destroy log
+    end();
     return 0;
 }

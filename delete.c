@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include "delete.h"
 #include "mem.h"
 #include "data.h"
@@ -7,18 +8,17 @@
 #include "copy.h"
 #include "cond.h"
 #include "select.h"
-#include "output.h"
 #include "node.h"
+#include "send.h"
 
-
-// adapt to select items node.
+/*Adapt to select items node data type.*/
 static SelectItemsNode *adapt_select_items_node() {
     SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
     select_items_node->type = SELECT_ALL;
     return select_items_node;
 }
 
-// adapt to query param.
+/*Adapt to query param data type.*/
 static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
     QueryParam *query_param = db_malloc(sizeof(QueryParam));
     query_param->table_name = strdup(delete_node->table_name);
@@ -28,7 +28,7 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
     return query_param;
 }
 
-// delete rows.
+/*Delete rows.*/
 static void delete_rows(SelectResult *select_result, Table *table) {
     for (uint32_t i = 0; i < select_result->row_size; i++) {
         Row *current_row = *(select_result->row + i);
@@ -37,15 +37,17 @@ static void delete_rows(SelectResult *select_result, Table *table) {
     }
 }
 
-//Execute delete statment.
-ExecuteResult exec_delete_statement(DeleteNode *delete_node,  Output *out) { 
+/*Execute delete statment.*/
+ExecuteResult exec_delete_statement(DeleteNode *delete_node) { 
+    char buff[BUFF_SIZE];
     Table *table = open_table(delete_node->table_name);
     if (table == NULL)
         return EXECUTE_TABLE_OPEN_FAIL;
     QueryParam *query_param = adapt_query_param(delete_node, table);
     SelectResult *select_result = query_with_condition(query_param);
     delete_rows(select_result, table);
-    print_data_d(out, "Successfully deleted %d row data.", select_result->row_size);
+    sprintf(buff, "Successfully deleted %d row data.\n", select_result->row_size);
+    db_send(buff);
     return EXECUTE_SUCCESS;
 }
 

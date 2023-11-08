@@ -13,6 +13,7 @@
 #include "misc.h"
 #include "stmt.h"
 #include "free.h"
+#include "send.h"
 #include "log.h"
 
 
@@ -61,27 +62,6 @@ static int get_line(int sock, char *buf, int size)
     return(i);
 }
 
-bool db_send(int client, const char *buff) {
-    size_t size = strlen(buff) + 1; 
-    if (send(client, &size, sizeof(size), 0) > 0) // first send buff size
-    {
-        if (send(client, buff, size, 0) > 0)
-            return 1;
-    }
-    return -1;
-}
-
-//Send out 
-bool send_out(int client, Output *out) {
-    if (out->result == EXECUTE_SUCCESS) 
-        return db_send(client, out->json_data)
-            && db_send(client, out->duration)
-            && db_send(client, "Over"); // 'Over' means these session is over.
-    else
-        return db_send(client, get_current_error()) 
-            && db_send(client, "Over");
-}
-
 //Start up the server.
 int startup(u_short port) {
     int httpd = 0;
@@ -106,19 +86,19 @@ int startup(u_short port) {
     return httpd;
 }
 
-//Accept request.
+/*Accept request.*/
 void accept_request(void *arg) {
     int client = (intptr_t) arg;
     size_t chars_num;
     char buf[1024];
+    set_client(arg);
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
-        Output *out = statement(buf);   
-        size_t send_size = send_out(client, out);
-        free_out_put(out);
-        if (send_size < 0)
+        statement(buf);   
+        if (!db_send_over())
             break;
     }
     close(client);
+    destroy_send();
     printf("Client disconnect.\n");
 }

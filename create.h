@@ -1,4 +1,4 @@
 #include "data.h"
 
-// generate meta table by create table node
-MetaTable *gen_meta_table(CreateTableNode *crete_table_node);
+// execute create table statement.
+ExecuteResult exec_create_table_statement(CreateTableNode *create_table_node);

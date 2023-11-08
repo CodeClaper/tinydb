@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define _XOPEN_SOURCE
+#define __USE_XOPEN
+#include <time.h>
 #include "meta.h"
 #include "mem.h"
 #include "common.h"
@@ -40,6 +43,79 @@ uint32_t column_type_length(DataType column_type) {
   default:
     fatal("unknow column type");
   }
+}
+
+/*Get key value pair string.*/
+char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
+    switch(data_type) {
+        case T_BOOL:
+            {
+                uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
+                char *s = db_malloc2(len, "BOOL String value");
+                sprintf(s, "\"%s\": %s", key, (*(bool *)value ? "true" : "false"));
+                return s;
+            }
+        case T_INT: 
+            {
+                uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
+                char *s = db_malloc2(len, "Int String value");
+                sprintf(s, "\"%s\": %d", key, *(uint32_t *)value);
+                return s;
+            }
+        case T_CHAR:
+            {
+                uint32_t len = strlen(key) + 6 + 1; /*len = key len + symbol len + value len.*/ 
+                char *s = db_malloc2(len, "Char String value");
+                sprintf(s, "\"%s\": \'%c\'", key, *(char *)value);
+                return s;
+            }
+        case T_STRING:
+            {
+                uint32_t len = strlen(key) + 6 + strlen(value); /*len = key len + symbol len + value len.*/
+                char *s = db_malloc2(len, "String value");
+                sprintf(s, "\"%s\": \"%s\"", key, (char *)value);
+                return s;
+            }
+        case T_FLOAT: 
+            {
+                uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
+                char *s = db_malloc2(len, "Float String value");
+                sprintf(s, "\"%s\": %f", key, *(float *)value);
+                return s;
+            }
+        case T_DOUBLE:
+            {
+                uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
+                char *s = db_malloc2(len, "Double String value");
+                sprintf(s, "\"%s\": %lf", key, *(double *)value);
+                return s;
+            }
+        case T_TIMESTAMP: 
+            {
+                char temp[90];
+                uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
+                char *s = db_malloc2(len, "Timestamp String value.");
+                time_t t = *(time_t *)value;
+                struct tm *tmp_time = localtime(&t);
+                strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
+                sprintf(s, "\"%s\": \"%s\"", key, temp);
+                return s;
+            }
+        case T_DATE: 
+            {
+                char temp[90];
+                uint32_t len = strlen(key) + 4 + 100; /*len =key len + symbol len + value len*/
+                char *s = db_malloc2(len, "Date String value.");
+                time_t t = *(time_t *)value;
+                struct tm *tmp_time = localtime(&t);
+                strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
+                sprintf(s, "\"%s\": \"%s\"", key, temp);
+                return s;
+            }
+        default:
+            fatal("Not support data type");
+    }
+    return NULL;
 }
 
 // calculate the length of table row

@@ -3,6 +3,9 @@
 // get data type name.
 char *data_type_name(DataType data_type);
 
+/*Get key value pair string.*/
+char *get_key_value_pair_str(char *key, void *value, DataType data_type);
+
 // column type length
 uint32_t column_type_length(DataType column_type);
 

@@ -4,5 +4,5 @@
 #include <stdio.h>
 
 
-// execute show statement.
-ExecuteResult exec_show_statement(ShowNode *show_node, Output *out);
+/*Execute show statement.*/
+ExecuteResult exec_show_statement(ShowNode *show_node);
