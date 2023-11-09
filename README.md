@@ -1,18 +1,24 @@
+#### Introduction
+
+​	Begin 2023-07-28, I tried to develop a simple object-oriented database engine named Tinydb.  Tinydb is intended to design and store more intuitive data model. When you use object-oriented language to build program like java, python etc,  the object  data structure in the code and the table structure in the Tinydb database have direct one-to-one mapping relationship. By Tinydb, you can easily save the data in memory to disk without unnecessary data structure conversion as well as reading data from disk.
+
 #### RoadMap
 
-​		Begin 2023-07-28, I tried to realise a simple object-oriented database engine, just for fun and the roadmap as follws:
-
-- [ ] B-Tree data page store
-
-- [ ] Based Lex&Yacc implement sql parser
-- [ ] Create a table using sql
-- [ ] Query data using sql
-- [ ] Insert data using sql
-- [ ] Query special column data using sql
-- [ ] Query data under condition using sql
-- [ ] B+Tree index store
-- [ ] Implement view
-- [ ] Implement MVCC
+- [x] B-Tree data page store
+- [x] Based Lex&Yacc implement sql parser
+- [x] Create a table using sql
+- [x] Query data using sql
+- [x] Insert data using sql
+- [x] Update data using sql
+- [x] Delete data using sql
+- [x] Query special column data using sql
+- [x] Query data under conditions using sql
+- [ ] Stream output of query result
+- [ ] Support index,  B+Tree index store
+- [ ] Create view using sql
+- [ ] Implement MVCC and support transaction
+- [ ] Bin Log
+- [ ] Distributed
 
 
 
