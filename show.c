@@ -11,7 +11,7 @@
 #include "utils.h"
 #include "mem.h"
 #include "free.h"
-#include "send.h"
+#include "session.h"
 
 #define KB_THRESHOLD 1024
 #define MB_THRESHOLD 1024 * KB_THRESHOLD

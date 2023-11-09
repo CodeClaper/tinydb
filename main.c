@@ -16,9 +16,9 @@
 #include "free.h"
 #include "server.h"
 #include "common.h"
+#include "session.h"
 #include "misc.h"
 #include "log.h"
-#include "send.h"
 
 char *data_dir;
 
@@ -26,12 +26,12 @@ char *data_dir;
 static void init() {
     data_dir = "/home/zc/data/";
     init_mem(); // init mmu
-    init_send();
+    init_session();
 }
 
 // end
 static void end() {
-    destroy_send();
+    end_session();
 }
 
 int main(void) {
@@ -50,9 +50,8 @@ int main(void) {
             fatal("Socket accept fail.");
         else
             printf("Client connect successfully.\n");
-        if (pthread_create(&new_thread, NULL, (void *)accept_request, (void *)(intptr_t)client_secket) != 0) {
+        if (pthread_create(&new_thread, NULL, (void *)accept_request, (void *)(intptr_t)client_secket) != 0)
             fatal("Create new thread fail.");
-        }
     }
     end();
     return 0;

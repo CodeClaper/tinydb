@@ -15,7 +15,7 @@
 #include "node.h"
 #include "check.h"
 #include "free.h"
-#include "send.h"
+#include "session.h"
 
 /*Adapt to column set node data type.*/
 static ColumnSetNode *adapt_column_set_node(Table *table) {

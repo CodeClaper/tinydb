@@ -7,11 +7,9 @@
 #include "misc.h"
 #include "table.h"
 #include "meta.h"
-#include "send.h"
+#include "session.h"
 
-
-
-//Get table name.
+/*Get table name.*/
 static char *get_table_name(DescribeNode *describe_node) {
     return describe_node->table_name;
 }

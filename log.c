@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "session.h"
 #include "log.h"
 #include "data.h"
-#include "send.h"
 
 /*Log for error level*/
 void log_error(char *s) {

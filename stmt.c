@@ -19,7 +19,7 @@
 #include "desc.h"
 #include "show.h"
 #include "input.h"
-#include "send.h"
+#include "session.h"
 #include "log.h"
 #include "free.h"
 

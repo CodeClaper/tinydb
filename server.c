@@ -13,7 +13,7 @@
 #include "misc.h"
 #include "stmt.h"
 #include "free.h"
-#include "send.h"
+#include "session.h"
 #include "log.h"
 
 
@@ -91,7 +91,8 @@ void accept_request(void *arg) {
     int client = (intptr_t) arg;
     size_t chars_num;
     char buf[1024];
-    set_client(arg);
+    Session *session = new_session(client);
+    set_session(session);
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
         statement(buf);   
@@ -99,6 +100,6 @@ void accept_request(void *arg) {
             break;
     }
     close(client);
-    destroy_send();
+    destroy_session();
     printf("Client disconnect.\n");
 }

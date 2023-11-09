@@ -1,6 +1,6 @@
 PROG=cache.c cond.c conf.c copy.c create.c desc.c free.c index.c input.c\
 	 insert.c meta.c misc.c node.c opr.c pager.c row.c select.c show.c stmt.c update.c delete.c\
-	 table.c token.c utils.c server.c log.c check.c mem.c send.c\
+	 table.c token.c utils.c server.c log.c check.c mem.c session.c\
 	 lex.yy.c y.tab.c intpr.c 
 PROMT=tinydb
 CLIENT=tinydb-cli

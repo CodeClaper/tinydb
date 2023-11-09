@@ -19,7 +19,7 @@
 #include "check.h"
 #include "free.h"
 #include "log.h"
-#include "send.h"
+#include "session.h"
 
 
 //Get table name in select node.

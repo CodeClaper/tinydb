@@ -317,4 +317,10 @@ typedef struct {
     uint32_t capacity; // lenght of table cell.
 }MHashTable;
 
+typedef struct {
+    int client;
+    uint32_t frequency;
+    uint32_t volumn;
+}Session;
+
 #endif

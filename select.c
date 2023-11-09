@@ -23,7 +23,7 @@
 #include "row.h"
 #include "select.h"
 #include "table.h"
-#include "send.h"
+#include "session.h"
 
 #define MAX_FETCH_ROWS 100 // maximum number of rows fetched at once.
 

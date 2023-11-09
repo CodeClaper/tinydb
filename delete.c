@@ -9,7 +9,7 @@
 #include "cond.h"
 #include "select.h"
 #include "node.h"
-#include "send.h"
+#include "session.h"
 
 /*Adapt to select items node data type.*/
 static SelectItemsNode *adapt_select_items_node() {
