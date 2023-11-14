@@ -6,7 +6,7 @@
 #include "opr.h"
 #include "intpr.h"
 
-// Equal operation.
+/*Equal operation (=).*/
 bool equal(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 
         return true;
@@ -35,7 +35,7 @@ bool equal(void *source, void *target, DataType data_type) {
     return false;
 }
 
-// Not equal operation.
+/* Not equal operation. (!=)*/
 bool not_equal(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 
         return false;
@@ -64,7 +64,7 @@ bool not_equal(void *source, void *target, DataType data_type) {
     return false;
 }
 
-// Not equal operation.
+/* Not equal operation. (>) */
 bool greater(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 
         return false;
@@ -93,7 +93,7 @@ bool greater(void *source, void *target, DataType data_type) {
     return false;
 }
 
-// Not equal operation.
+/* Not equal operation. (>=) */
 bool greater_equal(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 
         return true;
@@ -122,7 +122,7 @@ bool greater_equal(void *source, void *target, DataType data_type) {
     return false;
 }
 
-// Not equal operation.
+/* Not equal operation. (<) */
 bool less(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 
         return false;
@@ -151,7 +151,7 @@ bool less(void *source, void *target, DataType data_type) {
     return false;
 }
 
-// Not equal operation.
+/* Not equal operation. (<=) */
 bool less_equal(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 
         return true;
@@ -180,7 +180,9 @@ bool less_equal(void *source, void *target, DataType data_type) {
     return false;
 }
 
-// Eval
+/* Eval, now supported operation: 
+ * EQ NE GT GE LT LE 
+ * */
 bool eval(OprType op_type, void *source, void *target, DataType data_type) {
     switch(op_type) {
         case O_EQ:

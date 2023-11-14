@@ -6,7 +6,7 @@
 #include "index.h"
 #include "misc.h"
 
-//Copy value
+/* Free value */
 void free_value(void *value, DataType data_type) {
     if (value) {
         switch(data_type) {
@@ -19,7 +19,7 @@ void free_value(void *value, DataType data_type) {
     }
 }
 
-//Free KeyValue
+/* Free KeyValue */
 void free_key_value(KeyValue *key_value) {
     if (key_value) {
         if (key_value->key)
@@ -29,7 +29,7 @@ void free_key_value(KeyValue *key_value) {
     } 
 }
 
-//Free Row.
+/* Free Row. */
 void free_row(Row *row) {
     if (row) {
         for(uint32_t i = 0; i < row->column_len; i++) {
@@ -44,21 +44,16 @@ void free_row(Row *row) {
     }
 }
 
-//Free SelectResult.
+/* Free SelectResult. */
 void free_select_result(SelectResult *select_result) {
     if (select_result) {
         if (select_result->table_name != NULL)
             db_free(select_result->table_name);
-        for(uint32_t i = 0; i < select_result->row_size; i++) {
-            Row *row = *(select_result->row + i);
-            free_row(row);
-        }
-        db_free(select_result->row);
         db_free(select_result);
     }
 }
 
-//Free input buffer.
+/* Free input buffer. */
 void free_input_buffer(InputBuffer *input_buffer) {
     if (input_buffer != NULL) {
         if (input_buffer->input != NULL)
@@ -67,14 +62,14 @@ void free_input_buffer(InputBuffer *input_buffer) {
     }
 }
 
-//Free meta column.
+/* Free meta column. */
 void free_meta_column(MetaColumn *meta_column) {
     if (meta_column) {
         db_free(meta_column);
     }
 }
 
-//Free meta table.
+/* Free meta table. */
 void free_meta_table(MetaTable *meta_table) {
     if (meta_table) {
         if (meta_table->table_name) {
@@ -83,7 +78,7 @@ void free_meta_table(MetaTable *meta_table) {
     }
 }
 
-//Free column
+/* Free column */
 void free_column_node(ColumnNode *column_node) {
     if (column_node) {
         if (column_node->exist_table_name) {
@@ -97,7 +92,7 @@ void free_column_node(ColumnNode *column_node) {
 
 }
 
-//Free column set node.
+/* Free column set node. */
 void free_column_set_node(ColumnSetNode *column_set_node) {
     if (column_set_node) {
         for (uint32_t i = 0; i < column_set_node->size; i++) {
@@ -108,7 +103,7 @@ void free_column_set_node(ColumnSetNode *column_set_node) {
     }
 }
 
-//Free table
+/* Free table */
 void free_table(Table *table) {
      
 }
@@ -365,17 +360,6 @@ void free_statment(Statement *stmt) {
         free_ast_node(stmt->ast_node);
         db_free(stmt);
     }
-}
-
-// Free output
-void free_out_put(Output *output) {
-    if (output) {
-        if (output->json_data)
-            db_free(output->json_data);
-        if (output->message)
-            db_free(output->message);
-        db_free(output);
-    } 
 }
 
 // Free table list

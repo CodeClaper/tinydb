@@ -17,7 +17,7 @@
 #include "free.h"
 #include "session.h"
 
-/*Adapt to column set node data type.*/
+/* Adapt to column set node data type. */
 static ColumnSetNode *adapt_column_set_node(Table *table) {
     MetaTable *meta_table = table->meta_table;
     ColumnSetNode *column_set_node = db_malloc(sizeof(ColumnSetNode));
@@ -33,7 +33,7 @@ static ColumnSetNode *adapt_column_set_node(Table *table) {
     return column_set_node;
 }
 
-/*Adapt to select items node data type.*/
+/* Adapt to select items node data type.*/
 static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *table) {
     SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
     select_items_node->type = SELECT_COLUMNS;
@@ -41,7 +41,7 @@ static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *
     return select_items_node;
 }
 
-/*Adapt to query param data type.*/
+/* Adapt to query param data type.*/
 static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
     QueryParam *query_param = db_malloc(sizeof(QueryParam));
     query_param->table_name = strdup(update_node->table_name);
@@ -51,7 +51,7 @@ static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
     return query_param;
 }
 
-/*Update cell*/
+/* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node) {
     for (uint32_t i = 0; i < row->column_len; i++) {
         KeyValue *key_value = *(row->data + i);
@@ -88,31 +88,41 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
     } 
 }
 
-/*Update row*/
-static void update_row(Row *row, AssignmentSetNode *assignment_set_node, Table *table) {
+/* Update row */
+static void update_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    /* For update row funciton, the arg is AssignmentSetNode data type arguement. */
+    AssignmentSetNode *assignment_set_node = (AssignmentSetNode *) arg;
+
     uint32_t value_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
+
+    /* Handle each of assignment. */
     for (uint32_t i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assign_node = *(assignment_set_node->assignment_node + i);
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
         update_cell(row, assign_node);
         if (meta_column->is_primary) { 
-            /*It means to change primary key, and may casuse space movement.*/
+
+            /* Which means to change primary key, and may casuse space cell movement. */
             void *old_key = row->key;
-            void *new_key = get_value(assign_node->value);
-            if (equal(old_key, new_key, meta_column->column_type)) {
-                /*Key not change, do nothing.*/
-                continue; 
-            } else {
+            void *new_key = get_value_from_value_item_node(assign_node->value, meta_column->column_type);
+            if (equal(old_key, new_key, meta_column->column_type)) 
+                continue;  /* The Key value not change, nothing to do. */
+            else 
+            {
+                /* In the case, key value change, update = delete + re-insert. */
+                /* Delete the old one. */
                 Cursor *old_cursor = define_cursor(table, old_key);
-                clean_up_obsolute_cell(old_cursor); // make right cell forwar to covert old cell.
-                Cursor *new_cursor = define_cursor(table, new_key);
+                clean_up_obsolute_cell(old_cursor); 
                 free_value(old_key, meta_column->column_type);
+
+                /* Re-insert the updated one. */
+                Cursor *new_cursor = define_cursor(table, new_key);
                 row->key = new_key;
-                insert_leaf_node(new_cursor, row); // re-insert into leaf node with new cursor.
+                insert_leaf_node(new_cursor, row); 
             }
         } else { 
-            /*When it is non-key column, just update the cell value.*/
+            /* When it is non-key column, just update the cell value. */
             Cursor *cursor = define_cursor(table, row->key);
             void *leaf_node = get_page(table->pager, cursor->page_num);
             assert(get_node_type(leaf_node) == LEAF_NODE);
@@ -121,30 +131,38 @@ static void update_row(Row *row, AssignmentSetNode *assignment_set_node, Table *
             flush_page(table->pager, cursor->page_num);
         }
     }
+    select_result->row_size++;
 }
 
-/*update rows*/
-static void update_rows(SelectResult *select_result, AssignmentSetNode *assignment_set_node, Table *table) {
-    for (uint32_t i = 0; i < select_result->row_size; i++) {
-        Row *current_row = *(select_result->row + i);
-        update_row(current_row, assignment_set_node, table);
-    } 
+/* Generate new select result structure. */
+static SelectResult *new_select_result(char *table_name) {
+    SelectResult *select_result = db_malloc2(sizeof(SelectResult), "SelectResult");
+    select_result->row_size = 0;
+    select_result->table_name = strdup(table_name);
+    return select_result;
 }
 
-/*Execute update statment.*/
+/* Execute update statment. */
 ExecuteResult exec_update_statment(UpdateNode *update_node) {
     char buff[BUFF_SIZE];
     Table *table = open_table(update_node->table_name);
     if (table == NULL)
         return EXECUTE_TABLE_OPEN_FAIL;
-    /*First, query under condition and get rows that satisfy to update*/
-    QueryParam *query_param = adapt_query_param(update_node, table);
-    SelectResult *select_result = query_with_condition(query_param);
-    if (!check_update_node(update_node, select_result)) // check if valid
+
+    /* Check out update node. */
+    if (!check_update_node(update_node))
         return EXECUTE_FAIL;
-    /*second, update queried rows.*/
-    update_rows(select_result, update_node->assignment_set_node, table);
+
+    /* Adapt to query param. */
+    QueryParam *query_param = adapt_query_param(update_node, table);
+
+    /* Query with conditon, and update satisfied condition row. */
+    SelectResult *select_result = new_select_result(update_node->table_name);
+    query_with_condition(query_param, select_result, update_row, update_node->assignment_set_node);
+
+    /* Send out update result. */
     sprintf(buff, "Successfully updated %d row data.\n", select_result->row_size);
     db_send(buff);
+
     return EXECUTE_SUCCESS;
 }

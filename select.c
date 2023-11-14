@@ -20,15 +20,21 @@
 #include "node.h"
 #include "opr.h"
 #include "pager.h"
-#include "row.h"
 #include "select.h"
 #include "table.h"
 #include "session.h"
 
-#define MAX_FETCH_ROWS 100 // maximum number of rows fetched at once.
+/* Maximum number of rows fetched at once.*/
+#define MAX_FETCH_ROWS 100 
 
+static bool include_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table);
+/* Check if the key include the leaf node. */
+static bool include_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table);
 
-// find meta column index, return NULL if not exist
+/* Get meta column by condition name. */
+static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable *meta_table);
+
+/* Find meta column index, return NULL if not exist */
 static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_t index) {
     SelectItemsNode *select_items_node = query_param->select_items;
     Table *table = open_table(query_param->table_name);
@@ -45,7 +51,7 @@ static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_
     }
 }
 
-//calulate offset of every column in cell.
+/* Calulate offset of every column in cell. */
 static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
     SelectItemsNode *select_items_node = query_param->select_items;
     Table *table = open_table(query_param->table_name);
@@ -60,7 +66,7 @@ static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
     return off_set;
 }
 
-// Get query param column size.
+/* Get query param column size. */
 static uint32_t get_query_columns_num(QueryParam *query_param) {
     SelectItemsNode *select_items_node = query_param->select_items;
     switch (select_items_node->type) {
@@ -76,8 +82,12 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
   }
 }
 
-// Get value from value item node.
+/* Get value from value item node. */
 void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type) {
+
+    /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
+     * So we must use meta column data type to define which data type of the value.
+     * */
     switch (meta_data_type) 
     { 
         case T_CHAR: 
@@ -169,8 +179,35 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
     return NULL;
 }
 
-// Check if include the internal node.
-static bool include_internal_node(void *min_key, void *max_key, void *target_key, OprType opr_type, DataType key_data_type) {
+/*Check if the row include the condition node. */
+static bool satisfy_leaf_condition_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+
+    /* If without condition, of course the key include, so just return true. */
+    if (condition_node == NULL)
+        return true;
+
+    bool result = false;
+    uint32_t off_set = 0;
+    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
+            void *value = destinct + off_set;
+            void *target = get_value_from_value_item_node(condition_node->value, meta_column->column_type);
+            return eval(condition_node->opr_type, value, target, meta_column->column_type);
+        }
+        off_set += meta_column->column_length;
+    }
+    return false;
+}
+
+/* Check the tagert key if include the internal node.
+ * @param min_key the min key of node (exclude the min key, acutally the min key is max key of previous node)
+ * @param max_key the max key of node (include the max key)
+ * @param target_key the target key to compare
+ * @param opr_type operation type
+ * @param key_data_type data type of key
+ * */
+static bool satisfy_internal_condition_node(void *min_key, void *max_key, void *target_key, OprType opr_type, DataType key_data_type) {
     switch (opr_type) {
         case O_EQ:
             return less(min_key, target_key, key_data_type) && less_equal(target_key, max_key, key_data_type);
@@ -191,123 +228,190 @@ static bool include_internal_node(void *min_key, void *max_key, void *target_key
     return true;
 }
 
-// check if include the leaf node.
-static bool include_leaf_node(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
-    ConditionNode *condition_node = query_param->condition_node;
-    if (condition_node == NULL) // if not condition, just return true.
-          return true;
-    uint32_t off_set = 0;
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
-          MetaColumn *meta_column = meta_table->meta_column[i];
-          if (strcmp(meta_column->column_name, condition_node->column->column_name) ==0) {
-          void *value = destinct + off_set;
-          void *target = get_value_from_value_item_node(condition_node->value, meta_column->column_type);
-          return eval(condition_node->opr_type, value, target, meta_column->column_type);
-      }
-      off_set += meta_column->column_length;
-    }
-    return false;
+
+/* Check if include the internal node if condition is logic condition. */
+static bool include_logic_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
+    switch(condition_node->conn_type) {
+        case C_AND:
+           return include_internal_node(min_key, max_key, condition_node->left, meta_table) && include_internal_node(max_key, max_key, condition_node->right, meta_table);
+        case C_OR:
+           return include_internal_node(min_key, max_key, condition_node->left, meta_table) || include_internal_node(max_key, max_key, condition_node->right, meta_table);
+    } 
 }
 
-// Get meta column by condition name
-static MetaColumn *get_cond_meta_column(QueryParam *query_param) {
-    ConditionNode *condition_node = query_param->condition_node;
+/* Check if include the internal node if condition is exec condition. */
+static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
+
+    MetaColumn *cond_meta_column = get_cond_meta_column(condition_node, meta_table);
+    void *target_key = get_value_from_value_item_node(condition_node->value, cond_meta_column->column_type);
+
+    /* Two factors, Key column and satisfy condition */
+    return cond_meta_column->is_primary && satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
+
+}
+
+/* Check if include the internal node. */
+static bool include_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
+
+    /* If without condition, of course return true. */
+    if (condition_node == NULL)
+        return true;
+
+    switch(condition_node->type) {
+        case LOGIC_CONDITION:
+            return include_logic_internal_node(min_key, max_key, condition_node, meta_table);
+        case EXEC_CONDITION:
+            return include_exec_internal_node(min_key, max_key, condition_node, meta_table);
+    }
+}
+
+/* Check if include leaf node if the condition is logic condition. */
+static bool include_logic_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+    switch(condition_node->conn_type) {
+        case C_AND:
+            return include_leaf_node(destinct, condition_node->left, meta_table) && include_leaf_node(destinct, condition_node->right, meta_table);
+        case C_OR:
+            return include_leaf_node(destinct, condition_node->right, meta_table) || include_leaf_node(destinct, condition_node->right, meta_table);
+    } 
+}
+
+
+/* Check if include leaf node if the condition is exec condition. */
+static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+    return satisfy_leaf_condition_node(destinct, condition_node, meta_table);
+}
+
+/* Check if the key include the leaf node. */
+static bool include_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+
+    /* If without condition, of course the key include, so just return true. */
+    if (condition_node == NULL) 
+          return true;
+
+    switch(condition_node->type) {
+        case LOGIC_CONDITION:
+            return include_logic_leaf_node(destinct, condition_node, meta_table);
+        case EXEC_CONDITION:
+            return include_exec_leaf_node(destinct, condition_node, meta_table);
+    }
+}
+
+/* Get meta column by condition name. */
+static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable *meta_table) {
     if (condition_node == NULL)
         return NULL;
-    Table *table = open_table(query_param->table_name);
-    MetaTable *meta_table = table->meta_table;
-    return get_meta_column_by_name(meta_table, query_param->condition_node->column->column_name);
+    return get_meta_column_by_name(meta_table, condition_node->column->column_name);
 }
 
-// Generate select row.
+/* Assign value to row data. */
+static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_param) {
+    for (uint32_t i = 0; i < row->column_len; i++) {
+        MetaColumn *meta_column = find_select_item_meta_column(query_param, i);
+        uint32_t off_set = calc_offset(query_param, meta_column->column_name);
+        
+        /* Generate a key value pair. */
+        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        key_value->key = strdup(meta_column->column_name);
+        key_value->value = copy_value(destinct + off_set, meta_column->column_type);
+        key_value->data_type = meta_column->column_type;
+        *(row->data + i) = key_value;
+    }
+}
+
+/* Generate select row. */
 static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
-    Row *row = db_malloc2(sizeof(Row), "Row");
+    /* Check if table exist.*/
     Table *table = open_table(query_param->table_name);
     if (table == NULL)
       return NULL;
+
+    /* Define row data. */
+    Row *row = db_malloc2(sizeof(Row), "Row");
     row->column_len = get_query_columns_num(query_param);
     row->table_name = strdup(query_param->table_name);
-    // define row data.
-    row->data = db_malloc2(sizeof(KeyValue *) * row->column_len, "Row.data");
-    bool is_function = query_param->select_items->type == SELECT_FUNCTION;
-    if (is_function) {
 
-    } 
-    else {
-        for (uint32_t i = 0; i < row->column_len; i++) {
-            MetaColumn *meta_column = find_select_item_meta_column(query_param, i);
-            KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
-            uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            key_value->key = strdup(meta_column->column_name);
-            key_value->value = copy_value(destinct + off_set, meta_column->column_type);
-            key_value->data_type = meta_column->column_type;
-            *(row->data + i) = key_value;
-        }
+    /* Assignment values to row data. */
+    row->data = db_malloc2(sizeof(KeyValue *) * row->column_len, "Row.data");
+    switch (query_param->select_items->type) {
+        case SELECT_ALL:
+        case SELECT_COLUMNS:
+            assign_plain_row_data(row, destinct, query_param);
+            break;
+        case SELECT_FUNCTION:
+            break;
     }
-    // define row key
+    /* Define row key. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t priamry_key_set_off = calc_offset(query_param, primary_key_meta_column->column_name);
     row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type);
     return row;
 }
 
-// Select through leaf node
-static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table) {
+/* Select through leaf node. */
+static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table, ROW_HANDLER row_handler, void *arg) {
+
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
     uint32_t value_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
+
     for (uint32_t i = 0; i < cell_num; i++) {
         void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, i);
-        if (!include_leaf_node(destinct, query_param, table->meta_table))
+
+        /* Check if the row data include, in another word, if the row data satisfy the condition. */
+        if (!include_leaf_node(destinct, query_param->condition_node, table->meta_table))
             continue;
+
+        /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, query_param, table->meta_table);
-        select_result->row = db_realloc(select_result->row, sizeof(Row *) * (select_result->row_size + 1));
-        *(select_result->row + select_result->row_size) = row;
-        select_result->row_size++;
+        row_handler(row, select_result, table, arg);
     }
 }
 
-// select through internal node
-static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table) {
-    MetaColumn *cond_meta_column = get_cond_meta_column(query_param);
+/* Select go through internal node. */
+static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table, ROW_HANDLER row_handler, void *arg) {
+
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
     uint32_t key_len = calc_primary_key_length(table);
-    MetaColumn *priamry_key_meta_column = get_primary_key_meta_column(table->meta_table);
+
     for (int32_t i = 0; i < keys_num; i++) {
-        // check if index column to avoid full text scanning.
-        if (cond_meta_column != NULL && cond_meta_column->is_primary) {
-            void *max_key = get_internal_node_keys(internal_node, i, key_len);
-            void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);
-            ConditionNode *condition_node = query_param->condition_node;
-            void *compare_value = get_value_from_value_item_node(condition_node->value, cond_meta_column->column_type);
-            if (!include_internal_node(min_key, max_key, compare_value, condition_node->opr_type, priamry_key_meta_column->column_type))
-                continue;
+
+        /* Check if index column, use index to avoid full text scanning. */
+        {
+            /* Current internal node cell key as max key, previous cell key as min key */
+            /*void *max_key = get_internal_node_keys(internal_node, i, key_len); */
+            /*void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);*/
+            /*ConditionNode *condition_node = query_param->condition_node;*/
+            /*if (!include_internal_node(min_key, max_key, condition_node , table->meta_table))*/
+                /*continue;*/
         }
+
+        /* Check other non-key column */
         uint32_t page_num = get_internal_node_child(internal_node, i, key_len);
         void *node = get_page(table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
-                select_from_leaf_node(select_result, query_param, node, table);
+                select_from_leaf_node(select_result, query_param, node, table, row_handler, arg);
                 break;
             case INTERNAL_NODE:
-                select_from_internal_node(select_result, query_param, node, table);
+                select_from_internal_node(select_result, query_param, node, table, row_handler, arg);
                 break;
         }
     }
-    // don`t forget the right child
+
+    /* Don`t forget the right child. */
     uint32_t right_child_page_num = get_internal_node_right_child(internal_node);
     void *right_child = get_page(table->pager, right_child_page_num);
     switch (get_node_type(right_child)) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, query_param, right_child, table);
+            select_from_leaf_node(select_result, query_param, right_child, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, query_param, right_child, table);
+            select_from_internal_node(select_result, query_param, right_child, table, row_handler, arg);
             break;
     }
 }
 
-// convert from select node to query param
+/* Convert from select node to query param */
 QueryParam *convert_query_param(SelectNode *select_node) {
     QueryParam *query_param = db_malloc2(sizeof(QueryParam), "QueryParam");
     query_param->table_name = strdup(select_node->table_name);
@@ -318,128 +422,129 @@ QueryParam *convert_query_param(SelectNode *select_node) {
     return query_param;
 }
 
-// generate select reuslt.
-SelectResult *gen_select_result(QueryParam *query_param) {
+/* Generate new select result structure. */
+static SelectResult *new_select_result(char *table_name) {
     SelectResult *select_result = db_malloc2(sizeof(SelectResult), "SelectResult");
     select_result->row_size = 0;
-    select_result->row = db_malloc2(0, "SelectResult.row");
-    select_result->table_name = strdup(query_param->table_name);
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL)
-        return NULL;
-    void *root = get_page(table->pager, table->root_page_num);
-    switch (get_node_type(root)) {
-        case LEAF_NODE:
-            select_from_leaf_node(select_result, query_param, root, table);
-            break;
-        case INTERNAL_NODE:
-            select_from_internal_node(select_result, query_param, root, table);
-            break;
-    }
+    select_result->table_name = strdup(table_name);
     return select_result;
 }
 
-// Generate new query param and replace condition node.
-static QueryParam *new_query_param(QueryParam *query_param, ConditionNode *new_condition) {
-    QueryParam *query_param_copy = copy_query_param(query_param);
-    ConditionNode *old_condition_node = query_param_copy->condition_node;
-    query_param_copy->condition_node = copy_condition_node(new_condition);  // replace new conditon node.
-    free_condition_node(old_condition_node); // free old conditon node.
-    return query_param_copy;
-}
-
-/*And loigc condition process*/
-SelectResult *and_logic_cond_proc(QueryParam *query_param) {
-    ConditionNode *condition_node = query_param->condition_node;
-    // copy new query param
-    QueryParam *left_query_param = new_query_param(query_param, condition_node->left);
-    QueryParam *right_query_param = new_query_param(query_param, condition_node->right);
-    // Separately calulate result and reduce
-    SelectResult *left_select_result = query_with_condition(left_query_param);
-    SelectResult *right_select_result = query_with_condition(right_query_param);
-    SelectResult *result = reduce(left_select_result, right_select_result);
-    // Free
-    free_query_param(left_query_param);
-    free_query_param(right_query_param);
-    free_select_result(left_select_result);
-    free_select_result(right_select_result);
-    return result;
-}
-
-/*Or logic condition process*/
-static SelectResult *or_logic_cond_proc(QueryParam *query_param) {
-    ConditionNode *condition_node = query_param->condition_node;
-    // copy new query param
-    QueryParam *left_query_param = new_query_param(query_param, condition_node->left);
-    QueryParam *right_query_param = new_query_param(query_param, condition_node->right);
-    // Separately calulate result and merge
-    SelectResult *left_select_result = query_with_condition(left_query_param);
-    SelectResult *right_select_result = query_with_condition(right_query_param);
-    SelectResult *result = merge(left_select_result, right_select_result);
-    // Free
-    free_query_param(left_query_param);
-    free_query_param(right_query_param);
-    free_select_result(right_select_result);
-    return result;
-}
-
-/*Logic condition process*/
-static SelectResult *logic_cond_proc(QueryParam *query_param) {
-    ConditionNode *condition_node = query_param->condition_node;
-    switch (condition_node->conn_type) {
-        case C_AND:
-            return and_logic_cond_proc(query_param);
-        case C_OR:
-            return or_logic_cond_proc(query_param);
+/* Generate select reuslt. */
+static void gen_select_result(QueryParam *query_param, SelectResult *select_result, ROW_HANDLER row_handler, void *arg) {
+    Table *table = open_table(query_param->table_name);
+    if (table == NULL)
+        return;
+    void *root = get_page(table->pager, table->root_page_num);
+    switch (get_node_type(root)) {
+        case LEAF_NODE:
+            select_from_leaf_node(select_result, query_param, root, table, row_handler, arg);
+            break;
+        case INTERNAL_NODE:
+            select_from_internal_node(select_result, query_param, root, table, row_handler, arg);
+            break;
     }
 }
 
-/*Execute condition process*/
-static SelectResult *exec_cond_proc(QueryParam *query_param) {
-    return gen_select_result(query_param);
+/* Query with condition. */
+void query_with_condition(QueryParam *query_param, SelectResult *select_result ,ROW_HANDLER row_handler, void *arg) {
+    gen_select_result(query_param, select_result, row_handler, arg);
 }
 
-/*Query with condition*/
-SelectResult *query_with_condition(QueryParam *query_param) {
-    ConditionNode *condition_node = query_param->condition_node;
-    if (condition_node == NULL)
-        return gen_select_result(query_param);
-    switch (condition_node->type) {
-        case LOGIC_CONDITION:
-            return logic_cond_proc(query_param);
-        case EXEC_CONDITION:
-            return exec_cond_proc(query_param);
-    }
-}
-
-/*Send out select result.*/
-static void send_select_result(SelectResult *select_result) {
-    uint32_t buff_size = BUFF_SIZE;
-    db_send("[");
-    for (uint32_t i = 0; i < select_result->row_size; i++) {
-        Row *row = *(select_result->row + i);
-        db_send("{");
-        for (uint32_t j = 0; j < row->column_len; j++) {
-            KeyValue *key_value = *(row->data + j);
-            char *key_value_pair_str = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
-            db_send(key_value_pair_str);
-            db_free(key_value_pair_str);
-            if (j < row->column_len - 1)
-                db_send(", ");
-        }
-        db_send("}");
-        if (i < select_result->row_size - 1)
+/* Send row data. */
+static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    db_send("{");
+    for (uint32_t j = 0; j < row->column_len; j++) {
+        KeyValue *key_value = *(row->data + j);
+        char *key_value_pair_str = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
+        db_send(key_value_pair_str);
+        db_free(key_value_pair_str);
+        /* If not the last column, these is ',' to split. */
+        if (j < row->column_len - 1)
             db_send(", ");
     }
+    db_send("}");
+
+    /* If not the last row, these is ',' to split. */
+    select_result->row_size--;
+    if (select_result->row_size > 0)
+        db_send(", ");
+}
+
+/* Count number of row, used in the sql function count(1) */
+static void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    select_result->row_size++;
+}
+
+/* Execute count function */
+static void exec_count_function(QueryParam *query_param) {
+    char buff[BUFF_SIZE];
+
+    /* Generate select result. */
+    SelectResult *select_result = new_select_result(query_param->table_name);
+
+    /* Count row number. */
+    query_with_condition(query_param, select_result, count_row, NULL);
+    
+    /* Compose count result info and send out. */
+    sprintf(buff, "{\"count\", %d}\n", select_result->row_size);
+    db_send(buff);
+}
+
+
+/* Execute function select statement. 
+ * Now supported function:
+ *     COUNT
+ *     SUM
+ *     MAX
+ *     MIN
+ *     AVERAGE
+ * */
+static void exec_function_select_statement(QueryParam *query_param) {
+    FunctionNode *function_node = query_param->select_items->function_node;
+    switch(function_node->function_type) {
+        case F_COUNT:
+            exec_count_function(query_param);
+            break;
+        case F_SUM:
+        case F_MAX:
+        case F_MIN:
+        case F_AVG:
+            break;   
+    }
+}
+
+
+/* Execute plain select statement. 
+ * For plain select statment (without sql function in select items), 
+ * at first, execute count row function to get satisfied row number which
+ * is important for next select operation.
+ * */
+static void exec_plain_select_statement(QueryParam *query_param) {
+    SelectResult *select_result = new_select_result(query_param->table_name);
+    /* Count row number. */
+    query_with_condition(query_param, select_result, count_row, NULL);
+
+    /* Send row data in json format. */
+    db_send("[");
+    query_with_condition(query_param, select_result, send_row, NULL);
     db_send("]\n");
 }
 
-/*Execute select statement*/
+
+/* Execute select statement. */
 ExecuteResult exec_select_statement(SelectNode *select_node) {
     QueryParam *query_param = convert_query_param(select_node);
     if (check_query_param(query_param)) {
-        SelectResult *result = query_with_condition(query_param);
-        send_select_result(result);
+        switch(query_param->select_items->type) {
+            case SELECT_ALL:
+            case SELECT_COLUMNS:
+                exec_plain_select_statement(query_param);
+                break;
+            case SELECT_FUNCTION:
+                exec_function_select_statement(query_param);
+                break;
+        }
     }
     free_query_param(query_param);
     return EXECUTE_SUCCESS;
