@@ -128,16 +128,41 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name ,Valu
     return false;
 }
 
+/* Check function node */
+static bool check_function_node(FunctionNode *function_node, MetaTable *meta_table) {
+    FunctionValueNode *value_node = function_node->value;
+    switch(value_node->value_type) {
+        case V_INT:
+        case V_ALL:
+            return true;
+        case V_COLUMN:
+            {
+                ColumnNode *column = value_node->column;
+                return check_column_node(meta_table, column); 
+            }
+    }
+}
+
+/* Check column set node */
+static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *meta_table) {
+     for (uint32_t i = 0; i < column_set_node->size; i++) {
+         ColumnNode *column_node = *(column_set_node->columns + i);
+         if (!check_column_node(meta_table, column_node))
+             return false;
+     }
+     return true;
+}
+
 /* Check select items if exist int meta column */
 static bool check_select_items(SelectItemsNode *select_items_node, MetaTable *meta_table) {
-    if (select_items_node->type == SELECT_FUNCTION || select_items_node->type == SELECT_ALL)
-        return true;
-    for (uint32_t i = 0; i < select_items_node->column_set_node->size; i++) {
-        ColumnNode *column_node = *(select_items_node->column_set_node->columns + i);
-        if (!check_column_node(meta_table, column_node))
-            return false;
+    switch(select_items_node->type) {
+        case SELECT_ALL:
+            return true;
+        case SELECT_COLUMNS:
+            return check_column_set_node(select_items_node->column_set_node, meta_table);
+        case SELECT_FUNCTION:
+            return check_function_node(select_items_node->function_node, meta_table);
     }
-    return true;
 }
 
 /* Check condition node. */

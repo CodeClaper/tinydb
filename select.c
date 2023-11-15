@@ -231,6 +231,7 @@ static bool satisfy_internal_condition_node(void *min_key, void *max_key, void *
 
 /* Check if include the internal node if condition is logic condition. */
 static bool include_logic_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
+    /* For logic condition node, check left node and right node. */
     switch(condition_node->conn_type) {
         case C_AND:
            return include_internal_node(min_key, max_key, condition_node->left, meta_table) && include_internal_node(max_key, max_key, condition_node->right, meta_table);
@@ -245,8 +246,8 @@ static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNo
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node, meta_table);
     void *target_key = get_value_from_value_item_node(condition_node->value, cond_meta_column->column_type);
 
-    /* Two factors, Key column and satisfy condition */
-    return cond_meta_column->is_primary && satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
+    /* Skipped the internal node must satisfy tow condition, key column and not satisfied internal node condition. */
+    return !cond_meta_column->is_primary || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
 
 }
 
@@ -257,6 +258,7 @@ static bool include_internal_node(void *min_key, void *max_key, ConditionNode *c
     if (condition_node == NULL)
         return true;
 
+    /* According to condition node type, has different way. */
     switch(condition_node->type) {
         case LOGIC_CONDITION:
             return include_logic_internal_node(min_key, max_key, condition_node, meta_table);
@@ -372,17 +374,18 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
 
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
     uint32_t key_len = calc_primary_key_length(table);
+    ConditionNode *condition_node = query_param->condition_node;
 
+    /* Loop for each interanl node cell. */
     for (int32_t i = 0; i < keys_num; i++) {
 
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key */
-            /*void *max_key = get_internal_node_keys(internal_node, i, key_len); */
-            /*void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);*/
-            /*ConditionNode *condition_node = query_param->condition_node;*/
-            /*if (!include_internal_node(min_key, max_key, condition_node , table->meta_table))*/
-                /*continue;*/
+            void *max_key = get_internal_node_keys(internal_node, i, key_len); 
+            void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);
+            if (!include_internal_node(min_key, max_key, condition_node , table->meta_table))
+                continue;
         }
 
         /* Check other non-key column */
