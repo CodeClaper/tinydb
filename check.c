@@ -178,8 +178,8 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
             {
                 MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
                 return check_column_node(meta_table, condition_node->column) // check select column
-                    && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name) // check column type
-                        &&check_value_valid(meta_column->column_type, get_value_from_value_item_node(condition_node->value, meta_column->column_type)); // check if value valid
+                       && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name) // check column type
+                       && check_value_valid(meta_column->column_type, get_value_from_value_item_node(condition_node->value, meta_column->column_type)); // check if value valid
             }
     }
 }
@@ -254,11 +254,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
         if (!check_column_node(table->meta_table, column_node) || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name) || !check_value_valid(meta_column->column_type, get_value_from_value_item_node(value_node, meta_column->column_type)))
             return false;
 
-        /* It means to change the primary key column and may cause duplicate key.
-         * Firstly, multirows absulutely case duplicate.
-         * Secondly, if priamry key is assigned to the old value, there is no influnece. 
-         * Thirdly, if priamry key is assigned to different value, should check if key aleady exists, avoid cause duplicate. 
-         * */
+        /* It means to change the primary key column and may cause duplicate key. */
         if (meta_column->is_primary) {
             void *new_key = get_value_from_value_item_node(value_node, meta_column->column_type);
             Cursor *cursor = define_cursor(table, new_key);
@@ -279,8 +275,8 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
 bool check_update_node(UpdateNode *update_node) {
     Table *table = open_table(update_node->table_name);
     assert(table != NULL);
-    return check_assignment_set_node(update_node->assignment_set_node, table) && 
-           check_condition_node(update_node->condition_node, table->meta_table);
+    return check_assignment_set_node(update_node->assignment_set_node, table) 
+           && check_condition_node(update_node->condition_node, table->meta_table);
 }
 
 /* Check for delete node. */
