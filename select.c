@@ -1,8 +1,10 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #define _XOPEN_SOURCE
 #define __USE_XOPEN
 #include <time.h>
@@ -27,7 +29,16 @@
 /* Maximum number of rows fetched at once.*/
 #define MAX_FETCH_ROWS 100 
 
+/* Function name, also as key in out json. */
+#define COUNT_NAME "count"
+#define SUM_NAME "sum"
+#define AVG_NAME "avg"
+#define MAX_NAME "max"
+#define MIN_NAME "min"
+
+/* Check if include the internal node. */
 static bool include_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table);
+
 /* Check if the key include the leaf node. */
 static bool include_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table);
 
@@ -186,7 +197,6 @@ static bool satisfy_leaf_condition_node(void *destinct, ConditionNode *condition
     if (condition_node == NULL)
         return true;
 
-    bool result = false;
     uint32_t off_set = 0;
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
@@ -305,6 +315,107 @@ static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable
     return get_meta_column_by_name(meta_table, condition_node->column->column_name);
 }
 
+/* Assign function count() value to row data. */
+static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *query_param) {
+
+    Table *table = open_table(query_param->table_name);
+    if (table == NULL) return; /* Return if not exist the table. */
+    MetaTable *meta_table = table->meta_table;
+
+    /* Get function value. */
+    FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
+
+    /* Instance key value */
+    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    key_value->key = strdup(SUM_NAME);
+
+    /* According function value type, these are diffrent ways to deal with the row data: 
+     * For V_ALL, there is no pointer to sum the value, just regard as zero;
+     * For V_INT, absolutely a numerical type, just return the integer value.
+     * For V_COLUMN, if the column data type is numerical, return the numerical value, otherwise, return zero;
+     * */
+    switch (function_value_node->value_type) {
+        case V_ALL: {
+            uint32_t val = 0;
+            key_value->value = &val;
+            key_value->data_type = T_INT;
+            break;
+        }
+        case V_INT: {
+            key_value->value = &function_value_node->i_value;
+            key_value->data_type = T_INT;
+            break;
+        }
+        case V_COLUMN:
+            {
+                /* IF numerical data type column, return the numerical value, otherwise return zero */
+                ColumnNode *column_node = function_value_node->column;
+                MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
+                uint32_t off_set = calc_offset(query_param, meta_column->column_name);
+                switch (meta_column->column_type) {
+                    case T_STRING:
+                    case T_DATE:
+                    case T_TIMESTAMP: {
+                        int32_t val = 0;
+                        key_value->value = &val;
+                        key_value->data_type = T_INT;
+                        break;
+                    }
+                    case T_BOOL: {
+                        bool b_value = *(bool *)copy_value(destine + off_set, meta_column->column_type);
+                        int32_t val = b_value ? 1 : 0;
+                        key_value->value = &val;
+                        key_value->data_type = T_INT;
+                        break;
+                    }
+                    case T_CHAR: {
+                        char c_val = *(char *)copy_value(destine + off_set, meta_column->column_type);
+                        int32_t val = c_val;
+                        key_value->value = &val;
+                        key_value->data_type = T_INT;
+                        break;
+                    }
+                    case T_INT:
+                        key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                        key_value->data_type = T_INT;
+                        break;
+                    case T_FLOAT:
+                        key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                        key_value->data_type = T_FLOAT;
+                        break;
+                    case T_DOUBLE:
+                        key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                        key_value->data_type = T_DOUBLE;
+                        break;
+                        
+                }
+            }
+            break;
+    }
+
+    // assgin to row data.
+    *(row->data) = key_value;
+
+}
+
+/* Assign function value to row data. */
+static void assign_function_row_data(Row *row, void *destinct, QueryParam *query_param) {
+    FunctionNode *function_node = query_param->select_items->function_node;
+    switch (function_node->function_type) {
+        case F_COUNT:
+            break;
+        case F_SUM:
+            assign_funtion_sum_row_data(row, destinct, query_param);
+            break;
+        case F_AVG:
+            /* For avg, also first sum and then divied by total row size. */
+            assign_funtion_sum_row_data(row, destinct, query_param);
+        case F_MAX:
+        case F_MIN:
+            break;
+    }
+}
+
 /* Assign value to row data. */
 static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_param) {
     for (uint32_t i = 0; i < row->column_len; i++) {
@@ -340,8 +451,10 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
             assign_plain_row_data(row, destinct, query_param);
             break;
         case SELECT_FUNCTION:
+            assign_function_row_data(row, destinct, query_param);
             break;
     }
+
     /* Define row key. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t priamry_key_set_off = calc_offset(query_param, primary_key_meta_column->column_name);
@@ -356,10 +469,18 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
     uint32_t value_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
 
-    for (uint32_t i = 0; i < cell_num; i++) {
-        void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, i);
+    /* It`s necessary to use leaf node snapshot, beacuse when traversing cells, 
+     * update or delete operation will change the data structure of leaf node,
+     * which may causes bug.
+     * */
+    void *leaf_node_snapshot = copy_block(leaf_node, PAGE_SIZE);
 
-        /* Check if the row data include, in another word, if the row data satisfy the condition. */
+    for (uint32_t i = 0; i < cell_num; i++) {
+
+        /* Get leaf node cell value. */
+        void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
+
+        /* Check if the row data include, in another word, check if the row data satisfy the condition. */
         if (!include_leaf_node(destinct, query_param->condition_node, table->meta_table))
             continue;
 
@@ -367,6 +488,9 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         Row *row = generate_row(destinct, query_param, table->meta_table);
         row_handler(row, select_result, table, arg);
     }
+    
+    /* Free useless pointer. */
+    db_free(leaf_node_snapshot);
 }
 
 /* Select go through internal node. */
@@ -426,10 +550,11 @@ QueryParam *convert_query_param(SelectNode *select_node) {
 }
 
 /* Generate new select result structure. */
-static SelectResult *new_select_result(char *table_name) {
+SelectResult *new_select_result(char *table_name) {
     SelectResult *select_result = db_malloc2(sizeof(SelectResult), "SelectResult");
     select_result->row_size = 0;
     select_result->table_name = strdup(table_name);
+    select_result->sum.i = 0;
     return select_result;
 }
 
@@ -469,18 +594,129 @@ static void send_row(Row *row, SelectResult *select_result, Table *table, void *
     db_send("}");
 
     /* If not the last row, these is ',' to split. */
-    select_result->row_size--;
-    if (select_result->row_size > 0)
+    select_result->row_index--;
+    if (select_result->row_index > 0)
         db_send(", ");
 }
 
 /* Count number of row, used in the sql function count(1) */
-static void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    select_result->row_index++;
     select_result->row_size++;
 }
 
-/* Execute count function */
-static void exec_count_function(QueryParam *query_param) {
+/* Execute sum funciton */
+static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+
+    char buff[BUFF_SIZE]; 
+    
+    /* Only look for first content of row data. */;
+    KeyValue *key_value = row->data[0];
+    assert(strcasecmp(key_value->key, SUM_NAME) == 0);
+
+    switch(key_value->data_type) {
+        case T_INT:
+        case T_BOOL:
+        case T_CHAR:
+            select_result->sum.i += *(int32_t *)key_value->value; 
+            break;
+        case T_FLOAT:
+            select_result->sum.f += *(float *)key_value->value;
+            break;
+        case T_DOUBLE:
+            select_result->sum.d += *(double *)key_value->value;
+            break;
+        default:
+            select_result->sum.i += 0;
+            select_result->sum.f += 0;
+            select_result->sum.d += 0;
+            break;
+    }
+
+    select_result->row_index--;
+
+    /* Send out sum result. 
+     * Trigger when row index is zero, which means the last row. 
+     * */
+    if (select_result->row_index == 0) {
+        switch(key_value->data_type) {
+            case T_INT:
+            case T_BOOL:
+            case T_CHAR:
+                sprintf(buff, "{%s: %d}\n", SUM_NAME, select_result->sum.i);
+                break;
+            case T_FLOAT:
+                sprintf(buff, "{%s: %f}\n", SUM_NAME, select_result->sum.f);
+                break;
+            case T_DOUBLE:
+                sprintf(buff, "{%s: %fd}\n", SUM_NAME, select_result->sum.d);
+                break;
+            default:
+                sprintf(buff, "{%s: 0}\n", SUM_NAME);
+                break;
+        }
+        db_send(buff);
+    }
+}
+
+
+/* Execute avg funciton */
+static void avg_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+
+    char buff[BUFF_SIZE]; 
+    
+    /* Only look for first content of row data. */;
+    KeyValue *key_value = row->data[0];
+    assert(strcasecmp(key_value->key, SUM_NAME) == 0);
+
+    switch(key_value->data_type) {
+        case T_INT:
+        case T_BOOL:
+        case T_CHAR:
+            select_result->sum.i += *(int *)key_value->value; 
+            break;
+        case T_FLOAT:
+            select_result->sum.f += *(float *)key_value->value;
+            break;
+        case T_DOUBLE:
+            select_result->sum.d += *(double *)key_value->value;
+            break;
+        default:
+            select_result->sum.i += 0;
+            select_result->sum.f += 0;
+            select_result->sum.d += 0;
+            break;
+    }
+
+    select_result->row_index--;
+
+    /* Send out sum result. 
+     * Trigger when row index is zero, which means the last row. 
+     * */
+    if (select_result->row_index == 0) {
+        switch(key_value->data_type) {
+            case T_INT:
+            case T_BOOL:
+            case T_CHAR:
+                sprintf(buff, "{%s: %d}\n", AVG_NAME, select_result->sum.i / select_result->row_size);
+                break;
+            case T_FLOAT:
+                sprintf(buff, "{%s: %f}\n", AVG_NAME, select_result->sum.f / select_result->row_size);
+                break;
+            case T_DOUBLE:
+                sprintf(buff, "{%s: %fd}\n", AVG_NAME, select_result->sum.d / select_result->row_size);
+                break;
+            default:
+                sprintf(buff, "{%s: 0}\n", AVG_NAME);
+                break;
+        }
+        db_send(buff);
+    }
+}
+
+/* Execute aggregate function count(). */
+static void exec_function_count(QueryParam *query_param) {
+
     char buff[BUFF_SIZE];
 
     /* Generate select result. */
@@ -490,29 +726,73 @@ static void exec_count_function(QueryParam *query_param) {
     query_with_condition(query_param, select_result, count_row, NULL);
     
     /* Compose count result info and send out. */
-    sprintf(buff, "{\"count\", %d}\n", select_result->row_size);
+    sprintf(buff, "{%s: %d}\n", COUNT_NAME, select_result->row_size);
     db_send(buff);
+}
+
+/* Execute aggregate function sum(). */
+static void exec_function_sum(QueryParam *query_param) {
+     
+    /* Genrate select result. */
+    SelectResult *select_result = new_select_result(query_param->table_name);
+
+    /* Count row number. */
+    query_with_condition(query_param, select_result, count_row, NULL);
+
+    /* Sum row. */
+    query_with_condition(query_param, select_result, sum_row, NULL);
+
+} 
+
+/* Execute aggregate function avg(). */
+static void exec_function_avg(QueryParam *query_param) {
+
+    /* Genrate select result. */
+    SelectResult *select_result = new_select_result(query_param->table_name);
+
+    /* Count row number. */
+    query_with_condition(query_param, select_result, count_row, NULL);
+
+    /* Avg row. */
+    query_with_condition(query_param, select_result, avg_row, NULL);
+}
+
+/* Execute aggregate function max(). */
+static void exec_function_max(QueryParam *query_param) {
+    
+}
+
+/* Execute aggregate function min(). */
+static void exec_function_min(QueryParam *query_param) {
+
 }
 
 
 /* Execute function select statement. 
- * Now supported function:
+ * Now supported aggregate function:
  *     COUNT
  *     SUM
+ *     AVG
  *     MAX
  *     MIN
- *     AVERAGE
  * */
 static void exec_function_select_statement(QueryParam *query_param) {
     FunctionNode *function_node = query_param->select_items->function_node;
     switch(function_node->function_type) {
         case F_COUNT:
-            exec_count_function(query_param);
+            exec_function_count(query_param);
             break;
         case F_SUM:
+            exec_function_sum(query_param);
+            break;
         case F_MAX:
+            exec_function_max(query_param);
+            break;
         case F_MIN:
+            exec_function_min(query_param);
+            break;
         case F_AVG:
+            exec_function_avg(query_param);
             break;   
     }
 }
@@ -524,7 +804,10 @@ static void exec_function_select_statement(QueryParam *query_param) {
  * is important for next select operation.
  * */
 static void exec_plain_select_statement(QueryParam *query_param) {
+
+    /* Genrate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
+
     /* Count row number. */
     query_with_condition(query_param, select_result, count_row, NULL);
 

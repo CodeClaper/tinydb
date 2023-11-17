@@ -3,6 +3,12 @@
 /* Function pointer about row handler */
 typedef void (*ROW_HANDLER)(Row *, SelectResult *select_result, Table *table, void *arg);
 
+/* Generate new select result structure. */
+SelectResult *new_select_result(char *table_name);
+
+/* Count number of row, used in the sql function count(1) */
+void count_row(Row *row, SelectResult *select_result, Table *table, void *arg);
+
 /* Query with condition. */
 void query_with_condition(QueryParam *query_param, SelectResult *select_result, ROW_HANDLER row_handler, void *arg);
 
