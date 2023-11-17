@@ -7,7 +7,7 @@ bool check_query_param(QueryParam *query_param);
 bool check_insert_node(InsertNode *insert_node);
 
 /* Check for update node. */
-bool check_update_node(UpdateNode *update_node);
+bool check_update_node(UpdateNode *update_node, SelectResult *select_result);
 
 /* Check for delete node. */
 bool check_delete_node(DeleteNode *delete_node);

@@ -1,4 +1,5 @@
 #include "data.h"
+#include <stddef.h>
 
 //Copy value
 void *copy_value(void *value, DataType data_type); 
@@ -32,3 +33,6 @@ SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node);
 
 //Copy query param.
 QueryParam *copy_query_param(QueryParam *query_param);
+
+/* Copy a dymamic memory block */
+void *copy_block(void *value, size_t size);

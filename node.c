@@ -498,7 +498,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     }
 }
 
-// insert a new leaf node
+/* insert a new leaf node */
 void insert_leaf_node(Cursor *cursor, Row *row) {
     void *node = get_page(cursor->table->pager, cursor->page_num); 
     uint32_t cell_num = get_leaf_node_cell_num(node);
@@ -509,7 +509,7 @@ void insert_leaf_node(Cursor *cursor, Row *row) {
         insert_and_split_leaf_node(cursor, row);
     } else {
         if (cursor->cell_num < cell_num) {
-            // make room for new cell
+            /* Make room for new cell. */
             for (int i = cell_num; i > cursor->cell_num; i--) {
                 memcpy(get_leaf_node_cell(node, key_len, value_len, i), get_leaf_node_cell(node, key_len, value_len, i-1), cell_length);
             }
@@ -518,33 +518,38 @@ void insert_leaf_node(Cursor *cursor, Row *row) {
         void *destination = serialize_row_data(row, cursor->table);
         memcpy(get_leaf_node_cell_value(node, key_len, value_len, cursor->cell_num), destination, value_len);
         set_leaf_node_cell_num(node, ++cell_num);
-        flush_page(cursor->table->pager, cursor->page_num); // flush into disk.
+        flush_page(cursor->table->pager, cursor->page_num); /* flush into disk. */
     }
 }
 
-// When cell obsolute, cover the old cell space, make space align .
-void clean_up_obsolute_cell(Cursor *obs_cursor) {
-    void *leaf_node = get_page(obs_cursor->table->pager, obs_cursor->page_num);
+/* When cell obsolute, cover the old cell space, make space align. */
+void clean_obsolute_cell(Cursor *cursor) {
+
+    void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
-    uint32_t value_len = calc_table_row_length(obs_cursor->table);
-    uint32_t key_len = calc_primary_key_length(obs_cursor->table);
+    uint32_t value_len = calc_table_row_length(cursor->table);
+    uint32_t key_len = calc_primary_key_length(cursor->table);
     uint32_t cell_length = value_len + key_len;
-    if (obs_cursor->cell_num == cell_num - 1) {
-        // if old cell is the last one, just make it null.
+
+    if (cursor->cell_num == cell_num - 1) {
+
+        /* If old cell is the last one, just make it null. */
         memset(get_leaf_node_cell(leaf_node, key_len, value_len, cell_num - 1), 0, cell_length);
-        // the last cell has the max key, so if it`s parent node is internal node, need to repalce key
+
+        /* The last cell has the max key, so if it`s parent node is internal node, need to repalce key. */
         if (!is_root_node(leaf_node)) {
             uint32_t parent_page = get_parent_pointer(leaf_node);
-            void *parent_node = get_page(obs_cursor->table->pager, parent_page);
-            void *obs_key = get_leaf_node_cell_key(leaf_node, obs_cursor->cell_num, key_len, value_len);
-            void *obs_previous_key = get_leaf_node_cell_key(leaf_node, obs_cursor->cell_num - 1, key_len, value_len);
-            MetaColumn *primary_key_meta_column = get_primary_key_meta_column(obs_cursor->table->meta_table);
+            void *parent_node = get_page(cursor->table->pager, parent_page);
+            void *obs_key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
+            void *obs_previous_key = get_leaf_node_cell_key(leaf_node, cursor->cell_num - 1, key_len, value_len);
+            MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
             update_internal_node_key(parent_node, obs_key, obs_previous_key, key_len, primary_key_meta_column->column_type);
-            flush_page(obs_cursor->table->pager, parent_page);
+            flush_page(cursor->table->pager, parent_page);
         }
     } else {
-        // move right cell forward to covert the obsolute cell sapce. 
-        for (uint32_t i = obs_cursor->cell_num; i < cell_num; i++) {
+
+        /* Move right cell forward to covert the obsolute cell sapce. */
+        for (uint32_t i = cursor->cell_num; i < cell_num; i++) {
             if (i != cell_num -1)
                 memcpy(get_leaf_node_cell(leaf_node, key_len, value_len, i), get_leaf_node_cell(leaf_node, key_len, value_len, i + 1), cell_length);
             else  
@@ -552,10 +557,11 @@ void clean_up_obsolute_cell(Cursor *obs_cursor) {
         }
     }
     set_leaf_node_cell_num(leaf_node, cell_num -1);
-    flush_page(obs_cursor->table->pager, obs_cursor->page_num);
+
+    flush_page(cursor->table->pager, cursor->page_num);
 }
 
-// deserialize meta column
+/* Deserialize meta column */
 MetaColumn *deserialize_meta_column(void *destination) {
     MetaColumn *meta_column = db_malloc(sizeof(MetaColumn));
     strcpy(meta_column->column_name, destination); 
@@ -565,7 +571,7 @@ MetaColumn *deserialize_meta_column(void *destination) {
     return meta_column;
 }
 
-// deserialize meta column
+/* Deserialize meta column */
 void *serialize_meta_column(MetaColumn *meta_column) {
     void *destination= db_malloc(ROOT_NODE_META_COLUMN_SIZE);
     strcpy(destination, meta_column->column_name);

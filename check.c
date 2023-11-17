@@ -242,7 +242,7 @@ bool check_insert_node(InsertNode *insert_node) {
 }
 
 /* Check assignment set node */
-static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Table *table) { 
+static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Table *table, SelectResult *select_result) { 
     for (uint32_t i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assignment_node = *(assignment_set_node->assignment_node + i);
         ColumnNode *column_node = assignment_node->column;
@@ -256,15 +256,27 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
 
         /* It means to change the primary key column and may cause duplicate key. */
         if (meta_column->is_primary) {
-            void *new_key = get_value_from_value_item_node(value_node, meta_column->column_type);
-            Cursor *cursor = define_cursor(table, new_key);
-            uint32_t value_len = calc_table_row_length(table);
-            uint32_t key_len = calc_primary_key_length(table);
-            void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
-            void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
-            if (equal(key, new_key, meta_column->column_type)) {
-                log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
+
+            /* It means to change the primary key column and may cause duplicate key. 
+             * Firstly, multirows absulutely case duplicate.
+             * Secondly, if priamry key is assigned to the old value, there is no influnece.
+             * Thirdly, if priamry key is assigned to different value, should check if key aleady exists, avoid cause duplicate.
+             * */
+            if (select_result->row_size > 1) {
+                log_error("Duaplicate key not allowed");
                 return false;
+            }
+            if (select_result->row_size == 1) {
+                void *new_key = get_value_from_value_item_node(value_node, meta_column->column_type);
+                Cursor *cursor = define_cursor(table, new_key);
+                uint32_t value_len = calc_table_row_length(table);
+                uint32_t key_len = calc_primary_key_length(table);
+                void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
+                void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
+                if (equal(key, new_key, meta_column->column_type)) {
+                    log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
+                    return false;
+                }
             }
         }
     }
@@ -272,10 +284,10 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
 }
 
 // check for update node. 
-bool check_update_node(UpdateNode *update_node) {
+bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
     Table *table = open_table(update_node->table_name);
     assert(table != NULL);
-    return check_assignment_set_node(update_node->assignment_set_node, table) 
+    return check_assignment_set_node(update_node->assignment_set_node, table, select_result) 
            && check_condition_node(update_node->condition_node, table->meta_table);
 }
 

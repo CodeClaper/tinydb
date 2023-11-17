@@ -33,16 +33,8 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
 /* Delete row */
 static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     Cursor *cursor = define_cursor(table, row->key);
-    clean_up_obsolute_cell(cursor);
+    clean_obsolute_cell(cursor);
     select_result->row_size++;
-}
-
-/* Generate new select result structure. */
-static SelectResult *new_select_result(char *table_name) {
-    SelectResult *select_result = db_malloc2(sizeof(SelectResult), "SelectResult");
-    select_result->row_size = 0;
-    select_result->table_name = strdup(table_name);
-    return select_result;
 }
 
 /*Execute delete statment.*/

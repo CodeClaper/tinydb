@@ -295,6 +295,12 @@ typedef struct {
 typedef struct {
     char *table_name;
     uint32_t row_size;
+    uint32_t row_index;
+    union {
+        int32_t i;
+        float f;
+        double d;
+    } sum;
 }SelectResult;
 
 /* TableList */

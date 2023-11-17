@@ -178,7 +178,7 @@ ExecuteResult exec_insert_statement(InsertNode *insert_node) {
     // free memeory
     free_cursor(cursor);
     free_row(row);
-    db_send("Successfully insert one row data.");
+    db_send("Successfully insert one row data. \n");
     return EXECUTE_SUCCESS;    
 }
 

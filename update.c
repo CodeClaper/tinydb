@@ -113,7 +113,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
                 /* In the case, key value change, update = delete + re-insert. */
                 /* Delete the old one. */
                 Cursor *old_cursor = define_cursor(table, old_key);
-                clean_up_obsolute_cell(old_cursor); 
+                clean_obsolute_cell(old_cursor); 
                 free_value(old_key, meta_column->column_type);
 
                 /* Re-insert the updated one. */
@@ -131,15 +131,6 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
             flush_page(table->pager, cursor->page_num);
         }
     }
-    select_result->row_size++;
-}
-
-/* Generate new select result structure. */
-static SelectResult *new_select_result(char *table_name) {
-    SelectResult *select_result = db_malloc2(sizeof(SelectResult), "SelectResult");
-    select_result->row_size = 0;
-    select_result->table_name = strdup(table_name);
-    return select_result;
 }
 
 /* Execute update statment. */
@@ -149,15 +140,21 @@ ExecuteResult exec_update_statment(UpdateNode *update_node) {
     if (table == NULL)
         return EXECUTE_TABLE_OPEN_FAIL;
 
-    /* Check out update node. */
-    if (!check_update_node(update_node))
-        return EXECUTE_FAIL;
 
     /* Adapt to query param. */
     QueryParam *query_param = adapt_query_param(update_node, table);
 
     /* Query with conditon, and update satisfied condition row. */
     SelectResult *select_result = new_select_result(update_node->table_name);
+
+    /* Before update row, count satisfied row num which help to check. */
+    query_with_condition(query_param, select_result, count_row, NULL);
+
+    /* Check out update node. */
+    if (!check_update_node(update_node, select_result))
+        return EXECUTE_FAIL;
+
+    /* Query with update row operation. */
     query_with_condition(query_param, select_result, update_row, update_node->assignment_set_node);
 
     /* Send out update result. */

@@ -58,8 +58,8 @@ void initial_leaf_node(void *leaf_node, bool is_root);
 // insert a new leaf node
 void insert_leaf_node(Cursor *cursor, Row *row);
 
-// When cell obsolute, cover the old space, make space align .
-void clean_up_obsolute_cell(Cursor *obs_cursor);
+/* When cell obsolute, cover the old cell space, make space align. */
+void clean_obsolute_cell(Cursor *obs_cursor);
 
 // deserialize meta column
 MetaColumn *deserialize_meta_column(void *destination);

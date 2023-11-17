@@ -60,3 +60,4 @@ char *replace(char *str, char *old_str, char *new_str) {
     free(repl);
     return NULL;
 }
+

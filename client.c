@@ -84,7 +84,7 @@ int main() {
     while(1) {
         char *input = readline("tinydb > ");
         if (is_empty(input)) {
-            break;
+            continue;
         }
         if (strcmp("exit", input) == 0) {
             printf("Goodbye.\n");

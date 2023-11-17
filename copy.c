@@ -216,3 +216,10 @@ QueryParam *copy_query_param(QueryParam *query_param) {
     query_param_copy->select_items = copy_select_items_node(query_param->select_items);
     return query_param_copy;
 }
+
+/* Copy a dymamic memory block */
+void *copy_block(void *value, size_t size) {
+    void * copy_value = db_malloc2(size, "void");
+    memcpy(copy_value, value, size);
+    return copy_value;
+}
