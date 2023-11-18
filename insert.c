@@ -48,9 +48,16 @@ static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable 
         return ((ColumnNode *)(insert_node->columns_set_node->columns + index))->column_name;
 }
 
-//Get column value.
+/* Get value in insert node to assign column at index. */
 static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
+
+    /* Get value item node at index. */
     ValueItemNode* value_item_node = *(insert_node->value_item_set_node->value_item_node + index);
+
+    /* Different data type column, has diffrenet way to get value.
+     * Data type CHAR, STRING, DATE, TIMESTAMP both use '%s' format to pass value.
+     * And int value may be also FLOAT or DOUBLE. Column meta info helps to define the real data type.
+     * */
     switch(meta_column->column_type) {
         case T_CHAR:
         case T_STRING:
@@ -59,74 +66,73 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             return &(value_item_node->i_value);
         case T_BOOL:
             return &(value_item_node->b_value);
-        case T_DOUBLE:
-            {
-                switch(value_item_node->data_type) {
-                    case T_INT:
-                        value_item_node->d_value = value_item_node->i_value;
-                    case T_FLOAT:
-                        value_item_node->d_value = value_item_node->f_value;
-                    case T_DOUBLE:
-                        value_item_node->data_type = T_DOUBLE;
-                        return &value_item_node->d_value;
-                    default:
-                        fatal("Data type error.");
-                }
+        case T_DOUBLE: {
+            switch(value_item_node->data_type) {
+                case T_INT:
+                    value_item_node->d_value = value_item_node->i_value;
+                case T_FLOAT:
+                    value_item_node->d_value = value_item_node->f_value;
+                case T_DOUBLE:
+                    value_item_node->data_type = T_DOUBLE;
+                    return &value_item_node->d_value;
+                default:
+                    fatal("Data type error.");
             }
-        case T_FLOAT: 
-            {
-                switch(value_item_node->data_type) {
-                    case T_INT:
-                        value_item_node->f_value = value_item_node->i_value;
-                    case T_FLOAT:
-                        value_item_node->data_type = T_FLOAT;
-                        return &value_item_node->f_value;
-                    default:
-                        fatal("Data type error.");
-                }
+            break;
+        }
+        case T_FLOAT: {
+            switch(value_item_node->data_type) {
+                case T_INT:
+                    value_item_node->f_value = value_item_node->i_value;
+                case T_FLOAT:
+                    value_item_node->data_type = T_FLOAT;
+                    return &value_item_node->f_value;
+                default:
+                    fatal("Data type error.");
             }
-        case T_DATE:
-            {
-                switch(value_item_node->data_type) {
-                    case T_STRING:
-                        {
-                            struct tm *tmp_time = db_malloc(sizeof(struct tm));
-                            strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
-                            tmp_time->tm_sec = 0;
-                            tmp_time->tm_min = 0;
-                            tmp_time->tm_hour = 0;
-                            value_item_node->data_type = T_DATE;
-                            value_item_node->t_value = mktime(tmp_time);
-                            db_free(tmp_time);
-                        }
-                    case T_DATE:
-                        return &value_item_node->t_value;
-                    default:
-                        fatal("Data type error.");
+            break;
+        }
+        case T_DATE: {
+            switch(value_item_node->data_type) {
+                case T_STRING: {
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm));
+                    strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
+                    tmp_time->tm_sec = 0;
+                    tmp_time->tm_min = 0;
+                    tmp_time->tm_hour = 0;
+                    value_item_node->data_type = T_DATE;
+                    value_item_node->t_value = mktime(tmp_time);
+                    db_free(tmp_time);
                 }
+                case T_DATE:
+                    return &value_item_node->t_value;
+                default:
+                    fatal("Data type error.");
             }
-        case T_TIMESTAMP: 
-            {
-                switch(value_item_node->data_type) {
-                    case T_STRING:
-                        {
-                            struct tm *tmp_time = db_malloc(sizeof(struct tm));
-                            strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
-                            value_item_node->data_type = T_TIMESTAMP;
-                            value_item_node->t_value = mktime(tmp_time);
-                            db_free(tmp_time);
-                        }
-                    case T_TIMESTAMP:
-                        return &value_item_node->t_value;
-                    default:
-                        fatal("Data type error.");
-                }
+            break;
+        }
+        case T_TIMESTAMP: {
+            switch(value_item_node->data_type) {
+                case T_STRING:
+                    {
+                        struct tm *tmp_time = db_malloc(sizeof(struct tm));
+                        strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                        value_item_node->data_type = T_TIMESTAMP;
+                        value_item_node->t_value = mktime(tmp_time);
+                        db_free(tmp_time);
+                    }
+                case T_TIMESTAMP:
+                    return &value_item_node->t_value;
+                default:
+                    fatal("Data type error.");
             }
+            break;
+        }
     }
     return NULL;
 }
 
-//Generate insert row
+/* Generate insert row. */
 static Row *generate_insert_row(InsertNode *insert_node) {
     uint32_t i, column_len;
     Row *row = db_malloc(sizeof(Row));
@@ -144,7 +150,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         key_value->key = strdup(column_name);
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_name);
         if (meta_column == NULL) {
-            log_error_s("Inner error, not find meta column info by name '%s'", column_name);
+            log_error_s("Inner error, try to get meta column info by name '%s' fail", column_name);
             return NULL;
         }
         key_value->data_type = meta_column->column_type;
@@ -157,10 +163,13 @@ static Row *generate_insert_row(InsertNode *insert_node) {
     return row;
 }
 
-//Execute insert statement.
+/* Execute insert statement. */
 ExecuteResult exec_insert_statement(InsertNode *insert_node) {
+
+    /* Check if insert node valid. */
     if (!check_insert_node(insert_node))
         return EXECUTE_FAIL;
+
     Row *row = generate_insert_row(insert_node);
     if (row == NULL)
         return EXECUTE_FAIL;
@@ -174,8 +183,11 @@ ExecuteResult exec_insert_statement(InsertNode *insert_node) {
         log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
         return EXECUTE_DUPLICATE_KEY;
     }
+
+    /* Insert into leaf node. */
     insert_leaf_node(cursor, row);
-    // free memeory
+
+    /* Free unuesed memeory */
     free_cursor(cursor);
     free_row(row);
     db_send("Successfully insert one row data. \n");

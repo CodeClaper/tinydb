@@ -106,13 +106,11 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     value_item_node_copy->data_type = value_item_node->data_type;
     switch(value_item_node->data_type) {
         case T_CHAR:
-            value_item_node->c_value = value_item_node->c_value;
+        case T_STRING:
+            value_item_node_copy->s_value = strdup(value_item_node->s_value);
             break;
         case T_INT:
             value_item_node_copy->i_value = value_item_node->i_value;
-            break;
-        case T_STRING:
-            value_item_node_copy->s_value = strdup(value_item_node->s_value);
             break;
         case T_BOOL:
             value_item_node_copy->b_value = value_item_node->b_value;

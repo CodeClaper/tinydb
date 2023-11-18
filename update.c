@@ -70,15 +70,13 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                 case T_DOUBLE:
                     key_value->value = &value->d_value;
                     break;
-                case T_CHAR:
-                    key_value->value = &value->c_value;
-                    break;
                 case T_TIMESTAMP:
                     key_value->value = &value->t_value;
                     break;
                 case T_DATE:
                     key_value->value = &value->t_value;
                     break;
+                case T_CHAR:
                 case T_STRING:
                     db_free(key_value->value); // free old memory.
                     key_value->value = strdup(value->s_value);

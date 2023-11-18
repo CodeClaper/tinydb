@@ -28,7 +28,7 @@ static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
 
 /* Check if type convert pass. */
 static bool if_convert_type(DataType source, DataType target, char *column_name) {
-    bool result = true;
+    bool result;
     switch(source) {
         case T_BOOL:
             result = target == T_BOOL;
@@ -40,7 +40,7 @@ static bool if_convert_type(DataType source, DataType target, char *column_name)
             result = target == T_INT || target == T_FLOAT;
             break;
         case T_DOUBLE:
-            result = target == T_DOUBLE;
+            result = target == T_INT || target == T_DOUBLE;
             break;
         case T_CHAR:
             result = target == T_CHAR || target == T_STRING;
@@ -75,44 +75,47 @@ static bool check_value_valid(DataType data_type, void* value) {
         case T_DOUBLE:
         case T_STRING:
             return true;
-        case T_CHAR: 
-            {
-                /* For char type, only allow one character. */
-                size_t len = strlen((char *) value);
-                if (len != 1)
-                    log_error_s("Try to convert value '%s' to char fail.", (char *) value);
-                return len == 1;
-            }
-        case T_TIMESTAMP:
-            {   
-                /* when data type is tiemstamp, user`s input just a string type. */
-                regex_t reegex;
-                int comp_result, exe_result;
-                /* https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
-                comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
-                assert(comp_result == 0);
-                exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
-                regfree(&reegex);
-                if (exe_result == REG_NOMATCH) {
-                    log_error_s("Try to convert value '%s' to timestamp fail.", (char *) value);
-                }
-                return exe_result == REG_NOERROR;
-            }
-        case T_DATE:
-            {
-                /* When data type is date, user`s input just a string type. */
-                regex_t reegex;
-                int comp_result, exe_result;
-                /* Jump https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
-                comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", REG_EXTENDED);
-                assert(comp_result == 0);
-                exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
-                regfree(&reegex);
-                if (exe_result == REG_NOMATCH) {
-                    log_error_s("Try to convert value '%s' to timestamp fail.", (char *) value);
-                }
-                return exe_result == REG_NOERROR;
-            }
+        case T_CHAR: {
+
+            /* For CHAR type, only allow one character. */
+            size_t len = strlen((char *) value);
+            if (len != 1)
+                log_error_s("Try to convert value '%s' to CHAR type fail.", (char *) value);
+            return len == 1;
+
+        }
+        case T_TIMESTAMP: {   
+
+            /* when data type is TIMESTAMP, user`s input is a STIRNG type. */
+            regex_t reegex;
+            int comp_result, exe_result;
+
+            /* https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
+            comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
+            assert(comp_result == 0);
+            exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
+            regfree(&reegex);
+            if (exe_result == REG_NOMATCH) 
+                log_error_s("Try to convert value '%s' to timestamp fail.", (char *) value);
+            return exe_result == REG_NOERROR;
+
+        }
+        case T_DATE: {
+
+            /* When data type is DATE, user`s input is a STRING type. */
+            regex_t reegex;
+            int comp_result, exe_result;
+
+            /* Jump https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
+            comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", REG_EXTENDED);
+            assert(comp_result == 0);
+            exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
+            regfree(&reegex);
+            if (exe_result == REG_NOMATCH) 
+                log_error_s("Try to convert value '%s' to timestamp fail.", (char *) value);
+            return exe_result == REG_NOERROR;
+
+        }
     }
 
 }
@@ -135,11 +138,10 @@ static bool check_function_node(FunctionNode *function_node, MetaTable *meta_tab
         case V_INT:
         case V_ALL:
             return true;
-        case V_COLUMN:
-            {
-                ColumnNode *column = value_node->column;
-                return check_column_node(meta_table, column); 
-            }
+        case V_COLUMN: {
+            ColumnNode *column = value_node->column;
+            return check_column_node(meta_table, column); 
+        }
     }
 }
 
@@ -171,16 +173,13 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
         return true;
     switch(condition_node->type) {
         case LOGIC_CONDITION:
-            {
-                return check_condition_node(condition_node->left, meta_table) && check_condition_node(condition_node->right, meta_table);
-            }
-        case EXEC_CONDITION:
-            {
-                MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
-                return check_column_node(meta_table, condition_node->column) // check select column
-                       && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name) // check column type
-                       && check_value_valid(meta_column->column_type, get_value_from_value_item_node(condition_node->value, meta_column->column_type)); // check if value valid
-            }
+            return check_condition_node(condition_node->left, meta_table) && check_condition_node(condition_node->right, meta_table);
+        case EXEC_CONDITION: {
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
+            return check_column_node(meta_table, condition_node->column) // check select column
+                   && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name) // check column type
+                   && check_value_valid(meta_column->column_type, get_value_from_value_item_node(condition_node->value, meta_column->column_type)); // check if value valid
+        }
     }
 }
 
@@ -205,36 +204,50 @@ bool check_query_param(QueryParam *query_param) {
 
 /* Check insert node. */
 bool check_insert_node(InsertNode *insert_node) {
+
+    /* Check table exist.*/
     Table *table = open_table(insert_node->table_name);
     if (table == NULL)
         return false;
+
     MetaTable *meta_table = table->meta_table;
+    
+    /* According to all column flag, determine the number of column set. */
     if (insert_node->all_column) {
+        
+        /* Check column number equals the insert values number. */
         if (meta_table->column_size != insert_node->value_item_set_node->num) {
             log_error("Column count doesn't match value count");
             return false;
         }
+
         for (uint32_t i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name))  // check data type
+            /* Check data type. */
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name))  
                 return false;
-            if (!check_value_valid(meta_column->column_type, get_value_from_value_item_node(value_item_node, meta_column->column_type))) // checke value valid
+            /* Checke value valid. */
+            if (!check_value_valid(meta_column->column_type, get_value_from_value_item_node(value_item_node, meta_column->column_type)))
                 return false;
         }
     } else {
+
+        /* Check column number equals the insert values number. */
         if (insert_node->columns_set_node->size != insert_node->value_item_set_node->num) {
             log_error("Column count doesn't match value count");
             return false;
         }
+
         for (uint32_t i = 0; i < insert_node->columns_set_node->size; i++) {
             ColumnNode *column_node = *(insert_node->columns_set_node->columns + i);
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name)) { // check data type
+            /* Check data type. */
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name)) 
                 return false;
-            }
-            if (!check_value_valid(meta_column->column_type, get_value_from_value_item_node(value_item_node, meta_column->column_type))) // check value valid
+            /* Check value valid. */
+            if (!check_value_valid(meta_column->column_type, get_value_from_value_item_node(value_item_node, meta_column->column_type))) 
                 return false;
         }
     }

@@ -81,8 +81,7 @@ static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
 static uint32_t get_query_columns_num(QueryParam *query_param) {
     SelectItemsNode *select_items_node = query_param->select_items;
     switch (select_items_node->type) {
-    case SELECT_ALL: 
-    {
+    case SELECT_ALL: {
         Table *table = open_table(query_param->table_name);
         return table->meta_table->column_size;
     }
@@ -99,91 +98,85 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
     /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
      * So we must use meta column data type to define which data type of the value.
      * */
-    switch (meta_data_type) 
-    { 
-        case T_CHAR: 
-            {
-                switch (value_item_node->data_type) {
-                      case T_STRING:
-                          value_item_node->c_value = *value_item_node->s_value;
-                      case T_CHAR:
-                          value_item_node->data_type = T_CHAR;
-                          return &value_item_node->c_value;
-                      default:
-                            fatal("Data type error.");
-                }
+    switch (meta_data_type) { 
+        case T_CHAR: {
+            switch (value_item_node->data_type) {
+                  case T_STRING:
+                      value_item_node->data_type = T_CHAR;
+                      return value_item_node->s_value;
+                  default:
+                        fatal("Data type error.");
             }
+            break;
+        }
         case T_STRING:
             return value_item_node->s_value;
         case T_INT:
             return &value_item_node->i_value;
         case T_BOOL:
             return &value_item_node->b_value;
-        case T_FLOAT: 
-            {
-                switch (value_item_node->data_type) {
-                    case T_INT:
-                        value_item_node->f_value = value_item_node->i_value;
-                    case T_FLOAT:
-                        value_item_node->data_type = T_FLOAT;
-                        return &value_item_node->f_value;
-                    default:
-                        fatal("Data type error.");
+        case T_FLOAT: {
+            switch (value_item_node->data_type) {
+                case T_INT:
+                    value_item_node->f_value = value_item_node->i_value;
+                    value_item_node->data_type = T_FLOAT;
+                case T_FLOAT:
+                    return &value_item_node->f_value;
+                default:
+                    fatal("Data type error.");
+            }
+            break;
+        }
+        case T_DOUBLE: {
+            switch (value_item_node->data_type) {
+                case T_INT:
+                    value_item_node->d_value = value_item_node->i_value;
+                    value_item_node->data_type = T_DOUBLE;
+                case T_FLOAT:
+                    value_item_node->d_value = value_item_node->f_value;
+                    value_item_node->data_type = T_DOUBLE;
+                case T_DOUBLE:
+                    return &value_item_node->d_value;
+                default:
+                    fatal("Data type error.");
+            }
+            break;
+        }
+        case T_TIMESTAMP: {
+            switch (value_item_node->data_type) {
+                case T_STRING: {
+                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "struct tm");
+                    strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                    value_item_node->t_value = mktime(tmp_time);
+                    value_item_node->data_type = T_TIMESTAMP;
+                    db_free(tmp_time);
                 }
+                case T_TIMESTAMP:
+                    return &value_item_node->t_value;
+                default:
+                    fatal("Data type error.");
             }
-        case T_DOUBLE: 
-            {
-                switch (value_item_node->data_type) {
-                    case T_INT:
-                        value_item_node->d_value = value_item_node->i_value;
-                    case T_FLOAT:
-                        value_item_node->d_value = value_item_node->f_value;
-                    case T_DOUBLE:
-                        value_item_node->data_type = T_DOUBLE;
-                        return &value_item_node->d_value;
-                    default:
-                        fatal("Data type error.");
+            break;
+        }
+        case T_DATE: {
+            switch (value_item_node->data_type) {
+                case T_STRING: {
+                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "struct tm");
+                    strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
+                    tmp_time->tm_sec = 0;
+                    tmp_time->tm_min = 0;
+                    tmp_time->tm_hour = 0;
+                    value_item_node->t_value = mktime(tmp_time);
+                    value_item_node->data_type = T_DATE;
+                    db_free(tmp_time);
                 }
-            }
-        case T_TIMESTAMP: 
-            {
-                switch (value_item_node->data_type) {
-                    case T_STRING: 
-                        {
-                            struct tm *tmp_time = db_malloc2(sizeof(struct tm), "struct tm");
-                            strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
-                            value_item_node->t_value = mktime(tmp_time);
-                            value_item_node->data_type = T_TIMESTAMP;
-                            db_free(tmp_time);
-                        }
-                    case T_TIMESTAMP:
-                        return &value_item_node->t_value;
-                    default:
-                        fatal("Data type error.");
-                }
-                break;
-            }
-        case T_DATE:
-            {
-                switch (value_item_node->data_type) {
-                    case T_STRING: 
-                        {
-                            struct tm *tmp_time = db_malloc2(sizeof(struct tm), "struct tm");
-                            strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
-                            tmp_time->tm_sec = 0;
-                            tmp_time->tm_min = 0;
-                            tmp_time->tm_hour = 0;
-                            value_item_node->t_value = mktime(tmp_time);
-                            value_item_node->data_type = T_DATE;
-                            db_free(tmp_time);
-                        }
-                    case T_DATE:
-                        return &value_item_node->t_value;
-                    default:
-                        fatal("Data type error.");
-                 }
-                 break;
-            }
+                case T_DATE:
+                    return &value_item_node->t_value;
+                default:
+                    fatal("Data type error.");
+             }
+             break;
+        }
         default:
             fatal("Not implement yet.");
     }
