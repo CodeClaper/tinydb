@@ -96,7 +96,7 @@ MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     return meta_column_copy;
 } 
 
-//Copy column node.
+/* Copy column node. */
 ColumnNode *copy_column_node(ColumnNode *column_node) {
     if (column_node == NULL)
         return NULL;
@@ -111,7 +111,7 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
     return column_node_copy;
 }
 
-//Copy column set node.
+/* Copy column set node. */
 ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
     if (column_set_node == NULL)
         return NULL;
@@ -124,7 +124,7 @@ ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
     return column_set_node_copy;
 }
 
-//Copy value item node.
+/* Copy value item node. */
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node == NULL)
         return NULL;
@@ -155,7 +155,7 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     return value_item_node_copy;
 }
 
-//Copy function value node.
+/*Copy function value node. */
 FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_node) {
     if (function_value_node == NULL)
         return NULL;
@@ -174,7 +174,7 @@ FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_no
     return function_value_node_copy;
 }
 
-//Copy function node.
+/* Copy function node. */
 FunctionNode *copy_function_node(FunctionNode *function_node) {
     if (function_node == NULL)
         return NULL;
@@ -184,7 +184,7 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
     return function_node_copy;
 }
 
-//Copy condition node.
+/* Copy condition node. */
 ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     if (condition_node == NULL)
         return NULL;
@@ -210,7 +210,7 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     return condition_node_copy;
 }
 
-//Copy select items node.
+/* Copy select items node. */
 SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
     if (select_items_node == NULL)
         return NULL;
@@ -229,7 +229,7 @@ SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
     return select_items_node_copy;
 }
 
-//Copy query param.
+/* Copy query param. */
 QueryParam *copy_query_param(QueryParam *query_param) {
     if (query_param == NULL)
         return NULL;

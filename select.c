@@ -573,6 +573,8 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, query_param, table->meta_table);
         row_handler(row, select_result, table, arg);
+        /* Free useless row. */
+        free_row(row);
     }
     
     /* Free useless pointer. */
@@ -808,13 +810,15 @@ static void max_row(Row *row, SelectResult *select_result, Table *table, void *a
 
     /* At first, the max row is null. */
     if (select_result->max_row == NULL) 
-        select_result->max_row = row;
+        select_result->max_row = copy_row(row);
     else {
         Row *max_row = select_result->max_row;
         KeyValue *max_row_key_value = max_row->data[0];
         /* If current row value greater than max row, assign current row as the max row. */
-        if (greater(key_value->value, max_row_key_value->value, key_value->data_type))
-            select_result->max_row = row;
+        if (greater(key_value->value, max_row_key_value->value, key_value->data_type)) {
+            free_row(select_result->max_row);
+            select_result->max_row = copy_row(row);
+        }
     }
 
     /* Send out max row result. 
@@ -840,8 +844,10 @@ static void min_row(Row *row, SelectResult *select_result, Table *table, void *a
         /* If current row value less than min row, assign current row as the mix row. */
         Row *min_row = select_result->min_row;
         KeyValue *min_row_key_value = min_row->data[0];
-        if (less(key_value->value, min_row_key_value->value, key_value->data_type)) 
+        if (less(key_value->value, min_row_key_value->value, key_value->data_type)) {
+            free_row(select_result->min_row);
             select_result->min_row = copy_row(row);
+        }
     }
 
     /* Send out mix row result. 
@@ -972,6 +978,8 @@ static void exec_plain_select_statement(QueryParam *query_param) {
     db_send("[");
     query_with_condition(query_param, select_result, send_row, NULL);
     db_send("]\n");
+
+    free_select_result(select_result);
 }
 
 
