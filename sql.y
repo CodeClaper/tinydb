@@ -86,6 +86,7 @@ int yywrap() {
 %type <data_type> data_type
 %type <opr_type> opr
 %type <function_value_node> function_value
+%type <function_value_node> non_all_function_value
 %type <function_node> function
 %type <select_node> select_statement
 %type <insert_node> insert_statement
@@ -464,14 +465,14 @@ conn:
             | OR    { $$ = C_OR; }
             ;
 function:       
-            MAX LEFTPAREN function_value RIGHTPAREN
+            MAX LEFTPAREN non_all_function_value RIGHTPAREN
                 {
                     FunctionNode *function_node = make_function_node();        
                     function_node->function_type = F_MAX;
                     function_node->value = $3;
                     $$ = function_node;
                 }
-            | MIN LEFTPAREN function_value RIGHTPAREN
+            | MIN LEFTPAREN non_all_function_value RIGHTPAREN
                 {
                     FunctionNode *function_node = make_function_node();        
                     function_node->function_type = F_MIN;
@@ -519,6 +520,22 @@ function_value:
                 {
                     FunctionValueNode *node = make_function_value_node();
                     node->value_type = V_ALL;
+                    $$ = node;
+                }
+            ;
+non_all_function_value:
+            INTVALUE
+                {
+                    FunctionValueNode *node = make_function_value_node();
+                    node->i_value = $1;
+                    node->value_type = V_INT;
+                    $$ = node;
+                }
+            | column 
+                {
+                    FunctionValueNode *node = make_function_value_node();
+                    node->column = $1;
+                    node->value_type = V_COLUMN;
                     $$ = node;
                 }
             ;

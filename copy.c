@@ -1,34 +1,56 @@
+#include <bits/types/time_t.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "table.h"
 #include "copy.h"
 #include "data.h"
+#include "index.h"
 #include "common.h"
 #include "misc.h"
 #include "mem.h"
 
-//Copy value
+/* Copy value. */
 void *copy_value(void *value, DataType data_type) {
     switch(data_type) {
-        case T_BOOL:
-        case T_INT:
-        case T_FLOAT:
-        case T_DOUBLE:
-        case T_CHAR:
-        case T_TIMESTAMP:
+        case T_BOOL: {
+            bool *new_val = db_malloc2(sizeof(bool), "bool");
+            memcpy(new_val, value, sizeof(bool));
+            return new_val;
+        }
+        case T_INT:{
+            int32_t *new_val = db_malloc2(sizeof(int32_t), "int32_t");
+            memcpy(new_val, value, sizeof(int32_t));
+            return new_val;
+        }
+        case T_FLOAT: {
+            float *new_val = db_malloc2(sizeof(float), "float");
+            memcpy(new_val, value, sizeof(float));
+            return new_val;
+        }
+        case T_DOUBLE: {
+            double *new_val = db_malloc2(sizeof(double), "double");
+            memcpy(new_val, value, sizeof(double));
+            return new_val;
+        }
         case T_DATE:
-            return value;
-        case T_STRING:
-            {
-                char *new_value = db_malloc2(strlen(value) + 1, "String value");
-                strcpy(new_value, value);
-                return new_value;
-            }
+        case T_TIMESTAMP: {
+            time_t *new_val = db_malloc2(sizeof(time_t), "time_t");
+            memcpy(new_val, value, sizeof(time_t));
+            return new_val;
+        }
+        case T_CHAR:
+        case T_STRING: {
+            char *new_value = db_malloc2(strlen(value) + 1, "String value");
+            strcpy(new_value, value);
+            return new_value;
+        }
         default:
             return NULL;
     }    
 }
 
-// Copy Key value pair
+/* Copy Key value pair. */
 KeyValue *copy_key_value(KeyValue *key_value) {
     if (key_value == NULL)
         return NULL;
@@ -40,12 +62,16 @@ KeyValue *copy_key_value(KeyValue *key_value) {
     return key_value_copy;
 }
 
-//Copy row
+/* Copy row. */
 Row *copy_row(Row *row) {
     if (row == NULL)
         return NULL;
+    Table *table = open_table(row->table_name);
+    if (table == NULL)
+        return NULL;
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     Row *row_copy = db_malloc2(sizeof(Row), "Row");
-    row_copy->key = row->key;
+    row_copy->key = copy_value(row->key, primary_meta_column->column_type);
     row_copy->column_len = row->column_len;
     row_copy->table_name = db_malloc2(strlen(row->table_name) + 1, "Row.table_name");
     strcpy(row_copy->table_name, row->table_name);
@@ -56,7 +82,7 @@ Row *copy_row(Row *row) {
     return row_copy;
 }
 
-//Copy meta column.
+/* Copy meta column. */
 MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     if (meta_column == NULL)
         return NULL;

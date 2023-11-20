@@ -102,11 +102,17 @@ typedef struct {
 typedef struct {
     DataType data_type;
     union {
+        /* T_INT */
         int i_value;
+        /* T_BOOL */
         bool b_value;
+        /* T_CHAR, T_STRING */
         char *s_value;
+        /* T_FLOAT */
         float f_value;
+        /* T_DOUBLE */
         double d_value;
+        /* T_TIMESTAMP, T_DATE */
         time_t t_value;
     };
 } ValueItemNode;
@@ -294,12 +300,14 @@ typedef struct {
 typedef struct {
     char *table_name;
     uint32_t row_size;
-    uint32_t row_index;
+    int32_t row_index;
+    Row *max_row; /* The max row, used in funciton max. */
+    Row *min_row; /* The min row, used in funciton min. */
     union {
         int32_t i;
         float f;
         double d;
-    } sum;
+    } sum; /* The sum value, used in function sum. */
 }SelectResult;
 
 /* TableList */

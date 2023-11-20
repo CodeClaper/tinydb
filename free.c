@@ -8,15 +8,8 @@
 
 /* Free value */
 void free_value(void *value, DataType data_type) {
-    if (value) {
-        switch(data_type) {
-            case T_STRING:
-                db_free(value);
-                break;
-            default:
-                break;
-        }    
-    }
+    if (value)
+        db_free(value);
 }
 
 /* Free KeyValue */

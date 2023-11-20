@@ -24,4 +24,5 @@ install: tinydb
 	install tinydb /usr/bin 
 clean:
 	rm -r -f ${OBJECT} ${PROMT} ${CLIENT} ./test/test_client core.*  lex.yy.c y.tab.c y.tab.h
+.PHONY: sql
 .PHONY: clean

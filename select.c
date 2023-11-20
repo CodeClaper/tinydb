@@ -101,11 +101,11 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
     switch (meta_data_type) { 
         case T_CHAR: {
             switch (value_item_node->data_type) {
-                  case T_STRING:
-                      value_item_node->data_type = T_CHAR;
-                      return value_item_node->s_value;
-                  default:
-                        fatal("Data type error.");
+                case T_STRING:
+                    value_item_node->data_type = T_CHAR;
+                    return value_item_node->s_value;
+                default:
+                    fatal("Data type error.");
             }
             break;
         }
@@ -311,6 +311,7 @@ static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable
 /* Assign function count() value to row data. */
 static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *query_param) {
 
+    /* Check if table exist. */
     Table *table = open_table(query_param->table_name);
     if (table == NULL) return; /* Return if not exist the table. */
     MetaTable *meta_table = table->meta_table;
@@ -339,60 +340,148 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
             key_value->data_type = T_INT;
             break;
         }
-        case V_COLUMN:
-            {
-                /* IF numerical data type column, return the numerical value, otherwise return zero */
-                ColumnNode *column_node = function_value_node->column;
-                MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-                uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-                switch (meta_column->column_type) {
-                    case T_STRING:
-                    case T_DATE:
-                    case T_TIMESTAMP: {
-                        int32_t val = 0;
-                        key_value->value = &val;
-                        key_value->data_type = T_INT;
-                        break;
-                    }
-                    case T_BOOL: {
-                        bool b_value = *(bool *)copy_value(destine + off_set, meta_column->column_type);
-                        int32_t val = b_value ? 1 : 0;
-                        key_value->value = &val;
-                        key_value->data_type = T_INT;
-                        break;
-                    }
-                    case T_CHAR: {
-                        char c_val = *(char *)copy_value(destine + off_set, meta_column->column_type);
-                        int32_t val = c_val;
-                        key_value->value = &val;
-                        key_value->data_type = T_INT;
-                        break;
-                    }
-                    case T_INT:
-                        key_value->value = copy_value(destine + off_set, meta_column->column_type);
-                        key_value->data_type = T_INT;
-                        break;
-                    case T_FLOAT:
-                        key_value->value = copy_value(destine + off_set, meta_column->column_type);
-                        key_value->data_type = T_FLOAT;
-                        break;
-                    case T_DOUBLE:
-                        key_value->value = copy_value(destine + off_set, meta_column->column_type);
-                        key_value->data_type = T_DOUBLE;
-                        break;
-                        
+        case V_COLUMN: {
+            /* IF numerical data type column, return the numerical value, otherwise return zero */
+            ColumnNode *column_node = function_value_node->column;
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
+            uint32_t off_set = calc_offset(query_param, meta_column->column_name);
+            switch (meta_column->column_type) {
+                case T_STRING:
+                case T_DATE:
+                case T_TIMESTAMP: {
+                    int32_t val = 0;
+                    key_value->value = &val;
+                    key_value->data_type = T_INT;
+                    break;
                 }
+                case T_BOOL: {
+                    bool b_value = *(bool *)copy_value(destine + off_set, meta_column->column_type);
+                    int32_t val = b_value ? 1 : 0;
+                    key_value->value = &val;
+                    key_value->data_type = T_INT;
+                    break;
+                }
+                case T_CHAR: {
+                    char c_val = *(char *)copy_value(destine + off_set, meta_column->column_type);
+                    int32_t val = c_val;
+                    key_value->value = &val;
+                    key_value->data_type = T_INT;
+                    break;
+                }
+                case T_INT:
+                    key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                    key_value->data_type = T_INT;
+                    break;
+                case T_FLOAT:
+                    key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                case T_DOUBLE:
+                    key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                    
             }
-            break;
+        }
+        break;
     }
 
     // assgin to row data.
     *(row->data) = key_value;
+}
 
+/* Assign function max() value to row data. */
+static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *query_param) {
+    
+    /* Check if table exist. */
+    Table *table = open_table(query_param->table_name);
+    if (table == NULL) return; /* Return if not exist the table. */
+    MetaTable *meta_table = table->meta_table;
+
+    /* Get function value. */
+    FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
+
+    /* Instance key value */
+    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    key_value->key = strdup(MAX_NAME);
+
+    /* According function input value type, these are diffrent ways to deal with the row data: 
+     * For V_ALL, there is a error, not allow use '*' as max function input value. ;
+     * For V_INT, absolutely a numerical type, just return the integer value.
+     * For V_COLUMN, return the column value.
+     * */
+    switch (function_value_node->value_type) {
+        case V_ALL: 
+            fatal("Not allow use all as max function input value.");
+            break;
+        case V_INT: {
+            key_value->value = &function_value_node->i_value;
+            key_value->data_type = T_INT;
+            break;
+        }
+        case V_COLUMN: {
+            /* IF numerical data type column, return the numerical value, otherwise return zero */
+            ColumnNode *column_node = function_value_node->column;
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
+            uint32_t off_set = calc_offset(query_param, meta_column->column_name);
+            key_value->value = copy_value(destinct + off_set, meta_column->column_type);
+            key_value->data_type = meta_column->column_type;
+        }
+        break;
+    }
+
+    // assgin to row data.
+    *(row->data) = key_value;
+}
+
+
+/* Assign function min() value to row data. */
+static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *query_param) {
+    
+    /* Check if table exist. */
+    Table *table = open_table(query_param->table_name);
+    if (table == NULL) return; /* Return if not exist the table. */
+    MetaTable *meta_table = table->meta_table;
+
+    /* Get function value. */
+    FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
+
+    /* Instance key value */
+    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    key_value->key = strdup(MIN_NAME);
+
+    /* According function input value type, these are diffrent ways to deal with the row data: 
+     * For V_ALL, there is a error, not allow use '*' as max function input value. ;
+     * For V_INT, absolutely a numerical type, just return the integer value.
+     * For V_COLUMN, return the column value.
+     * */
+    switch (function_value_node->value_type) {
+        case V_ALL: 
+            fatal("Not allow use all as min function input value.");
+            break;
+        case V_INT: {
+            key_value->value = &function_value_node->i_value;
+            key_value->data_type = T_INT;
+            break;
+        }
+        case V_COLUMN: {
+            /* IF numerical data type column, return the numerical value, otherwise return zero */
+            ColumnNode *column_node = function_value_node->column;
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
+            uint32_t off_set = calc_offset(query_param, meta_column->column_name);
+            key_value->value = copy_value(destinct + off_set, meta_column->column_type);
+            key_value->data_type = meta_column->column_type;
+        }
+        break;
+    }
+
+    // assgin to row data.
+    *(row->data) = key_value;
 }
 
 /* Assign function value to row data. */
 static void assign_function_row_data(Row *row, void *destinct, QueryParam *query_param) {
+
     FunctionNode *function_node = query_param->select_items->function_node;
     switch (function_node->function_type) {
         case F_COUNT:
@@ -403,8 +492,12 @@ static void assign_function_row_data(Row *row, void *destinct, QueryParam *query
         case F_AVG:
             /* For avg, also first sum and then divied by total row size. */
             assign_funtion_sum_row_data(row, destinct, query_param);
+            break;
         case F_MAX:
+            assign_function_max_row_data(row, destinct, query_param);
+            break;
         case F_MIN:
+            assign_function_min_row_data(row, destinct, query_param);
             break;
     }
 }
@@ -486,7 +579,7 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
     db_free(leaf_node_snapshot);
 }
 
-/* Select go through internal node. */
+/* Select through internal node. */
 static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table, ROW_HANDLER row_handler, void *arg) {
 
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
@@ -707,6 +800,61 @@ static void avg_row(Row *row, SelectResult *select_result, Table *table, void *a
     }
 }
 
+/* Execute max function. */
+static void max_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    
+    /* Only look for first content of row data. */;
+    KeyValue *key_value = row->data[0];
+
+    /* At first, the max row is null. */
+    if (select_result->max_row == NULL) 
+        select_result->max_row = row;
+    else {
+        Row *max_row = select_result->max_row;
+        KeyValue *max_row_key_value = max_row->data[0];
+        /* If current row value greater than max row, assign current row as the max row. */
+        if (greater(key_value->value, max_row_key_value->value, key_value->data_type))
+            select_result->max_row = row;
+    }
+
+    /* Send out max row result. 
+     * Trigger when row index is zero, which means the last row. 
+     * */
+    select_result->row_index--;
+    if (select_result->row_index == 0) {
+        send_row(select_result->max_row, select_result, table, arg);
+        db_send("\n");
+    }
+}
+
+/* Execute min function. */
+static void min_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    
+    /* Only look for first content of row data. */;
+    KeyValue *key_value = row->data[0];
+
+    /* At first, the min row is null, initilise it. */
+    if (select_result->min_row == NULL) 
+        select_result->min_row = copy_row(row);
+    else {
+        /* If current row value less than min row, assign current row as the mix row. */
+        Row *min_row = select_result->min_row;
+        KeyValue *min_row_key_value = min_row->data[0];
+        if (less(key_value->value, min_row_key_value->value, key_value->data_type)) 
+            select_result->min_row = copy_row(row);
+    }
+
+    /* Send out mix row result. 
+     * Trigger when row index is zero, which means the last row. 
+     * */
+    select_result->row_index--;
+    if (select_result->row_index == 0) {
+        send_row(select_result->min_row, select_result, table, arg);
+        db_send("\n");
+    }
+}
+
+
 /* Execute aggregate function count(). */
 static void exec_function_count(QueryParam *query_param) {
 
@@ -753,11 +901,27 @@ static void exec_function_avg(QueryParam *query_param) {
 /* Execute aggregate function max(). */
 static void exec_function_max(QueryParam *query_param) {
     
+    /* Genrate select result. */
+    SelectResult *select_result = new_select_result(query_param->table_name);
+
+    /* Count row number. */
+    query_with_condition(query_param, select_result, count_row, NULL);
+
+    /* Max row. */
+    query_with_condition(query_param, select_result, max_row, NULL);
 }
 
 /* Execute aggregate function min(). */
 static void exec_function_min(QueryParam *query_param) {
 
+    /* Genrate select result. */
+    SelectResult *select_result = new_select_result(query_param->table_name);
+
+    /* Count row number. */
+    query_with_condition(query_param, select_result, count_row, NULL);
+
+    /* Min row. */
+    query_with_condition(query_param, select_result, min_row, NULL);
 }
 
 
@@ -778,15 +942,15 @@ static void exec_function_select_statement(QueryParam *query_param) {
         case F_SUM:
             exec_function_sum(query_param);
             break;
+        case F_AVG:
+            exec_function_avg(query_param);
+            break;   
         case F_MAX:
             exec_function_max(query_param);
             break;
         case F_MIN:
             exec_function_min(query_param);
             break;
-        case F_AVG:
-            exec_function_avg(query_param);
-            break;   
     }
 }
 
