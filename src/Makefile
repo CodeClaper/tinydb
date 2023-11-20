@@ -8,11 +8,11 @@ CFLAGS=-w -lreadline -ltinfo
 DFLAGS=-w -lreadline -ltinfo -g -D DEBUG
 
 all: ${PROG}
-	gcc ${PROG} main.c -o ${PROMT} ${CFLAGS}
-	gcc client.c input.c -o ${CLIENT} ${CFLAGS}
+	gcc ${PROG} db.c -o ${PROMT} ${CFLAGS}
+	gcc db_cli.c input.c -o ${CLIENT} ${CFLAGS}
 debug: ${PROG}
-	gcc ${PROG} main.c -o ${PROMT} ${DFLAGS}
-	gcc client.c input.c -o ${CLIENT} ${DFLAGS}
+	gcc ${PROG} db.c -o ${PROMT} ${DFLAGS}
+	gcc db_cli.c input.c -o ${CLIENT} ${DFLAGS}
 sql: sql.y sql.l intpr.c
 	lex sql.l
 	yacc -d sql.y
