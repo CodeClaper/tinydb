@@ -13,6 +13,7 @@
 - [x] Delete data using sql
 - [x] Query special column data using sql
 - [x] Query data under conditions using sql
+- [x] Query data with aggregate function sum avg max min count
 - [ ] Stream output of query result
 - [ ] Support index,  B+Tree index store
 - [ ] Create view using sql
