@@ -68,7 +68,7 @@ ExecuteResult exec_create_table_statement(CreateTableNode *create_table_node) {
     MetaTable *meta_table = gen_meta_table(create_table_node);
     ExecuteResult result = create_table(meta_table);
     if (result == EXECUTE_SUCCESS) {
-        sprintf(buff, "Table %s created successfully", meta_table->table_name);
+        sprintf(buff, "Table %s created successfully\n", meta_table->table_name);
         db_send(buff); 
     }
     db_free(meta_table);

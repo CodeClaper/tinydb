@@ -15,8 +15,10 @@
 #include "input.h"
 
 #define MAX_BUFF_SIZE 1<<20
+#define DEFAULT_HOST "127.0.0.1"
+#define DEFAULT_PORT 4080
 
-//Execute meta stament.
+/* Execute meta stament. */
 static bool meta_statment(char *input) {
     if (strcmp("clear", input) == 0 || strcmp("cls", input) == 0) {
         #ifdef _WIN32
@@ -65,20 +67,57 @@ void db_receive(int server_fd) {
     }
 }
 
-int main() {
+/* Genrate address. */
+static struct sockaddr_in *gen_address(int argc, char *argv[]) {
+    int opt;
+    char *optString = "h::p::";
+    struct sockaddr_in *address = malloc(sizeof(struct sockaddr_in));
+    address->sin_family = AF_INET;
+    while((opt = getopt(argc, argv, optString)) != -1) {
+        switch(opt) {
+            case 'h': {
+                if (optarg)
+                    address->sin_addr.s_addr = inet_addr(optString);
+                else 
+                    address->sin_addr.s_addr = inet_addr(DEFAULT_HOST);
+                break;
+            }
+            case 'p': {
+                if (optarg)
+                    address->sin_port = htons(atoi(optarg));
+                else 
+                    address->sin_port = htons(DEFAULT_PORT);
+                break;
+            }
+            default: 
+                fprintf(stderr, "Unrecognised parameter\n");
+                exit(1);
+                
+        }
+    }
+    return address;
+}
+
+/* main
+ * Command line parameters:
+ * -h host
+ * -p port
+ * */
+int main(int argc, char* argv[]) {
+    if (argc != 5) {
+        fprintf(stderr, "Bad command line arguement.");
+        exit(1);
+    }
     int sock_fd;
     pthread_t new_thread;
-    struct sockaddr_in *address = malloc(sizeof(struct sockaddr_in));
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (sock_fd == -1) {
         fprintf(stderr, "Create socket fail.");
         exit(1);
     }
-    address->sin_family = AF_INET;
-    address->sin_addr.s_addr = inet_addr("127.0.0.1");
-    address->sin_port = htons(4080);
+    struct sockaddr_in *address = gen_address(argc, argv);
     if (connect(sock_fd, (struct sockaddr *)address, sizeof(*address)) == -1) {
-        fprintf(stderr, "Connet server fail.");
+        fprintf(stderr, "Connet server %s:%d fail.", ((struct sockaddr *)address)->sa_data, address->sin_port);
         exit(1);
     }
     while(1) {

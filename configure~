@@ -4603,7 +4603,6 @@ done
 test -n "$YACC" || YACC="yacc"
 
 ## GNU Readline library
-AX_LIB_READLINE
 
 # Check whether --with-readline was given.
 if test ${with_readline+y}

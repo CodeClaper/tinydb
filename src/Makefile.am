@@ -1,6 +1,11 @@
 BUILT_SOURCES = data.h
+CFLAGS = -w
 AM_YFLAGS = -d
-AM_CFLAGS = -w 
+if DEBUG
+AM_CFLAGS = -g3 -O0
+else
+AM_CFLAGS = -O2
+endif
 LDADD = -lpthread
 bin_PROGRAMS = tinydb \
 			   tinydb_cli

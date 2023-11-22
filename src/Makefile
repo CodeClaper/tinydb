@@ -190,7 +190,7 @@ AUTOMAKE = ${SHELL} '/home/zc/work/c/TinyDb/missing' automake-1.16
 AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -w
 CPPFLAGS = 
 CSCOPE = cscope
 CTAGS = ctags
@@ -277,7 +277,8 @@ top_builddir = ..
 top_srcdir = ..
 BUILT_SOURCES = data.h
 AM_YFLAGS = -d
-AM_CFLAGS = -w 
+#AM_CFLAGS = -O2
+AM_CFLAGS = -g3 -O0
 LDADD = -lpthread
 tinydb_SOURCES = db.c cache.c cache.h check.c check.h common.h cond.c cond.h  conf.c conf.h const.h \
 				 copy.c copy.h create.c create.h data.h defs.h delete.c delete.h desc.c desc.h free.c free.h index.c index.h \

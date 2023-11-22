@@ -619,6 +619,8 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIB@&t@OBJS
+DEBUG_FALSE
+DEBUG_TRUE
 LIBREADLINE
 YFLAGS
 YACC
@@ -717,6 +719,7 @@ enable_option_checking
 enable_silent_rules
 enable_dependency_tracking
 with_readline
+enable_debug
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1357,6 +1360,7 @@ Optional Features:
                           do not reject slow dependency extractors
   --disable-dependency-tracking 
                           speeds up one-time build
+  --enable-debug          enable debugging, default: no
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4671,6 +4675,28 @@ ac_config_headers="$ac_config_headers config.h"
 
 ac_config_files="$ac_config_files Makefile src/Makefile"
 
+
+@%:@ Check whether --enable-debug was given.
+if test ${enable_debug+y}
+then :
+  enableval=$enable_debug; case "${enableval}" in
+             yes) debug=true ;;
+             no)  debug=false ;;
+             *)   as_fn_error $? "bad value ${enableval} for --enable-debug" "$LINENO" 5 ;;
+esac
+else $as_nop
+  debug=false
+fi
+
+
+ if test x"$debug" = x"true"; then
+  DEBUG_TRUE=
+  DEBUG_FALSE='#'
+else
+  DEBUG_TRUE='#'
+  DEBUG_FALSE=
+fi
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -4802,6 +4828,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${DEBUG_TRUE}" && test -z "${DEBUG_FALSE}"; then
+  as_fn_error $? "conditional \"DEBUG\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
