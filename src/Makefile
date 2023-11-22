@@ -86,7 +86,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = tinydb$(EXEEXT)
+bin_PROGRAMS = tinydb$(EXEEXT) tinydb_cli$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -110,6 +110,10 @@ am_tinydb_OBJECTS = db.$(OBJEXT) cache.$(OBJEXT) check.$(OBJEXT) \
 	update.$(OBJEXT) utils.$(OBJEXT) y.tab.$(OBJEXT)
 tinydb_OBJECTS = $(am_tinydb_OBJECTS)
 tinydb_LDADD = $(LDADD)
+tinydb_DEPENDENCIES =
+am_tinydb_cli_OBJECTS = db_cli.$(OBJEXT) input.$(OBJEXT)
+tinydb_cli_OBJECTS = $(am_tinydb_cli_OBJECTS)
+tinydb_cli_DEPENDENCIES =
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
 am__v_P_0 = false
@@ -127,17 +131,17 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cache.Po ./$(DEPDIR)/check.Po \
 	./$(DEPDIR)/cond.Po ./$(DEPDIR)/conf.Po ./$(DEPDIR)/copy.Po \
-	./$(DEPDIR)/create.Po ./$(DEPDIR)/db.Po ./$(DEPDIR)/delete.Po \
-	./$(DEPDIR)/desc.Po ./$(DEPDIR)/free.Po ./$(DEPDIR)/index.Po \
-	./$(DEPDIR)/input.Po ./$(DEPDIR)/insert.Po \
-	./$(DEPDIR)/intpr.Po ./$(DEPDIR)/lex.yy.Po ./$(DEPDIR)/log.Po \
-	./$(DEPDIR)/mem.Po ./$(DEPDIR)/meta.Po ./$(DEPDIR)/misc.Po \
-	./$(DEPDIR)/node.Po ./$(DEPDIR)/opr.Po ./$(DEPDIR)/pager.Po \
-	./$(DEPDIR)/select.Po ./$(DEPDIR)/server.Po \
-	./$(DEPDIR)/session.Po ./$(DEPDIR)/show.Po ./$(DEPDIR)/stmt.Po \
-	./$(DEPDIR)/table.Po ./$(DEPDIR)/token.Po \
-	./$(DEPDIR)/update.Po ./$(DEPDIR)/utils.Po \
-	./$(DEPDIR)/y.tab.Po
+	./$(DEPDIR)/create.Po ./$(DEPDIR)/db.Po ./$(DEPDIR)/db_cli.Po \
+	./$(DEPDIR)/delete.Po ./$(DEPDIR)/desc.Po ./$(DEPDIR)/free.Po \
+	./$(DEPDIR)/index.Po ./$(DEPDIR)/input.Po \
+	./$(DEPDIR)/insert.Po ./$(DEPDIR)/intpr.Po \
+	./$(DEPDIR)/lex.yy.Po ./$(DEPDIR)/log.Po ./$(DEPDIR)/mem.Po \
+	./$(DEPDIR)/meta.Po ./$(DEPDIR)/misc.Po ./$(DEPDIR)/node.Po \
+	./$(DEPDIR)/opr.Po ./$(DEPDIR)/pager.Po ./$(DEPDIR)/select.Po \
+	./$(DEPDIR)/server.Po ./$(DEPDIR)/session.Po \
+	./$(DEPDIR)/show.Po ./$(DEPDIR)/stmt.Po ./$(DEPDIR)/table.Po \
+	./$(DEPDIR)/token.Po ./$(DEPDIR)/update.Po \
+	./$(DEPDIR)/utils.Po ./$(DEPDIR)/y.tab.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -151,8 +155,8 @@ AM_V_CCLD = $(am__v_CCLD_$(V))
 am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(tinydb_SOURCES)
-DIST_SOURCES = $(tinydb_SOURCES)
+SOURCES = $(tinydb_SOURCES) $(tinydb_cli_SOURCES)
+DIST_SOURCES = $(tinydb_SOURCES) $(tinydb_cli_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -208,6 +212,7 @@ LEX = flex
 LEXLIB = -ll 
 LEX_OUTPUT_ROOT = lex.yy
 LIBOBJS = 
+LIBREADLINE = -lreadline -lncurses
 LIBS = 
 LTLIBOBJS = 
 MAKEINFO = ${SHELL} '/home/zc/work/c/TinyDb/missing' makeinfo
@@ -215,8 +220,8 @@ MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
 PACKAGE = tinydb
 PACKAGE_BUGREPORT = jerryzhou.zc@gmail.com
-PACKAGE_NAME = tinydb
-PACKAGE_STRING = tinydb 0.1
+PACKAGE_NAME = tinydb, tinydb_cli
+PACKAGE_STRING = tinydb, tinydb_cli 0.1
 PACKAGE_TARNAME = tinydb
 PACKAGE_URL = 
 PACKAGE_VERSION = 0.1
@@ -227,7 +232,7 @@ STRIP =
 VERSION = 0.1
 YACC = bison -y
 YFLAGS = 
-abs_builddir = /home/zc/work/c/TinyDb/src
+abs_builddir = ~/data
 abs_srcdir = /home/zc/work/c/TinyDb/src
 abs_top_builddir = /home/zc/work/c/TinyDb
 abs_top_srcdir = /home/zc/work/c/TinyDb
@@ -270,11 +275,20 @@ target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-tinydb_SOURCES = db.c cache.c check.c cond.c conf.c copy.c create.c delete.c desc.c \
-				free.c index.c input.c insert.c intpr.c lex.yy.c log.c mem.c meta.c misc.c node.c \
-				opr.c pager.c select.c server.c session.c show.c stmt.c table.c token.c update.c utils.c y.tab.c
+BUILT_SOURCES = data.h
+AM_YFLAGS = -d
+AM_CFLAGS = -w 
+LDADD = -lpthread
+tinydb_SOURCES = db.c cache.c cache.h check.c check.h common.h cond.c cond.h  conf.c conf.h const.h \
+				 copy.c copy.h create.c create.h data.h defs.h delete.c delete.h desc.c desc.h free.c free.h index.c index.h \
+				 input.c input.h insert.c insert.h intpr.c intpr.h lex.yy.c log.c log.h mem.c mem.h meta.c meta.h \
+				 misc.c misc.h node.c node.h opr.c opr.h pager.c pager.h select.c select.h server.c server.h session.c session.h \
+				 show.c show.h stmt.c stmt.h table.c table.h token.c token.h update.c update.h utils.c utils.h y.tab.c y.tab.h
 
-all: all-am
+tinydb_cli_SOURCES = db_cli.c input.c input.h
+tinydb_cli_LDADD = -lreadline -ltinfo
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .o .obj
@@ -354,6 +368,10 @@ tinydb$(EXEEXT): $(tinydb_OBJECTS) $(tinydb_DEPENDENCIES) $(EXTRA_tinydb_DEPENDE
 	@rm -f tinydb$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(tinydb_OBJECTS) $(tinydb_LDADD) $(LIBS)
 
+tinydb_cli$(EXEEXT): $(tinydb_cli_OBJECTS) $(tinydb_cli_DEPENDENCIES) $(EXTRA_tinydb_cli_DEPENDENCIES) 
+	@rm -f tinydb_cli$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(tinydb_cli_OBJECTS) $(tinydb_cli_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -367,6 +385,7 @@ include ./$(DEPDIR)/conf.Po # am--include-marker
 include ./$(DEPDIR)/copy.Po # am--include-marker
 include ./$(DEPDIR)/create.Po # am--include-marker
 include ./$(DEPDIR)/db.Po # am--include-marker
+include ./$(DEPDIR)/db_cli.Po # am--include-marker
 include ./$(DEPDIR)/delete.Po # am--include-marker
 include ./$(DEPDIR)/desc.Po # am--include-marker
 include ./$(DEPDIR)/free.Po # am--include-marker
@@ -498,14 +517,17 @@ distdir-am: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
-install-exec: install-exec-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
+install-exec: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
 
@@ -534,6 +556,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
@@ -546,6 +569,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/copy.Po
 	-rm -f ./$(DEPDIR)/create.Po
 	-rm -f ./$(DEPDIR)/db.Po
+	-rm -f ./$(DEPDIR)/db_cli.Po
 	-rm -f ./$(DEPDIR)/delete.Po
 	-rm -f ./$(DEPDIR)/desc.Po
 	-rm -f ./$(DEPDIR)/free.Po
@@ -623,6 +647,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/copy.Po
 	-rm -f ./$(DEPDIR)/create.Po
 	-rm -f ./$(DEPDIR)/db.Po
+	-rm -f ./$(DEPDIR)/db_cli.Po
 	-rm -f ./$(DEPDIR)/delete.Po
 	-rm -f ./$(DEPDIR)/desc.Po
 	-rm -f ./$(DEPDIR)/free.Po
@@ -665,7 +690,7 @@ ps-am:
 
 uninstall-am: uninstall-binPROGRAMS
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-exec install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
 	clean-binPROGRAMS clean-generic cscopelist-am ctags ctags-am \

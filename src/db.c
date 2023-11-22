@@ -24,7 +24,7 @@ char *data_dir;
 
 // init
 static void init() {
-    data_dir = "/home/zc/data/";
+    data_dir = "~/data/";
     init_mem(); // init mmu
     init_session();
 }

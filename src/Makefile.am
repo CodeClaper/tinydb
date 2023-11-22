@@ -1,4 +1,14 @@
-bin_PROGRAMS = tinydb
-tinydb_SOURCES = db.c cache.c check.c cond.c conf.c copy.c create.c delete.c desc.c \
-				free.c index.c input.c insert.c intpr.c lex.yy.c log.c mem.c meta.c misc.c node.c \
-				opr.c pager.c select.c server.c session.c show.c stmt.c table.c token.c update.c utils.c y.tab.c
+BUILT_SOURCES = data.h
+AM_YFLAGS = -d
+AM_CFLAGS = -w 
+LDADD = -lpthread
+bin_PROGRAMS = tinydb \
+			   tinydb_cli
+tinydb_SOURCES = db.c cache.c cache.h check.c check.h common.h cond.c cond.h  conf.c conf.h const.h \
+				 copy.c copy.h create.c create.h data.h defs.h delete.c delete.h desc.c desc.h free.c free.h index.c index.h \
+				 input.c input.h insert.c insert.h intpr.c intpr.h lex.yy.c log.c log.h mem.c mem.h meta.c meta.h \
+				 misc.c misc.h node.c node.h opr.c opr.h pager.c pager.h select.c select.h server.c server.h session.c session.h \
+				 show.c show.h stmt.c stmt.h table.c table.h token.c token.h update.c update.h utils.c utils.h y.tab.c y.tab.h
+tinydb_cli_SOURCES = db_cli.c input.c input.h
+tinydb_cli_LDADD = -lreadline -ltinfo
+abs_builddir = ~/data

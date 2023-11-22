@@ -560,7 +560,7 @@ char *yytext;
 #include "log.h"
 int lineno = 1;
 int yyerror(const char *s);
-
+int yylex();
 #line 565 "lex.yy.c"
 #line 566 "lex.yy.c"
 

@@ -9,7 +9,7 @@
 int yywrap() {
     return 1;
 }
-
+int yylex();
 %} 
 %union 
 {

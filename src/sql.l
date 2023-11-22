@@ -8,7 +8,7 @@
 #include "log.h"
 int lineno = 1;
 int yyerror(const char *s);
-
+int yylex();
 %}
 %%
 create                  return CREATE;

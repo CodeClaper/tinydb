@@ -184,7 +184,7 @@ am__define_uniq_tagged_files = \
 DIST_SUBDIRS = $(SUBDIRS)
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in AUTHORS \
 	COPYING ChangeLog INSTALL NEWS README.md compile depcomp \
-	install-sh missing
+	install-sh missing ylwrap
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -260,6 +260,7 @@ LEX = flex
 LEXLIB = -ll 
 LEX_OUTPUT_ROOT = lex.yy
 LIBOBJS = 
+LIBREADLINE = -lreadline -lncurses
 LIBS = 
 LTLIBOBJS = 
 MAKEINFO = ${SHELL} '/home/zc/work/c/TinyDb/missing' makeinfo
@@ -267,8 +268,8 @@ MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
 PACKAGE = tinydb
 PACKAGE_BUGREPORT = jerryzhou.zc@gmail.com
-PACKAGE_NAME = tinydb
-PACKAGE_STRING = tinydb 0.1
+PACKAGE_NAME = tinydb, tinydb_cli
+PACKAGE_STRING = tinydb, tinydb_cli 0.1
 PACKAGE_TARNAME = tinydb
 PACKAGE_URL = 
 PACKAGE_VERSION = 0.1
