@@ -11,6 +11,7 @@ if test "x$LEX" != xflex; then
 fi
 ## YACC
 AC_PROG_YACC
+AS_MKDIR_P
 ## GNU Readline library
 AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline],
@@ -45,6 +46,5 @@ AS_HELP_STRING([--enable-debug],
              *)   AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
 esac],
 [debug=false])
-
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 AC_OUTPUT

@@ -169,7 +169,7 @@ configure:4402: $? = 0
 configure:4415: result: none needed
 configure:4445: checking for library containing yywrap
 configure:4475: gcc -o conftest -g -O2   conftest.c  >&5
-/usr/bin/ld: /tmp/cckJvtkK.o: in function `main':
+/usr/bin/ld: /tmp/ccLXBBTJ.o: in function `main':
 /home/zc/work/c/TinyDb/conftest.c:19: undefined reference to `yywrap'
 collect2: error: ld returned 1 exit status
 configure:4475: $? = 1
@@ -233,10 +233,10 @@ configure:4541: result: yes
 configure:4565: checking for bison
 configure:4586: found /usr/bin/bison
 configure:4597: result: bison -y
-configure:4623: checking for main in -lreadline
-configure:4643: gcc -o conftest -g -O2   conftest.c -lreadline -lncurses  >&5
-configure:4643: $? = 0
-configure:4653: result: yes
+configure:4624: checking for main in -lreadline
+configure:4644: gcc -o conftest -g -O2   conftest.c -lreadline -lncurses  >&5
+configure:4644: $? = 0
+configure:4654: result: yes
 configure:4801: checking that generated files are newer than configure
 configure:4807: result: done
 configure:4834: creating ./config.status

@@ -4606,6 +4606,7 @@ fi
 done
 test -n "$YACC" || YACC="yacc"
 
+as_dir=; as_fn_mkdir_p
 ## GNU Readline library
 
 # Check whether --with-readline was given.
@@ -4687,7 +4688,6 @@ esac
 else $as_nop
   debug=false
 fi
-
 
  if test x"$debug" = x"true"; then
   DEBUG_TRUE=

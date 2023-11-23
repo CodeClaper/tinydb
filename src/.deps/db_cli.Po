@@ -50,6 +50,7 @@ db_cli.o: db_cli.c /usr/include/stdc-predef.h /usr/include/netinet/in.h \
  /usr/include/asm-generic/sockios.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
  /usr/include/x86_64-linux-gnu/bits/in.h \
+ /usr/lib/gcc/x86_64-linux-gnu/12/include/stdatomic.h \
  /usr/lib/gcc/x86_64-linux-gnu/12/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/x86_64-linux-gnu/bits/wchar.h /usr/include/stdio.h \
@@ -150,6 +151,7 @@ db_cli.o: db_cli.c /usr/include/stdc-predef.h /usr/include/netinet/in.h \
 /usr/include/asm-generic/sockios.h:
 /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h:
 /usr/include/x86_64-linux-gnu/bits/in.h:
+/usr/lib/gcc/x86_64-linux-gnu/12/include/stdatomic.h:
 /usr/lib/gcc/x86_64-linux-gnu/12/include/stdint.h:
 /usr/include/stdint.h:
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:

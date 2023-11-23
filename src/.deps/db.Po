@@ -81,7 +81,7 @@ db.o: db.c /usr/include/stdc-predef.h \
  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min.h data.h \
  /usr/include/ctype.h defs.h mem.h token.h input.h stmt.h free.h server.h \
- common.h session.h misc.h log.h
+ common.h session.h misc.h conf.h log.h
 /usr/include/stdc-predef.h:
 /usr/lib/gcc/x86_64-linux-gnu/12/include/stdbool.h:
 /usr/lib/gcc/x86_64-linux-gnu/12/include/stdint.h:
@@ -188,4 +188,5 @@ server.h:
 common.h:
 session.h:
 misc.h:
+conf.h:
 log.h:
