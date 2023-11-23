@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +12,7 @@
 #define DEFAULT_CONF_FILE "/etc/tinydb.cnf"
 
 /* Read config file. */
-char *read_conf(char *key) {
+char *read_conf(char *title, char *key) {
     FILE *file = fopen(DEFAULT_CONF_FILE, "r");
     if (file == NULL) {
         fprintf(stderr, "Try to open config file in path '%s' fail.\n", DEFAULT_CONF_FILE);
@@ -19,12 +20,20 @@ char *read_conf(char *key) {
     }
     char buff[BUFF_SIZE];
     char *p;
+    bool inBlock;
     while(!feof(file)) {
         fgets(buff, BUFF_SIZE, file);
         char *line = trim(buff);
         /* Check if commenter line. */
         if (startwith(line, "//") || startwith(line, "#"))
             continue;
+        /* Check if the title */
+        if (startwith(line, "[") && startwith(line + 1, title)) {
+            inBlock = true;    
+            continue;
+        }
+        /* If not in the title block, skip it. */
+        if (!inBlock) continue;
         /* Check if has symbol '='. */
         if (strchr(line, '=') == NULL)
             continue;
@@ -39,12 +48,13 @@ char *read_conf(char *key) {
         p += 1;
         return strdup(trim(p));
     }
-    return NULL;
+    fprintf(stderr, "Not found [%s].[%s] in configuration file.\n", title, key);
+    exit(EXECUTE_FAIL);
 }
 
 /* Load configuration. */
 Conf *load_conf() {
     Conf *conf = db_malloc2(sizeof(Conf), "Conf");
-    conf->data_dir = read_conf("dir");
+    conf->data_dir = read_conf("data", "dir");
     return conf;
 }
