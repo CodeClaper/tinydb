@@ -1,7 +1,38 @@
 #include "utils.h"
 #include "mem.h"
+#include <string.h>
 
-// check if a file has suffix.
+/* left trim*/
+char *ltrim(char *s) {
+    while(isspace(*s)) s++;
+    return s;
+}
+
+/* right trim */
+char *rtrim(char *s) {
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}
+
+/* trim */
+char *trim(char *s) {
+    return rtrim(ltrim(s)); 
+}
+
+/* Check if a file has prefix. */
+bool startwith(char *str, char *prefix) {
+    if (!str || !prefix)
+        return false;
+    ssize_t str_len = strlen(str);
+    ssize_t pre_size = strlen(prefix);
+    if (pre_size > str_len)
+        return false;
+    return strncmp(str, prefix, pre_size) == 0;
+}
+
+/* check if a file has suffix. */
 bool endwith(char *str, char *suffix) {
     if (!str || !suffix)
         return false;
@@ -12,7 +43,7 @@ bool endwith(char *str, char *suffix) {
     return strcmp(str + str_len - suffix_size, suffix) == 0;
 }
 
-// substring
+/* substring */
 char *substr(char *str, uint32_t start, uint32_t end) {
     if (!str)
         return NULL;
@@ -31,7 +62,7 @@ char *substr(char *str, uint32_t start, uint32_t end) {
     return substr;
 }
 
-// replace
+/* replace */
 char *replace(char *str, char *old_str, char *new_str) {
     if (!str || !old_str)
         return NULL;
@@ -54,10 +85,10 @@ char *replace(char *str, char *old_str, char *new_str) {
             free(temp);
             return repl;
         }
-        free(temp);
+        db_free(temp);
         *(repl+index) = *(str+index);
     }
-    free(repl);
+    db_free(repl);
     return NULL;
 }
 

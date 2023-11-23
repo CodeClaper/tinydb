@@ -1,4 +1,5 @@
 #include <netinet/in.h>
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -70,14 +71,14 @@ void db_receive(int server_fd) {
 /* Genrate address. */
 static struct sockaddr_in *gen_address(int argc, char *argv[]) {
     int opt;
-    char *optString = "h::p::";
+    char *optString = "h:p:";
     struct sockaddr_in *address = malloc(sizeof(struct sockaddr_in));
     address->sin_family = AF_INET;
     while((opt = getopt(argc, argv, optString)) != -1) {
         switch(opt) {
             case 'h': {
                 if (optarg)
-                    address->sin_addr.s_addr = inet_addr(optString);
+                    address->sin_addr.s_addr = inet_addr(optarg);
                 else 
                     address->sin_addr.s_addr = inet_addr(DEFAULT_HOST);
                 break;
@@ -117,7 +118,7 @@ int main(int argc, char* argv[]) {
     }
     struct sockaddr_in *address = gen_address(argc, argv);
     if (connect(sock_fd, (struct sockaddr *)address, sizeof(*address)) == -1) {
-        fprintf(stderr, "Connet server %s:%d fail.", ((struct sockaddr *)address)->sa_data, address->sin_port);
+        fprintf(stderr, "Connet server fail.");
         exit(1);
     }
     while(1) {

@@ -18,15 +18,18 @@
 #include "common.h"
 #include "session.h"
 #include "misc.h"
+#include "conf.h"
 #include "log.h"
 
-char *data_dir;
-
+Conf *conf;
 // init
 static void init() {
-    data_dir = "/home/zc/data/";
-    init_mem(); // init mmu
+    /* Initialise memory manager unit. */
+    init_mem(); 
+    /* Initialision session. */
     init_session();
+    /* Load configuration. */
+    conf = load_conf();
 }
 
 // end
@@ -43,7 +46,7 @@ int main(void) {
     socklen_t client_name_len = sizeof(*client_name);
     pthread_t new_thread;
     server_socket = startup(port);
-    printf("Tinydb server start up successfully. and listen port %d \n", port);
+    printf("Tinydb server start up successfully and listen port %d \n", port);
     while(true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
         if (client_name_len == -1)

@@ -338,4 +338,8 @@ typedef struct {
     uint32_t volumn;
 }Session;
 
+typedef struct {
+    char *data_dir;
+}Conf;
+
 #endif

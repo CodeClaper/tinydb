@@ -4,11 +4,24 @@
 #include <string.h>
 #include <sys/types.h>
 
-// check if a file has suffix.
+/* left trim*/
+char *ltrim(char *s);
+
+/* right trim */
+char *rtrim(char *s);
+
+/* trim */
+char *trim(char *s);
+
+/* Check if a file has prefix. */
+bool startwith(char *str, char *prefix);
+
+/* Check if a file has suffix. */
 bool endwith(char *str, char *suffix);
 
-// substring
+/* substring */
 char *substr(char *str, uint32_t start, uint32_t end);
 
-// replace
+/* replace */
 char *replace(char *str, char *old_str, char *new_str);
+

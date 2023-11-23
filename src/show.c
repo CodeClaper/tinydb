@@ -25,8 +25,8 @@ static TableList *gen_table_list() {
     TableList *table_list = db_malloc(sizeof(TableList));
     table_list->table_name_list = db_malloc(0);
     table_list->count = 0;
-    if ((dir = opendir(data_dir)) ==NULL) 
-        fatals("System error, not found directory: ", data_dir); 
+    if ((dir = opendir(conf->data_dir)) ==NULL) 
+        fatals("System error, not found directory: ", conf->data_dir); 
     else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && strstr(entry->d_name, ".dbt") != NULL) {
