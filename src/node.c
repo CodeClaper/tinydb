@@ -15,6 +15,21 @@
 #include "opr.h"
 #include "index.h"
 
+/**
+* - A database file is divided into a whole number pages.
+* - A page includes meta data and cells.
+* - Meta data includes node type, is root leaf node, parent pointer and cell number.
+* - Cell is a Key-Value, key is index and value containes one row data in table.
+* - TinyDb use B-Tree as disk data structre.
+* - Each node correspond to one page.
+* - There are two types nodes, leaf node and internal node.
+* - Only leaf node store table data.
+* - Internal node store keys.
+* - Root node also as leaf node, but does not store data.
+* - Usually, root node is page 0.
+*
+ */
+
 // get node type
 NodeType get_node_type(void *node) {
     uint8_t value = *(uint8_t *)(node + NODE_TYPE_OFFSET);
