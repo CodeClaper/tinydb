@@ -25,3 +25,5 @@ char *substr(char *str, uint32_t start, uint32_t end);
 /* replace */
 char *replace(char *str, char *old_str, char *new_str);
 
+/* Check if empty string. */
+bool is_empty(char *s);

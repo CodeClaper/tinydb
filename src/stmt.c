@@ -18,7 +18,7 @@
 #include "delete.h"
 #include "desc.h"
 #include "show.h"
-#include "input.h"
+#include "utils.h"
 #include "session.h"
 #include "log.h"
 #include "free.h"

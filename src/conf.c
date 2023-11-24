@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include "data.h"
 #include "conf.h"
@@ -56,5 +57,6 @@ char *read_conf(char *title, char *key) {
 Conf *load_conf() {
     Conf *conf = db_malloc2(sizeof(Conf), "Conf");
     conf->data_dir = read_conf("data", "dir");
+    conf->port = (ushort)atoi(read_conf("base", "port"));
     return conf;
 }

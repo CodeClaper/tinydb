@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
+#include <sys/types.h>
 
 #ifndef DATA_H
 #define DATA_H
@@ -327,8 +328,8 @@ typedef struct MEntry {
 /* MHashTable */
 typedef struct {
     MEntry **entry_list;
-    uint32_t num; // number of entry list.
-    uint32_t capacity; // lenght of table cell.
+    uint32_t num;       /* number of entry list. */
+    uint32_t capacity;  /* capacity of table cell. */
 }MHashTable;
 
 /* Session */
@@ -338,8 +339,10 @@ typedef struct {
     uint32_t volumn;
 }Session;
 
+/* Abount configuration. */
 typedef struct {
-    char *data_dir;
+    char *data_dir;         /* database file directory. */
+    ushort port;    /* Server listening port. */
 }Conf;
 
 #endif

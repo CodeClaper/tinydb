@@ -13,7 +13,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <pthread.h>
-#include "input.h"
+#include "utils.h"
 
 #define MAX_BUFF_SIZE 1<<20
 #define DEFAULT_HOST "127.0.0.1"
