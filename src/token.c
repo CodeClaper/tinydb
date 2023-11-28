@@ -7,6 +7,7 @@
 #include "data.h"
 #include "common.h"
 #include "misc.h"
+#include "utils.h"
 #include "intpr.h"
 #include "y.tab.h"
 
@@ -47,19 +48,21 @@ Statement *adapt(ASTNode *node) {
     return statement;
 }
 
-// parse token
+/* Parse token. */
 Statement *parse(char *input) {
     if (input == NULL)
         return NULL;
-    char *state = db_malloc2(strlen(input) + 2, "StrignValue");
-    sprintf(state, "%s%c", input, '\n');
-    YY_BUFFER_STATE buffer = yy_scan_string(state);
+    /* Remove space characters, includes '\f', '\n', '\r', '\t', '\v'*/
+    trim(input);
+    printf("input sql:  %s\n", input);
+    size_t size = strlen(input);
+    char buff[size + 1];
+    sprintf(buff, "%s%c", input, '\n');
+    YY_BUFFER_STATE buffer = yy_scan_string(buff);
     ASTNode *node = db_malloc2(sizeof(ASTNode), "ASTNode");
-    if(yyparse(node) == 0) {
-        db_free(state);
+    if (yyparse(node) == 0) 
         return adapt(node);
-    } else {
-        db_free(state);
+    else
         return NULL;
-    }
+    
 }

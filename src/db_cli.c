@@ -18,6 +18,7 @@
 #define MAX_BUFF_SIZE 1<<20
 #define DEFAULT_HOST "127.0.0.1"
 #define DEFAULT_PORT 4080
+#define BUFF_SIZE 1024
 
 /* Execute meta stament. */
 static bool meta_statment(char *input) {
@@ -43,10 +44,17 @@ static bool meta_statment(char *input) {
     return false;
 }
 
+bool send_get(int fd) {
+    char buff[3];
+    /* Send message 'GET'*/
+    sprintf(buff, "%s", "GET");
+    return send(fd, buff, 3, 0) > 0;
+}
+
 /**
  * Protocol symbol
- * META: message meta part
- * END: message end symbol
+ * GET: get the server message
+ * OVER: end of session.
  *
  */
 void db_receive(int server_fd) {
@@ -58,11 +66,11 @@ void db_receive(int server_fd) {
             fprintf(stderr, "Socket buffer is too large\n");
             break;
         }
-        char *buff = malloc(len + 1);
-        memset(buff, 0, len + 1);
+        // send_get(server_fd);
+        char buff[len + 1];
         if (recv(server_fd, buff, len, 0) < 0)
             break;
-        if (strcasecmp("Over", buff) == 0)
+        if (strcasecmp("OVER", buff) == 0)
             break;
         printf("%s", buff);
     }
@@ -135,17 +143,15 @@ int main(int argc, char* argv[]) {
             free(input);
             continue;
         }
-        char *sql = malloc(1024);
-        memset(sql, 0, 1024);
-        strcpy(sql, input);
-        size_t result = send(sock_fd, sql, 1024, 0);
+        char buff[BUFF_SIZE];
+        sprintf(buff, "%s", input);
+        size_t result = send(sock_fd, buff, BUFF_SIZE, 0);
         if (result == -1) {
             fprintf(stderr, "Send fail.");
             exit(1);
         }
         db_receive(sock_fd);
-        add_history(sql);
-        free(sql);
+        add_history(buff);
         free(input);
     }
     close(sock_fd);

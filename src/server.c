@@ -17,51 +17,6 @@
 #include "log.h"
 
 
-/**********************************************************************/
-/* Get a line from a socket, whether the line ends in a newline,
- * carriage return, or a CRLF combination.  Terminates the string read
- * with a null character.  If no newline indicator is found before the
- * end of the buffer, the string is terminated with a null.  If any of
- * the above three line terminators is read, the last character of the
- * string will be a linefeed and the string will be terminated with a
- * null character.
- * Parameters: the socket descriptor
- *             the buffer to save the data in
- *             the size of the buffer
- * Returns: the number of bytes stored (excluding null) */
-/**********************************************************************/
-static int get_line(int sock, char *buf, int size)
-{
-    int i = 0;
-    char c = '\0';
-    int n;
-
-    while ((i < size - 1) && (c != '\n'))
-    {
-        n = recv(sock, &c, 1, 0);
-        /* DEBUG printf("%02X\n", c); */
-        if (n > 0)
-        {
-            if (c == '\r')
-            {
-                n = recv(sock, &c, 1, MSG_PEEK);
-                /* DEBUG printf("%02X\n", c); */
-                if ((n > 0) && (c == '\n'))
-                    recv(sock, &c, 1, 0);
-                else
-                    c = '\n';
-            }
-            buf[i] = c;
-            i++;
-        }
-        else
-            c = '\n';
-    }
-    buf[i] = '\0';
-
-    return(i);
-}
-
 //Start up the server.
 int startup(u_short port) {
     int httpd = 0;
@@ -86,7 +41,7 @@ int startup(u_short port) {
     return httpd;
 }
 
-/*Accept request.*/
+/* Accept request.*/
 void accept_request(void *arg) {
     int client = (intptr_t) arg;
     size_t chars_num;
