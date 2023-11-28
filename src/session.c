@@ -60,15 +60,14 @@ bool db_send(const char *msg) {
     if (msg == NULL)
         return false;
     size_t size ;
-    ssize_t r = 0, s = 0, session_size = 0;
+    ssize_t r = -1, s = 0, session_size = 0;
     Session *session;
     char buff[3];
     size = strlen(msg) + 1; 
     session = get_session(); /*Get session*/
 
     /* Check if client close connection, if recv return zero which means client close conneciton. */
-    r = recv(session->client, buff, 3, MSG_PEEK | MSG_DONTWAIT);
-    if (r != 0 && (s = send(session->client, &size, sizeof(size), 0)) > 0) {
+    if (session != NULL && (r = recv(session->client, buff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 && (s = send(session->client, &size, sizeof(size), 0)) > 0) {
         if (session != NULL && (session_size = send(session->client, msg, size, 0)) > 0) {
             session->volumn += session_size;
             session->frequency++;
