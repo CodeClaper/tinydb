@@ -59,20 +59,16 @@ bool send_get(int fd) {
  */
 void db_receive(int server_fd) {
     while(1) {
-        size_t len;
-        if (recv(server_fd, &len, sizeof(len), 0) < 0)
-            break;
-        if (len > MAX_BUFF_SIZE) {
-            fprintf(stderr, "Socket buffer is too large\n");
-            break;
+        ssize_t r;
+        char buff[BUFF_SIZE];
+        if ((r = recv(server_fd, buff, BUFF_SIZE, 0)) > 0) {
+            if (strcmp(buff, "OVER") == 0) 
+                break;
+            else
+                printf("%s", buff);
         }
-        // send_get(server_fd);
-        char buff[len + 1];
-        if (recv(server_fd, buff, len, 0) < 0)
+        else
             break;
-        if (strcasecmp("OVER", buff) == 0)
-            break;
-        printf("%s", buff);
     }
 }
 
@@ -81,7 +77,7 @@ static struct sockaddr_in *gen_address(int argc, char *argv[]) {
     int opt;
     char *optString = "h:p:";
     struct sockaddr_in *address = malloc(sizeof(struct sockaddr_in));
-    address->sin_family = AF_INET;
+    address->sin_family = PF_INET;
     while((opt = getopt(argc, argv, optString)) != -1) {
         switch(opt) {
             case 'h': {
@@ -119,7 +115,7 @@ int main(int argc, char* argv[]) {
     }
     int sock_fd;
     pthread_t new_thread;
-    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    sock_fd = socket(PF_INET, SOCK_STREAM, 0);
     if (sock_fd == -1) {
         fprintf(stderr, "Create socket fail.");
         exit(1);
