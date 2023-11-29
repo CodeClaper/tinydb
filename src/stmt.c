@@ -109,8 +109,8 @@ ExecuteResult statement(char *sql) {
     }
     free_statment(statement);
     end = clock();
-    char buff[1024];
-    sprintf(buff, "Duration: %lfs\n", (double)(end - start) / CLOCKS_PER_SEC);
-    db_send(buff);
+    /*char buff[1024];*/
+    /*sprintf(buff, "Duration: %lfs\n", (double)(end - start) / CLOCKS_PER_SEC);*/
+    /*db_send(buff);*/
     return result;
 }

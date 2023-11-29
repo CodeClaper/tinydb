@@ -54,7 +54,6 @@ Statement *parse(char *input) {
         return NULL;
     /* Remove space characters, includes '\f', '\n', '\r', '\t', '\v'*/
     trim(input);
-    printf("input sql:  %s\n", input);
     size_t size = strlen(input);
     char buff[size + 1];
     sprintf(buff, "%s%c", input, '\n');

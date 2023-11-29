@@ -62,21 +62,26 @@ bool db_send(const char *msg) {
     size_t size ;
     ssize_t r = -1, s = 0;
     Session *session;
-    char buff[3];
-    size = strlen(msg) + sizeof(char); 
+    char rbuff[3], sbuff[BUFF_SIZE];
+
+    /* Initialize send buffer. */
+    memset(sbuff, 0, BUFF_SIZE);
+    
+    /* Assignment send buffer. */
+    sprintf(sbuff, "%s", msg);
 
     /*Get session*/
     session = get_session(); 
 
     /* Check if client close connection, if recv get zero which means client has closed conneciton. */
-    if (session != NULL && (r = recv(session->client, buff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 && (s = send(session->client, msg, BUFF_SIZE, 0)) > 0) {
+    if (session != NULL && (r = recv(session->client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 && (s = send(session->client, sbuff, BUFF_SIZE, 0)) > 0) {
         session->volumn += s;
         session->frequency++;
         return true;
     }
 
     /* If detect that client has closed conneciton, destroy the session. */
-    if (r == 0) 
+    if (r == 0 || s < 0) 
         destroy_session(); 
     return false;
 }
