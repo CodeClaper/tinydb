@@ -5,9 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include "mem.h"
 #include "data.h"
 #include "defs.h"
+#include "y.tab.h"
 
 /**
 * Memory Manager Unit
@@ -37,6 +39,7 @@
 
 static MHashTable *mtable;
 static uint32_t max_value;
+static pthread_mutex_t mutex;
 
 static uint32_t hash_code(void *ptr) {
     int a = (uintptr_t)ptr & 0xFFFFFFF;
@@ -64,12 +67,15 @@ static uint32_t get_index(void *ptr, uint32_t capacity) {
     return hash_code(ptr) % capacity;
 }
 
-/* initialise mem */
+/* Initialise mem */
 void init_mem() {
+    /* Initialise table. */
     mtable = sys_malloc(sizeof(MHashTable));
     mtable->capacity = MININUM_CAPACITY; 
     mtable->num = 0;
     mtable->entry_list = sys_malloc(sizeof(void *) * mtable->capacity);
+    /* Initialise tmux. */
+    pthread_mutex_init(&mutex, NULL);
 }
 
 /* Expand capacity of HashTable. */
@@ -161,8 +167,10 @@ void shrink_capacity() {
     free(old_list);
 }
 
-/* insert new entry */
+/* Insert new entry */
 void insert_entry(void *ptr, MEntry *entry) {
+    /* Lock */
+    pthread_mutex_lock(&mutex);
     uint32_t index, treshold;
     index = get_index(ptr, mtable->capacity);
     MEntry *current = mtable->entry_list[index];
@@ -178,6 +186,8 @@ void insert_entry(void *ptr, MEntry *entry) {
     treshold = mtable->capacity * DEFAULT_LOAD_FACTOR;
     if (mtable->num > treshold)
         expand_capacity();
+    /* Unlock */
+    pthread_mutex_unlock(&mutex);
 }
 
 /* free entry */
@@ -191,6 +201,8 @@ static void free_entry(MEntry *entry, bool alread_free_ptr) {
 
 /* remove entry */
 void remove_entry(void *ptr, bool alread_free_ptr) {
+    /* Lock */
+    pthread_mutex_lock(&mutex);
     uint32_t index, treshold;
     MEntry *first, *prev, *current;
     index = get_index(ptr, mtable->capacity);
@@ -218,6 +230,8 @@ void remove_entry(void *ptr, bool alread_free_ptr) {
     treshold = (mtable->capacity >> 1) * DEFAULT_LOAD_FACTOR;
     if (mtable->num < treshold)
         shrink_capacity();
+    /* UnLock */
+    pthread_mutex_unlock(&mutex);
 }
 
 /* search entry. */
