@@ -59,20 +59,19 @@ static void print_show_table(TableList *table_list) {
 /*Execute show statement.*/
 ExecuteResult exec_show_statement(ShowNode *show_node) {
     switch(show_node->type) {
-        case SHOW_TABLES:
-            {
-                TableList *table_list = gen_table_list();
-                print_show_table(table_list);
-                free_table_list(table_list);
-                break;
-            }
-        case SHOW_MEMORY:
-            {
-                char buff[BUFF_SIZE];
-                sprintf(buff, "Db used memeory: %ld\n", db_memesize()); 
-                db_send(buff);
-                break;
-            }
+        case SHOW_TABLES: {
+            TableList *table_list = gen_table_list();
+            print_show_table(table_list);
+            free_table_list(table_list);
+            break;
+        }
+        case SHOW_MEMORY: {
+            char buff[BUFF_SIZE];
+            sprintf(buff, "{\"used_memeory\": %ld, \"mtable_capacity\": %d, \"mentry_num\": %d}\n", 
+                    db_memesize(), mtable_capacity(), mentry_num()); 
+            db_send(buff);
+            break;
+        }
     }
     return EXECUTE_SUCCESS;
 }

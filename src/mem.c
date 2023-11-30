@@ -333,23 +333,32 @@ void *db_realloc(void *ptr, size_t size) {
     return ret;
 }
 
-/* database level mememory free. */
+/* Database level mememory free. */
 void db_free(void *ptr) {
     if (ptr)
         unregister_entry(ptr);
 }
 
-/* databese level mememory size. */
+/* Databese level mememory size. */
 size_t db_memesize() {
     size_t total = 0;
     for (uint32_t i = 0; i < mtable->capacity; i++) {
         MEntry *entry = *(mtable->entry_list + i);
         while(entry) {
-            printf("%s\t", entry->data_type_name);
             total += entry->size;
             entry = entry->next;
         }
     }
-    printf("\nTotal %d pointer and %ld byte memory not release, the mhashtabe capacity is %d entry number is %d.\n", mtable->num, total, mtable->capacity, mtable->num);
     return total;
 }
+
+/* Get mtable capacity. */
+uint32_t mtable_capacity() {
+    return mtable->capacity;
+}
+
+/* Get metable used num. */
+uint32_t mentry_num() {
+    return mtable->num;
+}
+

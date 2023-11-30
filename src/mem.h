@@ -1,25 +1,31 @@
 #include "data.h"
 
-// init mem
+/* Initialise mem */
 void init_mem();
 
-// system level mallocate
+/* System level mallocate */
 void *sys_malloc(size_t size);
 
-// system level reallocate
+/* System level reallocate. */
 void *sys_realloc(void *ptr, size_t size);
 
-// database level  mallocate.
+/* Database level mallocate. */
 void *db_malloc(size_t size);
 
-// database level mallocate.
+/* Database level mallocate. */
 void *db_malloc2(size_t size, char *data_type_name);
 
-// database level reallocate
+/* Database level reallocate */
 void *db_realloc(void *ptr, size_t size);
 
-// database level mememory free.
+/* Database level mememory free. */
 void db_free(void *ptr);
 
-// databese level mememory size.
+/* Databese level mememory size. */
 size_t db_memesize();
+
+/* Get mtable capacity. */
+uint32_t mtable_capacity();
+
+/* Get metable used num. */
+uint32_t mentry_num();
