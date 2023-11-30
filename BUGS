@@ -1,0 +1,5 @@
+1. Batch delete cause system crash.
+2. Session remove old list cause double free.
+-- Maybe caused by concurrency. I have added the mutux lock at meme and it works well. 
+-- But it may impact performance whic is future consideration.
+3. Concurrent DML operation cause system crash, lacking Concurrent lock.
