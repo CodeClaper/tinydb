@@ -1,0 +1,7 @@
+1. Batch delete (more than 1000 rows) may cause system crash.
+2. Session remove old list cause double free.
+-- Maybe caused by concurrency. I have added the mutux lock at meme and it works well. 
+-- But it may impact performance which is future consideration.
+3. Concurrent DML operation cause system crash, lacking Concurrent lock.
+4. Not free Memory after insert operation.
+5. Insert into an empty table,  when key is 0, throw duplicate key error.
