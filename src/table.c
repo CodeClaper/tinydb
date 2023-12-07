@@ -91,7 +91,7 @@ Table *open_table(char *table_name) {
           return NULL;
     table->pager = pager;
     table->root_page_num = 0; // Define root page is first page.
-    if (pager->num_page == 0) {
+    if (pager->size == 0) {
         // New db file and initialize page 0 as leaf node.
         void *root_node = get_page(pager, 0);
         initial_leaf_node(root_node, true);

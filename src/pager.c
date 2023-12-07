@@ -21,7 +21,7 @@ Pager *open_pager(char *table_file_path){
     off_t file_length = lseek(file_descriptor, 0, SEEK_END);
     pager->file_descriptor = file_descriptor;
     pager->file_length = file_length;
-    pager->num_page = (file_length / PAGE_SIZE);
+    pager->size = (file_length / PAGE_SIZE);
 
     if (file_length % PAGE_SIZE != 0) {
         fatal("Db file is not a whole number pages");
@@ -48,8 +48,8 @@ void *get_page(Pager *pager, int page_num) {
         }
         pager->pages[page_num] = page;
     }
-    if (page_num >= pager->num_page) {
-        pager->num_page++;
+    if (page_num >= pager->size) {
+        pager->size++;
     }
     return pager->pages[page_num];
 }

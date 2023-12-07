@@ -111,13 +111,13 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
                 /* In the case, key value change, update = delete + re-insert. */
                 /* Delete the old one. */
                 Cursor *old_cursor = define_cursor(table, old_key);
-                clean_obsolute_cell(old_cursor); 
+                delete_leaf_node_cell(old_cursor); 
                 free_value(old_key, meta_column->column_type);
 
                 /* Re-insert the updated one. */
                 Cursor *new_cursor = define_cursor(table, new_key);
                 row->key = new_key;
-                insert_leaf_node(new_cursor, row); 
+                insert_leaf_node_cell(new_cursor, row); 
             }
         } else { 
             /* When it is non-key column, just update the cell value. */

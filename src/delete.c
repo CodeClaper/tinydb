@@ -29,15 +29,15 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
     return query_param;
 }
 
-
 /* Delete row */
 static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     Cursor *cursor = define_cursor(table, row->key);
-    clean_obsolute_cell(cursor);
+    delete_leaf_node_cell(cursor);
     select_result->row_size++;
+    printf("Delete row key %d Successfully \n",  *(uint32_t *)row->key);
 }
 
-/*Execute delete statment.*/
+/* Execute delete statment.*/
 ExecuteResult exec_delete_statement(DeleteNode *delete_node) { 
     char buff[BUFF_SIZE];
     Table *table = open_table(delete_node->table_name);

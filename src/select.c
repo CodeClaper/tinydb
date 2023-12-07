@@ -52,8 +52,7 @@ static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_
     switch (select_items_node->type) {
         case SELECT_ALL:
             return table->meta_table->meta_column[index];
-        case SELECT_COLUMNS: 
-        {
+        case SELECT_COLUMNS: {
             ColumnNode *column_node = *(select_items_node->column_set_node->columns + index);
             return get_meta_column_by_name(table->meta_table, column_node->column_name);
         }
@@ -193,6 +192,7 @@ static bool satisfy_leaf_condition_node(void *destinct, ConditionNode *condition
     uint32_t off_set = 0;
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
+        /* Define the column. */
         if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
             void *value = destinct + off_set;
             void *target = get_value_from_value_item_node(condition_node->value, meta_column->column_type);
@@ -249,7 +249,8 @@ static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNo
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node, meta_table);
     void *target_key = get_value_from_value_item_node(condition_node->value, cond_meta_column->column_type);
 
-    /* Skipped the internal node must satisfy tow condition, key column and not satisfied internal node condition. */
+    /* Skipped the internal node must satisfy tow factors: 
+     * key column and not satisfied internal node condition. */
     return !cond_meta_column->is_primary || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
 
 }
@@ -551,6 +552,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
 /* Select through leaf node. */
 static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table, ROW_HANDLER row_handler, void *arg) {
 
+    /* Get cell number, key length and value lenght. */
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
     uint32_t value_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
@@ -584,11 +586,11 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 /* Select through internal node. */
 static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table, ROW_HANDLER row_handler, void *arg) {
 
+    /* Get keys number, key length. */
     uint32_t keys_num = get_internal_node_keys_num(internal_node);
     uint32_t key_len = calc_primary_key_length(table);
-    ConditionNode *condition_node = query_param->condition_node;
 
-    /* Loop for each interanl node cell. */
+    /* Loop for each interanl node cell to check if satisfy condition. */
     for (int32_t i = 0; i < keys_num; i++) {
 
         /* Check if index column, use index to avoid full text scanning. */
@@ -596,7 +598,9 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
             /* Current internal node cell key as max key, previous cell key as min key */
             void *max_key = get_internal_node_keys(internal_node, i, key_len); 
             void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);
-            if (!include_internal_node(min_key, max_key, condition_node , table->meta_table))
+
+            ConditionNode *condition_node = query_param->condition_node;
+            if (!include_internal_node(min_key, max_key, condition_node, table->meta_table))
                 continue;
         }
 
@@ -615,6 +619,8 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
 
     /* Don`t forget the right child. */
     uint32_t right_child_page_num = get_internal_node_right_child(internal_node);
+    /* Zero means there is no page. */
+    if (right_child_page_num == 0) return;
     void *right_child = get_page(table->pager, right_child_page_num);
     switch (get_node_type(right_child)) {
         case LEAF_NODE:

@@ -55,11 +55,11 @@ uint32_t get_root_node_meta_column_size();
 // initialize leaf node
 void initial_leaf_node(void *leaf_node, bool is_root);
 
-// insert a new leaf node
-void insert_leaf_node(Cursor *cursor, Row *row);
+/* Insert a new leaf node cell. */
+void insert_leaf_node_cell(Cursor *cursor, Row *row);
 
-/* When cell obsolute, cover the old cell space, make space align. */
-void clean_obsolute_cell(Cursor *obs_cursor);
+/* Delete leaf node. */
+void delete_leaf_node_cell(Cursor *obs_cursor);
 
 // deserialize meta column
 MetaColumn *deserialize_meta_column(void *destination);

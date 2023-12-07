@@ -185,7 +185,7 @@ ExecuteResult exec_insert_statement(InsertNode *insert_node) {
     }
 
     /* Insert into leaf node. */
-    insert_leaf_node(cursor, row);
+    insert_leaf_node_cell(cursor, row);
 
     /* Free unuesed memeory */
     free_cursor(cursor);

@@ -1,4 +1,6 @@
 1. Batch delete (more than 1000 rows) may cause system crash.
+-- The main reason is that the system lacking processing about large batch data deleting.
+-- To be precise, only support one page (root node) data deleting and lack extention.
 2. Session remove old list cause double free.
 -- Maybe caused by concurrency. I have added the mutux lock at meme and it works well. 
 -- But it may impact performance which is future consideration.
