@@ -102,57 +102,58 @@ Table *open_table(char *table_name) {
     return table;
 }
 
-static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node,
-                                       uint32_t page_num, void *key) {
-  Cursor *cursor = db_malloc2(sizeof(Cursor), "Cursor");
-  MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-  uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
-  uint32_t row_len = calc_table_row_length(table);
-  uint32_t key_len = calc_primary_key_length(table);
-  cursor->table = table;
-  cursor->page_num = page_num;
-  cursor->cell_num = get_leaf_node_cell_index(leaf_node, key, cell_num, key_len, row_len, primary_meta_column->column_type);
-  return cursor;
+/* Define cursor when meet leaf node. */
+static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t page_num, void *key) {
+    Cursor *cursor = db_malloc2(sizeof(Cursor), "Cursor");
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
+    uint32_t row_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
+    cursor->table = table;
+    cursor->page_num = page_num;
+    cursor->cell_num = get_leaf_node_cell_index(leaf_node, key, cell_num, key_len, row_len, primary_meta_column->column_type);
+    return cursor;
 }
 
+/* Define cursor when meet internal node. */
 static Cursor *deine_cursor_internal_node(Table *table, void *internal_node, void *key) {
-  uint keys_num = get_internal_node_keys_num(internal_node);
-  uint32_t key_len = calc_primary_key_length(table);
-  MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-  uint child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
-  void *child_node = get_page(table->pager, child_page_num);
-  if (get_node_type(child_node) == LEAF_NODE) {
-    return define_cursor_leaf_node(table, child_node, child_page_num, key);
-  } else {
-    return deine_cursor_internal_node(table, child_node, key);
-  }
+    uint keys_num = get_internal_node_keys_num(internal_node);
+    uint32_t key_len = calc_primary_key_length(table);
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
+    void *child_node = get_page(table->pager, child_page_num);
+    
+    switch(get_node_type(child_node)) {
+        case LEAF_NODE:
+            return define_cursor_leaf_node(table, child_node, child_page_num, key);
+        case INTERNAL_NODE:
+            return deine_cursor_internal_node(table, child_node, key);
+    }
 }
 
-// Deine cursor throngth table and key
-// Cursor can help us quickly find table, page and row.
+/* Define cursor. */
 Cursor *define_cursor(Table *table, void *key) {
-  void *root_node = get_page(table->pager, table->root_page_num);
-  if (get_node_type(root_node) == LEAF_NODE) {
-    // it means only root node as leaf node
-    return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
-  } else {
-    // it means root node as internal node
-    return deine_cursor_internal_node(table, root_node, key);
-  }
+    void *root_node = get_page(table->pager, table->root_page_num);
+    switch(get_node_type(root_node)) {
+        case LEAF_NODE:
+            return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
+        case INTERNAL_NODE:
+            return deine_cursor_internal_node(table, root_node, key);
+    }
 }
 
-// Delete an existed table.
+/* Delete an existed table. */
 ExecuteResult drop_table(char *table_name) {
-  char *file_path = table_file_path(table_name);
-  if (!table_file_exist(file_path)) {
-        fprintf(stderr, "Table '%s' not exists. \n", table_name);
-        return EXECUTE_TABLE_DROP_FAIL;
-  }
-  if (remove(file_path) == 0) {
-        printf("Table '%s' deleted success.\n", table_name);
-        return EXECUTE_SUCCESS;
-  }
-  db_free(file_path);
-  fprintf(stderr, "Table '%s' deleted fail, error : %d", table_name, errno);
-  return EXECUTE_TABLE_DROP_FAIL;
+    char *file_path = table_file_path(table_name);
+    if (!table_file_exist(file_path)) {
+          fprintf(stderr, "Table '%s' not exists. \n", table_name);
+          return EXECUTE_TABLE_DROP_FAIL;
+    }
+    if (remove(file_path) == 0) {
+          printf("Table '%s' deleted success.\n", table_name);
+          return EXECUTE_SUCCESS;
+    }
+    db_free(file_path);
+    fprintf(stderr, "Table '%s' deleted fail, error : %d", table_name, errno);
+    return EXECUTE_TABLE_DROP_FAIL;
 }

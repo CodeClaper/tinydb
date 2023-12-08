@@ -587,17 +587,25 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table, ROW_HANDLER row_handler, void *arg) {
 
     /* Get keys number, key length. */
-    uint32_t keys_num = get_internal_node_keys_num(internal_node);
-    uint32_t key_len = calc_primary_key_length(table);
+    uint32_t keys_num, key_len;
+    keys_num = get_internal_node_keys_num(internal_node);
+    key_len = calc_primary_key_length(table);
+
+    /* It`s necessary to use internal node snapshot, beacuse when traversing cells, 
+     * update or delete operation will change the data structure of internal node,
+     * which may causes bug.
+     * */
+    void *internal_node_snapshot = copy_block(internal_node, PAGE_SIZE);
 
     /* Loop for each interanl node cell to check if satisfy condition. */
-    for (int32_t i = 0; i < keys_num; i++) {
+    int32_t i;
+    for (i = 0; i < keys_num; i++) {
 
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key */
-            void *max_key = get_internal_node_keys(internal_node, i, key_len); 
-            void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node, i - 1, key_len);
+            void *max_key = get_internal_node_keys(internal_node_snapshot, i, key_len); 
+            void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node_snapshot, i - 1, key_len);
 
             ConditionNode *condition_node = query_param->condition_node;
             if (!include_internal_node(min_key, max_key, condition_node, table->meta_table))
@@ -605,7 +613,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
         }
 
         /* Check other non-key column */
-        uint32_t page_num = get_internal_node_child(internal_node, i, key_len);
+        uint32_t page_num = get_internal_node_child(internal_node_snapshot, i, key_len);
         void *node = get_page(table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
@@ -618,7 +626,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     }
 
     /* Don`t forget the right child. */
-    uint32_t right_child_page_num = get_internal_node_right_child(internal_node);
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node_snapshot);
     /* Zero means there is no page. */
     if (right_child_page_num == 0) return;
     void *right_child = get_page(table->pager, right_child_page_num);

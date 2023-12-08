@@ -55,6 +55,9 @@ ExecuteResult exec_delete_statement(DeleteNode *delete_node) {
     SelectResult *select_result = new_select_result(delete_node->table_name);
     query_with_condition(query_param, select_result, delete_row, NULL);
 
+    /* Root fall back. */
+    fall_back_root_node(table);
+
     /* Send out deleted result. */
     sprintf(buff, "Successfully deleted %d row data.\n", select_result->row_size);
     db_send(buff);

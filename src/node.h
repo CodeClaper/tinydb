@@ -61,6 +61,9 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row);
 /* Delete leaf node. */
 void delete_leaf_node_cell(Cursor *obs_cursor);
 
+/* Fall back. */
+void fall_back_root_node(Table *table);
+
 // deserialize meta column
 MetaColumn *deserialize_meta_column(void *destination);
 
