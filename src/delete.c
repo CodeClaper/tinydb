@@ -34,7 +34,7 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table, void
     Cursor *cursor = define_cursor(table, row->key);
     delete_leaf_node_cell(cursor);
     select_result->row_size++;
-    printf("Delete row key %d Successfully \n",  *(uint32_t *)row->key);
+    printf("Delete row key %s Successfully \n", (char *)row->key);
 }
 
 /* Execute delete statment.*/
@@ -56,7 +56,7 @@ ExecuteResult exec_delete_statement(DeleteNode *delete_node) {
     query_with_condition(query_param, select_result, delete_row, NULL);
 
     /* Root fall back. */
-    fall_back_root_node(table);
+    root_fall_back_root_node(table);
 
     /* Send out deleted result. */
     sprintf(buff, "Successfully deleted %d row data.\n", select_result->row_size);

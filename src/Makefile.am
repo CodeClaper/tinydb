@@ -1,10 +1,9 @@
 BUILT_SOURCES = data.h
-CFLAGS = -w
 AM_YFLAGS = -d
 if DEBUG
-AM_CFLAGS = -g3 -O0
+AM_CFLAGS = -g -O0 -w
 else
-AM_CFLAGS = -O2
+AM_CFLAGS = -O2 -w
 endif
 LDADD = -lpthread
 bin_PROGRAMS = tinydb \

@@ -55,14 +55,17 @@ uint32_t get_root_node_meta_column_size();
 // initialize leaf node
 void initial_leaf_node(void *leaf_node, bool is_root);
 
+/* Insert new internal node cell. */
+void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_child_page_num);
+
 /* Insert a new leaf node cell. */
 void insert_leaf_node_cell(Cursor *cursor, Row *row);
 
 /* Delete leaf node. */
 void delete_leaf_node_cell(Cursor *obs_cursor);
 
-/* Fall back. */
-void fall_back_root_node(Table *table);
+/* Root fall back. */
+void root_fall_back_root_node(Table *table);
 
 // deserialize meta column
 MetaColumn *deserialize_meta_column(void *destination);
