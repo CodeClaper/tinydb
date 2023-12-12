@@ -31,6 +31,18 @@
 * - Usually, root node is page 0.
  */
 
+/* If obsolute node. */
+bool is_obsolute_node(void *node) {
+    uint8_t value  = *(uint8_t *)(node + IS_OBSOLUTE_OFFSET);
+    return (bool) value;
+}
+
+/* Set obsolute flag. */
+void set_obsolute_node(void *node, bool flag) {
+    uint8_t value = (uint8_t) flag;
+    *(uint8_t *)(node + IS_OBSOLUTE_OFFSET) = value;
+}
+
 /* Get node type */
 NodeType get_node_type(void *node) {
     uint8_t value = *(uint8_t *)(node + NODE_TYPE_OFFSET);
@@ -46,7 +58,7 @@ void set_node_type(void *node, NodeType node_type) {
 /* If root node */
 static bool is_root_node(void *node) {
     uint8_t value  = *(uint8_t *)(node + IS_ROOT_OFFSET);
-    return (NodeType) value;
+    return (bool) value;
 }
 
 /* Set if root node */
@@ -194,8 +206,8 @@ void set_internal_node_right_child(void *node, uint32_t right_child_page_num) {
     }
 }
 
-/* Get keys number in the node by index. */
-void *get_internal_node_keys(void *node, uint32_t index, uint32_t key_len) {
+/* Get key in the node by index. */
+void *get_internal_node_key(void *node, uint32_t index, uint32_t key_len) {
     uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
@@ -205,8 +217,8 @@ void *get_internal_node_keys(void *node, uint32_t index, uint32_t key_len) {
     }
 }
 
-/* Set internal node keys num */
-void set_internal_node_keys(void *node, uint32_t index, void *key, uint32_t key_len) {
+/* Set internal node key by index */
+void set_internal_node_key(void *node, uint32_t index, void *key, uint32_t key_len) {
     uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
@@ -257,7 +269,7 @@ uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, u
     uint32_t max_index = keys_num;
     while(min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
-        void* index_key = get_internal_node_keys(node, index, key_len);
+        void* index_key = get_internal_node_key(node, index, key_len);
         if (greater_equal(index_key, key, key_data_type)) {
             max_index = index;
         } else {
@@ -275,7 +287,7 @@ uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t k
     uint32_t max_index = keys_num;
     while(min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
-        void *index_key = get_internal_node_keys(node, index, key_len);
+        void *index_key = get_internal_node_key(node, index, key_len);
         if (greater_equal(index_key, key, key_data_type)) {
             max_index = index;
         } else {
@@ -341,7 +353,7 @@ static void *get_absolute_max_key(Table *table, void *node, uint32_t key_len, ui
 void *get_max_key(void * node, uint32_t key_len, uint32_t value_len) {
     switch(get_node_type(node)) {
         case INTERNAL_NODE:
-           return get_internal_node_keys(node,  get_internal_node_keys_num(node) - 1, key_len);
+           return get_internal_node_key(node,  get_internal_node_keys_num(node) - 1, key_len);
         case LEAF_NODE:
             return get_leaf_node_cell_key(node, get_leaf_node_cell_num(node) - 1,  key_len, value_len);
     }
@@ -365,13 +377,13 @@ void initial_internal_node(void *internal_node, bool is_root) {
 static void update_internal_node_key(void *internal_node, void *old_key, void *new_key, uint32_t key_len, DataType key_data_type) {
     uint32_t keys_num = get_internal_node_keys_num(internal_node);  
     /* Get max key in internal node cell. */
-    void *max_key = get_internal_node_keys(internal_node, keys_num - 1, key_len);
+    void *max_key = get_internal_node_key(internal_node, keys_num - 1, key_len);
     
     /* If old key greater than the max key, it means it exist in right child node. No need to change cells key. 
      * Else, it means the key in the cells, need to replace with new one. */
     if (keys_num > 0 && !greater(old_key, max_key, key_data_type)) {
         uint32_t key_index = get_internal_node_key_index(internal_node, old_key, keys_num, key_len, key_data_type);
-        set_internal_node_keys(internal_node, key_index, new_key, key_len);
+        set_internal_node_key(internal_node, key_index, new_key, key_len);
     }
 }
 
@@ -484,7 +496,7 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num, ui
 
     /* Register the new (leaf) leaf node to root. */
     void *max_key = get_absolute_max_key(table, left_child, key_len, value_len);
-    set_internal_node_keys(root, 0, max_key, key_len);
+    set_internal_node_key(root, 0, max_key, key_len);
     set_internal_node_child(root, 0, next_unused_page_num, key_len);
     set_internal_node_right_child(root, right_child_page_num);
 
@@ -548,7 +560,7 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
         uint32_t index = i % LEFT_SPLIT_COUNT;
 
         if (i == new_child_max_key_index) {
-            set_internal_node_keys(destination_node, index, new_child_max_key, key_len); 
+            set_internal_node_key(destination_node, index, new_child_max_key, key_len); 
             set_internal_node_child(destination_node, index, new_child_page_num, key_len);
         } else if (i > new_child_max_key_index) {
             /* Right cells make cell space. */
@@ -621,7 +633,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
         if (greater_equal(new_child_max_key, right_child_max_key, primary_key_meta_column->column_type)) {
             /* Replace old right child */
             set_internal_node_child(internal_node, keys_num, right_child_page_num, key_len);
-            set_internal_node_keys(internal_node, keys_num, right_child_max_key, key_len);
+            set_internal_node_key(internal_node, keys_num, right_child_max_key, key_len);
             set_internal_node_right_child(internal_node, new_child_page_num);
         } else {
             
@@ -631,7 +643,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
                 uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
                 memcpy(get_internal_node_cell(internal_node, i, key_len), get_internal_node_cell(internal_node, i - 1, key_len), cell_len); 
             } 
-            set_internal_node_keys(internal_node, new_child_max_key_index, new_child_max_key, key_len);
+            set_internal_node_key(internal_node, new_child_max_key_index, new_child_max_key, key_len);
             set_internal_node_child(internal_node,  new_child_max_key_index, new_child_page_num, key_len);
         }
         /* Increase keys number. */
@@ -801,7 +813,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
     key_index = get_internal_node_key_index(internal_node, key, key_num, key_len, key_data_type);
 
     /* Get max key in internal node cell. */
-    void *max_key = key_num == 0 ? NULL : get_internal_node_keys(internal_node, key_num - 1, key_len);
+    void *max_key = key_num == 0 ? NULL : get_internal_node_key(internal_node, key_num - 1, key_len);
 
     /* If the key greater than max key, it means it is in right child node. */
     if (greater(key, max_key, key_data_type)) {
@@ -841,7 +853,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
                  * If yes, more complex, we need to check if right child node exists, 
                  * If not, need to delete the cell in parent internal node. */
                 if (key_num != 1) {
-                    void *previous_key = get_internal_node_keys(internal_node, key_index - 1, key_len);
+                    void *previous_key = get_internal_node_key(internal_node, key_index - 1, key_len);
                     update_internal_node_key(parent_internal_node, key, previous_key, key_len, key_data_type);
                     flush_page(table->pager, parent_page);
                 } else {

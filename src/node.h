@@ -1,6 +1,12 @@
 #include "data.h"
 #include <stdint.h>
 
+/* If obsolute node. */
+bool is_obsolute_node(void *node);
+
+/* Set obsolute flag. */
+void set_obsolute_node(void *node, bool flag);
+
 // get node type
 NodeType get_node_type(void *node);
 
@@ -26,7 +32,7 @@ uint32_t get_internal_node_keys_num(void *node);
 uint32_t get_internal_node_right_child(void *node);
 
 // get keys number in the node by index
-void* get_internal_node_keys(void *node, uint32_t index, uint32_t key_len);
+void* get_internal_node_key(void *node, uint32_t index, uint32_t key_len);
 
 // get child value in the node by index
 uint32_t get_internal_node_child(void *node, uint32_t index, uint32_t key_len);

@@ -54,8 +54,7 @@ void *get_page(Pager *pager, int page_num) {
     return pager->pages[page_num];
 }
 
-
-// flush page to disk
+/* Flush page to disk. */
 void flush_page(Pager *pager, uint32_t page_num) {
     if (pager->pages[page_num] == NULL) {
         fatal("Tried to flush null page to disk");
@@ -69,4 +68,8 @@ void flush_page(Pager *pager, uint32_t page_num) {
     if (write_size == -1) {
         fatald("Try to write page error and errno", errno);        
     }
+}
+
+/* Flush all to disk. */
+void flush(Pager pager) { 
 }

@@ -604,8 +604,8 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key */
-            void *max_key = get_internal_node_keys(internal_node_snapshot, i, key_len); 
-            void *min_key = i == 0 ? NULL : get_internal_node_keys(internal_node_snapshot, i - 1, key_len);
+            void *max_key = get_internal_node_key(internal_node_snapshot, i, key_len); 
+            void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node_snapshot, i - 1, key_len);
 
             ConditionNode *condition_node = query_param->condition_node;
             if (!include_internal_node(min_key, max_key, condition_node, table->meta_table))
