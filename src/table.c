@@ -116,7 +116,7 @@ static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t p
 }
 
 /* Define cursor when meet internal node. */
-static Cursor *deine_cursor_internal_node(Table *table, void *internal_node, void *key) {
+static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
     uint keys_num = get_internal_node_keys_num(internal_node);
     uint32_t key_len = calc_primary_key_length(table);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
@@ -127,7 +127,7 @@ static Cursor *deine_cursor_internal_node(Table *table, void *internal_node, voi
         case LEAF_NODE:
             return define_cursor_leaf_node(table, child_node, child_page_num, key);
         case INTERNAL_NODE:
-            return deine_cursor_internal_node(table, child_node, key);
+            return define_cursor_internal_node(table, child_node, key);
     }
 }
 
@@ -138,7 +138,7 @@ Cursor *define_cursor(Table *table, void *key) {
         case LEAF_NODE:
             return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
         case INTERNAL_NODE:
-            return deine_cursor_internal_node(table, root_node, key);
+            return define_cursor_internal_node(table, root_node, key);
     }
 }
 

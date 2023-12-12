@@ -111,7 +111,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
                 /* In the case, key value change, update = delete + re-insert. */
                 /* Delete the old one. */
                 Cursor *old_cursor = define_cursor(table, old_key);
-                delete_leaf_node_cell(old_cursor); 
+                delete_leaf_node_cell(old_cursor, old_key); 
                 free_value(old_key, meta_column->column_type);
 
                 /* Re-insert the updated one. */

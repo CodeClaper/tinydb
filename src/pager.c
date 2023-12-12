@@ -54,6 +54,7 @@ void *get_page(Pager *pager, int page_num) {
     return pager->pages[page_num];
 }
 
+
 /* Flush page to disk. */
 void flush_page(Pager *pager, uint32_t page_num) {
     if (pager->pages[page_num] == NULL) {

@@ -598,19 +598,19 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     void *internal_node_snapshot = copy_block(internal_node, PAGE_SIZE);
 
     /* Loop for each interanl node cell to check if satisfy condition. */
-    int32_t i;
+    int i;
     for (i = 0; i < keys_num; i++) {
 
         /* Check if index column, use index to avoid full text scanning. */
-        {
-            /* Current internal node cell key as max key, previous cell key as min key */
-            void *max_key = get_internal_node_key(internal_node_snapshot, i, key_len); 
-            void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node_snapshot, i - 1, key_len);
+        /*{*/
+            /*[> Current internal node cell key as max key, previous cell key as min key <]*/
+            /*void *max_key = get_internal_node_key(internal_node_snapshot, i, key_len); */
+            /*void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node_snapshot, i - 1, key_len);*/
 
-            ConditionNode *condition_node = query_param->condition_node;
-            if (!include_internal_node(min_key, max_key, condition_node, table->meta_table))
-                continue;
-        }
+            /*ConditionNode *condition_node = query_param->condition_node;*/
+            /*if (!include_internal_node(min_key, max_key, condition_node, table->meta_table))*/
+                /*continue;*/
+        /*}*/
 
         /* Check other non-key column */
         uint32_t page_num = get_internal_node_child(internal_node_snapshot, i, key_len);

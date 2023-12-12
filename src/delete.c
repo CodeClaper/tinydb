@@ -32,7 +32,7 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
 /* Delete row */
 static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     Cursor *cursor = define_cursor(table, row->key);
-    delete_leaf_node_cell(cursor);
+    delete_leaf_node_cell(cursor, row->key);
     select_result->row_size++;
     printf("Delete row key %s Successfully \n", (char *)row->key);
 }

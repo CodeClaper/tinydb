@@ -68,7 +68,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
 void insert_leaf_node_cell(Cursor *cursor, Row *row);
 
 /* Delete leaf node. */
-void delete_leaf_node_cell(Cursor *obs_cursor);
+void delete_leaf_node_cell(Cursor *obs_cursor, void *key);
 
 /* Root fall back. */
 void root_fall_back_root_node(Table *table);
