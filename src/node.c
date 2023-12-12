@@ -43,6 +43,27 @@ void set_obsolute_node(void *node, bool flag) {
     *(uint8_t *)(node + IS_OBSOLUTE_OFFSET) = value;
 }
 
+/* Make node obsolute. */
+static void make_obsolute_node(void *node) {
+    memset(node, 0, PAGE_SIZE);
+    set_obsolute_node(node, true);
+}
+
+/* Get next avaliable page num. 
+ * If page is obsolute, recycle to use it,
+ * If there is no obsolute page, return new page. */
+static uint32_t next_avaliable_page_num(Pager *pager) {
+    int i;
+    for (i = 0; i < pager->size; i++) {
+        if (is_obsolute_node(pager->pages[i])) {
+            set_obsolute_node(pager->pages[i], false);
+            printf("Page [%d] is obsolute and recycle to use. \n", i);
+            return i;
+        }
+    }
+    return pager->size;
+}
+
 /* Get node type */
 NodeType get_node_type(void *node) {
     uint8_t value = *(uint8_t *)(node + NODE_TYPE_OFFSET);
@@ -481,7 +502,7 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num, ui
 
     /* Notice that current next unused page num is not right child page num. 
      * The pager size has increased. */
-    uint32_t next_unused_page_num = table->pager->size;
+    uint32_t next_unused_page_num = next_avaliable_page_num(table->pager);
 
     /* Keep old root, generate a new leaf (or internal) node, 
      * and copy old root data to the new one. 
@@ -533,7 +554,7 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     
     /* Get new internal node. */
-    next_unused_page_num = table->pager->size;
+    next_unused_page_num = next_avaliable_page_num(table->pager);
     void *new_internal_node = get_page(table->pager, next_unused_page_num);
     initial_internal_node(new_internal_node, false);
     set_parent_pointer(new_internal_node, get_parent_pointer(old_internal_node));
@@ -684,7 +705,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     void *old_max_key = get_max_key(old_node, key_len, value_len);
 
     /* Page num start with zero, so the page size is the next page num. */
-    uint32_t next_unused_page_num = cursor->table->pager->size;
+    uint32_t next_unused_page_num = next_avaliable_page_num(cursor->table->pager);
 
     /* Get new leaf node, if not exists, pager will generate a new one. */
     void *new_node = get_page(cursor->table->pager, next_unused_page_num);
@@ -848,7 +869,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
             set_internal_node_right_child(internal_node, max_key_page_num);
             memset(get_internal_node_cell(internal_node, key_num - 1, key_len), 0, cell_len);
             /* Decrease cell number. */
-            set_internal_node_keys_num(internal_node, key_num - 1);
+            set_internal_node_keys_num(internal_node, --key_num);
             /* Update key.*/
             update_internal_node_key(table, internal_node, old_max_key, new_max_key, key_len, value_len, key_data_type);
         }
@@ -889,7 +910,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
             /* Make last one NULL. */
             memset(get_internal_node_cell(internal_node, key_index, key_len), 0, cell_len);
             /* Decrease cell number. */
-            set_internal_node_keys_num(internal_node, key_num - 1);
+            set_internal_node_keys_num(internal_node, --key_num);
         } else {
 
             /* Move right cell forward to cover the obsolute cell sapce. 
@@ -901,9 +922,14 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
                     memset(get_internal_node_cell(internal_node, i, key_len), 0, cell_len);
             }
             /* Decrease cell number. */
-            set_internal_node_keys_num(internal_node, key_num - 1);
+            set_internal_node_keys_num(internal_node, --key_num);
         }
     }
+    
+    /* If there is no cells, no right child and not a root node, ok, make it obsolute. */
+    if (!is_root_node(internal_node) && key_num == 0 && get_internal_node_right_child(internal_node) == 0)
+        make_obsolute_node(internal_node);
+
     flush_page(table->pager, page_num);
 }
 
@@ -959,7 +985,12 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
     }
 
     /* Decrease cell number. */
-    set_leaf_node_cell_num(leaf_node, cell_num - 1);
+    set_leaf_node_cell_num(leaf_node, --cell_num);
+
+    /* If there is no cells and not root node, make it obsolute. */
+    if (!is_root_node(leaf_node) && cell_num == 0)
+        make_obsolute_node(leaf_node);
+
     flush_page(cursor->table->pager, cursor->page_num);
 }
 
