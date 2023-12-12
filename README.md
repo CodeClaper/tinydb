@@ -14,13 +14,13 @@ TinyDb is a server-side database engine and currently only support linux environ
 
 TinyDb uses Lex & Yacc to realize sql lexical analyzer and parser. If you want to compile the sql file, you must have theses tools or substitutes. 
 
-In debian or ubuntu
+Debian or Ubuntu
 
 ```sh
 sudo apt-get install flex bison
 ```
 
-In centos
+Centos
 
 ```shell
 yum install flex bison
