@@ -14,7 +14,7 @@
 #include "pager.h"
 
 static char *data_type_name_list[] = {"bool",  "char",   "int",  "double",
-                                      "float", "string", "date", "timestamp"};
+                                      "float", "string", "date", "timestamp",  "reference"};
 
 // get data type name.
 char *data_type_name(DataType data_type) {
@@ -24,24 +24,26 @@ char *data_type_name(DataType data_type) {
 // column type length
 uint32_t column_type_length(DataType column_type) {
   switch (column_type) {
-  case T_BOOL:
-    return 2;
-  case T_CHAR:
-    return sizeof(char);
-  case T_INT:
-    return sizeof(uint32_t);
-  case T_DOUBLE:
-    return sizeof(double);
-  case T_FLOAT:
-    return sizeof(float);
-  case T_STRING:
-    return 48;
-  case T_DATE:
-    return 48;
-  case T_TIMESTAMP:
-    return 48;
-  default:
-    fatal("unknow column type");
+      case T_BOOL:
+        return 2;
+      case T_CHAR:
+        return sizeof(char);
+      case T_INT:
+        return sizeof(uint32_t);
+      case T_DOUBLE:
+        return sizeof(double);
+      case T_FLOAT:
+        return sizeof(float);
+      case T_STRING:
+        return 48;
+      case T_DATE:
+        return 48;
+      case T_TIMESTAMP:
+        return 48;
+      case T_REFERENCE:
+        return 48;
+      default:
+        fatal("Unknown column type");
   }
 }
 

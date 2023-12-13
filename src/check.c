@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <regex.h>
 #include "check.h"
@@ -54,6 +55,9 @@ static bool if_convert_type(DataType source, DataType target, char *column_name)
         case T_DATE:
             result = target == T_DATE || target == T_STRING;
             break;
+        case T_REFERENCE:
+            result = target == T_REFERENCE;
+            break;
     }
     if (!result)
        log_error_s("Data type convert fail for column '%s'", column_name);
@@ -74,6 +78,7 @@ static bool check_value_valid(DataType data_type, void* value) {
         case T_FLOAT:
         case T_DOUBLE:
         case T_STRING:
+        case T_REFERENCE:
             return true;
         case T_CHAR: {
 
@@ -116,6 +121,8 @@ static bool check_value_valid(DataType data_type, void* value) {
             return exe_result == REG_NOERROR;
 
         }
+        default:
+            fatal("Not implement yet.");
     }
 
 }

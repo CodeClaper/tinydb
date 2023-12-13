@@ -32,7 +32,8 @@ static ExecuteResult statement_create_table(Statement *stmt) {
 /*Insert Statment*/
 static ExecuteResult statement_insert(Statement *stmt) {
     assert(stmt->statement_type == STMT_INSERT);
-    return exec_insert_statement(stmt->ast_node->insert_node);
+    InsertExecuteResult *result = exec_insert_statement(stmt->ast_node->insert_node);
+    return result->status;
 }
 
 /*Select Statement*/

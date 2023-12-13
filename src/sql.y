@@ -308,6 +308,16 @@ column_def:
                     column_def_node->allow_null = false;
                     $$ = column_def_node;
                 }
+            | column table
+                {
+                    ColumnDefNode *column_def_node = make_column_def_node();
+                    column_def_node->column = $1;
+                    column_def_node->data_type = T_REFERENCE;
+                    column_def_node->table_name = $2;
+                    column_def_node->is_primary = false;
+                    column_def_node->allow_null = false;
+                    $$ = column_def_node;
+                }
             | column data_type NOT NULLX
                 {
                     ColumnDefNode *column_def_node = make_column_def_node();
@@ -393,6 +403,13 @@ value_item:
                     ValueItemNode *node = make_value_item_node();
                     node->f_value = $1;
                     node->data_type = T_FLOAT;
+                    $$ = node;
+                }
+            | LEFTPAREN value_items RIGHTPAREN
+                {
+                    ValueItemNode *node = make_value_item_node();
+                    node->nest_value_item_set = $2;
+                    node->data_type = T_REFERENCE;
                     $$ = node;
                 }
             ;

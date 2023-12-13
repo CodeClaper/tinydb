@@ -30,6 +30,10 @@ ExecuteResult exec_describe_statement(DescribeNode *describe_node) {
         db_send(", ");
         db_send(get_key_value_pair_str("type", data_type_name(meta_column->column_type), T_STRING));
         db_send(", ");
+        if (meta_column->column_type == T_REFERENCE) {
+            db_send(get_key_value_pair_str("table", meta_column->table_name, T_STRING));
+            db_send(", ");
+        }
         db_send(get_key_value_pair_str("primary key", &meta_column->is_primary, T_BOOL));
         db_send(", ");
         db_send(get_key_value_pair_str("size", &meta_column->column_length, T_INT));

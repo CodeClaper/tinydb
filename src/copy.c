@@ -44,8 +44,13 @@ void *copy_value(void *value, DataType data_type) {
             strcpy(new_value, value);
             return new_value;
         }
+        case T_REFERENCE: {
+            Refer *refer = db_malloc2(sizeof(Refer), "Refer");
+            memcpy(refer, value, sizeof(Refer));
+            return refer;
+        }
         default:
-            return NULL;
+            fatal("Not supported data type.");
     }    
 }
 

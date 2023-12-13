@@ -17,6 +17,7 @@
 
 #define MAX_COLUMN_SIZE 25
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
+#define MAX_TABLE_NAME 30
 
 /* OprType */
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE, O_IN, O_LIKE } OprType;
@@ -30,7 +31,8 @@ typedef enum {
   T_FLOAT,
   T_STRING,
   T_DATE,
-  T_TIMESTAMP
+  T_TIMESTAMP,
+  T_REFERENCE
 } DataType;
 
 /* FunctionType */
@@ -99,10 +101,11 @@ typedef struct {
 
 /* ColumnDefNode */
 typedef struct {
-  ColumnNode *column;
-  DataType data_type;
-  bool is_primary;
-  bool allow_null;
+    ColumnNode *column;
+    DataType data_type;
+    char *table_name;
+    bool is_primary;
+    bool allow_null;
 } ColumnDefNode;
 
 /* ColumnDefSetNode */
@@ -132,11 +135,13 @@ typedef struct {
     double d_value;
     /* T_TIMESTAMP, T_DATE */
     time_t t_value;
+    /* T_REFERENCE */
+    struct ValueItemSetNode *nest_value_item_set;
   };
 } ValueItemNode;
 
 /* ValueItemSetNode */
-typedef struct {
+typedef struct ValueItemSetNode {
   ValueItemNode **value_item_node;
   uint32_t num;
 } ValueItemSetNode;
@@ -273,10 +278,11 @@ typedef struct {
 
 /* MetaColumn */
 typedef struct {
-  char column_name[MAX_COLUMN_NAME_LEN];
-  DataType column_type;
-  uint32_t column_length;
-  bool is_primary;
+    char column_name[MAX_COLUMN_NAME_LEN];
+    DataType column_type;
+    char table_name[MAX_TABLE_NAME];
+    uint32_t column_length;
+    bool is_primary;
 } MetaColumn;
 
 /* MetaTable */
@@ -369,5 +375,16 @@ typedef struct {
   char *data_dir; /* database file directory. */
   ushort port;    /* Server listening port. */
 } Conf;
+
+typedef struct {
+  char table_name[MAX_TABLE_NAME];
+  uint32_t page_num;
+  uint32_t cell_num;
+}Refer;
+
+typedef struct {
+    ExecuteResult status;
+    Refer *refer;
+} InsertExecuteResult;
 
 #endif

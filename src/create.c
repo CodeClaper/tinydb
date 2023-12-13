@@ -44,6 +44,13 @@ static MetaColumn *get_meta_column(CreateTableNode *create_table_node, uint32_t 
     meta_column->column_type = column_def_node->data_type;
     meta_column->is_primary = if_primary_key_column(create_table_node, meta_column->column_name);
     meta_column->column_length = column_type_length(meta_column->column_type);
+    if (meta_column->column_type == T_REFERENCE) {
+        Table *table = open_table(column_def_node->table_name);
+        if (table)
+            strcpy(meta_column->table_name, column_def_node->table_name);
+        else 
+            return NULL;
+    }
     return meta_column;
 }
 
@@ -57,7 +64,10 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
         return NULL;
     }
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
-        meta_table->meta_column[i] = get_meta_column(crete_table_node, i);
+        MetaColumn *meta_column = get_meta_column(crete_table_node, i);
+        if (meta_column == NULL)
+            return NULL;
+        meta_table->meta_column[i] = meta_column;
     }
     return meta_table;
 }
@@ -66,6 +76,8 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
 ExecuteResult exec_create_table_statement(CreateTableNode *create_table_node) {
     char buff[1024];
     MetaTable *meta_table = gen_meta_table(create_table_node);
+    if (meta_table == NULL)
+        return EXECUTE_FAIL;
     ExecuteResult result = create_table(meta_table);
     if (result == EXECUTE_SUCCESS) {
         sprintf(buff, "Table %s created successfully\n", meta_table->table_name);

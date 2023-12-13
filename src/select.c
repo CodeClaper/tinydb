@@ -176,6 +176,8 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
              }
              break;
         }
+        case T_REFERENCE:
+            return value_item_node->nest_value_item_set; 
         default:
             fatal("Not implement yet.");
     }
@@ -549,6 +551,24 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     return row;
 }
 
+/* Define row by refer. */
+static Row *define_row(Refer *refer) {
+    uint32_t key_len, value_len;
+    Table *table = open_table(refer->table_name);
+    if (table == NULL) return NULL;
+    value_len = calc_table_row_length(table);
+    key_len = calc_primary_key_length(table);
+    void *leaf_node = get_page(table->pager, refer->page_num);
+    void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
+    
+    QueryParam *query_param = db_malloc2(sizeof(QueryParam), "QueryParam");
+    query_param->table_name = strdup(refer->table_name);
+    query_param->select_items = db_malloc2(sizeof(SelectItemsNode), "SelectItemsNode");
+    query_param->select_items->type = SELECT_ALL;
+
+    return generate_row(destinct, query_param, table->meta_table);
+}
+
 /* Select through leaf node. */
 static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table, ROW_HANDLER row_handler, void *arg) {
 
@@ -682,19 +702,32 @@ void query_with_condition(QueryParam *query_param, SelectResult *select_result ,
 }
 
 /* Send row data. */
-static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void send_row_data(Row *row) {
     db_send("{");
     for (uint32_t j = 0; j < row->column_len; j++) {
         KeyValue *key_value = *(row->data + j);
-        char *key_value_pair_str = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
-        db_send(key_value_pair_str);
-        db_free(key_value_pair_str);
+        if (key_value->data_type == T_REFERENCE) {
+            char buff[BUFF_SIZE ];
+            Refer *refer = (Refer *) key_value->value;
+            Row *sub_row = define_row(refer);
+            sprintf(buff, "\"%s\": ", key_value->key);
+            db_send(buff);
+            send_row_data(sub_row);
+        } else {
+            char *key_value_pair_str = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
+            db_send(key_value_pair_str);
+            db_free(key_value_pair_str);
+        }
         /* If not the last column, these is ',' to split. */
         if (j < row->column_len - 1)
             db_send(", ");
     }
     db_send("}");
+}
 
+/* Send row data. */
+static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    send_row_data(row);
     /* If not the last row, these is ',' to split. */
     select_result->row_index--;
     if (select_result->row_index > 0)
