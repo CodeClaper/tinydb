@@ -66,9 +66,9 @@ typedef enum {
 
 /* ColumnNode */
 typedef struct {
-  char *column_name;
-  bool exist_table_name;
-  char *table_name;
+    char *column_name;
+    char *sub_column_name;
+    bool *has_sub_column;
 } ColumnNode;
 
 /* ColumnSetNode */

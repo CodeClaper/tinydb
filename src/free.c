@@ -74,10 +74,8 @@ void free_meta_table(MetaTable *meta_table) {
 /* Free column */
 void free_column_node(ColumnNode *column_node) {
     if (column_node) {
-        if (column_node->exist_table_name) {
-            if (column_node->table_name)
-                db_free(column_node->table_name);
-        }
+        if (column_node->has_sub_column && column_node->sub_column_name)
+            db_free(column_node->sub_column_name);
         if (column_node->column_name)
             db_free(column_node->column_name);
         db_free(column_node);

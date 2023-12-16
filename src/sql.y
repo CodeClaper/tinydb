@@ -351,15 +351,15 @@ column:
                 {
                     ColumnNode *column_node = make_column_node();
                     column_node->column_name = strdup($1);
-                    column_node->exist_table_name = false;
+                    column_node->has_sub_column = false;
                     $$ = column_node;
                 }
             | IDENTIFIER POINT IDENTIFIER
                 {
                     ColumnNode *column_node = make_column_node();
                     column_node->column_name = strdup($1);
-                    column_node->table_name = strdup($3);
-                    column_node->exist_table_name = true;
+                    column_node->sub_column_name = strdup($3);
+                    column_node->has_sub_column = true;
                     $$ = column_node;
                 }
             ;

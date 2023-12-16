@@ -105,10 +105,9 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
     if (column_node == NULL)
         return NULL;
     ColumnNode *column_node_copy = db_malloc2(sizeof(ColumnNode), "ColumnNode");
-    column_node_copy->exist_table_name = column_node->exist_table_name;
-    if (column_node_copy->exist_table_name) {
-        column_node_copy->table_name = db_malloc2(strlen(column_node->table_name) + 1, "ColumnNode");
-        strcpy(column_node_copy->table_name, column_node->table_name);
+    column_node_copy->has_sub_column = column_node->has_sub_column;
+    if (column_node_copy->sub_column_name) {
+        column_node_copy->sub_column_name = strdup(column_node->sub_column_name);
     }
     column_node_copy->column_name = db_malloc2(strlen(column_node->column_name) + 1, "ColumnNode");
     strcpy(column_node_copy->column_name, column_node->column_name);
@@ -155,6 +154,11 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
         case T_DATE:
             value_item_node_copy->t_value = value_item_node->t_value;
             break;
+        case T_REFERENCE: {
+            value_item_node_copy->nest_value_item_set = db_malloc2(sizeof(ValueItemSetNode), "ValueItemSetNode");
+            memcpy(value_item_node_copy->nest_value_item_set, value_item_node->nest_value_item_set, sizeof(ValueItemSetNode));
+            break;
+        }
     }
     return value_item_node_copy;
 }

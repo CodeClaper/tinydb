@@ -1851,7 +1851,7 @@ yyreduce:
                 {
                     ColumnNode *column_node = make_column_node();
                     column_node->column_name = strdup((yyvsp[0].s_value));
-                    column_node->exist_table_name = false;
+                    column_node->has_sub_column = false;
                     (yyval.column_node) = column_node;
                 }
 #line 1858 "y.tab.c"
@@ -1862,8 +1862,8 @@ yyreduce:
                 {
                     ColumnNode *column_node = make_column_node();
                     column_node->column_name = strdup((yyvsp[-2].s_value));
-                    column_node->table_name = strdup((yyvsp[0].s_value));
-                    column_node->exist_table_name = true;
+                    column_node->sub_column_name = strdup((yyvsp[0].s_value));
+                    column_node->has_sub_column = true;
                     (yyval.column_node) = column_node;
                 }
 #line 1870 "y.tab.c"

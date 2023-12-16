@@ -10,7 +10,7 @@
 #include "mem.h"
 #include "misc.h"
 
-//Open Pager
+/* Open the pager. */
 Pager *open_pager(char *table_file_path){
     Pager *pager = db_malloc2(sizeof(Pager), "Pager");
     int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);
@@ -32,14 +32,14 @@ Pager *open_pager(char *table_file_path){
     return pager;
 }
 
-// Get page of a pager by page number.
+/* Get page of a pager by page number. */
 void *get_page(Pager *pager, int page_num) {
     if (page_num >= MAX_TABLE_PAGE) {
         fprintf(stderr, "Try to fetch page number out of bounds: %d >= %d", page_num, MAX_TABLE_PAGE);
         exit(1);
     }
     if (pager->pages[page_num] == NULL) {
-        //Cache dismiss, allocate memory and load file.
+        /* Cache dismiss, allocate memory and load file. */
         void *page = db_malloc2(PAGE_SIZE, "Page");
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);

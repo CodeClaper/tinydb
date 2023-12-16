@@ -26,7 +26,7 @@ static ColumnSetNode *adapt_column_set_node(Table *table) {
     for (uint32_t i = 0; i < column_set_node->size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         ColumnNode *column_node = db_malloc(sizeof(ColumnNode));
-        column_node->exist_table_name = false;
+        column_node->has_sub_column = false;
         column_node->column_name = strdup(meta_column->column_name);
         *(column_set_node->columns + i) = column_node;
     }
