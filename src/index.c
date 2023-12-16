@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "index.h"
-#include "mem.h"
+#include "mmu.h"
 #include "pager.h"
 #include "node.h"
 #include "meta.h"

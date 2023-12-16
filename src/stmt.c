@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include "stmt.h"
-#include "mem.h"
+#include "mmu.h"
 #include "common.h"
 #include "misc.h"
 #include "token.h"

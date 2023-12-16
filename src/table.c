@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include "table.h"
-#include "mem.h"
+#include "mmu.h"
 #include "cache.h"
 #include "common.h"
 #include "meta.h"

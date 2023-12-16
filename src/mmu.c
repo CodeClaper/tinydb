@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include "mem.h"
+#include "mmu.h"
 #include "data.h"
 #include "defs.h"
 #include "y.tab.h"

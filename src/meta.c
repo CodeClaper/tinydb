@@ -7,7 +7,7 @@
 #define __USE_XOPEN
 #include <time.h>
 #include "meta.h"
-#include "mem.h"
+#include "mmu.h"
 #include "common.h"
 #include "misc.h"
 #include "node.h"

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "cache.h"
-#include "mem.h"
+#include "mmu.h"
 #include "free.h"
 
 #define MAX_TABLE_CACHE_SIZE 100

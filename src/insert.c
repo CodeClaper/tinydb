@@ -8,7 +8,7 @@
 #define __USE_XOPEN
 #include <time.h>
 #include "insert.h"
-#include "mem.h"
+#include "mmu.h"
 #include "common.h"
 #include "misc.h"
 #include "table.h"

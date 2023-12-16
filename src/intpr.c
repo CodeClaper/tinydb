@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include "intpr.h"
 #include "data.h"
-#include "mem.h"
+#include "mmu.h"
 #include "free.h"
 
 

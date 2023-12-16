@@ -7,7 +7,7 @@
 #include <strings.h>
 #include <sys/types.h>
 #include "node.h"
-#include "mem.h"
+#include "mmu.h"
 #include "common.h"
 #include "misc.h"
 #include "const.h"

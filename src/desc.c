@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "desc.h"
-#include "mem.h"
+#include "mmu.h"
 #include "misc.h"
 #include "table.h"
 #include "meta.h"

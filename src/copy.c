@@ -7,7 +7,7 @@
 #include "index.h"
 #include "common.h"
 #include "misc.h"
-#include "mem.h"
+#include "mmu.h"
 
 /* Copy value. */
 void *copy_value(void *value, DataType data_type) {

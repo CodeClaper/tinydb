@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "update.h"
-#include "mem.h"
+#include "mmu.h"
 #include "data.h"
 #include "meta.h"
 #include "select.h"

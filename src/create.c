@@ -5,7 +5,7 @@
 #include "create.h"
 #include "common.h"
 #include "table.h"
-#include "mem.h"
+#include "mmu.h"
 #include "misc.h"
 #include "meta.h"
 #include "session.h"

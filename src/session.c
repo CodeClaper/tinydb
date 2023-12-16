@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "data.h"
-#include "mem.h"
+#include "mmu.h"
 #include "misc.h"
 #include "y.tab.h"
 

@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "pager.h"
-#include "mem.h"
+#include "mmu.h"
 #include "misc.h"
 
 /* Open the pager. */

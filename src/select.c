@@ -16,7 +16,7 @@
 #include "index.h"
 #include "intpr.h"
 #include "log.h"
-#include "mem.h"
+#include "mmu.h"
 #include "meta.h"
 #include "misc.h"
 #include "node.h"

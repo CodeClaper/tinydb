@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "token.h"
-#include "mem.h"
+#include "mmu.h"
 #include "data.h"
 #include "common.h"
 #include "misc.h"

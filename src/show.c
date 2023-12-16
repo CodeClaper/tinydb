@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "show.h"
-#include "mem.h"
+#include "mmu.h"
 #include "common.h"
 #include "misc.h"
 #include "utils.h"
-#include "mem.h"
+#include "mmu.h"
 #include "free.h"
 #include "session.h"
 

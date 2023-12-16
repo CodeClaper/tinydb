@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "data.h"
 #include "conf.h"
-#include "mem.h"
+#include "mmu.h"
 #include "utils.h"
 
 #define DEFAULT_CONF_FILE "/etc/tinydb.cnf"

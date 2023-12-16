@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "free.h"
-#include "mem.h"
+#include "mmu.h"
 #include "table.h"
 #include "index.h"
 #include "misc.h"

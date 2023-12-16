@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include "data.h"
 #include "defs.h"
-#include "mem.h"
+#include "mmu.h"
 #include "token.h"
 #include "stmt.h"
 #include "free.h"

@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "server.h"
-#include "mem.h"
+#include "mmu.h"
 #include "common.h"
 #include "misc.h"
 #include "stmt.h"
