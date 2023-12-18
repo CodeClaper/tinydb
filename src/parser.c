@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "token.h"
+#include "parser.h"
 #include "mmu.h"
 #include "data.h"
 #include "common.h"
@@ -18,7 +18,7 @@ extern YY_BUFFER_STATE yy_scan_string(char *str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 extern int yyparse(ASTNode *node);
 
-Statement *adapt(ASTNode *node) {
+Statement *new_statement(ASTNode *node) {
     if (node == NULL)
         return NULL;
     Statement *statement = db_malloc2(sizeof(Statement), "Statement");
@@ -49,21 +49,16 @@ Statement *adapt(ASTNode *node) {
     return statement;
 }
 
-/* Parse token. */
-Statement *parse(char *input) {
-    if (input == NULL)
+/* Parse sql. */
+Statement *parse(char *sql) {
+    if (sql == NULL)
         return NULL;
-    /* Remove space characters, includes '\f', '\n', '\r', '\t', '\v'*/
-    trim(input);
-    size_t size = strlen(input);
+    trim(sql);/* Remove space characters, includes '\f', '\n', '\r', '\t', '\v'*/
+    db_debug("Execute sql: %s\n", sql);
+    size_t size = strlen(sql);
     char buff[size + 1];
-    sprintf(buff, "%s%c", input, '\n');
-    db_debug("Origin sql: %s", buff);
+    sprintf(buff, "%s%c", sql, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(buff);
     ASTNode *node = db_malloc2(sizeof(ASTNode), "ASTNode");
-    if (yyparse(node) == 0) 
-        return adapt(node);
-    else
-        return NULL;
-    
+    return yyparse(node) == 0 ? new_statement(node) : NULL;
 }

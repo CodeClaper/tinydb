@@ -253,7 +253,8 @@ static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNo
 
     /* Skipped the internal node must satisfy tow factors: 
      * key column and not satisfied internal node condition. */
-    return !cond_meta_column->is_primary || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
+    return !cond_meta_column->is_primary 
+        || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
 
 }
 

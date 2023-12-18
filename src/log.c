@@ -14,6 +14,7 @@
 
 static char* LOG_LEVEL_NAME_LIST[] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR" };
 
+/* Get system time by format. */
 static char* get_sys_time(char *format) {
     time_t t_now;
     struct tm *tm_now;
