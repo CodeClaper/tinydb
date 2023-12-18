@@ -303,7 +303,40 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
     return true;
 }
 
-// check for update node. 
+/* Check if table alreay exist. */
+static bool check_duplicate_table(char *table_name) {
+    if (check_table_exist(table_name)) {
+        log_error_s("Table '%s' already exists. ", table_name); 
+        return false;
+    } else 
+        return true;
+}
+
+/* Check if support priamay key. 
+ * Maybe it will allow to not support primary key, but now, must to do.  */
+static bool check_primary_null(CreateTableNode *create_table_node) {
+    if (create_table_node->primary_key_node == NULL) 
+       log_error("Must support primary key.");
+    return create_table_node->primary_key_node != NULL;
+}
+
+/* Check if exists duplicate column name. */
+static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
+    int i, j;
+    for(i = 0; i < column_def_set_node->size; i++) {
+        ColumnDefNode *column_def_node1 = column_def_set_node->column_defs[i];
+        for(j = 0; j < column_def_set_node->size; j++) {
+            ColumnDefNode *column_def_node2 = column_def_set_node->column_defs[j];
+            if (i !=j && strcmp(column_def_node1->column->column_name, column_def_node2->column->column_name) == 0) {
+                log_error_s("Not allow duplicate column name '%s' in the same table.", column_def_node1->column->column_name);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/* Check for update node. */
 bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
     Table *table = open_table(update_node->table_name);
     assert(table != NULL);
@@ -317,3 +350,9 @@ bool check_delete_node(DeleteNode *delete_node) {
     return check_condition_node(delete_node->condition_node, table->meta_table);
 }
 
+/* Check for create table node. */
+bool check_create_table_node(CreateTableNode *create_table_node) {
+    return check_duplicate_table(create_table_node->table_name)
+           && check_duplicate_column_name(create_table_node->column_def_set_node)
+           && check_primary_null(create_table_node);
+}
