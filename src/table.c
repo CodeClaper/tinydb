@@ -52,12 +52,12 @@ ExecuteResult create_table(MetaTable *meta_table) {
         return EXECUTE_TABLE_CREATE_FAIL;
     char *file_path = table_file_path(meta_table->table_name);
     if (table_file_exist(file_path)) {
-        log_error_s("Table '%s' already exists. \n", meta_table->table_name);
+        db_error("Table '%s' already exists. \n", meta_table->table_name);
         return EXECUTE_TABLE_CREATE_FAIL;
     }
     int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (descr == -1) {
-        log_error_s("Open database file '%s' fail.\n", file_path);
+        db_error("Open database file '%s' fail.\n", file_path);
         return EXECUTE_TABLE_CREATE_FAIL;
     }
     void *root_node = db_malloc2(PAGE_SIZE, "PAGE NODE");
@@ -73,7 +73,7 @@ ExecuteResult create_table(MetaTable *meta_table) {
     lseek(descr, 0, SEEK_SET);
     ssize_t w_size = write(descr, root_node, PAGE_SIZE);
     if (w_size == -1) {
-        log_error_d("Write table meta info error and errno %d", errno);
+        db_error("Write table meta info error and errno %d.\n", errno);
         return EXECUTE_TABLE_CREATE_FAIL;
     }
     db_free(file_path);
@@ -89,7 +89,7 @@ Table *open_table(char *table_name) {
           return cache_table;
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-          log_error_s( "Table '%s' not exists.", table_name);
+          db_error("Table '%s' not exists.\n", table_name);
           db_free(file_path);
           return NULL;
     }

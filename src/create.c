@@ -65,7 +65,7 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
     meta_table->table_name = strdup(crete_table_node->table_name);
     meta_table->column_size = get_column_size(crete_table_node);
     if (meta_table->column_size > MAX_COLUMN_SIZE) {
-        log_error_d("Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
+        db_error("Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
         return NULL;
     }
     for (uint32_t i = 0; i < meta_table->column_size; i++) {

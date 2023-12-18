@@ -159,7 +159,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         key_value->key = strdup(column_name);
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_name);
         if (meta_column == NULL) {
-            log_error_s("Inner error, try to get meta column info by name '%s' fail", column_name);
+            db_error("Inner error, try to get meta column info by name '%s' fail.\n", column_name);
             return NULL;
         }
         key_value->data_type = meta_column->column_type;
@@ -206,7 +206,7 @@ InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key)) {
-        log_error_s("key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
+        db_error("key '%s' already exists, not allow duplicate key.\n", get_key_str(row->key, primary_key_meta_column->column_type));
         result->status = EXECUTE_DUPLICATE_KEY;
         return result;
     }

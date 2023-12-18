@@ -75,8 +75,6 @@ false                   return FALSE;
 %%
 
 int yyerror(const char *s) {
-    char buff[BUFF_SIZE];
-	sprintf(buff, "Line%d: sql syntax error %s at '%s'", lineno, s, yytext);
-    log_error(buff);
+	db_error("Line%d: sql syntax error %s at '%s'.\n", lineno, s, yytext);
     return 0;
 }
