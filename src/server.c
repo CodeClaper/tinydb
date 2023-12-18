@@ -1,3 +1,4 @@
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -16,8 +17,7 @@
 #include "session.h"
 #include "log.h"
 
-
-//Start up the server.
+/* Start up the server. */
 int startup(u_short port) {
     int httpd = 0;
     int on = 1;
@@ -48,6 +48,7 @@ void accept_request(void *arg) {
     char buf[1024];
     Session *session = new_session(client);
     set_session(session);
+    db_info("Client ID '%ld' connect successfully.\n", pthread_self());
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
         statement(buf);   
@@ -56,5 +57,5 @@ void accept_request(void *arg) {
     }
     close(client);
     destroy_session();
-    printf("Client disconnect.\n");
+    db_info("Client ID '%ld' disconnect.\n", pthread_self());
 }

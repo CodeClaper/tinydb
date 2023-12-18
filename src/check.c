@@ -85,12 +85,11 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             if (len != 1)
                 db_error("Try to convert value '%s' to CHAR type fail\n", (char *) value);
             return len == 1;
-
         }
         case T_STRING: {
             size_t size = strlen(value);
             if (size > meta_column->column_length)
-                db_error("Exceeding max lenght: %d > %d\n", size, meta_column->column_length);
+                db_error("Exceed the limit of data length: %d > %d, for column '%s'\n", size, meta_column->column_length, meta_column->column_name);
             return size <= meta_column->column_length;
         }
         case T_TIMESTAMP: {   
@@ -106,7 +105,6 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             if (exe_result == REG_NOMATCH) 
                 db_error("Try to convert value '%s' to timestamp fail\n", (char *) value);
             return exe_result == REG_NOERROR;
-
         }
         case T_DATE: {
 
@@ -122,7 +120,6 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             if (exe_result == REG_NOMATCH) 
                 db_error("Try to convert value '%s' to timestamp fail\n", (char *) value);
             return exe_result == REG_NOERROR;
-
         }
         default:
             fatal("Not implement yet.");

@@ -1,4 +1,7 @@
 [data]
-dir=/home/zc/data
+dir=/home/zc/data/
 [base]
-port=4087
+port=4083
+[log]
+dir=/home/zc/logs/tinydb/
+level=DEBUG

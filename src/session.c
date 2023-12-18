@@ -32,12 +32,10 @@ Session *new_session(int client) {
     return session;
 }
 
-
 /* Set session to pthread_key_t. */
 void set_session(void *session) {
     pthread_setspecific(key, session);
 }
-
 
 /* Get session from pthread_key_t. */
 Session *get_session() {
@@ -54,8 +52,7 @@ void destroy_session() {
 /* Socket send message.
  * First send message size before sending the message.
  * So that, client can prepare enough large buffer to store the message.
- * return true if send successfully, else return false.
- * */
+ * return true if send successfully, else return false. */
 bool db_send(const char *msg) {
     if (msg == NULL)
         return false;

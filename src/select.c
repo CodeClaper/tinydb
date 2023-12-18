@@ -350,6 +350,7 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
             uint32_t off_set = calc_offset(query_param, meta_column->column_name);
             switch (meta_column->column_type) {
                 case T_STRING:
+                case T_REFERENCE:
                 case T_DATE:
                 case T_TIMESTAMP: {
                     int32_t val = 0;
@@ -383,10 +384,9 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
                     key_value->value = copy_value(destine + off_set, meta_column->column_type);
                     key_value->data_type = T_DOUBLE;
                     break;
-                    
             }
+            break;
         }
-        break;
     }
 
     // assgin to row data.
@@ -826,8 +826,7 @@ static void avg_row(Row *row, SelectResult *select_result, Table *table, void *a
     select_result->row_index--;
 
     /* Send out sum result. 
-     * Trigger when row index is zero, which means the last row. 
-     * */
+     * Trigger when row index is zero, which means the last row. */
     if (select_result->row_index == 0) {
         switch(key_value->data_type) {
             case T_INT:

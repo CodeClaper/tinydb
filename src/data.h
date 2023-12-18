@@ -53,6 +53,9 @@ typedef enum { STMT_CREATE_TABLE, STMT_SELECT, STMT_UPDATE, STMT_INSERT, STMT_DE
 /* ExecuteResult */
 typedef enum { EXECUTE_SUCCESS, EXECUTE_FAIL, EXECUTE_SQL_ERROR, EXECUTE_TABLE_EXIST_FAIL, EXECUTE_TABLE_CREATE_FAIL, EXECUTE_TABLE_DROP_FAIL, EXECUTE_TABLE_OPEN_FAIL, EXECUTE_DUPLICATE_KEY } ExecuteResult;
 
+/* LogLevel */
+typedef enum { TRACE_LEVEL, DEBUG_LEVEL, INFO_LEVEL, WARN_LEVEL, ERROR_LEVLE } LogLevel;
+
 /* ColumnNode */
 typedef struct {
     char *column_name;
@@ -316,36 +319,38 @@ typedef struct {
 
 /* MEntry */
 typedef struct MEntry {
-  void *ptr;
-  size_t size;
-  char data_type_name[1024];
-  struct MEntry *next;
+    void *ptr;
+    size_t size;
+    char data_type_name[1024];
+    struct MEntry *next;
 } MEntry;
 
 /* MHashTable */
 typedef struct {
-  MEntry **entry_list;
-  uint32_t num;      /* number of entry list. */
-  uint32_t capacity; /* capacity of table cell. */
+    MEntry **entry_list;
+    uint32_t num;      /* number of entry list. */
+    uint32_t capacity; /* capacity of table cell. */
 } MHashTable;
 
 /* Session */
 typedef struct {
-  int client;
-  uint32_t frequency;
-  uint32_t volumn;
+    int client;
+    uint32_t frequency;
+    uint32_t volumn;
 } Session;
 
 /* Abount configuration. */
 typedef struct {
-  char *data_dir; /* database file directory. */
-  ushort port;    /* Server listening port. */
+    char *data_dir;     /* database file directory. */
+    ushort port;        /* Server listening port. */
+    char *log_dir;      /* log directory */
+    LogLevel log_level; /* log level */
 } Conf;
 
 typedef struct {
-  char table_name[MAX_TABLE_NAME];
-  uint32_t page_num;
-  uint32_t cell_num;
+    char table_name[MAX_TABLE_NAME];
+    uint32_t page_num;
+    uint32_t cell_num;
 }Refer;
 
 typedef struct {

@@ -9,6 +9,7 @@
 #include "misc.h"
 #include "utils.h"
 #include "intpr.h"
+#include "log.h"
 #include "y.tab.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
@@ -57,6 +58,7 @@ Statement *parse(char *input) {
     size_t size = strlen(input);
     char buff[size + 1];
     sprintf(buff, "%s%c", input, '\n');
+    db_debug("Origin sql: %s", buff);
     YY_BUFFER_STATE buffer = yy_scan_string(buff);
     ASTNode *node = db_malloc2(sizeof(ASTNode), "ASTNode");
     if (yyparse(node) == 0) 

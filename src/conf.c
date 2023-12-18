@@ -1,8 +1,10 @@
 #include <assert.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include "data.h"
@@ -11,6 +13,7 @@
 #include "utils.h"
 
 #define DEFAULT_CONF_FILE "/etc/tinydb.cnf"
+#define DEFAULT_LOG_LEVEL DEBUG_LEVEL
 
 /* Read config file. */
 char *read_conf(char *title, char *key) {
@@ -21,7 +24,7 @@ char *read_conf(char *title, char *key) {
     }
     char buff[BUFF_SIZE];
     char *p;
-    bool inBlock;
+    bool inBlock = false;
     while(!feof(file)) {
         fgets(buff, BUFF_SIZE, file);
         char *line = trim(buff);
@@ -53,10 +56,40 @@ char *read_conf(char *title, char *key) {
     exit(EXECUTE_FAIL);
 }
 
+static LogLevel define_log_level(char *level) {
+    if (strcasecmp(level, "TRACE") == 0)
+        return TRACE_LEVEL;
+    else if (strcasecmp(level, "DEBUG") == 0)
+        return DEBUG_LEVEL;
+    else if (strcasecmp(level, "INFO") == 0)
+        return INFO_LEVEL;
+    else if (strcasecmp(level, "WARN") == 0)
+        return WARN_LEVEL;
+    else if (strcasecmp(level, "ERROR") == 0)
+        return ERROR_LEVLE;
+    else
+        return DEFAULT_LOG_LEVEL;
+}
+
+static char* append_dir(char *dir) {
+    assert(dir);
+    size_t size = strlen(dir);
+    if (dir[size - 1] == '/')
+        return dir;
+    else {
+        char *append = db_malloc2(size + 1, "String");
+        sprintf(append, "%s/", dir);
+        return append;
+    }
+}
+
+
 /* Load configuration. */
 Conf *load_conf() {
     Conf *conf = db_malloc2(sizeof(Conf), "Conf");
-    conf->data_dir = read_conf("data", "dir");
+    conf->data_dir = append_dir(read_conf("data", "dir"));
     conf->port = (ushort)atoi(read_conf("base", "port"));
+    conf->log_dir = append_dir(read_conf("log", "dir"));
+    conf->log_level = define_log_level(read_conf("log", "level"));
     return conf;
 }
