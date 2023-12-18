@@ -19,7 +19,7 @@
 #include "log.h"
 #include "index.h"
 
-// Get table file path.
+/* Get table file path. */
 static char *table_file_path(char *table_name) {
   if (table_name == NULL) {
         fprintf(stderr, "Inner error, table name can`t be NULL.\n");
@@ -31,14 +31,22 @@ static char *table_file_path(char *table_name) {
   return file_path;
 }
 
-// Check table file if exist
-// Return true if exist or false if not exist.
+/* Check table file if exist 
+ * Return true if exist or false if not exist. */
 static bool table_file_exist(char *table_file_path) {
   struct stat buffer;
   return (stat(table_file_path, &buffer) == 0);
 }
 
-// Create a new table.
+/* Check if table exists. */
+bool check_table_exist(char *table_name) {
+    char *file_path = table_file_path(table_name);
+    bool ret = table_file_exist(file_path);
+    db_free(file_path);
+    return ret;
+}
+
+/* Create a new table. */
 ExecuteResult create_table(MetaTable *meta_table) {
     if (meta_table == NULL)
         return EXECUTE_TABLE_CREATE_FAIL;
@@ -74,7 +82,7 @@ ExecuteResult create_table(MetaTable *meta_table) {
     return EXECUTE_SUCCESS;
 }
 
-// Open a table file.
+/* Open a table file. */
 Table *open_table(char *table_name) {
     Table *cache_table = find_cache_table(table_name);
     if (cache_table)

@@ -2,9 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 
 #ifndef DATA_H
 #define DATA_H
@@ -23,17 +21,7 @@
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE, O_IN, O_LIKE } OprType;
 
 /* DataType */
-typedef enum {
-  T_BOOL,
-  T_CHAR,
-  T_INT,
-  T_DOUBLE,
-  T_FLOAT,
-  T_STRING,
-  T_DATE,
-  T_TIMESTAMP,
-  T_REFERENCE
-} DataType;
+typedef enum { T_BOOL, T_CHAR, T_INT, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
 
 /* FunctionType */
 typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
@@ -54,15 +42,16 @@ typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
 
 /* StatementType */
-typedef enum {
-  CREATE_TABLE_STMT,
-  SELECT_STMT,
-  INSERT_STMT,
-  UPDATE_STMT,
-  DELETE_STMT,
-  DESCRIBE_STMT,
-  SHOW_STMT
-} StatementType; // statement type
+typedef enum { CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT } StatementType; // statement type
+
+/* NodeType */
+typedef enum { LEAF_NODE, INTERNAL_NODE } NodeType;
+
+/* StatementType */
+typedef enum { STMT_CREATE_TABLE, STMT_SELECT, STMT_UPDATE, STMT_INSERT, STMT_DELETE, STMT_DESCRIBE, STMT_SHOW } StamentType;
+
+/* ExecuteResult */
+typedef enum { EXECUTE_SUCCESS, EXECUTE_FAIL, EXECUTE_SQL_ERROR, EXECUTE_TABLE_EXIST_FAIL, EXECUTE_TABLE_CREATE_FAIL, EXECUTE_TABLE_DROP_FAIL, EXECUTE_TABLE_OPEN_FAIL, EXECUTE_DUPLICATE_KEY } ExecuteResult;
 
 /* ColumnNode */
 typedef struct {
@@ -103,6 +92,8 @@ typedef struct {
 typedef struct {
     ColumnNode *column;
     DataType data_type;
+    bool is_define_len;
+    uint32_t data_len;
     char *table_name;
     bool is_primary;
     bool allow_null;
@@ -236,37 +227,12 @@ typedef struct {
   ssize_t input_length;
 } InputBuffer;
 
-/* NodeType */
-typedef enum { LEAF_NODE, INTERNAL_NODE } NodeType;
-
-/* StatementType */
-typedef enum {
-  STMT_CREATE_TABLE,
-  STMT_SELECT,
-  STMT_UPDATE,
-  STMT_INSERT,
-  STMT_DELETE,
-  STMT_DESCRIBE,
-  STMT_SHOW
-} StamentType;
-
 /* Statement */
 typedef struct {
   StamentType statement_type;
   ASTNode *ast_node;
 } Statement;
 
-/* ExecuteResult */
-typedef enum {
-  EXECUTE_SUCCESS,
-  EXECUTE_FAIL,
-  EXECUTE_SQL_ERROR,
-  EXECUTE_TABLE_EXIST_FAIL,
-  EXECUTE_TABLE_CREATE_FAIL,
-  EXECUTE_TABLE_DROP_FAIL,
-  EXECUTE_TABLE_OPEN_FAIL,
-  EXECUTE_DUPLICATE_KEY
-} ExecuteResult;
 
 /* Pager */
 typedef struct {

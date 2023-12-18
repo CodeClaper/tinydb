@@ -859,7 +859,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
     /* Get key number, key length, cell lenght and position of key. */
     uint32_t key_num, key_len, cell_len, value_len, key_index;
     key_num = get_internal_node_keys_num(internal_node);
-    key_len = column_type_length(key_data_type);
+    key_len = calc_primary_key_length(table);
     cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
     value_len = calc_table_row_length(table);
     key_index = get_internal_node_key_index(internal_node, key, key_num, key_len, key_data_type);

@@ -306,6 +306,18 @@ column_def:
                     column_def_node->data_type = $2;
                     column_def_node->is_primary = false;
                     column_def_node->allow_null = false;
+                    column_def_node->is_define_len = false;
+                    $$ = column_def_node;
+                }
+           | column STRING LEFTPAREN INTVALUE RIGHTPAREN
+                {
+                    ColumnDefNode *column_def_node = make_column_def_node();
+                    column_def_node->column = $1;
+                    column_def_node->data_type = T_STRING;
+                    column_def_node->data_len = $4;
+                    column_def_node->is_define_len = true;
+                    column_def_node->is_primary = false;
+                    column_def_node->allow_null = false;
                     $$ = column_def_node;
                 }
             | column table
@@ -314,6 +326,7 @@ column_def:
                     column_def_node->column = $1;
                     column_def_node->data_type = T_REFERENCE;
                     column_def_node->table_name = $2;
+                    column_def_node->is_define_len = false;
                     column_def_node->is_primary = false;
                     column_def_node->allow_null = false;
                     $$ = column_def_node;
