@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -5,13 +6,14 @@
 #include "copy.h"
 #include "data.h"
 #include "index.h"
+#include "meta.h"
 #include "common.h"
 #include "misc.h"
 #include "mmu.h"
 
 /* Copy value. */
-void *copy_value(void *value, DataType data_type) {
-    switch(data_type) {
+void *copy_value(void *value, MetaColumn *meta_column) {
+    switch(meta_column->column_type) {
         case T_BOOL: {
             bool *new_val = db_malloc2(sizeof(bool), "bool");
             memcpy(new_val, value, sizeof(bool));
@@ -40,8 +42,8 @@ void *copy_value(void *value, DataType data_type) {
         }
         case T_CHAR:
         case T_STRING: {
-            char *new_value = db_malloc2(strlen(value) + 1, "String value");
-            strcpy(new_value, value);
+            char *new_value = db_malloc2(meta_column->column_length, "String value");
+            memcpy(new_value, value, meta_column->column_length);
             return new_value;
         }
         case T_REFERENCE: {
@@ -55,13 +57,15 @@ void *copy_value(void *value, DataType data_type) {
 }
 
 /* Copy Key value pair. */
-KeyValue *copy_key_value(KeyValue *key_value) {
+KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table) {
     if (key_value == NULL)
         return NULL;
     KeyValue *key_value_copy = db_malloc2(sizeof(KeyValue), "KeyValue");
     key_value_copy->key = db_malloc2(strlen(key_value->key) + 1, "Keyvalue.Key");
     strcpy(key_value_copy->key, key_value->key);
-    key_value_copy->value = copy_value(key_value->value, key_value->data_type);
+    MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
+    assert(meta_column);
+    key_value_copy->value = copy_value(key_value->value, meta_column);
     key_value_copy->data_type = key_value->data_type;
     return key_value_copy;
 }
@@ -75,13 +79,13 @@ Row *copy_row(Row *row) {
         return NULL;
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     Row *row_copy = db_malloc2(sizeof(Row), "Row");
-    row_copy->key = copy_value(row->key, primary_meta_column->column_type);
+    row_copy->key = copy_value(row->key, primary_meta_column);
     row_copy->column_len = row->column_len;
     row_copy->table_name = db_malloc2(strlen(row->table_name) + 1, "Row.table_name");
     strcpy(row_copy->table_name, row->table_name);
     row_copy->data = db_malloc2(sizeof(KeyValue *) * row->column_len, "Row.data");
     for(uint32_t i = 0; i < row->column_len; i++) {
-        *(row_copy->data + i) = copy_key_value(*(row->data + i));
+        *(row_copy->data + i) = copy_key_value(*(row->data + i), table->meta_table);
     }
     return row_copy;
 }

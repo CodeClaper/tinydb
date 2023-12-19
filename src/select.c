@@ -360,29 +360,29 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
                     break;
                 }
                 case T_BOOL: {
-                    bool b_value = *(bool *)copy_value(destine + off_set, meta_column->column_type);
+                    bool b_value = *(bool *)copy_value(destine + off_set, meta_column);
                     int32_t val = b_value ? 1 : 0;
                     key_value->value = &val;
                     key_value->data_type = T_INT;
                     break;
                 }
                 case T_CHAR: {
-                    char c_val = *(char *)copy_value(destine + off_set, meta_column->column_type);
+                    char c_val = *(char *)copy_value(destine + off_set, meta_column);
                     int32_t val = c_val;
                     key_value->value = &val;
                     key_value->data_type = T_INT;
                     break;
                 }
                 case T_INT:
-                    key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                    key_value->value = copy_value(destine + off_set, meta_column);
                     key_value->data_type = T_INT;
                     break;
                 case T_FLOAT:
-                    key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                    key_value->value = copy_value(destine + off_set, meta_column);
                     key_value->data_type = T_FLOAT;
                     break;
                 case T_DOUBLE:
-                    key_value->value = copy_value(destine + off_set, meta_column->column_type);
+                    key_value->value = copy_value(destine + off_set, meta_column);
                     key_value->data_type = T_DOUBLE;
                     break;
             }
@@ -428,7 +428,7 @@ static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *q
             ColumnNode *column_node = function_value_node->column;
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            key_value->value = copy_value(destinct + off_set, meta_column->column_type);
+            key_value->value = copy_value(destinct + off_set, meta_column);
             key_value->data_type = meta_column->column_type;
         }
         break;
@@ -473,7 +473,7 @@ static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *q
             ColumnNode *column_node = function_value_node->column;
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            key_value->value = copy_value(destinct + off_set, meta_column->column_type);
+            key_value->value = copy_value(destinct + off_set, meta_column);
             key_value->data_type = meta_column->column_type;
         }
         break;
@@ -515,7 +515,7 @@ static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_pa
         /* Generate a key value pair. */
         KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
         key_value->key = strdup(meta_column->column_name);
-        key_value->value = copy_value(destinct + off_set, meta_column->column_type);
+        key_value->value = copy_value(destinct + off_set, meta_column);
         key_value->data_type = meta_column->column_type;
         *(row->data + i) = key_value;
     }
@@ -548,7 +548,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     /* Define row key. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t priamry_key_set_off = calc_offset(query_param, primary_key_meta_column->column_name);
-    row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type);
+    row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column);
     return row;
 }
 
