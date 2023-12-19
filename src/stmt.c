@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,6 +7,7 @@
 #include "stmt.h"
 #include "mmu.h"
 #include "common.h"
+#include "asserts.h"
 #include "misc.h"
 #include "parser.h"
 #include "table.h"
@@ -25,44 +25,44 @@
 
 /*Create table Statement*/
 static ExecuteResult statement_create_table(Statement *stmt) {
-    assert(stmt->statement_type == STMT_CREATE_TABLE);
+    assert_true(stmt->statement_type == STMT_CREATE_TABLE, "System error, create statement type error.\n");
     return exec_create_table_statement(stmt->ast_node->create_table_node);
 }
 
 /*Insert Statment*/
 static ExecuteResult statement_insert(Statement *stmt) {
-    assert(stmt->statement_type == STMT_INSERT);
+    assert_true(stmt->statement_type == STMT_INSERT, "System error, insert statement type error.\n");
     InsertExecuteResult *result = exec_insert_statement(stmt->ast_node->insert_node);
     return result->status;
 }
 
 /*Select Statement*/
 static ExecuteResult statement_select(Statement *statement) {
-    assert(statement->statement_type == STMT_SELECT);
+    assert_true(statement->statement_type == STMT_SELECT, "System error, select statement type error.\n");
     return exec_select_statement(statement->ast_node->select_node); 
 }
 
 /*Update statemetn*/
 static ExecuteResult statement_update(Statement *statement) {
-    assert(statement->statement_type == STMT_UPDATE);
+    assert_true(statement->statement_type == STMT_UPDATE, "System error, update statement type error.\n");
     return exec_update_statment(statement->ast_node->update_node);
 }
 
 /*Delete Statement*/
 static ExecuteResult statement_delete(Statement *statement) {
-    assert(statement->statement_type == STMT_DELETE);
+    assert_true(statement->statement_type == STMT_DELETE, "System error, delete statement type error.\n");
     return exec_delete_statement(statement->ast_node->delete_node);
 }
 
 /*Describe Statement*/
 static ExecuteResult statement_describe(Statement *statement) {
-    assert(statement->statement_type == STMT_DESCRIBE); 
+    assert_true(statement->statement_type == STMT_DESCRIBE, "System error, describe statement type error.\n"); 
     return exec_describe_statement(statement->ast_node->describe_node);
 }
 
 /*Show tables Statment*/
 static ExecuteResult statement_show(Statement *statement) {
-    assert(statement->statement_type == STMT_SHOW); 
+    assert_true(statement->statement_type == STMT_SHOW, "System error, show statmement type error.\n"); 
     return exec_show_statement(statement->ast_node->show_node);
 }
 

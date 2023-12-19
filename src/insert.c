@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,6 +16,7 @@
 #include "table.h"
 #include "pager.h"
 #include "index.h"
+#include "asserts.h"
 #include "check.h"
 #include "free.h"
 #include "log.h"

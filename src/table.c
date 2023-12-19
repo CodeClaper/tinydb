@@ -86,17 +86,17 @@ ExecuteResult create_table(MetaTable *meta_table) {
 Table *open_table(char *table_name) {
     Table *cache_table = find_cache_table(table_name);
     if (cache_table)
-          return cache_table;
+        return cache_table;
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-          db_error("Table '%s' not exists.\n", table_name);
-          db_free(file_path);
-          return NULL;
+        db_error("Table '%s' not exists.\n", table_name);
+        db_free(file_path);
+        return NULL;
     }
     Table *table = db_malloc2(sizeof(Table), "Table");
     Pager *pager = open_pager(file_path);
     if (NULL == pager) 
-          return NULL;
+        return NULL;
     table->pager = pager;
     table->root_page_num = 0; // Define root page is first page.
     if (pager->size == 0) {

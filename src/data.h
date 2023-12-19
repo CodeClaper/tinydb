@@ -358,4 +358,12 @@ typedef struct {
     Refer *refer;
 } InsertExecuteResult;
 
+/* Alias struct flock. */
+typedef struct flock FileLock;
+
+/* LockState */
+typedef struct {
+    int fd;
+    FileLock *lock; 
+} LockState;
 #endif

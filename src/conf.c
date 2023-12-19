@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -8,6 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "data.h"
+#include "asserts.h"
 #include "conf.h"
 #include "mmu.h"
 #include "utils.h"
@@ -45,7 +45,7 @@ char *read_conf(char *title, char *key) {
         if (!startwith(line, key))
             continue;
         p = strstr(line, key);
-        assert(p);
+        assert_not_null(p, "Read configuration error.");
         p += strlen(key);
         trim(p);
         /* skip '=' */
@@ -71,8 +71,9 @@ static LogLevel define_log_level(char *level) {
         return DEFAULT_LOG_LEVEL;
 }
 
-static char* append_dir(char *dir) {
-    assert(dir);
+/* Append directory end character [/] */
+static char* append_dir_end(char *dir) {
+    assert_not_null(dir, "");
     size_t size = strlen(dir);
     if (dir[size - 1] == '/')
         return dir;
@@ -87,9 +88,9 @@ static char* append_dir(char *dir) {
 /* Load configuration. */
 Conf *load_conf() {
     Conf *conf = db_malloc2(sizeof(Conf), "Conf");
-    conf->data_dir = append_dir(read_conf("data", "dir"));
+    conf->data_dir = append_dir_end(read_conf("data", "dir"));
     conf->port = (ushort)atoi(read_conf("base", "port"));
-    conf->log_dir = append_dir(read_conf("log", "dir"));
+    conf->log_dir = append_dir_end(read_conf("log", "dir"));
     conf->log_level = define_log_level(read_conf("log", "level"));
     return conf;
 }

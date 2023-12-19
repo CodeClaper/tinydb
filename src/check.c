@@ -1,10 +1,10 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <regex.h>
 #include "check.h"
+#include "asserts.h"
 #include "data.h"
 #include "table.h"
 #include "log.h"
@@ -99,7 +99,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
 
             /* https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
             comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
-            assert(comp_result == 0);
+            assert_true(comp_result == 0, "Regex compile fail.\n");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
             regfree(&reegex);
             if (exe_result == REG_NOMATCH) 
@@ -114,7 +114,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
 
             /* Jump https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
             comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", REG_EXTENDED);
-            assert(comp_result == 0);
+            assert_true(comp_result == 0, "Regex compile fail.\n");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
             regfree(&reegex);
             if (exe_result == REG_NOMATCH) 
@@ -215,7 +215,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
         AssignmentNode *assignment_node = *(assignment_set_node->assignment_node + i);
         ColumnNode *column_node = assignment_node->column;
         ValueItemNode *value_node = assignment_node->value;
-        assert(column_node != NULL);
+        assert_not_null(column_node, "System error, there is no column node in assignment set node.\n");
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
 
         /* Check column, check type, check if value valid. */
@@ -341,8 +341,8 @@ bool check_insert_node(InsertNode *insert_node) {
 /* Check for update node. */
 bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
     Table *table = open_table(update_node->table_name);
-    assert(table != NULL);
-    return check_assignment_set_node(update_node->assignment_set_node, table, select_result) 
+    return table != NULL 
+           && check_assignment_set_node(update_node->assignment_set_node, table, select_result) 
            && check_condition_node(update_node->condition_node, table->meta_table);
 }
 

@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,6 +8,7 @@
 #include "node.h"
 #include "mmu.h"
 #include "common.h"
+#include "asserts.h"
 #include "misc.h"
 #include "const.h"
 #include "pager.h"
@@ -401,11 +401,7 @@ static void update_internal_node_key(Table *table, void *internal_node, void *ol
     if (keys_num > 0 && !greater(old_key, max_key, key_data_type)) {
         uint32_t key_index = get_internal_node_key_index(internal_node, old_key, keys_num, key_len, key_data_type);
         void *key = get_internal_node_key(internal_node, key_index, key_len);
-        if (not_equal(old_key, key, key_data_type)) {
-            perror("System error in update internal node key.");
-            exit(EXECUTE_FAIL);
-        }
-        /*assert(equal(old_key, key, key_data_type)); // Theoretically equal, just for check.*/
+        assert_true(equal(old_key, key, key_data_type), "System error in update internal node key.\n"); /* Theoretically equal, just for check.*/
         set_internal_node_key(internal_node, key_index, new_key, key_len);
     }
     
@@ -844,7 +840,7 @@ static void *get_replaced_child_node(Table *table, void *node) {
 /* When root is empty to do. */
 static void empty_root_node(Table *table) {
     void *root = get_page(table->pager, table->root_page_num);
-    assert(get_node_type(root) == INTERNAL_NODE);
+    assert_true(get_node_type(root) == INTERNAL_NODE, "Sysmtem error, when empty root node, it must be internal type.");
     set_node_type(root, LEAF_NODE);
     set_leaf_node_cell_num(root, 0);
     set_leaf_node_next_leaf(root, 0);
@@ -1035,7 +1031,7 @@ void root_fall_back_root_node(Table *table) {
                 set_node_type(root, LEAF_NODE);
                 uint32_t cells_num = get_leaf_node_cell_num(replace_node); 
                 /* May be overflow. wait for resolution. */
-                assert(!overflow_leaf_node(root, key_len, value_len, cells_num));
+                assert_false(overflow_leaf_node(root, key_len, value_len, cells_num), "Leaf node overflow when root fall back.\n");
                 for (uint32_t i = 0; i < cells_num; i++) {
                     set_leaf_node_cell_key(root, i, key_len, value_len, get_leaf_node_cell_key(replace_node, i, key_len, value_len)); 
                     memcpy(get_leaf_node_cell_value(root, key_len, value_len, i), get_leaf_node_cell_value(replace_node, key_len , value_len, i), value_len);
@@ -1047,7 +1043,7 @@ void root_fall_back_root_node(Table *table) {
                 set_node_type(root, INTERNAL_NODE);
                 uint32_t keys_num = get_internal_node_keys_num(replace_node);
                 /* May be overflow. wait for resolution. */
-                assert(!overflow_internal_node(root, keys_num, key_len));
+                assert_false(overflow_internal_node(root, keys_num, key_len), "Internal node overflow when root fall back.\n");
                 for (uint32_t i = 0; i < keys_num; i++) {
                     memcpy(get_internal_node_cell(root, i, key_len), get_internal_node_cell(replace_node, i, key_len), cell_len);
                     uint32_t child_node_num = get_internal_node_child(replace_node, i, key_len);

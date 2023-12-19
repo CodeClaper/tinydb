@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,6 +23,7 @@
 #include "pager.h"
 #include "select.h"
 #include "table.h"
+#include "asserts.h"
 #include "session.h"
 
 /* Maximum number of rows fetched at once.*/
@@ -748,7 +748,7 @@ static void sum_row(Row *row, SelectResult *select_result, Table *table, void *a
     
     /* Only look for first content of row data. */;
     KeyValue *key_value = row->data[0];
-    assert(strcasecmp(key_value->key, SUM_NAME) == 0);
+    assert_true(strcasecmp(key_value->key, SUM_NAME) == 0, "System error, key name must be '%s'", SUM_NAME);
 
     switch(key_value->data_type) {
         case T_INT:
@@ -803,7 +803,6 @@ static void avg_row(Row *row, SelectResult *select_result, Table *table, void *a
     
     /* Only look for first content of row data. */;
     KeyValue *key_value = row->data[0];
-    assert(strcasecmp(key_value->key, SUM_NAME) == 0);
 
     switch(key_value->data_type) {
         case T_INT:

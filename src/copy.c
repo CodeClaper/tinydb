@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -7,6 +6,7 @@
 #include "data.h"
 #include "index.h"
 #include "meta.h"
+#include "asserts.h"
 #include "common.h"
 #include "misc.h"
 #include "mmu.h"
@@ -64,7 +64,7 @@ KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table) {
     key_value_copy->key = db_malloc2(strlen(key_value->key) + 1, "Keyvalue.Key");
     strcpy(key_value_copy->key, key_value->key);
     MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
-    assert(meta_column);
+    assert_not_null(meta_column, "Try to get meta column of '%s' in table '%s' fail.\n", key_value->key, meta_table->table_name);
     key_value_copy->value = copy_value(key_value->value, meta_column);
     key_value_copy->data_type = key_value->data_type;
     return key_value_copy;

@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +14,7 @@
 #include "node.h"
 #include "check.h"
 #include "free.h"
+#include "asserts.h"
 #include "session.h"
 
 /* Adapt to column set node data type. */
@@ -123,7 +123,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
             /* When it is non-key column, just update the cell value. */
             Cursor *cursor = define_cursor(table, row->key);
             void *leaf_node = get_page(table->pager, cursor->page_num);
-            assert(get_node_type(leaf_node) == LEAF_NODE);
+            assert_true(get_node_type(leaf_node) == LEAF_NODE, "System error, the node must be leaf type when update row.");
             void *destination = serialize_row_data(row, table);
             memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
             flush_page(table->pager, cursor->page_num);

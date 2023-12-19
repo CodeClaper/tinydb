@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -7,6 +6,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "mmu.h"
+#include "asserts.h"
 #include "data.h"
 #include "defs.h"
 #include "y.tab.h"
@@ -256,11 +256,11 @@ static void register_entry(void *ptr, size_t size, const char *data_type_name) {
     insert_entry(ptr, entry);
 }
 
-// change MEntry`s size
+/* Change MEntry`s size. */
 static void change_entry(void *old_ptr, void* new_ptr ,size_t resize) {
     if (old_ptr == new_ptr) {
         MEntry *entry = search_entry(old_ptr);
-        assert(entry);
+        assert_not_null(entry, "System error, try to find MEntry fail.\n");
         entry->ptr = new_ptr;
         entry->size = resize;
     } else {
