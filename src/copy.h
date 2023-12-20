@@ -2,10 +2,13 @@
 #include "data.h"
 
 /* Copy value. */
-void *copy_value(void *value, MetaColumn *meta_column); 
+void *copy_value(void *value, DataType data_type, MetaColumn *meta_column); 
 
 /* Copy Key value pair. */
 KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table);
+
+/* Copy refer. */
+Refer *copy_refer(Refer *refer);
 
 /* Copy row. */
 Row *copy_row(Row *row);

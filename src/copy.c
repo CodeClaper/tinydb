@@ -12,8 +12,8 @@
 #include "mmu.h"
 
 /* Copy value. */
-void *copy_value(void *value, MetaColumn *meta_column) {
-    switch(meta_column->column_type) {
+void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
+    switch(data_type) {
         case T_BOOL: {
             bool *new_val = db_malloc2(sizeof(bool), "bool");
             memcpy(new_val, value, sizeof(bool));
@@ -42,9 +42,16 @@ void *copy_value(void *value, MetaColumn *meta_column) {
         }
         case T_CHAR:
         case T_STRING: {
-            char *new_value = db_malloc2(meta_column->column_length, "String value");
-            memcpy(new_value, value, meta_column->column_length);
-            return new_value;
+            if (meta_column) {
+                char *new_value = db_malloc2(meta_column->column_length, "String value");
+                memcpy(new_value, value, meta_column->column_length);
+                return new_value;
+            } else {
+                char *new_value = db_malloc2(strlen(value) + 1, "String value");
+                memset(new_value, 0, strlen(value) + 1);
+                strcpy(new_value, value);
+                return new_value;
+            }
         }
         case T_REFERENCE: {
             Refer *refer = db_malloc2(sizeof(Refer), "Refer");
@@ -63,9 +70,9 @@ KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table) {
     KeyValue *key_value_copy = db_malloc2(sizeof(KeyValue), "KeyValue");
     key_value_copy->key = db_malloc2(strlen(key_value->key) + 1, "Keyvalue.Key");
     strcpy(key_value_copy->key, key_value->key);
-    MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
-    assert_not_null(meta_column, "Try to get meta column of '%s' in table '%s' fail.\n", key_value->key, meta_table->table_name);
-    key_value_copy->value = copy_value(key_value->value, meta_column);
+    MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key); 
+    /*Meta column may be null, in fact, key aggregate function, key is min, max, sum, avg ect. there is no meta column. */
+    key_value_copy->value = copy_value(key_value->value, key_value->data_type, meta_column);
     key_value_copy->data_type = key_value->data_type;
     return key_value_copy;
 }
@@ -79,7 +86,7 @@ Row *copy_row(Row *row) {
         return NULL;
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     Row *row_copy = db_malloc2(sizeof(Row), "Row");
-    row_copy->key = copy_value(row->key, primary_meta_column);
+    row_copy->key = copy_value(row->key, primary_meta_column->column_type, primary_meta_column);
     row_copy->column_len = row->column_len;
     row_copy->table_name = db_malloc2(strlen(row->table_name) + 1, "Row.table_name");
     strcpy(row_copy->table_name, row->table_name);
@@ -88,6 +95,17 @@ Row *copy_row(Row *row) {
         *(row_copy->data + i) = copy_key_value(*(row->data + i), table->meta_table);
     }
     return row_copy;
+}
+
+/* Copy refer. */
+Refer *copy_refer(Refer *refer) {
+    if (refer == NULL) return NULL;
+    Refer *copy_refer = db_malloc2(sizeof(Refer), "Refer");
+    memset(copy_refer, 0, sizeof(Refer));
+    strcpy(copy_refer->table_name, refer->table_name);
+    copy_refer->page_num = refer->page_num;
+    copy_refer->cell_num = refer->cell_num;
+    return copy_refer;
 }
 
 /* Copy meta column. */
