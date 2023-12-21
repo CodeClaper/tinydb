@@ -25,6 +25,8 @@
 #include "table.h"
 #include "asserts.h"
 #include "session.h"
+#include "lock.h"
+#include "refer.h"
 
 /* Maximum number of rows fetched at once.*/
 #define MAX_FETCH_ROWS 100 
@@ -360,29 +362,29 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
                     break;
                 }
                 case T_BOOL: {
-                    bool b_value = *(bool *)copy_value(destine + off_set, meta_column);
+                    bool b_value = *(bool *)copy_value(destine + off_set, meta_column->column_type, meta_column);
                     int32_t val = b_value ? 1 : 0;
                     key_value->value = &val;
                     key_value->data_type = T_INT;
                     break;
                 }
                 case T_CHAR: {
-                    char c_val = *(char *)copy_value(destine + off_set, meta_column);
+                    char c_val = *(char *)copy_value(destine + off_set, meta_column->column_type, meta_column);
                     int32_t val = c_val;
                     key_value->value = &val;
                     key_value->data_type = T_INT;
                     break;
                 }
                 case T_INT:
-                    key_value->value = copy_value(destine + off_set, meta_column);
+                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
                     key_value->data_type = T_INT;
                     break;
                 case T_FLOAT:
-                    key_value->value = copy_value(destine + off_set, meta_column);
+                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
                     key_value->data_type = T_FLOAT;
                     break;
                 case T_DOUBLE:
-                    key_value->value = copy_value(destine + off_set, meta_column);
+                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
                     key_value->data_type = T_DOUBLE;
                     break;
             }
@@ -428,7 +430,7 @@ static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *q
             ColumnNode *column_node = function_value_node->column;
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            key_value->value = copy_value(destinct + off_set, meta_column);
+            key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
             key_value->data_type = meta_column->column_type;
         }
         break;
@@ -473,7 +475,7 @@ static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *q
             ColumnNode *column_node = function_value_node->column;
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            key_value->value = copy_value(destinct + off_set, meta_column);
+            key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
             key_value->data_type = meta_column->column_type;
         }
         break;
@@ -515,7 +517,7 @@ static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_pa
         /* Generate a key value pair. */
         KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
         key_value->key = strdup(meta_column->column_name);
-        key_value->value = copy_value(destinct + off_set, meta_column);
+        key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
         key_value->data_type = meta_column->column_type;
         *(row->data + i) = key_value;
     }
@@ -548,7 +550,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     /* Define row key. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t priamry_key_set_off = calc_offset(query_param, primary_key_meta_column->column_name);
-    row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column);
+    row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type, primary_key_meta_column);
     return row;
 }
 
@@ -571,7 +573,9 @@ static Row *define_row(Refer *refer) {
 }
 
 /* Select through leaf node. */
-static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, void *leaf_node, Table *table, ROW_HANDLER row_handler, void *arg) {
+static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
+
+    void *leaf_node = get_page(table->pager, page_num);
 
     /* Get cell number, key length and value lenght. */
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
@@ -586,6 +590,9 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 
     for (uint32_t i = 0; i < cell_num; i++) {
 
+        /* set read lock on row. */
+        LockState *lock_state = db_row_lock(new_refer(table->meta_table->table_name, page_num, i), RD_MODE);
+    
         /* Get leaf node cell value. */
         void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
 
@@ -598,6 +605,9 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         row_handler(row, select_result, table, arg);
         /* Free useless row. */
         free_row(row);
+
+        /* Unlock */
+        db_unlock(lock_state);
     }
     
     /* Free useless pointer. */
@@ -638,7 +648,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
         void *node = get_page(table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
-                select_from_leaf_node(select_result, query_param, node, table, row_handler, arg);
+                select_from_leaf_node(select_result, query_param, page_num, table, row_handler, arg);
                 break;
             case INTERNAL_NODE:
                 select_from_internal_node(select_result, query_param, node, table, row_handler, arg);
@@ -653,7 +663,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     void *right_child = get_page(table->pager, right_child_page_num);
     switch (get_node_type(right_child)) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, query_param, right_child, table, row_handler, arg);
+            select_from_leaf_node(select_result, query_param, right_child_page_num, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
             select_from_internal_node(select_result, query_param, right_child, table, row_handler, arg);
@@ -689,7 +699,7 @@ static void gen_select_result(QueryParam *query_param, SelectResult *select_resu
     void *root = get_page(table->pager, table->root_page_num);
     switch (get_node_type(root)) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, query_param, root, table, row_handler, arg);
+            select_from_leaf_node(select_result, query_param, table->root_page_num, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
             select_from_internal_node(select_result, query_param, root, table, row_handler, arg);

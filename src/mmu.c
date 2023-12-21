@@ -12,7 +12,7 @@
 #include "y.tab.h"
 
 /**
-* Memory Manager Unit
+* =========================== Memeory Manager Unit ==============================
 *
 * Memory Manager Unit(MMU) is designed to achieve unnified memory management.
 * We use db_malloc,db_realloc, db_free to repalce native diynamic memory function 
@@ -24,15 +24,15 @@
 * 2.No memory leaking, no double free
 * 3.Robust against allocation failures
 * 4.Memory usage limit
-*/
-
-/* =========================== HashTable Data structure ========================
- * MHashTable is a array of MEntry, and the index is defined by hash of pointer
- * in MEntry. When hash collision, the MEntry will transform to chain list. The
- * new MEntry will insert at tail. If the number of MEntry exceed the treshold
- * (treshold = capacity * DEFAULT_LOAD_FACTOR), MTable will automatically expand,
- * In the same way, MTable will shrink when number below the treshold.
- * ============================================================================*/
+*
+* Data structure:
+* MHashTable is a array of MEntry, and the index is defined by hash of pointer
+* in MEntry. When hash collision, the MEntry will transform to chain list. The
+* new MEntry will insert at tail. If the number of MEntry exceed the treshold
+* (treshold = capacity * DEFAULT_LOAD_FACTOR), MTable will automatically expand,
+* In the same way, MTable will shrink when number below the treshold.
+* ============================================================================
+* */
 #define MAXIMUM_CAPACITY 1<<31
 #define MININUM_CAPACITY 1<<10
 #define DEFAULT_LOAD_FACTOR 0.75

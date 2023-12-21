@@ -40,6 +40,9 @@ uint32_t get_internal_node_child(void *node, uint32_t index, uint32_t key_len);
 /* Get internal node child page num. */
 uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, DataType primary_key_data_type);
 
+/* Get leaf node cell offset. */
+uint32_t get_leaf_node_cell_offset(void *node, uint32_t cell_len, uint32_t index);
+
 /* Get leaf node cell key. */
 void *get_leaf_node_cell_key(void *node, uint32_t index, uint32_t key_len,uint32_t value_len);
 

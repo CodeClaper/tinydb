@@ -151,7 +151,17 @@ static void set_leaf_node_next_leaf(void *node, uint32_t value) {
     }
 }
 
+/* Get leaf node cell offset. */
+uint32_t get_leaf_node_cell_offset(void *node, uint32_t cell_len, uint32_t index) {
+    if (is_root_node(node)) {
+        uint32_t column_size = get_column_size(node);
+        return (ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + cell_len * index); 
+    } else {
+        return (LEAF_NODE_HEAD_SIZE + cell_len * index);
+    }
+}
 
+/* Get leaf node cell. */
 void *get_leaf_node_cell(void *node, uint32_t key_len, uint32_t value_len, uint32_t index) {
     uint32_t cell_len = key_len + value_len;
     if (is_root_node(node)) {

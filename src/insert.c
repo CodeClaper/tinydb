@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 #define _XOPEN_SOURCE
 #define __USE_XOPEN
 #include <time.h>
@@ -17,10 +18,12 @@
 #include "pager.h"
 #include "index.h"
 #include "asserts.h"
+#include "session.h"
 #include "check.h"
 #include "free.h"
+#include "lock.h"
+#include "refer.h"
 #include "log.h"
-#include "session.h"
 
 
 //Get table name in select node.
@@ -211,6 +214,9 @@ InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
         return result;
     }
 
+    /* Set row write lock. */
+    LockState *lock_state = db_row_lock(convert_refer(cursor), WR_MODE);
+
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
 
@@ -221,6 +227,12 @@ InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
     /* Free unuesed memeory */
     free_cursor(cursor);
     free_row(row);
+
+    sleep(20); // for debug
+    
+    /* Unlock */
+    db_unlock(lock_state);
+
     db_send("Successfully insert one row data. \n");
     return result;    
 }

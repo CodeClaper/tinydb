@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -5,9 +6,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include "log.h"
 #include "session.h"
 #include "mmu.h"
-#include "log.h"
+#include "lock.h"
 #include "data.h"
 #include "defs.h"
 #include "misc.h"
@@ -25,15 +27,17 @@ static char* get_sys_time(char *format) {
     return sys_time;
 }
 
-/* Flush log to disk. */
+/* Flush log message to disk. */
 static void flush_log(char* msg) {
-    FILE *file;
     char log_path[BUFF_SIZE];
     char *sys_date = get_sys_time("%Y-%m-%d");
     sprintf(log_path, "%s%s.%s", conf->log_dir, sys_date, "log");
+    FILE *file;
     file = fopen(log_path, "a");
-    if (file == NULL)
-        fatal("Flush log error");
+    if (file == NULL) {
+        fprintf(stderr, "Try to open log file '%s' error, errno %d. \n", log_path, errno);
+        exit(1);
+    }
     fputs(msg, file);
     fclose(file);
 }

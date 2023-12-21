@@ -13,7 +13,8 @@
 /* Open the pager. */
 Pager *open_pager(char *table_file_path){
     Pager *pager = db_malloc2(sizeof(Pager), "Pager");
-    int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);
+    /*int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);*/
+    int file_descriptor = open(table_file_path, O_RDWR);
     if (file_descriptor == -1) {
         fprintf(stderr, "Open table file fail.\n");
         exit(EXIT_FAILURE);

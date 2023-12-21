@@ -1,8 +1,9 @@
-#include <ctype.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #ifndef DATA_H
 #define DATA_H
@@ -55,6 +56,12 @@ typedef enum { EXECUTE_SUCCESS, EXECUTE_FAIL, EXECUTE_SQL_ERROR, EXECUTE_TABLE_E
 
 /* LogLevel */
 typedef enum { TRACE_LEVEL, DEBUG_LEVEL, INFO_LEVEL, WARN_LEVEL, ERROR_LEVLE } LogLevel;
+
+/* Lock level. */
+typedef enum { LEVEL_ROW, LEVEL_TABLE } LockLevel;
+
+/* Lock mode. */
+typedef enum LockMode { RD_MODE, WR_MODE } LockMode;
 
 /* ColumnNode */
 typedef struct {
@@ -362,8 +369,17 @@ typedef struct {
 typedef struct flock FileLock;
 
 /* LockState */
-typedef struct {
-    int fd;
-    FileLock *lock; 
+typedef struct LockState {
+    Refer *refer;
+    pthread_rwlock_t lock;  /* wrlock. */
+    uint32_t in_use; /* in use. */
+    struct LockState *next; /* next */
 } LockState;
+
+/* LockTable */
+typedef struct {
+    LockState *head; /* the head of list */
+    LockState *tail; /* the tail of list */
+    uint32_t size;
+} LockTable;
 #endif

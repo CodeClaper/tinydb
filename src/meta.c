@@ -114,60 +114,60 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
 
 /* Calculate the length of table row. */
 uint32_t calc_table_row_length(Table *table) {
-  uint32_t len = 0;
-  for (int i = 0; i < table->meta_table->column_size; i++) {
-    MetaColumn *meta_col = (table->meta_table->meta_column[i]);
-    len += meta_col->column_length;
-  }
-  return len;
+    uint32_t len = 0;
+    for (int i = 0; i < table->meta_table->column_size; i++) {
+      MetaColumn *meta_col = (table->meta_table->meta_column[i]);
+      len += meta_col->column_length;
+    }
+    return len;
 }
 
 /* Calculate primary key lenght. if not exist primary key , return -1; */
 uint32_t calc_primary_key_length(Table *table) {
-   for (int i = 0; i < table->meta_table->column_size; i++) {
-     MetaColumn *meta_column = (table->meta_table->meta_column[i]);
-     if (meta_column->is_primary)
-         return meta_column->column_length;
-   }
-   fatal("Not found primary key.");
-   return -1;
+    for (int i = 0; i < table->meta_table->column_size; i++) {
+       MetaColumn *meta_column = (table->meta_table->meta_column[i]);
+       if (meta_column->is_primary)
+           return meta_column->column_length;
+     }
+     fatal("Not found primary key.");
+     return -1;
 }
 
 /* Get index column meta info */
 MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index) {
-  uint32_t column_size = get_column_size(root_node);
-  if (index >= column_size) {
-     fprintf(stderr, "Exceed the maxinum column size: [%d]", column_size);   
-     exit(1);
-  }
-  void *destination = get_meta_column_pointer(root_node, index);
-  return deserialize_meta_column(destination);
+    uint32_t column_size = get_column_size(root_node);
+    if (index >= column_size) {
+       fprintf(stderr, "Exceed the maxinum column size: [%d]", column_size);   
+       exit(1);
+    }
+    void *destination = get_meta_column_pointer(root_node, index);
+    return deserialize_meta_column(destination);
 }
 
 /* Get meta column info by column name. */
 MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
-  for (uint32_t i = 0; i < meta_table->column_size; i++) {
-    MetaColumn *meta_column = meta_table->meta_column[i];
-    if (strcmp(meta_column->column_name, name) == 0)
-      return meta_column;
-  }
-  return NULL;
+    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+      MetaColumn *meta_column = meta_table->meta_column[i];
+      if (strcmp(meta_column->column_name, name) == 0)
+        return meta_column;
+    }
+    return NULL;
 }
 
 /* Get table meta info. */
 MetaTable *get_meta_table(Table *table, char *table_name) {
-  if (table_name == NULL)
-    fatal("Input table name can`t be null.");
-  MetaTable *meta_table = db_malloc(sizeof(MetaTable));
-  void *root_node = get_page(table->pager, table->root_page_num);
-  uint32_t column_size = get_column_size(root_node);
-  meta_table->table_name = strdup(table_name);
-  meta_table->column_size = column_size;
-  size_t meta_column_size = sizeof(MetaColumn);
-  for (int i = 0; i < column_size; i++) {
-    meta_table->meta_column[i] = db_malloc(meta_column_size);
-    memcpy(meta_table->meta_column[i], get_meta_column_by_index(root_node, i),
-           meta_column_size);
-  }
-  return meta_table;
+    if (table_name == NULL)
+      fatal("Input table name can`t be null.");
+    MetaTable *meta_table = db_malloc(sizeof(MetaTable));
+    void *root_node = get_page(table->pager, table->root_page_num);
+    uint32_t column_size = get_column_size(root_node);
+    meta_table->table_name = strdup(table_name);
+    meta_table->column_size = column_size;
+    size_t meta_column_size = sizeof(MetaColumn);
+    for (int i = 0; i < column_size; i++) {
+      meta_table->meta_column[i] = db_malloc(meta_column_size);
+      memcpy(meta_table->meta_column[i], get_meta_column_by_index(root_node, i),
+             meta_column_size);
+    }
+    return meta_table;
 }

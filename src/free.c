@@ -22,6 +22,13 @@ void free_key_value(KeyValue *key_value) {
     } 
 }
 
+/* Free Refer. */
+void free_refer(Refer *refer) {
+    if (refer) {
+        db_free(refer);
+    }
+}
+
 /* Free Row. */
 void free_row(Row *row) {
     if (row) {
@@ -361,5 +368,14 @@ void free_table_list(TableList *table_list) {
         }
         db_free(table_list->table_name_list);
         db_free(table_list);
+    }
+}
+
+/* Free lock state. */
+void free_lock_state(LockState *lock_state) {
+    if (lock_state) {
+        free_refer(lock_state->refer);
+        free_lock_state(lock_state->next);
+        db_free(lock_state);
     }
 }

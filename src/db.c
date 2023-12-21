@@ -10,6 +10,7 @@
 #include "data.h"
 #include "defs.h"
 #include "mmu.h"
+#include "lock.h"
 #include "parser.h"
 #include "stmt.h"
 #include "free.h"
@@ -27,8 +28,10 @@ Conf *conf;
 static void init() {
     /* Initialise memory manager unit. */
     init_mem(); 
-    /* Initialision session. */
+    /* Initialise session. */
     init_session();
+    /* Initialise lock. */
+    init_lock();
     /* Load configuration. */
     conf = load_conf();
 }
