@@ -590,8 +590,6 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 
     for (uint32_t i = 0; i < cell_num; i++) {
 
-        /* set read lock on row. */
-        LockState *lock_state = db_row_lock(new_refer(table->meta_table->table_name, page_num, i), RD_MODE);
     
         /* Get leaf node cell value. */
         void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
@@ -600,6 +598,8 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         if (!include_leaf_node(destinct, query_param->condition_node, table->meta_table))
             continue;
 
+        /* Set read lock on row. */
+        LockHandle *lock_handle = db_row_lock(new_refer(table->meta_table->table_name, page_num, i), RD_MODE);
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, query_param, table->meta_table);
         row_handler(row, select_result, table, arg);
@@ -607,7 +607,7 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         free_row(row);
 
         /* Unlock */
-        db_unlock(lock_state);
+        db_unlock(lock_handle);
     }
     
     /* Free useless pointer. */

@@ -371,11 +371,11 @@ void free_table_list(TableList *table_list) {
     }
 }
 
-/* Free lock state. */
-void free_lock_state(LockState *lock_state) {
-    if (lock_state) {
-        free_refer(lock_state->refer);
-        free_lock_state(lock_state->next);
-        db_free(lock_state);
+/* Free LockHandle. */
+void free_lock_handle(LockHandle *lock_handle) {
+    if (lock_handle) {
+        free_refer(lock_handle->refer);
+        free_lock_handle(lock_handle->next);
+        db_free(lock_handle);
     }
 }

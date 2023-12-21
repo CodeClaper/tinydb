@@ -27,12 +27,12 @@
  *=================================================================================================================
  * */
 
-volatile static LockTable *ltable; /* Store lock state list. */
+volatile static LockTable *ltable; /* Store lock handle list. */
 
 /* Initialise lock. */
 void init_lock() {
 
-    /* Initialise lock state table. */
+    /* Initialise lock handle table. */
     ltable = db_malloc2(sizeof(LockTable), "LockTable");
     ltable->head = NULL;
     ltable->tail = NULL;
@@ -48,32 +48,31 @@ static bool compare(Refer *r1, Refer *r2) {
 }
 
 
-/* Register lock state. */
-static void register_lock_state(LockState *lock_state) {
+/* Register lock handle. */
+static void register_lock_handle(LockHandle *lock_handle) {
     if (ltable->size == 0) {
-        ltable->head = lock_state;
-        ltable->tail = lock_state;
+        ltable->head = lock_handle;
+        ltable->tail = lock_handle;
     } else {
-        ltable->tail->next = lock_state;
-        ltable->tail = lock_state;
+        ltable->tail->next = lock_handle;
+        ltable->tail = lock_handle;
     }
     ltable->size++;
 }
 
-/* Destroy lock state. 
- * When lock state has more than one thread in use, just decrease
- * When in use num is 1, destroy the lock state. */
-static bool destroy_lock_state(LockState *lock_state) {
-    
+/* Destroy lock handle. 
+ * When lock handle has more than one thread in use, just decrease
+ * When in use num is 1, destroy the lock handle. */
+static bool destroy_lock_handle(LockHandle *lock_handle) {
 
     /* Destroy only when there is no thread in use. */
-    if (lock_state->in_use > 1) {
-        lock_state->in_use--;
+    if (lock_handle->shared > 1) {
+        lock_handle->shared--;
         return true;
     }
 
     /* Maybe head. */
-    if (ltable->head == lock_state) {
+    if (ltable->head == lock_handle) {
         ltable->head = ltable->head->next;
         /* When size is 1, head and tail all becomes null. */
         if (ltable->size == 1)
@@ -81,21 +80,21 @@ static bool destroy_lock_state(LockState *lock_state) {
         ltable->size--;
         
         /* Destroy lock. */
-        pthread_rwlock_destroy(&lock_state->lock);
+        pthread_rwlock_destroy(&lock_handle->lock);
         /* Free memory. */
-        lock_state->next = NULL;
-        free_lock_state(lock_state);
+        lock_handle->next = NULL;
+        free_lock_handle(lock_handle);
         return true;
     }
 
-    /* current, previous lock state. */
-    LockState *current, *prev;
+    /* current, previous lock handle. */
+    LockHandle *current, *prev;
     current = ltable->head; 
     prev = ltable->head;
 
     /* Loop to check. */
     while(current != NULL) {
-        if (current == lock_state) {
+        if (current == lock_handle) {
             /* If current is tail, tail end back. */
             if (ltable->tail == current)
                 ltable->tail = prev;
@@ -103,10 +102,10 @@ static bool destroy_lock_state(LockState *lock_state) {
             prev->next = current->next; 
             ltable->size--;
             /* Destroy lock. */
-            pthread_rwlock_destroy(&lock_state->lock);
+            pthread_rwlock_destroy(&lock_handle->lock);
             /* Free memory. */
             current->next = NULL;
-            free_lock_state(current);
+            free_lock_handle(current);
             return true;
         }
         prev = current; 
@@ -115,68 +114,68 @@ static bool destroy_lock_state(LockState *lock_state) {
     return false;
 }
 
-/* Generate new lock state. */
-static LockState *new_lock_state(Refer *refer) {
-    LockState *lock_state = db_malloc2(sizeof(LockState), "LockState");
-    memset(lock_state, 0, sizeof(LockState));
-    lock_state->refer = copy_refer(refer);
-    lock_state->next = NULL;
-    lock_state->in_use = 1;
-    /* register new lock state. */
-    register_lock_state(lock_state);
-    return lock_state;
+/* Generate new lock handle. */
+static LockHandle *new_lock_handle(Refer *refer) {
+    LockHandle *lock_handle = db_malloc2(sizeof(LockHandle), "LockHandle");
+    memset(lock_handle, 0, sizeof(LockHandle));
+    lock_handle->refer = copy_refer(refer);
+    lock_handle->next = NULL;
+    lock_handle->shared = 1;
+    /* register new lock handle. */
+    register_lock_handle(lock_handle);
+    return lock_handle;
 }
 
-/* Find lock state. 
+/* Find lock handle. 
  * If fail, then generate new one. */
-static LockState *find_lock_state(Refer *refer) {
+static LockHandle *find_lock_handle(Refer *refer) {
 
     /* Firstly, try to find in ltable. */
-    LockState *current;
+    LockHandle *current;
     for (current = ltable->head; current != NULL; current = current->next) {
         if (compare(refer, current->refer)) {
-            current->in_use++;
+            current->shared++;
             return current;
         }
     }
 
     /* If cache missing, generate new one. */
-    return new_lock_state(refer);
+    return new_lock_handle(refer);
 }
 
 /* Db read row level read mode or write lock. */
-LockState *db_row_lock(Refer *refer, LockMode lock_mode) {
+LockHandle *db_row_lock(Refer *refer, LockMode lock_mode) {
 
     int ret;
 
-    /* Get the lock state. */
-    LockState *lock_state = find_lock_state(refer);
+    /* Get the lock handle. */
+    LockHandle *lock_handle = find_lock_handle(refer);
 
     switch(lock_mode) {
         case RD_MODE:
-            ret = pthread_rwlock_rdlock(&lock_state->lock);
+            ret = pthread_rwlock_rdlock(&lock_handle->lock);
             break;
         case WR_MODE:
-            ret = pthread_rwlock_wrlock(&lock_state->lock);
+            ret = pthread_rwlock_wrlock(&lock_handle->lock);
             break;
     }
 
     /* Check lock result. */
     assert_true(ret == 0, "Row lock error, errno is %d and error message: %s", errno, strerror(errno));
 
-    return lock_state;
+    return lock_handle;
 }
 
 /* Db read row level unlock. */
-void db_unlock(LockState *lock_state) {
+void db_unlock(LockHandle *lock_handle) {
 
     /* Check not null. */
-    assert_not_null(lock_state, "Lock state not allow to be null.\n");
+    assert_not_null(lock_handle, "Lock handle not allow to be null.\n");
     
     /* Unlock and check result. */
-    assert_true(pthread_rwlock_unlock(&lock_state->lock) == 0, "Unlock error, errno is %d and error message:  %s.\n", errno, strerror(errno));
+    assert_true(pthread_rwlock_unlock(&lock_handle->lock) == 0, "Unlock error, errno is %d and error message:  %s.\n", errno, strerror(errno));
 
-    /* Destroy lock state and check result. */
-    assert_true(destroy_lock_state(lock_state), "Destroy lock state fail.\n");
+    /* Destroy lock handle and check result. */
+    assert_true(destroy_lock_handle(lock_handle), "Destroy lock handle fail.\n");
 }
 

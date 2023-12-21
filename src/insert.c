@@ -215,7 +215,7 @@ InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
     }
 
     /* Set row write lock. */
-    LockState *lock_state = db_row_lock(convert_refer(cursor), WR_MODE);
+    LockHandle *lock_handle = db_row_lock(convert_refer(cursor), WR_MODE);
 
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
@@ -231,7 +231,7 @@ InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
     sleep(20); // for debug
     
     /* Unlock */
-    db_unlock(lock_state);
+    db_unlock(lock_handle);
 
     db_send("Successfully insert one row data. \n");
     return result;    

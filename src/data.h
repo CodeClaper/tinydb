@@ -369,17 +369,17 @@ typedef struct {
 typedef struct flock FileLock;
 
 /* LockState */
-typedef struct LockState {
+typedef struct LockHandle {
     Refer *refer;
     pthread_rwlock_t lock;  /* wrlock. */
-    uint32_t in_use; /* in use. */
-    struct LockState *next; /* next */
-} LockState;
+    uint32_t shared; /* number of shared the lock. */
+    struct LockHandle *next; /* next */
+} LockHandle;
 
 /* LockTable */
 typedef struct {
-    LockState *head; /* the head of list */
-    LockState *tail; /* the tail of list */
+    LockHandle *head; /* the head of list */
+    LockHandle *tail; /* the tail of list */
     uint32_t size;
 } LockTable;
 #endif

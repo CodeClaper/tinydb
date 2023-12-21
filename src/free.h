@@ -75,5 +75,5 @@ void free_query_param(QueryParam *query_param);
 // Free table list
 void free_table_list(TableList *table_list);
 
-/* Free lock state. */
-void free_lock_state(LockState *lock_state);
+/* Free LockHandle. */
+void free_lock_handle(LockHandle *lock_state);
