@@ -228,8 +228,6 @@ InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
     free_cursor(cursor);
     free_row(row);
 
-    sleep(20); // for debug
-    
     /* Unlock */
     db_unlock(lock_handle);
 

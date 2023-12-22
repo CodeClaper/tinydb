@@ -81,15 +81,12 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
 ExecuteResult exec_create_table_statement(CreateTableNode *create_table_node) {
     if (!check_create_table_node(create_table_node))
         return EXECUTE_FAIL;
-    char buff[1024];
     MetaTable *meta_table = gen_meta_table(create_table_node);
     if (meta_table == NULL)
         return EXECUTE_FAIL;
     ExecuteResult result = create_table(meta_table);
-    if (result == EXECUTE_SUCCESS) {
-        sprintf(buff, "Table %s created successfully.\n", meta_table->table_name);
-        db_send(buff); 
-    }
+    if (result == EXECUTE_SUCCESS) 
+        db_send("Table %s created successfully.\n", meta_table->table_name);
     db_free(meta_table);
     return result;
 }

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <stdarg.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -53,9 +54,10 @@ void destroy_session() {
  * First send message size before sending the message.
  * So that, client can prepare enough large buffer to store the message.
  * return true if send successfully, else return false. */
-bool db_send(const char *msg) {
-    if (msg == NULL)
+bool db_send(const char *format, ...) {
+    if (format == NULL)
         return false;
+    va_list ap;
     size_t size ;
     ssize_t r = -1, s = 0;
     Session *session;
@@ -63,9 +65,11 @@ bool db_send(const char *msg) {
 
     /* Initialize send buffer. */
     memset(sbuff, 0, BUFF_SIZE);
+
+    va_start(ap, format);
     
     /* Assignment send buffer. */
-    sprintf(sbuff, "%s", msg);
+    vsprintf(sbuff, format, ap);
 
     /*Get session*/
     session = get_session(); 
@@ -74,12 +78,14 @@ bool db_send(const char *msg) {
     if (session != NULL && (r = recv(session->client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 && (s = send(session->client, sbuff, BUFF_SIZE, 0)) > 0) {
         session->volumn += s;
         session->frequency++;
+        va_end(ap);
         return true;
     }
 
     /* If detect that client has closed conneciton, destroy the session. */
     if (r == 0 || s < 0) 
         destroy_session(); 
+    va_end(ap);
     return false;
 }
 

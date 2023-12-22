@@ -39,7 +39,6 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table, void
 
 /* Execute delete statment.*/
 ExecuteResult exec_delete_statement(DeleteNode *delete_node) { 
-    char buff[BUFF_SIZE];
     Table *table = open_table(delete_node->table_name);
     if (table == NULL)
         return EXECUTE_TABLE_OPEN_FAIL;
@@ -59,8 +58,7 @@ ExecuteResult exec_delete_statement(DeleteNode *delete_node) {
     root_fall_back_root_node(table);
 
     /* Send out deleted result. */
-    sprintf(buff, "Successfully deleted %d row data.\n", select_result->row_size);
-    db_send(buff);
+    db_send("Successfully deleted %d row data.\n", select_result->row_size);
 
     return EXECUTE_SUCCESS;
 }

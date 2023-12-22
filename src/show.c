@@ -46,10 +46,8 @@ static void print_show_table(TableList *table_list) {
     uint32_t i;
     db_send("[");
     for (i = 0; i < table_list->count; i++) {
-        char buff[BUFF_SIZE];
         char *table_name = *(table_list->table_name_list + i);
-        sprintf(buff, "\"%s\"", table_name);
-        db_send(buff);
+        db_send("\"%s\"", table_name);
         if (i < table_list->count -1)
             db_send(", ");
     } 

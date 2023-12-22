@@ -15,7 +15,7 @@ Session *get_session();
 /* Socket send
  * return true if send successfully, else return false.
  * */
-bool db_send(const char *buff);
+bool db_send(const char *format, ...);
 
 /* Socket send 'Over' flag,
  * which means the message is over.

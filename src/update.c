@@ -14,6 +14,7 @@
 #include "node.h"
 #include "check.h"
 #include "free.h"
+#include "misc.h"
 #include "asserts.h"
 #include "session.h"
 
@@ -78,8 +79,11 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     break;
                 case T_CHAR:
                 case T_STRING:
-                    db_free(key_value->value); // free old memory.
+                    db_free(key_value->value); /* free old memory. */
                     key_value->value = strdup(value->s_value);
+                    break;
+                case T_REFERENCE:
+                    fatal("Not implement yet.");
                     break;
             }    
         }
@@ -106,8 +110,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
             void *new_key = get_value_from_value_item_node(assign_node->value, meta_column->column_type);
             if (equal(old_key, new_key, meta_column->column_type)) 
                 continue;  /* The Key value not change, nothing to do. */
-            else 
-            {
+            else {
                 /* In the case, key value change, update = delete + re-insert. */
                 /* Delete the old one. */
                 Cursor *old_cursor = define_cursor(table, old_key);
@@ -133,7 +136,6 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
 
 /* Execute update statment. */
 ExecuteResult exec_update_statment(UpdateNode *update_node) {
-    char buff[BUFF_SIZE];
     Table *table = open_table(update_node->table_name);
     if (table == NULL)
         return EXECUTE_TABLE_OPEN_FAIL;
@@ -156,8 +158,7 @@ ExecuteResult exec_update_statment(UpdateNode *update_node) {
     query_with_condition(query_param, select_result, update_row, update_node->assignment_set_node);
 
     /* Send out update result. */
-    sprintf(buff, "Successfully updated %d row data.\n", select_result->row_size);
-    db_send(buff);
+    db_send("Successfully updated %d row data.\n", select_result->row_size);
 
     return EXECUTE_SUCCESS;
 }
