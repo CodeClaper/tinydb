@@ -54,6 +54,7 @@ dkms.conf
 # Log file
 *.log
 
+.vscode/
 
 # http://www.gnu.org/software/automake
 
