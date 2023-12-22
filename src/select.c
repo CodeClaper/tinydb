@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <strings.h>
 #define _XOPEN_SOURCE
@@ -525,6 +526,7 @@ static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_pa
 
 /* Generate select row. */
 static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
+
     /* Check if table exist.*/
     Table *table = open_table(query_param->table_name);
     if (table == NULL)
@@ -600,6 +602,7 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 
         /* Set read lock on row. */
         LockHandle *lock_handle = db_row_lock(new_refer(table->meta_table->table_name, page_num, i), RD_MODE);
+
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, query_param, table->meta_table);
         row_handler(row, select_result, table, arg);
@@ -718,11 +721,9 @@ static void send_row_data(Row *row) {
     for (uint32_t j = 0; j < row->column_len; j++) {
         KeyValue *key_value = *(row->data + j);
         if (key_value->data_type == T_REFERENCE) {
-            char buff[BUFF_SIZE ];
             Refer *refer = (Refer *) key_value->value;
             Row *sub_row = define_row(refer);
-            sprintf(buff, "\"%s\": ", key_value->key);
-            db_send(buff);
+            db_send("\"%s\": ", key_value->key);
             send_row_data(sub_row);
         } else {
             char *key_value_pair_str = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
@@ -754,8 +755,6 @@ void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 /* Execute sum funciton */
 static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
-    char buff[BUFF_SIZE]; 
-    
     /* Only look for first content of row data. */;
     KeyValue *key_value = row->data[0];
     assert_true(strcasecmp(key_value->key, SUM_NAME) == 0, "System error, key name must be '%s'", SUM_NAME);
@@ -789,19 +788,18 @@ static void sum_row(Row *row, SelectResult *select_result, Table *table, void *a
             case T_INT:
             case T_BOOL:
             case T_CHAR:
-                sprintf(buff, "{%s: %d}\n", SUM_NAME, select_result->sum.i);
+                db_send("{%s: %d}\n", SUM_NAME, select_result->sum.i);
                 break;
             case T_FLOAT:
-                sprintf(buff, "{%s: %f}\n", SUM_NAME, select_result->sum.f);
+                db_send("{%s: %f}\n", SUM_NAME, select_result->sum.f);
                 break;
             case T_DOUBLE:
-                sprintf(buff, "{%s: %fd}\n", SUM_NAME, select_result->sum.d);
+                db_send("{%s: %fd}\n", SUM_NAME, select_result->sum.d);
                 break;
             default:
-                sprintf(buff, "{%s: 0}\n", SUM_NAME);
+                db_send("{%s: 0}\n", SUM_NAME);
                 break;
         }
-        db_send(buff);
     }
 }
 
@@ -809,8 +807,6 @@ static void sum_row(Row *row, SelectResult *select_result, Table *table, void *a
 /* Execute avg funciton */
 static void avg_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
-    char buff[BUFF_SIZE]; 
-    
     /* Only look for first content of row data. */;
     KeyValue *key_value = row->data[0];
 
@@ -842,19 +838,18 @@ static void avg_row(Row *row, SelectResult *select_result, Table *table, void *a
             case T_INT:
             case T_BOOL:
             case T_CHAR:
-                sprintf(buff, "{%s: %d}\n", AVG_NAME, select_result->sum.i / select_result->row_size);
+                db_send("{%s: %d}\n", AVG_NAME, select_result->sum.i / select_result->row_size);
                 break;
             case T_FLOAT:
-                sprintf(buff, "{%s: %f}\n", AVG_NAME, select_result->sum.f / select_result->row_size);
+                db_send("{%s: %f}\n", AVG_NAME, select_result->sum.f / select_result->row_size);
                 break;
             case T_DOUBLE:
-                sprintf(buff, "{%s: %fd}\n", AVG_NAME, select_result->sum.d / select_result->row_size);
+                db_send("{%s: %fd}\n", AVG_NAME, select_result->sum.d / select_result->row_size);
                 break;
             default:
-                sprintf(buff, "{%s: 0}\n", AVG_NAME);
+                db_send("{%s: 0}\n", AVG_NAME);
                 break;
         }
-        db_send(buff);
     }
 }
 
@@ -920,8 +915,6 @@ static void min_row(Row *row, SelectResult *select_result, Table *table, void *a
 /* Execute aggregate function count(). */
 static void exec_function_count(QueryParam *query_param) {
 
-    char buff[BUFF_SIZE];
-
     /* Generate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
@@ -929,8 +922,7 @@ static void exec_function_count(QueryParam *query_param) {
     query_with_condition(query_param, select_result, count_row, NULL);
     
     /* Compose count result info and send out. */
-    sprintf(buff, "{%s: %d}\n", COUNT_NAME, select_result->row_size);
-    db_send(buff);
+    db_send("{%s: %d}\n", COUNT_NAME, select_result->row_size);
 }
 
 /* Execute aggregate function sum(). */

@@ -11,6 +11,8 @@ int yyerror(const char *s);
 int yylex();
 %}
 %%
+begin                   return BEGINN;
+commit                  return COMMIT;
 create                  return CREATE;
 select                  return SELECT;
 insert                  return INSERT;

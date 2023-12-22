@@ -43,13 +43,13 @@ typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
 
 /* StatementType */
-typedef enum { CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT } StatementType; // statement type
+typedef enum { BEGIN_TRANSACTION_STMT, COMMIT_TRANSACTION_STMT, CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT } StatementType; // statement type
 
 /* NodeType */
 typedef enum { LEAF_NODE, INTERNAL_NODE } NodeType;
 
 /* StatementType */
-typedef enum { STMT_CREATE_TABLE, STMT_SELECT, STMT_UPDATE, STMT_INSERT, STMT_DELETE, STMT_DESCRIBE, STMT_SHOW } StamentType;
+typedef enum { STMT_BEGINE_TRANSACTION, STMT_COMMIT_TRANSACTION, STMT_CREATE_TABLE, STMT_SELECT, STMT_UPDATE, STMT_INSERT, STMT_DELETE, STMT_DESCRIBE, STMT_SHOW } StamentType;
 
 /* ExecuteResult */
 typedef enum { EXECUTE_SUCCESS, EXECUTE_FAIL, EXECUTE_SQL_ERROR, EXECUTE_TABLE_EXIST_FAIL, EXECUTE_TABLE_CREATE_FAIL, EXECUTE_TABLE_DROP_FAIL, EXECUTE_TABLE_OPEN_FAIL, EXECUTE_DUPLICATE_KEY } ExecuteResult;
@@ -382,4 +382,18 @@ typedef struct {
     LockHandle *tail; /* the tail of list */
     uint32_t size;
 } LockTable;
+
+/* TransactionHandle */
+typedef struct TransactionHandle {
+    uint64_t xid; /* transaction id. */ 
+    uint64_t tid; /* thread id. */
+    struct TransactionHandle *next; /* next */
+} TransactionHandle;
+
+/* Transaction Table. */
+typedef struct {
+    TransactionHandle *head;
+    TransactionHandle *tail;
+    uint32_t size;
+} TransactionTable; 
 #endif

@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include "node.h"
 #include "mmu.h"
+#include "refer.h"
+#include "lock.h"
 #include "common.h"
 #include "asserts.h"
 #include "misc.h"

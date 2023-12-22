@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "mmu.h"
 #include "lock.h"
+#include "trans.h"
 #include "parser.h"
 #include "stmt.h"
 #include "free.h"
@@ -32,6 +33,8 @@ static void init() {
     init_session();
     /* Initialise lock. */
     init_lock();
+    /* Initialise transaction. */
+    init_transaction();
     /* Load configuration. */
     conf = load_conf();
 }
@@ -52,7 +55,7 @@ int main(void) {
     db_info("Tinydb server start up successfully and listen port %d \n", conf->port);
     while(true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
-        if (client_name_len == -1)
+        if (client_secket == -1)
             fatal("Socket accept fail.");
         if (pthread_create(&new_thread, NULL, (void *)accept_request, (void *)(intptr_t)client_secket) != 0)
             fatal("Create new thread fail.");

@@ -18,10 +18,23 @@
 #include "delete.h"
 #include "desc.h"
 #include "show.h"
+#include "trans.h"
 #include "utils.h"
 #include "session.h"
 #include "log.h"
 #include "free.h"
+
+/* Begin tranasction statement. */
+static ExecuteResult statement_begin_transaction(Statement *stmt) {
+    assert_true(stmt->statement_type == BEGIN_TRANSACTION_STMT, "System error, begin tranasction statement type error.\n");
+    return begin_transaction();
+}
+
+/* Commit tranasction statement. */
+static ExecuteResult statement_commit_transaction(Statement *stmt) {
+    assert_true(stmt->statement_type == COMMIT_TRANSACTION_STMT, "System error, commit tranasction statement type error.\n");
+    return EXECUTE_SUCCESS;
+}
 
 /*Create table Statement*/
 static ExecuteResult statement_create_table(Statement *stmt) {
@@ -86,6 +99,12 @@ ExecuteResult statement(char *sql) {
     if (statement == NULL)
         return EXECUTE_SQL_ERROR;
     switch(statement->statement_type) {
+        case STMT_BEGINE_TRANSACTION:
+            result = statement_begin_transaction(statement);
+            break;
+        case STMT_COMMIT_TRANSACTION:
+            result = statement_commit_transaction(statement);
+            break;
         case STMT_CREATE_TABLE:
             result = statement_create_table(statement);
             break;

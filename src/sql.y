@@ -45,6 +45,7 @@ int yylex();
 };
 
 %token NL
+%token <keyword> BEGINN COMMIT
 %token <keyword> CREATE SELECT INSERT UPDATE DELETE DESCRIBE
 %token <keyword> FROM
 %token <keyword> WHERE
@@ -105,7 +106,15 @@ statements:
             | statements
             ;
 statement: 
-            create_table_statement
+            begin_transaction_statement
+                {
+                    ast_node->statement_type = BEGIN_TRANSACTION_STMT;
+                }
+            | commit_transaction_statement
+                {
+                    ast_node->statement_type = COMMIT_TRANSACTION_STMT;
+                }
+            | create_table_statement
                 {
                     ast_node->statement_type = CREATE_TABLE_STMT;
                     ast_node->create_table_node = $1;
@@ -140,6 +149,12 @@ statement:
                     ast_node->statement_type = SHOW_STMT;
                     ast_node->show_node = $1;
                 }
+            ;
+begin_transaction_statement:
+            BEGINN end
+            ;
+commit_transaction_statement:
+            COMMIT end
             ;
 create_table_statement: 
             CREATE TABLE table LEFTPAREN column_defs RIGHTPAREN end

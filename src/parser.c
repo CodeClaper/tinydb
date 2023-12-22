@@ -23,6 +23,12 @@ Statement *new_statement(ASTNode *node) {
         return NULL;
     Statement *statement = db_malloc2(sizeof(Statement), "Statement");
     switch(node->statement_type) {
+        case BEGIN_TRANSACTION_STMT:
+            statement->statement_type = STMT_BEGINE_TRANSACTION;
+            break;
+        case COMMIT_TRANSACTION_STMT:
+            statement->statement_type = STMT_COMMIT_TRANSACTION;
+            break;
         case CREATE_TABLE_STMT:
             statement->statement_type = STMT_CREATE_TABLE;
             break;
