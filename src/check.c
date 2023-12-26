@@ -37,6 +37,9 @@ static bool if_convert_type(DataType source, DataType target, char *column_name)
         case T_INT:
             result = target == T_INT;
             break;
+        case T_LONG:
+            result = target == T_INT || target == T_LONG;
+            break;
         case T_FLOAT:
             result = target == T_INT || target == T_FLOAT;
             break;
@@ -301,7 +304,7 @@ bool check_insert_node(InsertNode *insert_node) {
         
         /* Check column number equals the insert values number. */
         if (meta_table->column_size != insert_node->value_item_set_node->num) {
-            db_error("Column count doesn't match value count");
+            db_error("Column count doesn't match value count: %d != %d. \n", meta_table->column_size, insert_node->value_item_set_node->num);
             return false;
         }
 
@@ -318,7 +321,7 @@ bool check_insert_node(InsertNode *insert_node) {
     } else {
 
         /* Check column number equals the insert values number. */
-        if (insert_node->columns_set_node->size != insert_node->value_item_set_node->num) {
+        if (insert_node->columns_set_node->size  != insert_node->value_item_set_node->num) {
             db_error("Column count doesn't match value count\n");
             return false;
         }

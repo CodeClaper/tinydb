@@ -27,6 +27,7 @@
 #include "asserts.h"
 #include "session.h"
 #include "lock.h"
+#include "trans.h"
 #include "refer.h"
 
 /* Maximum number of rows fetched at once.*/
@@ -70,7 +71,7 @@ static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
     Table *table = open_table(query_param->table_name);
     MetaTable *meta_table = table->meta_table;
     uint32_t off_set = 0;
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+    for (uint32_t i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_name) == 0)
             break;
@@ -83,14 +84,14 @@ static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
 static uint32_t get_query_columns_num(QueryParam *query_param) {
     SelectItemsNode *select_items_node = query_param->select_items;
     switch (select_items_node->type) {
-    case SELECT_ALL: {
-        Table *table = open_table(query_param->table_name);
-        return table->meta_table->column_size;
-    }
-    case SELECT_COLUMNS:
-        return select_items_node->column_set_node->size;
-    case SELECT_FUNCTION:
-        return 1;
+        case SELECT_ALL: {
+            Table *table = open_table(query_param->table_name);
+            return table->meta_table->all_column_size;
+        }
+        case SELECT_COLUMNS:
+            return select_items_node->column_set_node->size;
+        case SELECT_FUNCTION:
+            return 1;
   }
 }
 
@@ -513,6 +514,7 @@ static void assign_function_row_data(Row *row, void *destinct, QueryParam *query
 static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_param) {
     for (uint32_t i = 0; i < row->column_len; i++) {
         MetaColumn *meta_column = find_select_item_meta_column(query_param, i);
+
         uint32_t off_set = calc_offset(query_param, meta_column->column_name);
         
         /* Generate a key value pair. */
@@ -557,7 +559,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
 }
 
 /* Define row by refer. */
-static Row *define_row(Refer *refer) {
+Row *define_row(Refer *refer) {
     uint32_t key_len, value_len;
     Table *table = open_table(refer->table_name);
     if (table == NULL) return NULL;
@@ -571,7 +573,12 @@ static Row *define_row(Refer *refer) {
     query_param->select_items = db_malloc2(sizeof(SelectItemsNode), "SelectItemsNode");
     query_param->select_items->type = SELECT_ALL;
 
-    return generate_row(destinct, query_param, table->meta_table);
+    Row *row = generate_row(destinct, query_param, table->meta_table);
+    
+    /* Free memory. */
+    free_query_param(query_param);
+
+    return row;
 }
 
 /* Select through leaf node. */
@@ -605,7 +612,10 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, query_param, table->meta_table);
-        row_handler(row, select_result, table, arg);
+
+        /* Check if visible for current transaction. */
+        if (row_is_visible(row))
+            row_handler(row, select_result, table, arg);
         /* Free useless row. */
         free_row(row);
 
@@ -624,7 +634,6 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     uint32_t keys_num, key_len;
     keys_num = get_internal_node_keys_num(internal_node);
     key_len = calc_primary_key_length(table);
-
     /* It`s necessary to use internal node snapshot, beacuse when traversing cells, 
      * update or delete operation will change the data structure of internal node,
      * which may causes bug.

@@ -1,3 +1,10 @@
+/*
+ * ============================= The pager manger ================================
+ * The pager manager supports manipulating disk data ways.
+ * Page is the basic unit of which data is store/read/written to disk and memory.
+ * PAGE_SIZE is the size of a page and data length of each IO operation.
+ * ===============================================================================
+ */
 #include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>

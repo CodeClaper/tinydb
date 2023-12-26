@@ -14,7 +14,7 @@ int yylex();
 %union 
 {
    char                     *s_value;
-   int                      i_value;
+   int64_t                  i_value;
    float                    f_value;
    bool                     b_value;
    char                     *keyword;
@@ -59,7 +59,7 @@ int yylex();
 %token <keyword> TRUE FALSE
 %token <keyword> NOT
 %token <keyword> NULLX
-%token <keyword> INT CHAR STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
+%token <keyword> CHAR INT LONG STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> PRIMARY KEY
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> AND OR
@@ -358,6 +358,7 @@ column_def:
            ;
 data_type:
            INT          { $$ = T_INT; }
+           | LONG       { $$ = T_LONG;  }
            | CHAR       { $$ = T_CHAR; }
            | STRING     { $$ = T_STRING; }
            | BOOL       { $$ = T_BOOL; }

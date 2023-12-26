@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +12,14 @@
 #include "common.h"
 #include "misc.h"
 #include "node.h"
+#include "asserts.h"
 #include "pager.h"
+
+#define DEFAULT_STRING_LENGTH       48
+#define DEFAULT_DATE_LENGTH         20
+#define DEFAULT_TIMESTAMP_LENGTH    20
+#define DEFAULT_REFERENCE_LENGTH    48
+
 
 /* Data type name list. */
 static char *data_type_name_list[] = {"bool",  "char",   "int",  "double", "float", "string", "date", "timestamp",  "reference"};
@@ -29,19 +37,21 @@ uint32_t default_data_len(DataType column_type) {
       case T_CHAR:
             return sizeof(char);
       case T_INT:
-            return sizeof(uint32_t);
+            return sizeof(int32_t);
+      case T_LONG:
+            return sizeof(int64_t);
       case T_DOUBLE:
             return sizeof(double);
       case T_FLOAT:
             return sizeof(float);
       case T_STRING:
-            return 48;
+            return DEFAULT_STRING_LENGTH;
       case T_DATE:
-            return 20;
+            return DEFAULT_DATE_LENGTH;
       case T_TIMESTAMP:
-            return 20;
+            return DEFAULT_TIMESTAMP_LENGTH;
       case T_REFERENCE:
-            return 48;
+            return DEFAULT_REFERENCE_LENGTH;
       default:
             fatal("Unknown column type");
   }
@@ -59,7 +69,13 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
         case T_INT: {
             uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
             char *s = db_malloc2(len, "Int String value");
-            sprintf(s, "\"%s\": %d", key, *(uint32_t *)value);
+            sprintf(s, "\"%s\": %d", key, *(int32_t *)value);
+            return s;
+        }
+        case T_LONG: {
+            uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
+            char *s = db_malloc2(len, "Int String value");
+            sprintf(s, "\"%s\": %" PRIu64, key, *(int64_t *)value);
             return s;
         }
         case T_CHAR: {
@@ -115,7 +131,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
 /* Calculate the length of table row. */
 uint32_t calc_table_row_length(Table *table) {
     uint32_t len = 0;
-    for (int i = 0; i < table->meta_table->column_size; i++) {
+    for (int i = 0; i < table->meta_table->all_column_size; i++) {
       MetaColumn *meta_col = (table->meta_table->meta_column[i]);
       len += meta_col->column_length;
     }
@@ -156,18 +172,25 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
 
 /* Get table meta info. */
 MetaTable *get_meta_table(Table *table, char *table_name) {
-    if (table_name == NULL)
-      fatal("Input table name can`t be null.");
-    MetaTable *meta_table = db_malloc(sizeof(MetaTable));
+
+    /* Check valid. */
+    assert_not_null(table_name,"Input table name can`t be null.");
+    MetaTable *meta_table = db_malloc2(sizeof(MetaTable), "MetaTable");
     void *root_node = get_page(table->pager, table->root_page_num);
     uint32_t column_size = get_column_size(root_node);
     meta_table->table_name = strdup(table_name);
-    meta_table->column_size = column_size;
-    size_t meta_column_size = sizeof(MetaColumn);
+    meta_table->column_size = 0;
+    meta_table->all_column_size = 0;
     for (int i = 0; i < column_size; i++) {
-      meta_table->meta_column[i] = db_malloc(meta_column_size);
-      memcpy(meta_table->meta_column[i], get_meta_column_by_index(root_node, i),
-             meta_column_size);
+        MetaColumn *current = get_meta_column_by_index(root_node, i);
+        meta_table->meta_column[i] = db_malloc2(sizeof(MetaColumn), "MetaColumn");
+        memcpy(meta_table->meta_column[i], current , sizeof(MetaColumn));
+
+        /* Skip to system reserved column. */
+        if (!current->sys_reserved)
+            meta_table->column_size++;
+
+        meta_table->all_column_size++;
     }
     return meta_table;
 }

@@ -1,16 +1,3 @@
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include "mmu.h"
-#include "asserts.h"
-#include "data.h"
-#include "defs.h"
-#include "y.tab.h"
-
 /**
 * =========================== Memeory Manager Unit ==============================
 *
@@ -33,6 +20,19 @@
 * In the same way, MTable will shrink when number below the treshold.
 * ============================================================================
 * */
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include "mmu.h"
+#include "asserts.h"
+#include "data.h"
+#include "defs.h"
+#include "y.tab.h"
+
 #define MAXIMUM_CAPACITY 1<<31
 #define MININUM_CAPACITY 1<<10
 #define DEFAULT_LOAD_FACTOR 0.75

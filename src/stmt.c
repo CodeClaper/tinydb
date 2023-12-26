@@ -33,7 +33,7 @@ static ExecuteResult statement_begin_transaction(Statement *stmt) {
 /* Commit tranasction statement. */
 static ExecuteResult statement_commit_transaction(Statement *stmt) {
     assert_true(stmt->statement_type == COMMIT_TRANSACTION_STMT, "System error, commit tranasction statement type error.\n");
-    return EXECUTE_SUCCESS;
+    return commit_transaction();
 }
 
 /*Create table Statement*/
@@ -88,6 +88,8 @@ static ExecuteResult statement_show(Statement *statement) {
  * (5) CREATE TABLE
  * (6) SHOW TABLES AND SHOW MEMORY
  * (7) DESCRIBE TABLE
+ * (8) BEGIN TRANSACTION
+ * (9) COMMIT TRANSACTION
  * */
 ExecuteResult statement(char *sql) {
     clock_t start, end;
@@ -127,9 +129,10 @@ ExecuteResult statement(char *sql) {
             result = statement_show(statement);
             break;
     }
+    /* Commit transction manually. */
+    auto_commit_transaction();
     free_statment(statement);
     end = clock();
     db_info("Duration: %lfs\n", (double)(end - start) / CLOCKS_PER_SEC);
-    /*db_send(buff);*/
     return result;
 }

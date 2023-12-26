@@ -12,6 +12,7 @@
 #include "mmu.h"
 #include "cache.h"
 #include "common.h"
+#include "asserts.h"
 #include "meta.h"
 #include "misc.h"
 #include "node.h"
@@ -84,6 +85,10 @@ ExecuteResult create_table(MetaTable *meta_table) {
 
 /* Open a table file. */
 Table *open_table(char *table_name) {
+
+    /* Check valid. */
+    assert_not_null(table_name, "Table name must be supported.\n");
+
     Table *cache_table = find_cache_table(table_name);
     if (cache_table)
         return cache_table;

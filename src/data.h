@@ -16,13 +16,13 @@
 
 #define MAX_COLUMN_SIZE 25
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
-#define MAX_TABLE_NAME 30
+#define MAX_TABLE_NAME_LEN 30
 
 /* OprType */
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE, O_IN, O_LIKE } OprType;
 
 /* DataType */
-typedef enum { T_BOOL, T_CHAR, T_INT, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
+typedef enum { T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
 
 /* FunctionType */
 typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
@@ -44,6 +44,9 @@ typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
 
 /* StatementType */
 typedef enum { BEGIN_TRANSACTION_STMT, COMMIT_TRANSACTION_STMT, CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT } StatementType; // statement type
+
+/* Tansaction operation type. */
+typedef enum { TR_SELECT, TR_INSERT, TR_DELETE, TR_UPDATE } TransOpType;
 
 /* NodeType */
 typedef enum { LEAF_NODE, INTERNAL_NODE } NodeType;
@@ -124,8 +127,8 @@ typedef struct {
 typedef struct {
   DataType data_type;
   union {
-    /* T_INT */
-    int i_value;
+    /* T_INT, T_LONG */
+    int64_t i_value;
     /* T_BOOL */
     bool b_value;
     /* T_CHAR, T_STRING */
@@ -256,16 +259,18 @@ typedef struct {
 typedef struct {
     char column_name[MAX_COLUMN_NAME_LEN];
     DataType column_type;
-    char table_name[MAX_TABLE_NAME];
+    char table_name[MAX_TABLE_NAME_LEN];
     uint32_t column_length;
     bool is_primary;
+    bool sys_reserved; /* System reserved column, only visible for system. */
 } MetaColumn;
 
 /* MetaTable */
 typedef struct {
-  char *table_name;
-  MetaColumn *meta_column[MAX_COLUMN_SIZE];
-  uint32_t column_size;
+    char *table_name;
+    MetaColumn *meta_column[MAX_COLUMN_SIZE];
+    uint32_t column_size;       /* size of column, excluding system reserved columns. */
+    uint32_t all_column_size;   /* sizo of column, including system reserved columns. */
 } MetaTable;
 
 /* Table */
@@ -355,7 +360,7 @@ typedef struct {
 } Conf;
 
 typedef struct {
-    char table_name[MAX_TABLE_NAME];
+    char table_name[MAX_TABLE_NAME_LEN];
     uint32_t page_num;
     uint32_t cell_num;
 }Refer;
@@ -385,8 +390,9 @@ typedef struct {
 
 /* TransactionHandle */
 typedef struct TransactionHandle {
-    uint64_t xid; /* transaction id. */ 
-    uint64_t tid; /* thread id. */
+    int64_t xid; /* transaction id. */ 
+    int64_t tid; /* thread id. */
+    bool auto_commit; /* auto commit. */
     struct TransactionHandle *next; /* next */
 } TransactionHandle;
 

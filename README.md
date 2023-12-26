@@ -40,6 +40,7 @@ yum install flex bison
 - [x] Query special column data using sql
 - [x] Query data under conditions using sql
 - [x] Query data with aggregate function sum, avg, max, min, count
+- [ ] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference.
 - [ ] Stream output of query result
 - [ ] Support index,  B+Tree index store
 - [ ] Create view using sql

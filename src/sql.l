@@ -32,6 +32,7 @@ values                  return VALUES;
 primary                 return PRIMARY;
 key                     return KEY;
 int                     return INT;
+long                    return LONG;
 char                    return CHAR;
 float                   return FLOAT;
 double                  return DOUBLE;

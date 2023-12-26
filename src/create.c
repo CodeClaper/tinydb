@@ -10,7 +10,23 @@
 #include "meta.h"
 #include "session.h"
 #include "check.h"
+#include "copy.h"
 #include "log.h"
+
+/*
+ *=================== Create Statement ================= 
+ * 
+ *======================================================
+ **/
+
+/* System reserved columns. */
+MetaColumn SYS_RESERVED_COLUMNS[] = {
+    {"created_xid", T_LONG, "",  sizeof(int64_t), false, true },
+    {"expired_xid", T_LONG, "",  sizeof(int64_t), false, true }
+}; 
+
+/* System reserved columns length. */
+#define SYS_RESERVED_COLUMNS_LENGHT sizeof(SYS_RESERVED_COLUMNS) / sizeof(SYS_RESERVED_COLUMNS[0])
 
 /* Get column size. */
 static uint32_t get_column_size(CreateTableNode *create_table_node) {
@@ -42,10 +58,10 @@ static bool if_primary_key_column(CreateTableNode *create_table_node, char *colu
 }
 
 /* Get meta column. */
-static MetaColumn *get_meta_column(CreateTableNode *create_table_node, uint32_t index) {
-    MetaColumn *meta_column = db_malloc(sizeof(MetaColumn));
+static MetaColumn *get_meta_column(CreateTableNode *create_table_node, int index) {
+    MetaColumn *meta_column = db_malloc2(sizeof(MetaColumn), "MetaColumn");
     ColumnDefNode *column_def_node = *(create_table_node->column_def_set_node->column_defs + index);
-    strcpy(meta_column->column_name, strdup(column_def_node->column->column_name)); 
+    strcpy(meta_column->column_name, column_def_node->column->column_name); 
     meta_column->column_type = column_def_node->data_type;
     meta_column->is_primary = if_primary_key_column(create_table_node, meta_column->column_name);
     meta_column->column_length = calc_column_len(column_def_node);
@@ -59,8 +75,26 @@ static MetaColumn *get_meta_column(CreateTableNode *create_table_node, uint32_t 
     return meta_column;
 }
 
+/* Copy system meta column. */
+MetaColumn *copy_sys_meta_column(char *table_name, int index) {
+    MetaColumn *meta_column = db_malloc2(sizeof(MetaColumn), "MetaColumn");
+    MetaColumn sys_reserved_column = SYS_RESERVED_COLUMNS[index];
+
+    /* Copy each field. */
+    meta_column->is_primary = sys_reserved_column.is_primary;
+    meta_column->column_type = sys_reserved_column.column_type;
+    meta_column->column_length = sys_reserved_column.column_length;
+    meta_column->sys_reserved = sys_reserved_column.sys_reserved;
+    strcpy(meta_column->table_name, table_name);
+    strcpy(meta_column->column_name, sys_reserved_column.column_name);
+
+    return meta_column;
+}
+
+
 /* Generate meta table by create table node. */
 static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
+    int i, j; 
     MetaTable *meta_table = db_malloc2(sizeof(MetaTable), "MetaTable");
     meta_table->table_name = strdup(crete_table_node->table_name);
     meta_table->column_size = get_column_size(crete_table_node);
@@ -68,11 +102,19 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
         db_error("Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
         return NULL;
     }
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+
+    /* User define. */
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = get_meta_column(crete_table_node, i);
         if (meta_column == NULL)
             return NULL;
         meta_table->meta_column[i] = meta_column;
+    }
+
+    /* System define. */
+    for (j = i; j < SYS_RESERVED_COLUMNS_LENGHT + i; j++) {
+        meta_table->meta_column[j] = copy_sys_meta_column(meta_table->table_name, (j - i));
+        meta_table->column_size++;
     }
     return meta_table;
 }

@@ -1,5 +1,5 @@
-#include "data.h"
 #include <stdint.h>
+#include "data.h"
 
 /* If obsolute node. */
 bool is_obsolute_node(void *node);

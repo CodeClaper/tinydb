@@ -1,3 +1,20 @@
+/**
+ * ========================== Disk Mapping Node ======================================
+ * Node module is the core mudule for TinyDB.
+ * - A database file is divided into a whole number pages.
+ * - A page includes meta data and cells.
+ * - Meta data includes node type, is root leaf node, parent pointer and cell number.
+ * - Cell is a Key-Value, key is index and value containes one row data in table.
+ * - TinyDb use B-Tree as disk data structre.
+ * - Each node correspond to one page.
+ * - There are two types nodes, leaf node and internal node.
+ * - Leaf node store real row data.
+ * - Internal node store keys.
+ * - Root node also as leaf node, but does not store data.
+ * - Usually, root node is page 0.
+ * ====================================================================================
+ */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,21 +34,6 @@
 #include "meta.h"
 #include "opr.h"
 #include "index.h"
-
-/**
-* Node module is the core mudule for TinyDB.
-* - A database file is divided into a whole number pages.
-* - A page includes meta data and cells.
-* - Meta data includes node type, is root leaf node, parent pointer and cell number.
-* - Cell is a Key-Value, key is index and value containes one row data in table.
-* - TinyDb use B-Tree as disk data structre.
-* - Each node correspond to one page.
-* - There are two types nodes, leaf node and internal node.
-* - Leaf node store real row data.
-* - Internal node store keys.
-* - Root node also as leaf node, but does not store data.
-* - Usually, root node is page 0.
- */
 
 /* If obsolute node. */
 bool is_obsolute_node(void *node) {
@@ -1081,6 +1083,7 @@ MetaColumn *deserialize_meta_column(void *destination) {
     meta_column->is_primary = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE);
     if (meta_column->column_type == T_REFERENCE)
         strcpy(meta_column->table_name, destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE);
+    meta_column->sys_reserved = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE);
     return meta_column;
 }
 
@@ -1090,9 +1093,10 @@ void *serialize_meta_column(MetaColumn *meta_column) {
     strcpy(destination, meta_column->column_name);
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE) = (uint32_t) meta_column->column_type;
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE) = (uint32_t) meta_column->column_length;
-    *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE) =meta_column->is_primary;  
+    *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE) = meta_column->is_primary;  
     if (meta_column->column_type == T_REFERENCE)
         strcpy(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE, meta_column->table_name);
+    *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE) = meta_column->sys_reserved;  
     return destination;
 }
 
@@ -1100,9 +1104,8 @@ void *serialize_meta_column(MetaColumn *meta_column) {
 static void *get_row_value(Row *row, MetaColumn *meta_column) {
     char *column_name = meta_column->column_name;
     for(uint32_t i = 0; i < row->column_len; i++) {
-        if (strcmp(column_name, row->data[i]->key) == 0) {
+        if (strcmp(column_name, row->data[i]->key) == 0)
            return row->data[i]->value;
-        }
     }
     fatals("Inner error, unknown column ", column_name);
     return NULL;
@@ -1114,7 +1117,7 @@ void *serialize_row_data(Row *row, Table *table) {
     void *destination = db_malloc(row_length);
     MetaTable *meta_table = table->meta_table;
     uint32_t offset = 0;
-    for(uint32_t i = 0; i < meta_table->column_size; i++) {
+    for(uint32_t i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
         void *value = get_row_value(row, meta_column);
         memcpy(destination + offset, value, meta_column->column_length);

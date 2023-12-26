@@ -8,8 +8,10 @@
 #include "copy.h"
 #include "cond.h"
 #include "select.h"
+#include "refer.h"
 #include "node.h"
 #include "check.h"
+#include "trans.h"
 #include "session.h"
 
 /* Adapt to select items node data type. */
@@ -32,9 +34,15 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
 /* Delete row */
 static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     Cursor *cursor = define_cursor(table, row->key);
-    delete_leaf_node_cell(cursor, row->key);
+    
+    /* This because, the input row is a snapshot. */
+    row = define_row(convert_refer(cursor));
+
+    if (row_is_visible(row)) {
+        update_transaction_state(row, TR_DELETE);
+    }
+    // delete_leaf_node_cell(cursor, row->key);
     select_result->row_size++;
-    printf("Delete row key %s Successfully \n", (char *)row->key);
 }
 
 /* Execute delete statment.*/

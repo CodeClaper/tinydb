@@ -1,5 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
 #include "table.h"
 #include "copy.h"
@@ -19,9 +21,14 @@ void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
             memcpy(new_val, value, sizeof(bool));
             return new_val;
         }
-        case T_INT:{
+        case T_INT: {
             int32_t *new_val = db_malloc2(sizeof(int32_t), "int32_t");
             memcpy(new_val, value, sizeof(int32_t));
+            return new_val;
+        }
+        case T_LONG: {
+            int64_t *new_val = db_malloc2(sizeof(int64_t), "int64_t");
+            memcpy(new_val, value, sizeof(int64_t));
             return new_val;
         }
         case T_FLOAT: {
@@ -116,9 +123,9 @@ MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     meta_column_copy->is_primary = meta_column->is_primary;
     meta_column_copy->column_type = meta_column->column_type;
     meta_column_copy->column_length = meta_column->column_length;
-    for(uint32_t i = 0; i < MAX_COLUMN_NAME_LEN; i++) {
-        meta_column_copy->column_name[i] = meta_column->column_name[i];
-    }
+    meta_column_copy->sys_reserved = meta_column->sys_reserved;
+    strcpy(meta_column_copy->column_name, meta_column->column_name);
+    strcpy(meta_column_copy->table_name, meta_column->table_name);
     return meta_column_copy;
 } 
 
@@ -161,6 +168,7 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
             value_item_node_copy->s_value = strdup(value_item_node->s_value);
             break;
         case T_INT:
+        case T_LONG:
             value_item_node_copy->i_value = value_item_node->i_value;
             break;
         case T_BOOL:

@@ -1,3 +1,16 @@
+/* 
+ *====================================Lock Manager ==============================================================
+ *
+ * Lock manager provides a synchronization mechanism for concurrency scenes. 
+ * TinyDb supports two level lock, table level lock and row level lock.
+ * Besides, TinyDb supports two mode lock, read (shared) mode and write (exclusive) mode.
+ * An exclusive or write lock gives a thread exclusive access for writing to the specified part of the file. 
+ * While a write lock is in place, no other thread can lock that part of the file.
+ * A shared or read lock prohibits any other thread from requesting a write lock on the specified part of the file. 
+ * However, other thread can request read locks. 
+ *=================================================================================================================
+ * */
+
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -14,18 +27,6 @@
 #include "copy.h"
 #include "free.h"
 
-/* 
- *====================================Lock Manager ==============================================================
- *
- * Lock manager provides a synchronization mechanism for concurrency scenes. 
- * TinyDb supports two level lock, table level lock and row level lock.
- * Besides, TinyDb supports two mode lock, read (shared) mode and write (exclusive) mode.
- * An exclusive or write lock gives a thread exclusive access for writing to the specified part of the file. 
- * While a write lock is in place, no other thread can lock that part of the file.
- * A shared or read lock prohibits any other thread from requesting a write lock on the specified part of the file. 
- * However, other thread can request read locks. 
- *=================================================================================================================
- * */
 
 volatile static LockTable *ltable; /* Store lock handle list. */
 
@@ -93,7 +94,7 @@ static bool destroy_lock_handle(LockHandle *lock_handle) {
     prev = ltable->head;
 
     /* Loop to check. */
-    while(current != NULL) {
+    for (current = ltable->head ;current != NULL; prev = current, current = current->next) {
         if (current == lock_handle) {
             /* If current is tail, tail end back. */
             if (ltable->tail == current)
@@ -108,8 +109,6 @@ static bool destroy_lock_handle(LockHandle *lock_handle) {
             free_lock_handle(current);
             return true;
         }
-        prev = current; 
-        current = current->next;
     }
     return false;
 }
