@@ -828,6 +828,52 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     }
 }
 
+/* If row is deleted*/
+bool row_is_deleted(Cursor *cursor) {
+
+    uint32_t key_len, value_len;
+
+    Table *table = cursor->table;
+    key_len = calc_primary_key_length(table); 
+    value_len = calc_table_row_length(table); 
+
+    void *leaf_node = get_page(table->pager, cursor->page_num);
+    
+    void *destination = get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num);
+ 
+    int i, offset =0;
+    for(i = 0; i < table->meta_table->all_column_size; i++) {
+        MetaColumn *meta_column = table->meta_table->meta_column[i];
+        if (meta_column->sys_reserved && strcmp(meta_column->column_name, EXPIRED_XID_COLUMN_NAME) == 0) {
+            int64_t expired_xid = *(int64_t *)(destination + offset);
+            return expired_xid != 0;
+        }
+        offset += meta_column->column_length;
+    }
+    return false;
+}
+
+/* Update row system reserved columns. */
+void update_row_sys_reserved_column(Row *row, Cursor *cursor) {
+
+    uint32_t key_len, value_len;
+
+    Table *table = cursor->table;
+    key_len = calc_primary_key_length(table); 
+    value_len = calc_table_row_length(table); 
+    
+    /* Get leaf node. */
+    void *leaf_node = get_page(table->pager, cursor->page_num);
+
+    /* Serialize row. */
+    void *destination = serialize_row_data(row, cursor->table);
+
+    /* Overcover leaf node. */
+    memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
+
+    flush_page(table->pager, cursor->page_num);
+}
+
 
 /* Get replace child node. */
 static void *get_replaced_child_node(Table *table, void *node) {

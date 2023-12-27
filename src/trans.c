@@ -195,7 +195,9 @@ ExecuteResult commit_transaction() {
         return EXECUTE_FAIL;
     }
     assert_false(trans_handle->auto_commit, "System Logic error, transaction is auto commited but found in manual commit funciton.\n");
+    
     assert_true(destroy_transaction(trans_handle), "Destroy transaction error, transaction id is %ld and thread id is %ld.\n", trans_handle->xid, trans_handle->tid);
+    
     db_send("Commit the transaction successfully and transactionId is [%ld].\n", trans_handle->xid);
     return EXECUTE_SUCCESS;
 }
@@ -203,6 +205,7 @@ ExecuteResult commit_transaction() {
 /* Commit transaction automatically. */
 void auto_commit_transaction() {
     TransactionHandle *trans_handle = find_transaction();
+
     /* Only deal with auto-commit transaction. */
     if (trans_handle && trans_handle->auto_commit) 
         /* Destroy transaction. */
@@ -228,7 +231,7 @@ bool row_is_visible(Row *row) {
         return true;
     if (row_created_xid != trans_handle->xid && !is_active(row_created_xid) && row_expired_xid == 0)
         return true;
-    if (row_expired_xid != 0 && is_active(row_expired_xid) && row_created_xid != row_expired_xid)
+    if (row_expired_xid != 0 && row_expired_xid != trans_handle->xid && is_active(row_expired_xid) && row_created_xid != row_expired_xid)
         return true;
     
     return false;

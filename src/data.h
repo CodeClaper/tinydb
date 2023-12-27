@@ -18,6 +18,10 @@
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define MAX_TABLE_NAME_LEN 30
 
+#define CREATED_XID_COLUMN_NAME  "created_xid"
+#define EXPIRED_XID_COLUMN_NAME  "expired_xid"
+
+
 /* OprType */
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE, O_IN, O_LIKE } OprType;
 

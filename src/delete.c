@@ -35,11 +35,10 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
 static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     Cursor *cursor = define_cursor(table, row->key);
     
-    /* This because, the input row is a snapshot. */
-    row = define_row(convert_refer(cursor));
-
+    /* Only deal with row that is visible for current transaction. */
     if (row_is_visible(row)) {
         update_transaction_state(row, TR_DELETE);
+        update_row_sys_reserved_column(row, cursor);
     }
     // delete_leaf_node_cell(cursor, row->key);
     select_result->row_size++;

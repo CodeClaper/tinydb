@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "create.h"
+#include "data.h"
 #include "common.h"
 #include "table.h"
 #include "mmu.h"
@@ -21,8 +22,8 @@
 
 /* System reserved columns. */
 MetaColumn SYS_RESERVED_COLUMNS[] = {
-    {"created_xid", T_LONG, "",  sizeof(int64_t), false, true },
-    {"expired_xid", T_LONG, "",  sizeof(int64_t), false, true }
+    { CREATED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, true },
+    { EXPIRED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, true }
 }; 
 
 /* System reserved columns length. */

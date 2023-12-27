@@ -225,7 +225,7 @@ InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
-    if (check_duplicate_key(cursor, row->key)) {
+    if (check_duplicate_key(cursor, row->key) && !row_is_deleted(cursor)) {
         db_error("key '%s' already exists, not allow duplicate key.\n", get_key_str(row->key, primary_key_meta_column->column_type));
         result->status = EXECUTE_DUPLICATE_KEY;
         return result;
