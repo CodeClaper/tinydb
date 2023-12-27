@@ -170,6 +170,17 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
     return NULL;
 }
 
+
+/* Get all meta column info by column name including system reserved column. */
+MetaColumn *get_all_meta_column_by_name(MetaTable *meta_table, char *name) {
+    for (uint32_t i = 0; i < meta_table->all_column_size; i++) {
+      MetaColumn *meta_column = meta_table->meta_column[i];
+      if (strcmp(meta_column->column_name, name) == 0)
+        return meta_column;
+    }
+    return NULL;
+}
+
 /* Get table meta info. */
 MetaTable *get_meta_table(Table *table, char *table_name) {
 

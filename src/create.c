@@ -1,3 +1,8 @@
+/*
+ *====================== Create Module =================================
+ * Create Module supports ways to create a table.
+ *======================================================================
+ * */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,12 +18,6 @@
 #include "check.h"
 #include "copy.h"
 #include "log.h"
-
-/*
- *=================== Create Statement ================= 
- * 
- *======================================================
- **/
 
 /* System reserved columns. */
 MetaColumn SYS_RESERVED_COLUMNS[] = {

@@ -1,14 +1,13 @@
 /*
  *============================================================ Transaction Manager ================================================================
- * If you are unfamiliar with transaction, this article (https://levelup.gitconnected.com/implementing-your-own-transactions-with-mvcc-bba11cab8e70) 
+ * If you are unfamiliar with transaction and MVCC, this article (https://levelup.gitconnected.com/implementing-your-own-transactions-with-mvcc-bba11cab8e70) 
  * will help a lot.
- * Simply put, transaction works througth two system reserved columns, created_xid and expired_xid.
- * System reserved means it is only visible for system, not accessible for user.
+ * Simply put, the implement of MVCC depends on two system reserved columns, created_xid and expired_xid.
+ * System reserved means it is only visible for system, not accessible for user and are always at the end of row.
  * [created_xid] stores the id of transaction which create the inserted row.
- * [current_xid] stores the id of current transaction. [current_xid] only works when read lock is needed.
  * [expired_xid] stores the id of transaction which delete the row. [expired_xid] always is zero until deleted.
  *
- * Before talking about how to implement transaction, we need to know what is visible row and what is locked row.
+ * Before talking about how to implement MVCC, we need to know what is visible row and what is locked row.
  * Visible row is the row who is accessible for current transaction. 
  * Visible row must satisfy any of the follows conditions:
  * (1) the current transaction create the row, and the row is not deleted.
@@ -40,6 +39,7 @@
 #include "mmu.h"
 #include "log.h"
 #include "copy.h"
+#include "timer.h"
 #include "asserts.h"
 
 
@@ -48,15 +48,7 @@ static TransactionTable *xtable; /* Store activ transactions. */
 /* Generate next xid. 
  * return next xid, if return -1, there is an error. */
 static int64_t next_xid() {
-    char time_str[32];
-    struct timespec tv;
-    if (clock_gettime(CLOCK_REALTIME, &tv)) {
-        db_error("Generate next xid error.");
-        return -1;
-    }
-    sprintf(time_str, "%ld.%.9ld", tv.tv_sec, tv.tv_nsec);
-    int64_t value = round(atof(time_str) * 1e9);
-    return value;
+    return get_current_sys_time(NANOSECOND);
 }
 
 /* Initialise transaction. */

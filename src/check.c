@@ -246,7 +246,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
                 uint32_t key_len = calc_primary_key_length(table);
                 void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
                 void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
-                if (equal(key, new_key, meta_column->column_type)) {
+                if (equal(key, new_key, meta_column->column_type) && !row_is_deleted(cursor)) {
                     db_error("key '%s' already exists, not allow duplicate key\n", get_key_str(key, meta_column->column_type));
                     return false;
                 }

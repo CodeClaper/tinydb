@@ -20,3 +20,6 @@ MetaTable *get_meta_table(Table *table, char *table_name);
 
 /* Get meta column info by column name. */
 MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name);
+
+/* Get all meta column info by column name including system reserved column. */
+MetaColumn *get_all_meta_column_by_name(MetaTable *meta_table, char *name);

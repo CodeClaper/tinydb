@@ -1,3 +1,9 @@
+/*
+ * ================================ Select Module ============================================
+ * Select modeule support select statment. 
+ * Besides, Update statement, delete statement also use these module for query under conditon.
+ * ===========================================================================================
+ * */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -49,16 +55,26 @@ static bool include_leaf_node(void *destinct, ConditionNode *condition_node, Met
 /* Get meta column by condition name. */
 static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable *meta_table);
 
-/* Find meta column index, return NULL if not exist */
+/* Find meta column index.
+ * Return NULL if not exist */
 static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_t index) {
     SelectItemsNode *select_items_node = query_param->select_items;
     Table *table = open_table(query_param->table_name);
+    MetaTable *meta_table = table->meta_table;
     switch (select_items_node->type) {
         case SELECT_ALL:
-            return table->meta_table->meta_column[index];
+            return meta_table->meta_column[index];
         case SELECT_COLUMNS: {
-            ColumnNode *column_node = *(select_items_node->column_set_node->columns + index);
-            return get_meta_column_by_name(table->meta_table, column_node->column_name);
+            /* Because there are system reserved column, so when index greater than column size, 
+             * it is system reserved column. */
+            int column_size = select_items_node->column_set_node->size;
+            if (index < column_size) {
+                ColumnNode *column_node = *(select_items_node->column_set_node->columns + index);
+                return get_meta_column_by_name(table->meta_table, column_node->column_name);
+            } else {
+                index =  meta_table->column_size + index - column_size;
+                return meta_table->meta_column[index];
+            }
         }
         case SELECT_FUNCTION:
             return NULL;
@@ -83,13 +99,14 @@ static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
 /* Get query param column size. */
 static uint32_t get_query_columns_num(QueryParam *query_param) {
     SelectItemsNode *select_items_node = query_param->select_items;
+    Table *table = open_table(query_param->table_name);
     switch (select_items_node->type) {
         case SELECT_ALL: {
-            Table *table = open_table(query_param->table_name);
             return table->meta_table->all_column_size;
         }
         case SELECT_COLUMNS:
-            return select_items_node->column_set_node->size;
+            /* Get column size including system reserved columns. */
+            return select_items_node->column_set_node->size + (table->meta_table->all_column_size - table->meta_table->column_size);
         case SELECT_FUNCTION:
             return 1;
   }
@@ -99,8 +116,7 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
 void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type) {
 
     /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
-     * So we must use meta column data type to define which data type of the value.
-     * */
+     * So we must use meta column data type to define which data type of the value. */
     switch (meta_data_type) { 
         case T_CHAR: {
             switch (value_item_node->data_type) {
@@ -259,7 +275,6 @@ static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNo
      * key column and not satisfied internal node condition. */
     return !cond_meta_column->is_primary 
         || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
-
 }
 
 /* Check if include the internal node. */
@@ -724,23 +739,38 @@ void query_with_condition(QueryParam *query_param, SelectResult *select_result ,
     gen_select_result(query_param, select_result, row_handler, arg);
 }
 
+/* Check if system reserved column by column name. */
+static bool is_sys_reserved(char *column_name) {
+    return column_name != NULL && 
+        (strcmp(column_name, CREATED_XID_COLUMN_NAME) == 0 || strcmp(column_name, EXPIRED_XID_COLUMN_NAME) == 0);
+}
+
 /* Send row data. */
-static void send_row_data(Row *row) {
+static void send_row_data(Row *row, Table *table) {
+    
+    int sys_reserved_column_size = table->meta_table->all_column_size - table->meta_table->column_size;
+
     db_send("{");
-    for (uint32_t j = 0; j < row->column_len; j++) {
-        KeyValue *key_value = *(row->data + j);
+    int i;
+    for (i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = *(row->data + i);
+
+        /* Skip system reserved column. */
+        MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value->key);
+        if (meta_column->sys_reserved) continue;
+        
         if (key_value->data_type == T_REFERENCE) {
             Refer *refer = (Refer *) key_value->value;
             Row *sub_row = define_row(refer);
             db_send("\"%s\": ", key_value->key);
-            send_row_data(sub_row);
+            send_row_data(sub_row, table);
         } else {
             char *key_value_pair_str = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
             db_send(key_value_pair_str);
             db_free(key_value_pair_str);
         }
         /* If not the last column, these is ',' to split. */
-        if (j < row->column_len - 1)
+        if (i < row->column_len - sys_reserved_column_size - 1)
             db_send(", ");
     }
     db_send("}");
@@ -748,7 +778,7 @@ static void send_row_data(Row *row) {
 
 /* Send row data. */
 static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    send_row_data(row);
+    send_row_data(row, table);
     /* If not the last row, these is ',' to split. */
     select_result->row_index--;
     if (select_result->row_index > 0)

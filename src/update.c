@@ -15,6 +15,7 @@
 #include "check.h"
 #include "free.h"
 #include "misc.h"
+#include "trans.h"
 #include "asserts.h"
 #include "session.h"
 
@@ -63,6 +64,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     key_value->value = &value->b_value;
                     break;
                 case T_INT:
+                case T_LONG:
                     key_value->value = &value->i_value;
                     break;
                 case T_FLOAT:
@@ -92,6 +94,10 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
 
 /* Update row */
 static void update_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+
+    /* Only update row that is visible for current transaction. */
+    if (!row_is_visible(row)) return;
+
     /* For update row funciton, the arg is AssignmentSetNode data type arguement. */
     AssignmentSetNode *assignment_set_node = (AssignmentSetNode *) arg;
 
