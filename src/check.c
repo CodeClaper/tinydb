@@ -78,6 +78,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
     switch(meta_column->column_type) {
         case T_BOOL:
         case T_INT:
+        case T_LONG:
         case T_FLOAT:
         case T_DOUBLE:
         case T_REFERENCE:

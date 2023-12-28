@@ -4,10 +4,10 @@
  * Besides, Update statement, delete statement also use these module for query under conditon.
  * ===========================================================================================
  * */
+#include <stdlib.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
@@ -108,7 +108,7 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
             /* Get column size including system reserved columns. */
             return select_items_node->column_set_node->size + (table->meta_table->all_column_size - table->meta_table->column_size);
         case SELECT_FUNCTION:
-            return 1;
+            return 1 + (table->meta_table->all_column_size - table->meta_table->column_size);
   }
 }
 
@@ -332,6 +332,35 @@ static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable
 }
 
 /* Assign function count() value to row data. */
+static void assign_function_count_row_data(Row *row, void *destine, QueryParam *query_param) {
+    /* Check if table exist. */
+    Table *table = open_table(query_param->table_name);
+    if (table == NULL) return; /* Return if not exist the table. */
+    MetaTable *meta_table = table->meta_table;
+
+    int32_t val = 1;
+    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    key_value->key = strdup(COUNT_NAME);
+    key_value->value = copy_value(&val, T_INT, NULL);
+    key_value->data_type = T_INT;
+    row->data[0] = key_value;
+
+    /* Assign system reserved column. */
+    int i, j;
+    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
+        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
+        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
+        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
+        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        key_value->key = strdup(sys_reserved_meta_column->column_name);
+        key_value->value = copy_value(destine + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
+        key_value->data_type = sys_reserved_meta_column->column_type;
+        /* Assign system reserved value to row. */
+        row->data[j] = key_value;
+    }
+}
+
+/* Assign function sum() value to row data. */
 static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *query_param) {
 
     /* Check if table exist. */
@@ -396,6 +425,10 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
                     key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
                     key_value->data_type = T_INT;
                     break;
+                case T_LONG:
+                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
+                    key_value->data_type = T_LONG;
+                    break;
                 case T_FLOAT:
                     key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
                     key_value->data_type = T_FLOAT;
@@ -409,8 +442,22 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
         }
     }
 
-    // assgin to row data.
-    *(row->data) = key_value;
+    /* Assgin to row frist data. */
+    row->data[0] = key_value;
+    
+    /* Assign system reserved column. */
+    int i, j;
+    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
+        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
+        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
+        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
+        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        key_value->key = strdup(sys_reserved_meta_column->column_name);
+        key_value->value = copy_value(destine + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
+        key_value->data_type = sys_reserved_meta_column->column_type;
+        /* Assign system reserved value to row. */
+        row->data[j] = key_value;
+    }
 }
 
 /* Assign function max() value to row data. */
@@ -453,8 +500,22 @@ static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *q
         break;
     }
 
-    // assgin to row data.
-    *(row->data) = key_value;
+    /* Assgin to row data. */
+    row->data[0] = key_value;
+
+    /* Assign system reserved column. */
+    int i, j;
+    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
+        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
+        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
+        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
+        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        key_value->key = strdup(sys_reserved_meta_column->column_name);
+        key_value->value = copy_value(destinct + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
+        key_value->data_type = sys_reserved_meta_column->column_type;
+        /* Assign system reserved value to row. */
+        row->data[j] = key_value;
+    }
 }
 
 
@@ -498,8 +559,22 @@ static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *q
         break;
     }
 
-    // assgin to row data.
-    *(row->data) = key_value;
+    /* Assgin to row data. */
+    row->data[0] = key_value;
+
+    /* Assign system reserved column. */
+    int i, j;
+    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
+        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
+        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
+        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
+        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        key_value->key = strdup(sys_reserved_meta_column->column_name);
+        key_value->value = copy_value(destinct + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
+        key_value->data_type = sys_reserved_meta_column->column_type;
+        /* Assign system reserved value to row. */
+        row->data[j] = key_value;
+    }
 }
 
 /* Assign function value to row data. */
@@ -508,6 +583,7 @@ static void assign_function_row_data(Row *row, void *destinct, QueryParam *query
     FunctionNode *function_node = query_param->select_items->function_node;
     switch (function_node->function_type) {
         case F_COUNT:
+            assign_function_count_row_data(row, destinct, query_param);
             break;
         case F_SUM:
             assign_funtion_sum_row_data(row, destinct, query_param);
@@ -613,7 +689,6 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
     void *leaf_node_snapshot = copy_block(leaf_node, PAGE_SIZE);
 
     for (uint32_t i = 0; i < cell_num; i++) {
-
     
         /* Get leaf node cell value. */
         void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
@@ -622,20 +697,15 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         if (!include_leaf_node(destinct, query_param->condition_node, table->meta_table))
             continue;
 
-        /* Set read lock on row. */
-        LockHandle *lock_handle = db_row_lock(new_refer(table->meta_table->table_name, page_num, i), RD_MODE);
-
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, query_param, table->meta_table);
 
         /* Check if visible for current transaction. */
         if (row_is_visible(row))
             row_handler(row, select_result, table, arg);
+
         /* Free useless row. */
         free_row(row);
-
-        /* Unlock */
-        db_unlock(lock_handle);
     }
     
     /* Free useless pointer. */
@@ -757,7 +827,7 @@ static void send_row_data(Row *row, Table *table) {
 
         /* Skip system reserved column. */
         MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value->key);
-        if (meta_column->sys_reserved) continue;
+        if (meta_column && meta_column->sys_reserved) continue;
         
         if (key_value->data_type == T_REFERENCE) {
             Refer *refer = (Refer *) key_value->value;

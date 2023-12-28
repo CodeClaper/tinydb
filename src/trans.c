@@ -1,7 +1,6 @@
 /*
- *============================================================ Transaction Manager ================================================================
- * If you are unfamiliar with transaction and MVCC, this article (https://levelup.gitconnected.com/implementing-your-own-transactions-with-mvcc-bba11cab8e70) 
- * will help a lot.
+ *============================================================ Transaction Manager =============================================================================================
+ * If you are unfamiliar with transaction and MVCC, this article (https://levelup.gitconnected.com/implementing-your-own-transactions-with-mvcc-bba11cab8e70) will help a lot.
  * Simply put, the implement of MVCC depends on two system reserved columns, created_xid and expired_xid.
  * System reserved means it is only visible for system, not accessible for user and are always at the end of row.
  * [created_xid] stores the id of transaction which create the inserted row.
@@ -11,19 +10,43 @@
  * Visible row is the row who is accessible for current transaction. 
  * Visible row must satisfy any of the follows conditions:
  * (1) the current transaction create the row, and the row is not deleted.
- * (2) other transaction creates the row, and transaction is commited and the row is not deleted.
- * (3) the row is deleted by another uncommited transaction (which not creates the row)  
+ * (2) other transaction creates the row, and transaction is committed and the row is not deleted.
+ * (3) the row is deleted by another uncommitted transaction (which not creates the row)  
  * What is locked row. Firstly locked row is visible for at least row transaction.
- * When the first transaction manipulating the row, other transaction will block until the first transaction commited.
+ * When the first transaction manipulating the row, other transaction will block until the first transaction committed.
  *
  * There are four transaction operation types: TR_INSERT, TR_SELECT, TR_DELETE, TR_UPDATE;
  * For insert operation, created_xid of new row stores the current transaction id and expired_xid stores zore;
  * For select operation, the current transaction will only accesses visible rows.
  * For delete operation, expired_xid of deleted row stores the current transaction id.
  * For update, there is no need to manipulate deletion separately. We can simply treat update operations as delete operations 
- * and add operations, 
- *
- *=================================================================================================================================================
+ * and add operations.
+ * Transaction isolation levels are a measure of the extent to which transaction isolation succeeds. 
+ * In particular, transaction isolation levels are defined by the presence or absence of the following phenomena:
+ * (1)  Dirty Reads: A dirty read occurs when a transaction reads data that has not yet been committed. 
+ *      For example, suppose transaction 1 updates a row. Transaction 2 reads the updated row before transaction 1 commits the update. 
+ *      If transaction 1 rolls back the change, transaction 2 will have read data that is considered never to have existed.
+ * (2)  Nonrepeatable Reads: A nonrepeatable read occurs when a transaction reads the same row twice but gets different data each time. 
+ *      For example, suppose transaction 1 reads a row. Transaction 2 updates or deletes that row and commits the update or delete. 
+ *      If transaction 1 rereads the row, it retrieves different row values or discovers that the row has been deleted.
+ * (3)  Phantoms: A phantom is a row that matches the search criteria but is not initially seen. 
+ *      For example, suppose transaction 1 reads a set of rows that satisfy some search criteria. 
+ *      Transaction 2 generates a new row (through either an update or an insert) that matches the search criteria for transaction 1. 
+ *      If transaction 1 reexecutes the statement that reads the rows, it gets a different set of rows.
+ * The four transaction isolation levels (as defined by SQL-92) are defined in terms of these phenomena. 
+ * In the following table, an "X" marks each phenomenon that can occur.
+ * -----------------------------------------------------------------------------------------------
+ * - Transaction isolation level        Dirty reads         Nonrepeatable reads         Phantoms -
+ * -----------------------------------------------------------------------------------------------
+ * - Read uncommitted                   X                   X                           X        -
+ * -----------------------------------------------------------------------------------------------
+ * - Read committed                     --                  X                           X        -
+ * -----------------------------------------------------------------------------------------------
+ * - Read uncommitted                   --                  --                          X        -
+ * -----------------------------------------------------------------------------------------------
+ * - Read uncommitted                   --                  --                          --       -
+ * -----------------------------------------------------------------------------------------------
+ *===================================================================================================================================================================================
  */
 #include <stdbool.h>
 #include <stdint.h>
@@ -99,7 +122,7 @@ static bool destroy_transaction(TransactionHandle *trans_handle) {
     return false;
 }
 
-/* Check if a transaction active(uncommited). */
+/* Check if a transaction active(uncommitted). */
 static bool is_active(int64_t xid) {
     TransactionHandle *current;
     for(current = xtable->head; current != NULL; current = current->next) {
@@ -124,7 +147,7 @@ static TransactionHandle *find_transaction() {
     return NULL;
 }
 
-/* New transaction which will be commited automatically. */
+/* New transaction which will be committed automatically. */
 static TransactionHandle *new_transaction() {
 
     /* Generate new transaction. */
@@ -141,7 +164,7 @@ static TransactionHandle *new_transaction() {
     return trans_handle;
 }
 
-/* Begin a new transaction which need be commited manually. */
+/* Begin a new transaction which need be committed manually. */
 ExecuteResult begin_transaction() {
 
     TransactionHandle *trans_handle;
@@ -183,10 +206,10 @@ TransactionHandle *get_current_transaction() {
 ExecuteResult commit_transaction() {
     TransactionHandle *trans_handle = find_transaction();
     if (trans_handle == NULL) {
-        db_error("Not found any transaction to be commited.\n");
+        db_error("Not found any transaction to be committed.\n");
         return EXECUTE_FAIL;
     }
-    assert_false(trans_handle->auto_commit, "System Logic error, transaction is auto commited but found in manual commit funciton.\n");
+    assert_false(trans_handle->auto_commit, "System Logic error, transaction is auto committed but found in manual commit funciton.\n");
     
     assert_true(destroy_transaction(trans_handle), "Destroy transaction error, transaction id is %ld and thread id is %ld.\n", trans_handle->xid, trans_handle->tid);
     
@@ -208,8 +231,8 @@ void auto_commit_transaction() {
  *
  * Visible row must satisfy any of the follows conditions:
  * (1) the current transaction create the row, and the row is not deleted.
- * (2) other transaction creates the row, and transaction is commited and the row is not deleted.
- * (3) the row is deleted by another uncommited transaction (which not creates the row)  
+ * (2) other transaction creates the row, and transaction is committed and the row is not deleted.
+ * (3) the row is deleted by another uncommitted transaction (which not creates the row)  
  * */
 bool row_is_visible(Row *row) {
 

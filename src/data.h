@@ -70,6 +70,9 @@ typedef enum { LEVEL_ROW, LEVEL_TABLE } LockLevel;
 /* Lock mode. */
 typedef enum LockMode { RD_MODE, WR_MODE } LockMode;
 
+/* The Four Transaction Isolation Level. */
+typedef enum { READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE } TransIsolationLevel;
+
 /* ColumnNode */
 typedef struct {
     char *column_name;
@@ -357,10 +360,15 @@ typedef struct {
 
 /* Abount configuration. */
 typedef struct {
+    /* data */
     char *data_dir;     /* database file directory. */
+    /* base */
     ushort port;        /* Server listening port. */
+    /* log */
     char *log_dir;      /* log directory */
     LogLevel log_level; /* log level */
+    /* transaction */
+    TransIsolationLevel trans_iso_level;
 } Conf;
 
 typedef struct {
