@@ -156,7 +156,7 @@ static TransactionHandle *new_transaction() {
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = true;
 
-    db_info("Generated transaction xid: %"PRIu64" and xid: %"PRIu64".\n", trans_handle->xid, trans_handle->tid);
+    db_info("Begin transaction xid: %"PRId64" and tid: %"PRId64".\n", trans_handle->xid, trans_handle->tid);
 
     /* Register the transaction. */
     register_transaction(trans_handle);
@@ -181,13 +181,13 @@ ExecuteResult begin_transaction() {
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = false;
 
-    db_info("Generated transaction xid: %"PRIu64" and xid: %"PRIu64".\n", trans_handle->xid, trans_handle->tid);
+    db_info("Begin transaction xid: %"PRId64" and tid: %"PRId64".\n", trans_handle->xid, trans_handle->tid);
 
     /* Register the transaction. */
     register_transaction(trans_handle);
 
     /* Send message. */
-    db_send("Begin new transaction successfully and transactionId is [%ld].\n", trans_handle->xid);
+    db_send("Begin new transaction successfully and xid is %"PRId64".\n", trans_handle->xid);
 
     return EXECUTE_SUCCESS;
 }
@@ -211,9 +211,12 @@ ExecuteResult commit_transaction() {
     }
     assert_false(trans_handle->auto_commit, "System Logic error, transaction is auto committed but found in manual commit funciton.\n");
     
-    assert_true(destroy_transaction(trans_handle), "Destroy transaction error, transaction id is %ld and thread id is %ld.\n", trans_handle->xid, trans_handle->tid);
+    /* Destroy transaction. */
+    assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and thread tid %ld.\n", trans_handle->xid, trans_handle->tid);
     
-    db_send("Commit the transaction successfully and transactionId is [%ld].\n", trans_handle->xid);
+    db_info("Commit the transaction successfully and xid: %"PRId64".\n", trans_handle->xid);
+
+    db_send("Commit the transaction successfully and xid: %"PRId64".\n", trans_handle->xid);
     return EXECUTE_SUCCESS;
 }
 
@@ -222,9 +225,11 @@ void auto_commit_transaction() {
     TransactionHandle *trans_handle = find_transaction();
 
     /* Only deal with auto-commit transaction. */
-    if (trans_handle && trans_handle->auto_commit) 
+    if (trans_handle && trans_handle->auto_commit) {
         /* Destroy transaction. */
-        assert_true(destroy_transaction(trans_handle), "Destroy transaction error, transaction id is %ld and thread id is %ld.\n", trans_handle->xid, trans_handle->tid);
+        assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and  tid is %ld.\n", trans_handle->xid, trans_handle->tid);
+        db_info("Auto commit the transaction successfully and xid: %"PRId64".\n", trans_handle->xid);
+    }
 }
 
 /* Check if row is visible for current transaction. 

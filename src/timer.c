@@ -17,7 +17,7 @@
  * Supports four time level, SECOND, MILLISECOND, MICROSECOND, NANOSECOND. */
 int64_t get_current_sys_time(TIME_LEVEL time_level) {
 
-    int value;
+    int64_t value;
     char time_str[32];
     struct timespec tv;
     if (clock_gettime(CLOCK_REALTIME, &tv)) {
@@ -29,16 +29,16 @@ int64_t get_current_sys_time(TIME_LEVEL time_level) {
         case SECOND:
             value = tv.tv_sec;
         case MILLISECOND:
-            sprintf(time_str, "%ld.%3ld", tv.tv_sec, tv.tv_nsec / 1000000);
-            value = round(atof(time_str) * 1000);
+            sprintf(time_str, "%ld.%.3ld", tv.tv_sec, tv.tv_nsec / 1000000);
+            value = round(atof(time_str) * 1e3);
             break;
         case MICROSECOND:
-            sprintf(time_str, "%ld.%6ld", tv.tv_sec, tv.tv_nsec / 1000);
-            value = round(atof(time_str) * 1000000);
+            sprintf(time_str, "%ld.%.6ld", tv.tv_sec, tv.tv_nsec / 1000);
+            value = round(atof(time_str) * 1e6);
             break;
         case NANOSECOND:
-            sprintf(time_str, "%ld.%9ld", tv.tv_sec, tv.tv_nsec);
-            value = round(atof(time_str) * 1000000000);
+            sprintf(time_str, "%ld.%.9ld", tv.tv_sec, tv.tv_nsec);
+            value = round(atof(time_str) * 1e9);
             break;
     }
     return value;
