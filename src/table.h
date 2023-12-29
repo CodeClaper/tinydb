@@ -5,7 +5,7 @@
 bool check_table_exist(char *table_name); 
 
 /* Create a new table. */
-ExecuteResult create_table(MetaTable *meta_table);
+void create_table(MetaTable *meta_table, DBResult *result);
 
 /* Open a table file. */
 Table *open_table(char *table_name);
@@ -14,4 +14,4 @@ Table *open_table(char *table_name);
 Cursor *define_cursor(Table *table, void *key);
 
 /*Delete an existed table. */
-ExecuteResult drop_table(char *table_name);
+void drop_table(char *table_name, DBResult *result);

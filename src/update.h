@@ -1,4 +1,4 @@
 #include "data.h"
 
-// exec update statment. 
-ExecuteResult exec_update_statment(UpdateNode *update_node);
+/* Exec update statment. */
+void exec_update_statment(UpdateNode *update_node, DBResult *result);

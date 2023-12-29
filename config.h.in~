@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define if you have libreadline */
+#undef HAVE_LIBREADLINE
+
 /* Name of package */
 #undef PACKAGE
 

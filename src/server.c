@@ -48,7 +48,7 @@ void accept_request(void *arg) {
     char buf[1024];
     Session *session = new_session(client);
     set_session(session);
-    db_info("Client ID '%ld' connect successfully.\n", pthread_self());
+    db_info("Client ID '%ld' connect successfully.", pthread_self());
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
         statement(buf);   
@@ -57,5 +57,5 @@ void accept_request(void *arg) {
     }
     close(client);
     destroy_session();
-    db_info("Client ID '%ld' disconnect.\n", pthread_self());
+    db_info("Client ID '%ld' disconnect.", pthread_self());
 }

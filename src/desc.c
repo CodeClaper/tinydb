@@ -8,19 +8,22 @@
 #include "table.h"
 #include "meta.h"
 #include "session.h"
+#include "ret.h"
 
 /*Get table name.*/
 static char *get_table_name(DescribeNode *describe_node) {
     return describe_node->table_name;
 }
 
-/*Execute describe statment.*/
-ExecuteResult exec_describe_statement(DescribeNode *describe_node) {
+/* Execute describe statment. */
+void exec_describe_statement(DescribeNode *describe_node, DBResult *result) {
     uint32_t i;
     char *table_name = get_table_name(describe_node); 
     Table *table = open_table(table_name);
-    if (table == NULL) 
-        return EXECUTE_TABLE_OPEN_FAIL;
+    if (table == NULL) {
+        error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", table_name);
+        return;
+    }
     MetaTable *meta_table = table->meta_table;
     db_send("[");
     for (i = 0; i < meta_table->column_size; i++) {
@@ -42,5 +45,4 @@ ExecuteResult exec_describe_statement(DescribeNode *describe_node) {
             db_send(", ");
     }
     db_send("]\n");
-    return EXECUTE_SUCCESS;
 }

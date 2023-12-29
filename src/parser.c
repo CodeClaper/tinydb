@@ -60,7 +60,7 @@ Statement *parse(char *sql) {
     if (sql == NULL)
         return NULL;
     trim(sql);/* Remove space characters, includes '\f', '\n', '\r', '\t', '\v'*/
-    db_debug("Execute sql: %s\n", sql);
+    db_debug("Execute sql: %s", sql);
     size_t size = strlen(sql);
     char buff[size + 1];
     sprintf(buff, "%s%c", sql, '\n');

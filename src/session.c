@@ -96,7 +96,6 @@ bool db_send_over() {
     return db_send("OVER");
 }
 
-
 /* Delete pthread_key_t. */
 void end_session() {
     pthread_key_delete(key);

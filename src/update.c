@@ -18,6 +18,7 @@
 #include "trans.h"
 #include "asserts.h"
 #include "session.h"
+#include "ret.h"
 
 /* Adapt to column set node data type. */
 static ColumnSetNode *adapt_column_set_node(Table *table) {
@@ -141,11 +142,13 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
 }
 
 /* Execute update statment. */
-ExecuteResult exec_update_statment(UpdateNode *update_node) {
-    Table *table = open_table(update_node->table_name);
-    if (table == NULL)
-        return EXECUTE_TABLE_OPEN_FAIL;
+void exec_update_statment(UpdateNode *update_node, DBResult *result) {
 
+    Table *table = open_table(update_node->table_name);
+    if (table == NULL) {
+        error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", update_node->table_name);
+        return;
+    }
 
     /* Adapt to query param. */
     QueryParam *query_param = adapt_query_param(update_node, table);
@@ -157,14 +160,12 @@ ExecuteResult exec_update_statment(UpdateNode *update_node) {
     query_with_condition(query_param, select_result, count_row, NULL);
 
     /* Check out update node. */
-    if (!check_update_node(update_node, select_result))
-        return EXECUTE_FAIL;
+    if (!check_update_node(update_node, select_result, result)) return;
 
     /* Query with update row operation. */
     query_with_condition(query_param, select_result, update_row, update_node->assignment_set_node);
 
     /* Send out update result. */
-    db_send("Successfully updated %d row data.\n", select_result->row_size);
+    success_result(result, "Successfully updated %d row data.\n", select_result->row_size);
 
-    return EXECUTE_SUCCESS;
 }

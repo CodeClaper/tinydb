@@ -1,4 +1,4 @@
 #include "data.h"
 
-/*Execute delete statement.*/
-ExecuteResult exec_delete_statement(DeleteNode *delete_node);
+/* Execute delete statement. */
+void exec_delete_statement(DeleteNode *delete_node, DBResult *result);

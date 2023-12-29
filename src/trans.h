@@ -4,17 +4,17 @@
 void init_transaction();
 
 /* New transaction which will be commited automatically. */
-ExecuteResult begin_transaction();
+void begin_transaction(DBResult *result);
 
 /* Get current thread transction handle. 
  * Firstly, try to find in the xtable, is not found, create new one. */
 TransactionHandle *get_current_transaction();
 
 /* Commit transaction manually. */
-ExecuteResult commit_transaction();
+void commit_transaction(DBResult *result);
 
 /* Commit transaction automatically. */
-void auto_commit_transaction();
+void auto_commit_transaction(DBResult *result);
 
 /* Check if row is visible for current transaction. */
 bool row_is_visible(Row *row);

@@ -56,10 +56,25 @@ typedef enum { TR_SELECT, TR_INSERT, TR_DELETE, TR_UPDATE } TransOpType;
 typedef enum { LEAF_NODE, INTERNAL_NODE } NodeType;
 
 /* StatementType */
-typedef enum { STMT_BEGINE_TRANSACTION, STMT_COMMIT_TRANSACTION, STMT_CREATE_TABLE, STMT_SELECT, STMT_UPDATE, STMT_INSERT, STMT_DELETE, STMT_DESCRIBE, STMT_SHOW } StamentType;
+typedef enum { STMT_BEGINE_TRANSACTION, STMT_COMMIT_TRANSACTION, STMT_CREATE_TABLE, STMT_SELECT, STMT_UPDATE, STMT_INSERT, STMT_DELETE, STMT_DESCRIBE, STMT_SHOW } StmtType;
 
 /* ExecuteResult */
-typedef enum { EXECUTE_SUCCESS, EXECUTE_FAIL, EXECUTE_SQL_ERROR, EXECUTE_TABLE_EXIST_FAIL, EXECUTE_TABLE_CREATE_FAIL, EXECUTE_TABLE_DROP_FAIL, EXECUTE_TABLE_OPEN_FAIL, EXECUTE_DUPLICATE_KEY } ExecuteResult;
+typedef enum { 
+    EXECUTE_SUCCESS = 200, 
+    EXECUTE_FAIL, 
+    EXECUTE_SQL_ERROR, 
+    EXECUTE_TABLE_NOT_EXIST_FAIL, 
+    EXECUTE_TABLE_CREATE_FAIL, 
+    EXECUTE_TABLE_DROP_FAIL, 
+    EXECUTE_TABLE_OPEN_FAIL,
+    EXECUTE_DUPLICATE_COLUMN,
+    EXECUTE_UNKNOWN_COLUMN,
+    EXECUTE_DUPLICATE_KEY,
+    EXECUTE_EXCEEDED_MAX_COLUMN,
+    EXECUTE_OPEN_DATABASE_FAIL,
+    EXECUTE_RW_DATABASE_FAIL,
+    EXECUTE_CONVERT_DATA_TYPE_FAIL
+} ExecuteStatus;
 
 /* LogLevel */
 typedef enum { TRACE_LEVEL, DEBUG_LEVEL, INFO_LEVEL, WARN_LEVEL, ERROR_LEVLE } LogLevel;
@@ -249,7 +264,7 @@ typedef struct {
 
 /* Statement */
 typedef struct {
-  StamentType statement_type;
+  StmtType statement_type;
   ASTNode *ast_node;
 } Statement;
 
@@ -282,52 +297,53 @@ typedef struct {
 
 /* Table */
 typedef struct {
-  Pager *pager;
-  uint32_t root_page_num;
-  MetaTable *meta_table;
+    Pager *pager;
+    uint32_t root_page_num;
+    MetaTable *meta_table;
 } Table;
 
 /* Cursor */
 typedef struct {
-  Table *table;
-  uint32_t page_num;
-  uint32_t cell_num;
+    Table *table;
+    uint32_t page_num;
+    uint32_t cell_num;
 } Cursor;
 
 /* KeyValue */
 typedef struct {
-  char *key;
-  void *value;
-  DataType data_type;
+    char *key;
+    void *value;
+    DataType data_type;
 } KeyValue;
 
 /* Row */
 typedef struct {
-  void *key;
-  char *table_name;
-  KeyValue **data;
-  uint32_t column_len;
+    void *key;
+    char *table_name;
+    KeyValue **data;
+    uint32_t column_len;
 } Row;
 
 /* QueryParam */
 typedef struct {
-  char *table_name;
-  SelectItemsNode *select_items;
-  ConditionNode *condition_node;
+    char *table_name;
+    SelectItemsNode *select_items;
+    ConditionNode *condition_node;
 } QueryParam;
 
 /* SelectResult */
 typedef struct {
-  char *table_name;
-  uint32_t row_size;
-  int32_t row_index;
-  Row *max_row; /* The max row, used in funciton max. */
-  Row *min_row; /* The min row, used in funciton min. */
-  union {
-    int32_t i;
-    float f;
-    double d;
-  } sum; /* The sum value, used in function sum. */
+    char *table_name;   /* Table name. */
+    uint32_t row_size;  /* Row size. */
+    Row **rows;         /* Selected rows. */
+    int32_t row_index;  /* current row index. */
+    Row *max_row;       /* The max row, used in funciton max. */
+    Row *min_row;       /* The min row, used in funciton min. */
+    union {
+      int32_t i;
+      float f;
+      double d;
+    } sum; /* The sum value, used in function sum. */
 } SelectResult;
 
 /* TableList */
@@ -378,9 +394,21 @@ typedef struct {
 }Refer;
 
 typedef struct {
-    ExecuteResult status;
+    ExecuteStatus status;
     Refer *refer;
 } InsertExecuteResult;
+
+/* Db execute result. */
+typedef struct {
+    char *table;
+    StmtType stmt_type;
+    ExecuteStatus status;
+    bool success;
+    void *data;
+    uint32_t rows;
+    char *message;
+    double duration;
+}DBResult;
 
 /* Alias struct flock. */
 typedef struct flock FileLock;

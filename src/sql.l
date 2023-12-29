@@ -3,7 +3,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "data.h"
 #include "intpr.h"
+#include "ret.h"
 #include "y.tab.h"
 #include "log.h"
 int lineno = 1;
@@ -73,11 +75,13 @@ false                   return FALSE;
 '[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.s_value = strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.s_value =  strdup(str);} return STRINGVALUE;} 
 '[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
-[ \t]   /* igonore space */
+[ \t]           /* igonore space */
 "--".*$		;	/* comment */
 %%
 
 int yyerror(const char *s) {
-	db_error("Line%d: sql syntax error %s at '%s'.\n", lineno, s, yytext);
+    DBResult *result = new_db_result();
+	error_result(result, EXECUTE_SQL_ERROR ,"Sql syntax error near '%s' ", yytext);
+    db_send_result(result);
     return 0;
 }

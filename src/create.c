@@ -18,6 +18,7 @@
 #include "check.h"
 #include "copy.h"
 #include "log.h"
+#include "ret.h"
 
 /* System reserved columns. */
 MetaColumn SYS_RESERVED_COLUMNS[] = {
@@ -93,20 +94,20 @@ MetaColumn *copy_sys_meta_column(char *table_name, int index) {
 
 
 /* Generate meta table by create table node. */
-static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
-    int i, j; 
+static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *result) {
     MetaTable *meta_table = db_malloc2(sizeof(MetaTable), "MetaTable");
     meta_table->table_name = strdup(crete_table_node->table_name);
     meta_table->column_size = get_column_size(crete_table_node);
     if (meta_table->column_size > MAX_COLUMN_SIZE) {
-        db_error("Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
+        error_result(result, EXECUTE_EXCEEDED_MAX_COLUMN ,"Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
         return NULL;
     }
 
+    int i, j; 
     /* User define. */
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = get_meta_column(crete_table_node, i);
-        if (meta_column == NULL)
+        if (meta_column == NULL) 
             return NULL;
         meta_table->meta_column[i] = meta_column;
     }
@@ -120,15 +121,15 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node) {
 }
 
 /* Execute create table statement. */
-ExecuteResult exec_create_table_statement(CreateTableNode *create_table_node) {
-    if (!check_create_table_node(create_table_node))
-        return EXECUTE_FAIL;
-    MetaTable *meta_table = gen_meta_table(create_table_node);
-    if (meta_table == NULL)
-        return EXECUTE_FAIL;
-    ExecuteResult result = create_table(meta_table);
-    if (result == EXECUTE_SUCCESS) 
-        db_send("Table %s created successfully.\n", meta_table->table_name);
+void exec_create_table_statement(CreateTableNode *create_table_node, DBResult *result) {
+
+    /* Check valid. */
+    if (!check_create_table_node(create_table_node, result)) return;
+
+    MetaTable *meta_table = gen_meta_table(create_table_node, result);
+    if (meta_table == NULL) return;
+
+    create_table(meta_table, result);
+
     db_free(meta_table);
-    return result;
 }

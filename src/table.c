@@ -19,6 +19,7 @@
 #include "pager.h"
 #include "log.h"
 #include "index.h"
+#include "ret.h"
 
 /* Get table file path. */
 static char *table_file_path(char *table_name) {
@@ -48,18 +49,20 @@ bool check_table_exist(char *table_name) {
 }
 
 /* Create a new table. */
-ExecuteResult create_table(MetaTable *meta_table) {
-    if (meta_table == NULL)
-        return EXECUTE_TABLE_CREATE_FAIL;
+void create_table(MetaTable *meta_table, DBResult *result) {
+    if (meta_table == NULL) {
+        error_result(result, EXECUTE_TABLE_CREATE_FAIL, "Try to create table fail.");
+        return;
+    }
     char *file_path = table_file_path(meta_table->table_name);
     if (table_file_exist(file_path)) {
-        db_error("Table '%s' already exists. \n", meta_table->table_name);
-        return EXECUTE_TABLE_CREATE_FAIL;
+        error_result(result, EXECUTE_TABLE_CREATE_FAIL, "Table '%s' already exists. \n", meta_table->table_name);
+        return;
     }
     int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (descr == -1) {
-        db_error("Open database file '%s' fail.\n", file_path);
-        return EXECUTE_TABLE_CREATE_FAIL;
+        error_result(result, EXECUTE_OPEN_DATABASE_FAIL, "Open database file '%s' fail.\n", file_path);
+        return;
     }
     void *root_node = db_malloc2(PAGE_SIZE, "PAGE NODE");
     // initialize root node
@@ -74,13 +77,14 @@ ExecuteResult create_table(MetaTable *meta_table) {
     lseek(descr, 0, SEEK_SET);
     ssize_t w_size = write(descr, root_node, PAGE_SIZE);
     if (w_size == -1) {
-        db_error("Write table meta info error and errno %d.\n", errno);
-        return EXECUTE_TABLE_CREATE_FAIL;
+        error_result(result, EXECUTE_RW_DATABASE_FAIL, "Write table meta info error and errno %d.\n", errno);
+        return;
     }
     db_free(file_path);
     close(descr);
     db_free(root_node);
-    return EXECUTE_SUCCESS;
+
+    success_result(result, "Table '%s' created successfully.", meta_table->table_name);
 }
 
 /* Open a table file. */
@@ -94,13 +98,12 @@ Table *open_table(char *table_name) {
         return cache_table;
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-        db_error("Table '%s' not exists.\n", table_name);
         db_free(file_path);
         return NULL;
     }
     Table *table = db_malloc2(sizeof(Table), "Table");
     Pager *pager = open_pager(file_path);
-    if (NULL == pager) 
+    if (pager == NULL) 
         return NULL;
     table->pager = pager;
     table->root_page_num = 0; // Define root page is first page.
@@ -156,17 +159,18 @@ Cursor *define_cursor(Table *table, void *key) {
 }
 
 /* Delete an existed table. */
-ExecuteResult drop_table(char *table_name) {
+void drop_table(char *table_name, DBResult *result) {
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-          fprintf(stderr, "Table '%s' not exists. \n", table_name);
-          return EXECUTE_TABLE_DROP_FAIL;
+        error_result(result, EXECUTE_TABLE_NOT_EXIST_FAIL, stderr, "Table '%s' not exists. \n", table_name);
+        db_free(file_path);
+        return;
     }
     if (remove(file_path) == 0) {
-          printf("Table '%s' deleted success.\n", table_name);
-          return EXECUTE_SUCCESS;
+        success_result(result, "Table '%s' deleted success.\n", table_name);
+        db_free(file_path);
+        return;
     }
+    error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' deleted fail, error : %d", table_name, errno);
     db_free(file_path);
-    fprintf(stderr, "Table '%s' deleted fail, error : %d", table_name, errno);
-    return EXECUTE_TABLE_DROP_FAIL;
 }

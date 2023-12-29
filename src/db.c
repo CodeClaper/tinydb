@@ -52,7 +52,7 @@ int main(void) {
     socklen_t client_name_len = sizeof(*client_name);
     pthread_t new_thread;
     server_socket = startup(conf->port);
-    db_info("Tinydb server start up successfully and listen port %d \n", conf->port);
+    db_info("Tinydb server start up successfully and listen port %d.", conf->port);
     while(true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
         if (client_secket == -1)
@@ -61,5 +61,5 @@ int main(void) {
             fatal("Create new thread fail.");
     }
     end();
-    return 0;
+    return EXIT_SUCCESS;
 }

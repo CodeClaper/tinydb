@@ -25,6 +25,7 @@
 #include "refer.h"
 #include "trans.h"
 #include "log.h"
+#include "ret.h"
 
 
 /* Get column number of insert statement. */
@@ -60,7 +61,7 @@ static int get_column_index(InsertNode *insert_node, char *column_name) {
 }
 
 /* Get value in insert node to assign column at index. */
-static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
+static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column, DBResult *result) {
 
     /* Get value item node at index. */
     ValueItemNode* value_item_node = *(insert_node->value_item_set_node->value_item_node + index);
@@ -74,6 +75,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_STRING:
             return strdup((char *)value_item_node->s_value);
         case T_INT:
+        case T_LONG:
             return &(value_item_node->i_value);
         case T_BOOL:
             return &(value_item_node->b_value);
@@ -124,14 +126,13 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         }
         case T_TIMESTAMP: {
             switch(value_item_node->data_type) {
-                case T_STRING:
-                    {
-                        struct tm *tmp_time = db_malloc(sizeof(struct tm));
-                        strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
-                        value_item_node->data_type = T_TIMESTAMP;
-                        value_item_node->t_value = mktime(tmp_time);
-                        db_free(tmp_time);
-                    }
+                case T_STRING: {
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm));
+                    strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                    value_item_node->data_type = T_TIMESTAMP;
+                    value_item_node->t_value = mktime(tmp_time);
+                    db_free(tmp_time);
+                }
                 case T_TIMESTAMP:
                     return &value_item_node->t_value;
                 default:
@@ -144,20 +145,21 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             nest_insert_node->table_name = strdup(meta_column->table_name);
             nest_insert_node->all_column = true;
             nest_insert_node->value_item_set_node = value_item_node->nest_value_item_set;
-            InsertExecuteResult *result = exec_insert_statement(nest_insert_node);
-            return result->status == EXECUTE_SUCCESS ? result->refer : NULL;
+            return exec_insert_statement(nest_insert_node, result);
         }
     }
     return NULL;
 }
 
 /* Generate insert row. */
-static Row *generate_insert_row(InsertNode *insert_node) {
+static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
     uint32_t i;
     Row *row = db_malloc(sizeof(Row));
     Table *table = open_table(insert_node->table_name);
-    if (table == NULL) 
+    if (table == NULL) {
+        error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", insert_node->table_name);
         return NULL;
+    }
     MetaTable *meta_table = table->meta_table;
     row->table_name = strdup(meta_table->table_name);
     row->column_len = meta_table->all_column_size;
@@ -170,14 +172,13 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         if (meta_column->sys_reserved) continue;
 
         KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
-        assert_not_null(meta_column, "System error, get meta column fail.\n");
         key_value->key = strdup(meta_column->column_name);
         key_value->data_type = meta_column->column_type;
         if (insert_node->all_column)
-            key_value->value = get_column_value(insert_node, i, meta_column);
+            key_value->value = get_column_value(insert_node, i, meta_column, result);
         else {
             int index = get_column_index(insert_node, key_value->key);          
-            key_value->value = get_column_value(insert_node, index, meta_column);
+            key_value->value = get_column_value(insert_node, index, meta_column, result);
         }
         assert_not_null(key_value->value, "Get value fail when insertion.\n");
 
@@ -193,56 +194,46 @@ static Row *generate_insert_row(InsertNode *insert_node) {
     return row;
 }
 
-static InsertExecuteResult *new_insert_execute_result() {
-    InsertExecuteResult *result = db_malloc2(sizeof(InsertExecuteResult), "InsertExecuteResult");
-    result->status = EXECUTE_SUCCESS;
-    result->refer = db_malloc2(sizeof(Refer), "Refer");
-    return result;
-}
-
 /* Execute insert statement. */
-InsertExecuteResult *exec_insert_statement(InsertNode *insert_node) {
+Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     
-    InsertExecuteResult *result = new_insert_execute_result();
+    Refer *refer = db_malloc2(sizeof(Refer), "Refer");
 
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {
-        result->status = EXECUTE_TABLE_EXIST_FAIL;
-        return result;
+        error_result(result, EXECUTE_OPEN_DATABASE_FAIL, "Try to open table '%s' fail.", insert_node->table_name);
+        return NULL;
     }
 
     /* Check if insert node valid. */
-    if (!check_insert_node(insert_node)) {
-        result->status = EXECUTE_FAIL;
-        return result;
-    }
+    if (!check_insert_node(insert_node, result)) 
+        return NULL;
 
-    Row *row = generate_insert_row(insert_node);
+    Row *row = generate_insert_row(insert_node, result);
     if (row == NULL) {
         result->status = EXECUTE_FAIL;
-        return result;
+        return NULL;
     }
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key) && !row_is_deleted(cursor)) {
-        db_error("key '%s' already exists, not allow duplicate key.\n", get_key_str(row->key, primary_key_meta_column->column_type));
-        result->status = EXECUTE_DUPLICATE_KEY;
-        return result;
+        error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.\n", get_key_str(row->key, primary_key_meta_column->column_type));
+        return NULL;
     }
 
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
 
-    result->refer->cell_num = cursor->cell_num;
-    result->refer->page_num = cursor->page_num;
-    strcpy(result->refer->table_name, insert_node->table_name);
+    refer->cell_num = cursor->cell_num;
+    refer->page_num = cursor->page_num;
+    strcpy(refer->table_name, insert_node->table_name);
 
     /* Free unuesed memeory */
     free_cursor(cursor);
     free_row(row);
 
-    db_send("Successfully insert one row data. \n");
-    return result;    
+    success_result(result, "Successfully insert one row data. \n");
+    return refer;    
 }
 

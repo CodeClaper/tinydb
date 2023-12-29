@@ -35,6 +35,7 @@
 #include "lock.h"
 #include "trans.h"
 #include "refer.h"
+#include "ret.h"
 
 /* Maximum number of rows fetched at once.*/
 #define MAX_FETCH_ROWS 100 
@@ -848,16 +849,11 @@ static void send_row_data(Row *row, Table *table) {
 
 /* Send row data. */
 static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    send_row_data(row, table);
-    /* If not the last row, these is ',' to split. */
-    select_result->row_index--;
-    if (select_result->row_index > 0)
-        db_send(", ");
+    select_result->rows[select_result->row_index++] = copy_row(row);
 }
 
 /* Count number of row, used in the sql function count(1) */
 void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    select_result->row_index++;
     select_result->row_size++;
 }
 
@@ -1123,31 +1119,35 @@ static void exec_function_select_statement(QueryParam *query_param) {
  * at first, execute count row function to get satisfied row number which
  * is important for next select operation.
  * */
-static void exec_plain_select_statement(QueryParam *query_param) {
+static void exec_plain_select_statement(QueryParam *query_param, DBResult *result) {
 
     /* Genrate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
-    /* Count row number. */
+    /* Send row data in json format. */
     query_with_condition(query_param, select_result, count_row, NULL);
 
-    /* Send row data in json format. */
-    db_send("[");
-    query_with_condition(query_param, select_result, send_row, NULL);
-    db_send("]\n");
+    /* Prepare enough memory space. */
+    select_result->rows = db_malloc2(sizeof(Row *) * select_result->row_size, "SelectResult.Rows");
 
-    free_select_result(select_result);
+    /* Send row data in json format. */
+    query_with_condition(query_param, select_result, send_row, NULL);
+
+    /* Assign exeuction result. */
+    success_result(result, "Query data successfully.");
+    result->rows = select_result->row_size;
+    result->data = select_result;
 }
 
 
 /* Execute select statement. */
-ExecuteResult exec_select_statement(SelectNode *select_node) {
+void exec_select_statement(SelectNode *select_node, DBResult *result) {
     QueryParam *query_param = convert_query_param(select_node);
-    if (check_query_param(query_param)) {
+    if (check_query_param(query_param, result)) {
         switch(query_param->select_items->type) {
             case SELECT_ALL:
             case SELECT_COLUMNS:
-                exec_plain_select_statement(query_param);
+                exec_plain_select_statement(query_param, result);
                 break;
             case SELECT_FUNCTION:
                 exec_function_select_statement(query_param);
@@ -1155,5 +1155,4 @@ ExecuteResult exec_select_statement(SelectNode *select_node) {
         }
     }
     free_query_param(query_param);
-    return EXECUTE_SUCCESS;
 }

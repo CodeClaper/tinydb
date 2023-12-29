@@ -49,7 +49,7 @@ static void db_log(char *msg, LogLevel level) {
     if (level >= conf->log_level) {
         char *sys_time = get_sys_time("%Y-%m-%d %H:%M:%S");
         char buff[BUFF_SIZE];
-        sprintf(buff, "[%s][%ld][%s]:\t%s", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[level], msg);
+        sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[level], msg);
         fprintf(stdout, "%s", buff);
         flush_log(buff);
     }
@@ -61,7 +61,6 @@ void db_error(char *format, ...) {
     va_start(ap, format);
     char buff[BUFF_SIZE];
     vsprintf(buff, format, ap);
-    db_send(buff);
     db_log(buff, ERROR_LEVLE);
     va_end(ap);
 }

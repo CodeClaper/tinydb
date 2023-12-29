@@ -54,8 +54,8 @@ static void print_show_table(TableList *table_list) {
     db_send("]\n");
 }
 
-/*Execute show statement.*/
-ExecuteResult exec_show_statement(ShowNode *show_node) {
+/* Execute show statement. */
+void exec_show_statement(ShowNode *show_node, DBResult *result) {
     switch(show_node->type) {
         case SHOW_TABLES: {
             TableList *table_list = gen_table_list();
@@ -64,13 +64,10 @@ ExecuteResult exec_show_statement(ShowNode *show_node) {
             break;
         }
         case SHOW_MEMORY: {
-            char buff[BUFF_SIZE];
-            sprintf(buff, "{\"used_memeory\": %ld, \"mtable_capacity\": %d, \"mentry_num\": %d}\n", 
+            db_send("{\"used_memeory\": %ld, \"mtable_capacity\": %d, \"mentry_num\": %d}\n", 
                     db_memesize(), mtable_capacity(), mentry_num()); 
-            db_send(buff);
             break;
         }
     }
-    return EXECUTE_SUCCESS;
 }
 

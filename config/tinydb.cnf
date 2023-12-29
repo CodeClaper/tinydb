@@ -5,3 +5,6 @@ port=4083
 [log]
 dir=/home/zc/logs/tinydb/
 level=DEBUG
+[transaction]
+## Supports four transaction isoland level, READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE.
+trans_isolation_level=READ_COMMITTED

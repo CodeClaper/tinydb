@@ -23,116 +23,135 @@
 #include "session.h"
 #include "log.h"
 #include "free.h"
+#include "ret.h"
+
 
 /* Begin tranasction statement. */
-static ExecuteResult statement_begin_transaction(Statement *stmt) {
+static void statement_begin_transaction(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == BEGIN_TRANSACTION_STMT, "System error, begin tranasction statement type error.\n");
-    return begin_transaction();
+    begin_transaction(result);
 }
 
 /* Commit tranasction statement. */
-static ExecuteResult statement_commit_transaction(Statement *stmt) {
+static void statement_commit_transaction(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == COMMIT_TRANSACTION_STMT, "System error, commit tranasction statement type error.\n");
-    return commit_transaction();
+    commit_transaction(result);
 }
 
 /*Create table Statement*/
-static ExecuteResult statement_create_table(Statement *stmt) {
+static void statement_create_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == STMT_CREATE_TABLE, "System error, create statement type error.\n");
-    return exec_create_table_statement(stmt->ast_node->create_table_node);
+    exec_create_table_statement(stmt->ast_node->create_table_node, result);
 }
 
 /*Insert Statment*/
-static ExecuteResult statement_insert(Statement *stmt) {
+static void statement_insert(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == STMT_INSERT, "System error, insert statement type error.\n");
-    InsertExecuteResult *result = exec_insert_statement(stmt->ast_node->insert_node);
-    return result->status;
+    exec_insert_statement(stmt->ast_node->insert_node, result);
 }
 
 /*Select Statement*/
-static ExecuteResult statement_select(Statement *statement) {
+static void statement_select(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == STMT_SELECT, "System error, select statement type error.\n");
-    return exec_select_statement(statement->ast_node->select_node); 
+    exec_select_statement(statement->ast_node->select_node, result); 
 }
 
 /*Update statemetn*/
-static ExecuteResult statement_update(Statement *statement) {
+static void statement_update(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == STMT_UPDATE, "System error, update statement type error.\n");
-    return exec_update_statment(statement->ast_node->update_node);
+    exec_update_statment(statement->ast_node->update_node, result);
 }
 
 /*Delete Statement*/
-static ExecuteResult statement_delete(Statement *statement) {
+static void statement_delete(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == STMT_DELETE, "System error, delete statement type error.\n");
-    return exec_delete_statement(statement->ast_node->delete_node);
+    exec_delete_statement(statement->ast_node->delete_node, result);
 }
 
 /*Describe Statement*/
-static ExecuteResult statement_describe(Statement *statement) {
+static void statement_describe(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == STMT_DESCRIBE, "System error, describe statement type error.\n"); 
-    return exec_describe_statement(statement->ast_node->describe_node);
+    exec_describe_statement(statement->ast_node->describe_node, result);
 }
 
 /*Show tables Statment*/
-static ExecuteResult statement_show(Statement *statement) {
+static void statement_show(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == STMT_SHOW, "System error, show statmement type error.\n"); 
-    return exec_show_statement(statement->ast_node->show_node);
+    exec_show_statement(statement->ast_node->show_node, result);
 }
 
 /*Execute statement
  * Now supported statments:
  * (1) SELECT
  * (2) UPDATE
- * (3) Insert
+ * (3) INSERT
  * (4) DELETE
  * (5) CREATE TABLE
+ * (6) DEROP TABLE
  * (6) SHOW TABLES AND SHOW MEMORY
  * (7) DESCRIBE TABLE
  * (8) BEGIN TRANSACTION
  * (9) COMMIT TRANSACTION
  * */
-ExecuteResult statement(char *sql) {
+DBResult *statement(char *sql) {
     clock_t start, end;
-    ExecuteResult result;
+    DBResult *result = new_db_result();
     start = clock();
-    if (is_empty(sql))
-        return EXECUTE_SQL_ERROR;
+    if (is_empty(sql)) {
+        return result;
+    }
+    /* Execute statement. */
     Statement *statement = parse(sql);
-    if (statement == NULL)
-        return EXECUTE_SQL_ERROR;
+    if (statement == NULL) {
+        return result;
+    }
     switch(statement->statement_type) {
         case STMT_BEGINE_TRANSACTION:
-            result = statement_begin_transaction(statement);
+            result->stmt_type = STMT_BEGINE_TRANSACTION;
+            statement_begin_transaction(statement, result);
             break;
         case STMT_COMMIT_TRANSACTION:
-            result = statement_commit_transaction(statement);
+            result->stmt_type = STMT_COMMIT_TRANSACTION;
+            statement_commit_transaction(statement, result);
             break;
         case STMT_CREATE_TABLE:
-            result = statement_create_table(statement);
+            result->stmt_type = STMT_CREATE_TABLE;
+            statement_create_table(statement, result);
             break;
         case STMT_INSERT:
-            result = statement_insert(statement); 
+            result->stmt_type = STMT_INSERT;
+            statement_insert(statement, result); 
             break; 
         case STMT_SELECT:
-            result = statement_select(statement); 
+            result->stmt_type = STMT_SELECT;
+            statement_select(statement, result); 
             break; 
         case STMT_UPDATE:
-            result = statement_update(statement); 
+            result->stmt_type = STMT_UPDATE;
+            statement_update(statement, result); 
             break; 
         case STMT_DELETE:
-            result = statement_delete(statement); 
+            result->stmt_type = STMT_DELETE;
+            statement_delete(statement, result); 
             break; 
         case STMT_DESCRIBE:
-            result = statement_describe(statement);
+            result->stmt_type = STMT_DESCRIBE;
+            statement_describe(statement, result);
             break;
         case STMT_SHOW:
-            result = statement_show(statement);
+            result->stmt_type = STMT_SHOW;
+            statement_show(statement, result);
             break;
     }
     /* Commit transction manually. */
-    auto_commit_transaction();
+    auto_commit_transaction(result);
+    /* Free statement memory. */
     free_statment(statement);
+    /* Calulate duration. */
     end = clock();
-    db_info("Duration: %lfs\n", (double)(end - start) / CLOCKS_PER_SEC);
+    result->duration = (double)(end - start) / CLOCKS_PER_SEC;
+    db_info("Duration: %lfs", result->duration);
+    /* send result. */
+    db_send_result(result);
     return result;
 }

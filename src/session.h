@@ -13,8 +13,7 @@ void set_session(void *session);
 Session *get_session();
 
 /* Socket send
- * return true if send successfully, else return false.
- * */
+ * return true if send successfully, else return false.  */
 bool db_send(const char *format, ...);
 
 /* Socket send 'Over' flag,

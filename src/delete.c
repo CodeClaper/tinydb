@@ -13,6 +13,7 @@
 #include "check.h"
 #include "trans.h"
 #include "session.h"
+#include "ret.h"
 
 /* Adapt to select items node data type. */
 static SelectItemsNode *adapt_select_items_node() {
@@ -45,14 +46,16 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table, void
 }
 
 /* Execute delete statment.*/
-ExecuteResult exec_delete_statement(DeleteNode *delete_node) { 
+void exec_delete_statement(DeleteNode *delete_node, DBResult *result) { 
+
     Table *table = open_table(delete_node->table_name);
-    if (table == NULL)
-        return EXECUTE_TABLE_OPEN_FAIL;
+    if (table == NULL) {
+        error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", delete_node->table_name);
+        return;
+    }
 
     /* Check out delete node. */
-    if (!check_delete_node(delete_node))
-        return EXECUTE_FAIL;
+    if (!check_delete_node(delete_node, result)) return;
 
     /* Adapt to query param. */
     QueryParam *query_param = adapt_query_param(delete_node, table);
@@ -65,8 +68,6 @@ ExecuteResult exec_delete_statement(DeleteNode *delete_node) {
     root_fall_back_root_node(table);
 
     /* Send out deleted result. */
-    db_send("Successfully deleted %d row data.\n", select_result->row_size);
-
-    return EXECUTE_SUCCESS;
+    success_result(result, "Successfully deleted %d row data.\n", select_result->row_size);
 }
 
