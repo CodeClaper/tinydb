@@ -24,7 +24,7 @@ static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node, DB
         if (strcmp(meta_column->column_name, column_node->column_name) == 0)
             return true;
     }
-    error_result(result, EXECUTE_UNKNOWN_COLUMN, "Unknown column '%s' in table '%s'\n", column_node->column_name, meta_table->table_name);
+    error_result(result, EXECUTE_UNKNOWN_COLUMN, "Unknown column '%s' in table '%s'", column_node->column_name, meta_table->table_name);
     return false;
 }
 
@@ -64,7 +64,7 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
             break;
     }
     if (!re)
-       error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Data type convert fail for column '%s'\n", column_name);
+       error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Data type convert fail for column '%s'.", column_name);
     return re;
 }
 
@@ -73,7 +73,7 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
  * */
 static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *result) {
     if (value == NULL) {
-        error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Try to convert NULL '%s' to %s fail\n", data_type_name(meta_column->column_type));
+        error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Try to convert NULL '%s' to %s fail.", data_type_name(meta_column->column_type));
         return false;
     }
     switch(meta_column->column_type) {
@@ -208,7 +208,7 @@ static bool check_column_set(ColumnSetNode *column_set_node, MetaTable *meta_tab
 bool check_query_param(QueryParam *query_param, DBResult *result) {
     Table *table = open_table(query_param->table_name);
     if (table == NULL) {
-        error_result(result, EXECUTE_TABLE_DROP_FAIL, "Try to open table '%s' fail.", query_param->table_name);
+        error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' not exists.", query_param->table_name);
         return false;
     }
     return check_select_items(query_param->select_items, table->meta_table, result) 
@@ -239,7 +239,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
              * Thirdly, if priamry key is assigned to different value, should check if key aleady exists, avoid cause duplicate.
              * */
             if (select_result->row_size > 1) {
-                error_result(result, EXECUTE_DUPLICATE_KEY, "Duaplicate key not allowed\n");
+                error_result(result, EXECUTE_DUPLICATE_KEY, "Duaplicate key not allowed.");
                 return false;
             }
             if (select_result->row_size == 1) {
@@ -250,7 +250,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
                 void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
                 void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
                 if (equal(key, new_key, meta_column->column_type) && !row_is_deleted(cursor)) {
-                    error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key\n", get_key_str(key, meta_column->column_type));
+                    error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
                     return false;
                 }
             }
@@ -307,7 +307,7 @@ bool check_insert_node(InsertNode *insert_node, DBResult *result) {
         
         /* Check column number equals the insert values number. */
         if (meta_table->column_size != insert_node->value_item_set_node->num) {
-            db_error("Column count doesn't match value count: %d != %d. \n", meta_table->column_size, insert_node->value_item_set_node->num);
+            error_result(result, EXECUTE_NOT_MATCH_COLUMN, "Column count doesn't match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
             return false;
         }
 

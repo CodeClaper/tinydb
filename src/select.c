@@ -4,6 +4,7 @@
  * Besides, Update statement, delete statement also use these module for query under conditon.
  * ===========================================================================================
  * */
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -785,7 +786,8 @@ SelectResult *new_select_result(char *table_name) {
     SelectResult *select_result = db_malloc2(sizeof(SelectResult), "SelectResult");
     select_result->row_size = 0;
     select_result->table_name = strdup(table_name);
-    select_result->sum.i = 0;
+    select_result->sum = 0;
+    select_result->rows = NULL;
     return select_result;
 }
 
@@ -847,115 +849,37 @@ static void send_row_data(Row *row, Table *table) {
     db_send("}");
 }
 
-/* Send row data. */
-static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    select_result->rows[select_result->row_index++] = copy_row(row);
-}
-
 /* Count number of row, used in the sql function count(1) */
 void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     select_result->row_size++;
 }
 
-/* Execute sum funciton */
-static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-
-    /* Only look for first content of row data. */;
-    KeyValue *key_value = row->data[0];
-    assert_true(strcasecmp(key_value->key, SUM_NAME) == 0, "System error, key name must be '%s'", SUM_NAME);
-
-    switch(key_value->data_type) {
-        case T_INT:
-        case T_BOOL:
-        case T_CHAR:
-            select_result->sum.i += *(int32_t *)key_value->value; 
-            break;
-        case T_FLOAT:
-            select_result->sum.f += *(float *)key_value->value;
-            break;
-        case T_DOUBLE:
-            select_result->sum.d += *(double *)key_value->value;
-            break;
-        default:
-            select_result->sum.i += 0;
-            select_result->sum.f += 0;
-            select_result->sum.d += 0;
-            break;
-    }
-
-    select_result->row_index--;
-
-    /* Send out sum result. 
-     * Trigger when row index is zero, which means the last row. 
-     * */
-    if (select_result->row_index == 0) {
-        switch(key_value->data_type) {
-            case T_INT:
-            case T_BOOL:
-            case T_CHAR:
-                db_send("{%s: %d}\n", SUM_NAME, select_result->sum.i);
-                break;
-            case T_FLOAT:
-                db_send("{%s: %f}\n", SUM_NAME, select_result->sum.f);
-                break;
-            case T_DOUBLE:
-                db_send("{%s: %fd}\n", SUM_NAME, select_result->sum.d);
-                break;
-            default:
-                db_send("{%s: 0}\n", SUM_NAME);
-                break;
-        }
-    }
+/* Send row data. */
+static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
 }
 
 
-/* Execute avg funciton */
-static void avg_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-
-    /* Only look for first content of row data. */;
+/* Execute sum funciton */
+static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     KeyValue *key_value = row->data[0];
-
     switch(key_value->data_type) {
         case T_INT:
         case T_BOOL:
         case T_CHAR:
-            select_result->sum.i += *(int *)key_value->value; 
+            select_result->sum += *(int32_t *) key_value->value;
             break;
         case T_FLOAT:
-            select_result->sum.f += *(float *)key_value->value;
+            select_result->sum += *(float *) key_value->value;
             break;
         case T_DOUBLE:
-            select_result->sum.d += *(double *)key_value->value;
+            select_result->sum += *(double *) key_value->value;
             break;
         default:
-            select_result->sum.i += 0;
-            select_result->sum.f += 0;
-            select_result->sum.d += 0;
+            select_result->sum += 0;
             break;
     }
-
-    select_result->row_index--;
-
-    /* Send out sum result. 
-     * Trigger when row index is zero, which means the last row. */
-    if (select_result->row_index == 0) {
-        switch(key_value->data_type) {
-            case T_INT:
-            case T_BOOL:
-            case T_CHAR:
-                db_send("{%s: %d}\n", AVG_NAME, select_result->sum.i / select_result->row_size);
-                break;
-            case T_FLOAT:
-                db_send("{%s: %f}\n", AVG_NAME, select_result->sum.f / select_result->row_size);
-                break;
-            case T_DOUBLE:
-                db_send("{%s: %fd}\n", AVG_NAME, select_result->sum.d / select_result->row_size);
-                break;
-            default:
-                db_send("{%s: 0}\n", AVG_NAME);
-                break;
-        }
-    }
+    select_result->row_size++;
 }
 
 /* Execute max function. */
@@ -966,25 +890,18 @@ static void max_row(Row *row, SelectResult *select_result, Table *table, void *a
 
     /* At first, the max row is null. */
     if (select_result->max_row == NULL) 
-        select_result->max_row = copy_row(row);
+        select_result->max_row = copy_row_without_reserved(row);
     else {
         Row *max_row = select_result->max_row;
         KeyValue *max_row_key_value = max_row->data[0];
         /* If current row value greater than max row, assign current row as the max row. */
         if (greater(key_value->value, max_row_key_value->value, key_value->data_type)) {
             free_row(select_result->max_row);
-            select_result->max_row = copy_row(row);
+            select_result->max_row = copy_row_without_reserved(row);
         }
     }
 
-    /* Send out max row result. 
-     * Trigger when row index is zero, which means the last row. 
-     * */
-    select_result->row_index--;
-    if (select_result->row_index == 0) {
-        send_row(select_result->max_row, select_result, table, arg);
-        db_send("\n");
-    }
+    select_result->row_size++;
 }
 
 /* Execute min function. */
@@ -995,92 +912,178 @@ static void min_row(Row *row, SelectResult *select_result, Table *table, void *a
 
     /* At first, the min row is null, initilise it. */
     if (select_result->min_row == NULL) 
-        select_result->min_row = copy_row(row);
+        select_result->min_row = copy_row_without_reserved(row);
     else {
         /* If current row value less than min row, assign current row as the mix row. */
         Row *min_row = select_result->min_row;
         KeyValue *min_row_key_value = min_row->data[0];
         if (less(key_value->value, min_row_key_value->value, key_value->data_type)) {
             free_row(select_result->min_row);
-            select_result->min_row = copy_row(row);
+            select_result->min_row = copy_row_without_reserved(row);
         }
     }
 
-    /* Send out mix row result. 
-     * Trigger when row index is zero, which means the last row. 
-     * */
-    select_result->row_index--;
-    if (select_result->row_index == 0) {
-        send_row(select_result->min_row, select_result, table, arg);
-        db_send("\n");
-    }
+    select_result->row_size++;
 }
 
 
 /* Execute aggregate function count(). */
-static void exec_function_count(QueryParam *query_param) {
+static void exec_function_count(QueryParam *query_param, DBResult *result) {
 
     /* Generate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
     /* Count row number. */
     query_with_condition(query_param, select_result, count_row, NULL);
-    
-    /* Compose count result info and send out. */
-    db_send("{%s: %d}\n", COUNT_NAME, select_result->row_size);
+
+    success_result(result, "Count function exeucted successfully.");
+
+    int32_t row_size = select_result->row_size;
+    /* Prepare enough memory space. */
+    select_result->row_size = 1;
+    select_result->rows = db_malloc2(sizeof(Row *) * select_result->row_size, "SelectResult.Rows");
+
+    /* For the count row. */
+    Row *row = db_malloc2(sizeof(Row), "Row");
+    row->table_name = strdup(query_param->table_name);
+    row->data = db_malloc2(sizeof(KeyValue *) * 1, "Row.data");
+    row->column_len = 1;
+
+    /* For key value. */
+    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    key_value->key = strdup(COUNT_NAME);
+    key_value->value = copy_value(&row_size, T_INT, NULL);
+    key_value->data_type = T_INT;
+
+    /* Assignment. */
+    row->data[0] = key_value;
+    select_result->rows[0] = row;
+    result->data = select_result;
+    result->rows = row_size;
 }
 
 /* Execute aggregate function sum(). */
-static void exec_function_sum(QueryParam *query_param) {
+static void exec_function_sum(QueryParam *query_param, DBResult *result) {
      
     /* Genrate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
-    /* Count row number. */
-    query_with_condition(query_param, select_result, count_row, NULL);
-
-    /* Sum row. */
+    /* Plus row data. */
     query_with_condition(query_param, select_result, sum_row, NULL);
 
+    /* success result. */
+    success_result(result, "Sum function exeucted successfully.");
+
+    int row_size = select_result->row_size;
+    /* Prepare enough memory space. */
+    select_result->row_size = 1;
+    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+
+    /* For the SUM row. */
+    Row *row = db_malloc2(sizeof(Row), "Row");
+    row->table_name = strdup(query_param->table_name);
+    row->data = db_malloc2(sizeof(KeyValue *) * 1, "Row.data");
+    row->column_len = 1;
+
+    /* For key value. */
+    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    key_value->key = strdup(SUM_NAME);
+    key_value->value = copy_value(&select_result->sum, T_DOUBLE, NULL);
+    key_value->data_type = T_DOUBLE;
+
+    /* Assignment. */
+    row->data[0] = key_value;
+    select_result->rows[0] = row;
+    result->data = select_result;
+    result->rows = row_size;
 } 
 
 /* Execute aggregate function avg(). */
-static void exec_function_avg(QueryParam *query_param) {
+static void exec_function_avg(QueryParam *query_param, DBResult *result) {
 
     /* Genrate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
-    /* Count row number. */
-    query_with_condition(query_param, select_result, count_row, NULL);
+    /* Plus row data. */
+    query_with_condition(query_param, select_result, sum_row, NULL);
 
-    /* Avg row. */
-    query_with_condition(query_param, select_result, avg_row, NULL);
+    /* success result. */
+    success_result(result, "Avg function exeucted successfully.");
+
+    int row_size = select_result->row_size;
+    /* Prepare enough memory space. */
+    select_result->row_size = 1;
+    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+
+    /* For the SUM row. */
+    Row *row = db_malloc2(sizeof(Row), "Row");
+    row->table_name = strdup(query_param->table_name);
+    row->data = db_malloc2(sizeof(KeyValue *) * 1, "Row.data");
+    row->column_len = 1;
+
+    /* For key value. */
+    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    key_value->key = strdup(AVG_NAME);
+    double value = select_result->sum / row_size;
+    key_value->value = copy_value(&value, T_DOUBLE, NULL);
+    key_value->data_type = T_DOUBLE;
+
+    /* Assignment. */
+    row->data[0] = key_value;
+    select_result->rows[0] = row;
+    result->data = select_result;
+    result->rows = row_size;
 }
 
 /* Execute aggregate function max(). */
-static void exec_function_max(QueryParam *query_param) {
+static void exec_function_max(QueryParam *query_param, DBResult *result) {
     
     /* Genrate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
-    /* Count row number. */
-    query_with_condition(query_param, select_result, count_row, NULL);
-
     /* Max row. */
     query_with_condition(query_param, select_result, max_row, NULL);
+
+    /* success result. */
+    success_result(result, "Max function executed successfully.");
+
+    int row_size = select_result->row_size;
+    /* Prepare enough memory space. */
+    select_result->row_size = 1;
+    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+
+    /* For the SUM row. */
+    Row *row = copy_row(select_result->max_row);
+    /* Assignment. */
+    select_result->rows[0] = row;
+    result->data = select_result;
+    result->rows = row_size;
+
 }
 
 /* Execute aggregate function min(). */
-static void exec_function_min(QueryParam *query_param) {
+static void exec_function_min(QueryParam *query_param, DBResult *result) {
 
     /* Genrate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
-    /* Count row number. */
-    query_with_condition(query_param, select_result, count_row, NULL);
-
     /* Min row. */
     query_with_condition(query_param, select_result, min_row, NULL);
+
+    /* success result. */
+    success_result(result, "Min function executed successfully.");
+
+    int row_size = select_result->row_size;
+    /* Prepare enough memory space. */
+    select_result->row_size = 1;
+    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+
+    /* For the SUM row. */
+    Row *row = copy_row(select_result->min_row);
+    /* Assignment. */
+    select_result->rows[0] = row;
+    result->data = select_result;
+    result->rows = row_size;
 }
 
 
@@ -1092,23 +1095,23 @@ static void exec_function_min(QueryParam *query_param) {
  *     MAX
  *     MIN
  * */
-static void exec_function_select_statement(QueryParam *query_param) {
+static void exec_function_select_statement(QueryParam *query_param, DBResult *result) {
     FunctionNode *function_node = query_param->select_items->function_node;
     switch(function_node->function_type) {
         case F_COUNT:
-            exec_function_count(query_param);
+            exec_function_count(query_param, result);
             break;
         case F_SUM:
-            exec_function_sum(query_param);
+            exec_function_sum(query_param, result);
             break;
         case F_AVG:
-            exec_function_avg(query_param);
+            exec_function_avg(query_param, result);
             break;   
         case F_MAX:
-            exec_function_max(query_param);
+            exec_function_max(query_param, result);
             break;
         case F_MIN:
-            exec_function_min(query_param);
+            exec_function_min(query_param, result);
             break;
     }
 }
@@ -1135,6 +1138,7 @@ static void exec_plain_select_statement(QueryParam *query_param, DBResult *resul
 
     /* Assign exeuction result. */
     success_result(result, "Query data successfully.");
+
     result->rows = select_result->row_size;
     result->data = select_result;
 }
@@ -1150,7 +1154,7 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
                 exec_plain_select_statement(query_param, result);
                 break;
             case SELECT_FUNCTION:
-                exec_function_select_statement(query_param);
+                exec_function_select_statement(query_param, result);
                 break;
         }
     }

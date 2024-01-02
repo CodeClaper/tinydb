@@ -19,7 +19,6 @@
 #include "ret.h"
 #include "log.h"
 #include "meta.h"
-#include "table.h"
 #include "asserts.h"
 #include "session.h"
 
@@ -64,42 +63,83 @@ void error_result(DBResult *result, ExecuteStatus status, char *format, ...) {
     va_end(ap);
 }
 
+/* Send out row. */
+static void db_send_row_result(Row *row) {
+    db_send("{ ");
+    int i = 0;
+    for(i =0; i <row->column_len; i++) {
+        KeyValue *key_value = *(row->data + i);
+        char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
+        db_send(key_value_pair);
+        db_free(key_value_pair);
+
+        /* split with ',' */
+        if (i < row->column_len - 1) 
+            db_send(", ");
+    }
+    db_send(" }");
+}
+
+/* Send out map result. */
+static void db_send_map_result(Map *map) {
+    db_send("{ ");
+    int i = 0;
+    for(i =0; i <map->size; i++) {
+        KeyValue *key_value = *(map->body + i);
+        char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
+        db_send(key_value_pair);
+        db_free(key_value_pair);
+
+        /* split with ',' */
+        if (i < map->size - 1) 
+            db_send(", ");
+    }
+    db_send(" }");
+}
+
 /* Send out db select execution result. */
 static void db_send_select_result(DBResult *result) {
-    db_send("{\"status\": %d, \"success\": %s, \"rows\": %d, \"message\": \"%s\", \"data\": [", 
-            result->status, result->success ? "true" : "false", result->rows, result->message);
-    SelectResult *select_result = result->data;
-    uint32_t i, j;
-    for(i = 0; i < result->rows; i++) {
-        Row *row = select_result->rows[i];
-        Table *table = open_table(row->table_name);
-        assert_not_null(table, "System error, found table '%s' fail. \n", row->table_name);
-        int sys_reserved_column_size = table->meta_table->all_column_size - table->meta_table->column_size;
-        db_send("{");
-        for(j =0; j <row->column_len; j++) {
-            KeyValue *key_value = *(row->data + j);
+    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\"",
+            result->status, result->success ? "true" : "false", result->message);
 
-            /* Skip system reserved columns. */
-            MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value->key);
-            if (meta_column->sys_reserved) continue;
-
-            char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
-            db_send(key_value_pair);
-            db_free(key_value_pair);
-
-            /* split with ',' */
-            if (j < row->column_len - 1 - sys_reserved_column_size) db_send(", ");
+    if (result->success) {
+        db_send(", \"data\": ");
+        SelectResult *select_result = result->data;
+        select_result && select_result->row_size == 1 ? db_send("") : db_send("[");
+        int i;
+        for(i = 0; i < select_result->row_size; i++) {
+            Row *row = select_result->rows[i];
+            /* Send out row. */
+            db_send_row_result(row);
+            if (i < select_result->row_size - 1)
+                db_send(", ");
         }
-        db_send("}");
-        if (i < result->rows - 1) db_send(", ");
+        select_result && select_result->row_size == 1 ? db_send("") : db_send("]");
     }
-    db_send("], \"duration\": %lf }\n", result->duration);
+    db_send(", \"rows\": %d, \"duration\": %lf }\n", result->rows, result->duration);
 }
 
 /* Send out db none data result. */
 static void db_send_nondata_result(DBResult *result) {
-    db_send("{\"status\": %d, \"success\": %s, \"rows\": %d, \"message\": \"%s\", \"duration\": %lf}\n", 
-            result->status, result->success ? "true" : "false", result->rows, result->message, result->duration);
+    db_send("{\"status\": %d, \"success\": %s, \"message\": \"%s\", \"duration\": %lf}\n", 
+            result->status, result->success ? "true" : "false", result->message, result->duration);
+}
+
+/* Send out db show tables result. */
+static void db_send_map_list(DBResult *result) {
+    MapList *map_list = (MapList *)result->data;
+    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\", \"data\": ",
+            result->status, result->success ? "true" : "false", result->message);
+    map_list->size == 1 ? db_send("") : db_send("[");
+    uint32_t i = 0;
+    for(i = 0; i < map_list->size; i++) {
+        Map *map = map_list->data[i];
+        db_send_map_result(map);
+        if (i < map_list->size - 1)
+            db_send(", ");
+    }
+    map_list->size == 1 ? db_send("") : db_send("]");
+    db_send(", \"duration\": %lf }\n", result->duration);
 }
 
 /* Send out db execution result. */
@@ -110,6 +150,7 @@ void db_send_result(DBResult *result) {
             break;
         case STMT_SHOW:
         case STMT_DESCRIBE:
+            db_send_map_list(result);
             break;
         default:
             db_send_nondata_result(result);

@@ -22,7 +22,8 @@
 
 
 /* Data type name list. */
-static char *data_type_name_list[] = {"bool",  "char",   "int",  "double", "float", "string", "date", "timestamp",  "reference"};
+static char *data_type_name_list[] = \
+    {"bool",  "char",  "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
 
 /* Get data type name. */
 char *data_type_name(DataType data_type) {

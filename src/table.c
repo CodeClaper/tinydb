@@ -23,21 +23,21 @@
 
 /* Get table file path. */
 static char *table_file_path(char *table_name) {
-  if (table_name == NULL) {
+    if (table_name == NULL) {
         fprintf(stderr, "Inner error, table name can`t be NULL.\n");
         exit(EXIT_FAILURE);
-  }
-  int len = strlen(conf->data_dir) + strlen(table_name) + strlen(".dbt") + 1;
-  char *file_path = db_malloc2(len, "String value");
-  sprintf(file_path, "%s%s%s", conf->data_dir, table_name, ".dbt");
-  return file_path;
+    }
+    int len = strlen(conf->data_dir) + strlen(table_name) + strlen(".dbt") + 1;
+    char *file_path = db_malloc2(len, "String value");
+    sprintf(file_path, "%s%s%s", conf->data_dir, table_name, ".dbt");
+    return file_path;
 }
 
 /* Check table file if exist 
  * Return true if exist or false if not exist. */
 static bool table_file_exist(char *table_file_path) {
-  struct stat buffer;
-  return (stat(table_file_path, &buffer) == 0);
+    struct stat buffer;
+    return (stat(table_file_path, &buffer) == 0);
 }
 
 /* Check if table exists. */

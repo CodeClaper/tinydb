@@ -68,6 +68,7 @@ typedef enum {
     EXECUTE_TABLE_DROP_FAIL, 
     EXECUTE_TABLE_OPEN_FAIL,
     EXECUTE_DUPLICATE_COLUMN,
+    EXECUTE_NOT_MATCH_COLUMN,
     EXECUTE_UNKNOWN_COLUMN,
     EXECUTE_DUPLICATE_KEY,
     EXECUTE_EXCEEDED_MAX_COLUMN,
@@ -316,6 +317,17 @@ typedef struct {
     DataType data_type;
 } KeyValue;
 
+/* Map */
+typedef struct {
+    KeyValue **body;
+    uint32_t size;
+} Map;
+
+typedef struct {
+    Map **data;
+    uint32_t size;
+}MapList;
+
 /* Row */
 typedef struct {
     void *key;
@@ -339,11 +351,7 @@ typedef struct {
     int32_t row_index;  /* current row index. */
     Row *max_row;       /* The max row, used in funciton max. */
     Row *min_row;       /* The min row, used in funciton min. */
-    union {
-      int32_t i;
-      float f;
-      double d;
-    } sum; /* The sum value, used in function sum. */
+    double sum; /* The sum value, used in function sum. */
 } SelectResult;
 
 /* TableList */

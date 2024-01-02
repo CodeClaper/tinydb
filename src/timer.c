@@ -4,13 +4,16 @@
 * ======================================================================================================
 */
 
+#include <string.h>
 #include <time.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdint.h>
+#include "data.h"
 #include "timer.h"
 #include "data.h"
 #include "log.h"
+#include "mmu.h"
 
 /* Get current system timestamp.
  * Return current system timestamp, and -1 if fail.
@@ -42,4 +45,12 @@ int64_t get_current_sys_time(TIME_LEVEL time_level) {
             break;
     }
     return value;
+}
+
+/* Format time. */
+char *format_time(char *format, time_t t) {
+    char *s = db_malloc2(20, "Date String value.");
+    struct tm *tm = localtime(&t);
+    strftime(s, 20, format, tm);
+    return s;
 }
