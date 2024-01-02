@@ -138,7 +138,7 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name ,Valu
         if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, result)) 
             return true;
     }
-    error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Column '%s' data type error.\n", column_name);
+    error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Column '%s' data type error.", column_name);
     return false;
 }
 
@@ -262,7 +262,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
 /* Check if table alreay exist. */
 static bool check_duplicate_table(char *table_name, DBResult *result) {
     if (check_table_exist(table_name)) {
-        error_result(result, EXECUTE_TABLE_CREATE_FAIL, "Table '%s' already exists.\n", table_name); 
+        error_result(result, EXECUTE_TABLE_CREATE_FAIL, "Table '%s' already exists.", table_name); 
         return false;
     } else 
         return true;
@@ -272,7 +272,7 @@ static bool check_duplicate_table(char *table_name, DBResult *result) {
  * Maybe it will allow to not support primary key, but now, must to do.  */
 static bool check_primary_null(CreateTableNode *create_table_node, DBResult *result) {
     if (create_table_node->primary_key_node == NULL) 
-       error_result(result, EXECUTE_FAIL, "Must support primary key.\n");
+       error_result(result, EXECUTE_FAIL, "Must support primary key.");
     return create_table_node->primary_key_node != NULL;
 }
 
@@ -284,7 +284,7 @@ static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node, D
         for(j = 0; j < column_def_set_node->size; j++) {
             ColumnDefNode *column_def_node2 = column_def_set_node->column_defs[j];
             if (i !=j && strcmp(column_def_node1->column->column_name, column_def_node2->column->column_name) == 0) {
-                error_result(result, EXECUTE_DUPLICATE_COLUMN, "Not allow duplicate column name '%s' in the same table.\n", column_def_node1->column->column_name);
+                error_result(result, EXECUTE_DUPLICATE_COLUMN, "Not allow duplicate column name '%s' in the same table.", column_def_node1->column->column_name);
                 return false;
             }
         }

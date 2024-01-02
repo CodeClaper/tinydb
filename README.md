@@ -14,19 +14,63 @@ TinyDb is a server-side database engine and currently only support linux environ
 
 TinyDb uses Lex & Yacc to realize sql lexical analyzer and parser. If you want to compile the sql file, you must have theses tools or substitutes. 
 
-Debian or Ubuntu
+**Debian** or **Ubuntu**
 
 ```sh
 sudo apt-get install flex bison
 ```
 
-Centos
+**Centos**
 
 ```shell
 yum install flex bison
 ```
 
+### GNU Readline
 
+Tinydb cli bases the GNU Readline as command helper, so if you want use cli, you must install GNU Readline firstly.
+
+**Debian** or **Ubuntu**
+
+```shell
+sudo apt install libreadline-dev
+```
+
+**Centos**
+
+```shell
+yum install readline-devel
+```
+
+
+
+## Compile
+
+TinyDb uses GNU Automake as the tool to compile the program. 
+
+Firstly,  generate configuration scripts.
+
+```shell
+autoconf
+```
+
+The configure script is automatic generated, run it to to determine certain information about the packages.
+
+```
+./configure
+```
+
+If you want debug.
+
+```shell
+./configure --enable-debug=yes CFLAGS='-g -O0'
+```
+
+Finally, makefile is generated, compile it.
+
+```shell
+make
+```
 
 ## RoadMap
 
@@ -40,10 +84,10 @@ yum install flex bison
 - [x] Query special column data using sql
 - [x] Query data under conditions using sql
 - [x] Query data with aggregate function sum, avg, max, min, count
-- [ ] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference.
-- [ ] Stream output of query result
+- [x] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference.
+- [x] Data type valid check.
+- [x] Implement MVCC , support transaction and support the four types of transaction isolations.
 - [ ] Support index, B+Tree index store
 - [ ] Create view using sql
-- [ ] Implement MVCC and support transaction
-- [ ] Bin Log
+- [ ] Bin Log 
 - [ ] Distributed

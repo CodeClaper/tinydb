@@ -2,6 +2,8 @@ AC_INIT([tinydb, tinydb_cli], [0.1], [jerryzhou.zc@gmail.com])
 AM_INIT_AUTOMAKE([-Wall])
 ## CC
 AC_PROG_CC
+## python
+AM_PATH_PYTHON
 ## LEX
 AC_PROG_LEX(yywrap)
 if test "x$LEX" != xflex; then

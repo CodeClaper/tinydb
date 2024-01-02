@@ -1,6 +1,9 @@
 SUBDIRS = src
 dist_doc_DATA = README.md
 
+check-local:
+	pytest test/pytest/unit/
+
 clean-local:
 	@rm config.status configure config.log
 	@rm Makefile

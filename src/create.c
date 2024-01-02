@@ -59,7 +59,7 @@ static bool if_primary_key_column(CreateTableNode *create_table_node, char *colu
 }
 
 /* Get meta column. */
-static MetaColumn *get_meta_column(CreateTableNode *create_table_node, int index) {
+static MetaColumn *get_meta_column(CreateTableNode *create_table_node, int index, DBResult *result) {
     MetaColumn *meta_column = db_malloc2(sizeof(MetaColumn), "MetaColumn");
     ColumnDefNode *column_def_node = *(create_table_node->column_def_set_node->column_defs + index);
     strcpy(meta_column->column_name, column_def_node->column->column_name); 
@@ -70,8 +70,10 @@ static MetaColumn *get_meta_column(CreateTableNode *create_table_node, int index
         Table *table = open_table(column_def_node->table_name);
         if (table)
             strcpy(meta_column->table_name, column_def_node->table_name);
-        else 
+        else {
+            error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Table '%s' not exists.", column_def_node->table_name);
             return NULL;
+        }
     }
     return meta_column;
 }
@@ -106,7 +108,7 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *re
     int i, j; 
     /* User define. */
     for (i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = get_meta_column(crete_table_node, i);
+        MetaColumn *meta_column = get_meta_column(crete_table_node, i, result);
         if (meta_column == NULL) 
             return NULL;
         meta_table->meta_column[i] = meta_column;
