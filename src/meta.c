@@ -27,33 +27,33 @@ static char *data_type_name_list[] = \
 
 /* Get data type name. */
 char *data_type_name(DataType data_type) {
-  return data_type_name_list[data_type];
+    return data_type_name_list[data_type];
 }
 
 /* Column type length */
 uint32_t default_data_len(DataType column_type) {
-  switch (column_type) {
-      case T_BOOL:
+    switch (column_type) {
+        case T_BOOL:
             return 2;
-      case T_CHAR:
+        case T_CHAR:
             return sizeof(char);
-      case T_INT:
+        case T_INT:
             return sizeof(int32_t);
-      case T_LONG:
+        case T_LONG:
             return sizeof(int64_t);
-      case T_DOUBLE:
+        case T_DOUBLE:
             return sizeof(double);
-      case T_FLOAT:
+        case T_FLOAT:
             return sizeof(float);
-      case T_STRING:
+        case T_STRING:
             return DEFAULT_STRING_LENGTH;
-      case T_DATE:
+        case T_DATE:
             return DEFAULT_DATE_LENGTH;
-      case T_TIMESTAMP:
+        case T_TIMESTAMP:
             return DEFAULT_TIMESTAMP_LENGTH;
-      case T_REFERENCE:
+        case T_REFERENCE:
             return DEFAULT_REFERENCE_LENGTH;
-      default:
+        default:
             fatal("Unknown column type");
   }
 }
