@@ -48,10 +48,10 @@ yum install readline-devel
 
 TinyDb uses GNU Automake as the tool to compile the program. 
 
-Firstly,  generate configuration scripts.
+Firstly, generate configuration scripts.
 
 ```shell
-autoconf
+autoreconf --install
 ```
 
 The configure script is automatic generated, run it to to determine certain information about the packages.
@@ -63,7 +63,7 @@ The configure script is automatic generated, run it to to determine certain info
 If you want debug.
 
 ```shell
-./configure --enable-debug=yes CFLAGS='-g -O0'
+./configure --enable-debug=yes CFLAGS='-g -O0 -D DEBUG'
 ```
 
 Finally, makefile is generated, compile it.
@@ -86,7 +86,9 @@ make
 - [x] Query data with aggregate function sum, avg, max, min, count
 - [x] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference.
 - [x] Data type valid check.
-- [x] Implement MVCC , support transaction and support the four types of transaction isolations.
+- [x] Implement MVCC , support transaction and support the four types of transaction isolation levels.
+- [ ] ACID.
+- [ ] Subquery.
 - [ ] Support index, B+Tree index store
 - [ ] Create view using sql
 - [ ] Bin Log 
