@@ -113,15 +113,15 @@ typedef struct {
 
 /* FunctionNode */
 typedef struct {
-  FunctionType function_type;
-  FunctionValueNode *value;
+    FunctionType function_type;
+    FunctionValueNode *value;
 } FunctionNode;
 
 /* SelectItemsNode */
 typedef struct {
-  ColumnSetNode *column_set_node;
-  FunctionNode *function_node;
-  SelectItemType type;
+    ColumnSetNode *column_set_node;
+    FunctionNode *function_node;
+    SelectItemType type;
 } SelectItemsNode;
 
 /* ColumnDefNode */
@@ -137,145 +137,145 @@ typedef struct {
 
 /* ColumnDefSetNode */
 typedef struct {
-  ColumnDefNode **column_defs;
-  uint32_t size;
+    ColumnDefNode **column_defs;
+    uint32_t size;
 } ColumnDefSetNode;
 
 /* PrimaryKeyNode */
 typedef struct {
-  ColumnNode *column;
+    ColumnNode *column;
 } PrimaryKeyNode;
 
 /* ValueItemNode */
 typedef struct {
-  DataType data_type;
-  union {
-    /* T_INT, T_LONG */
-    int64_t i_value;
-    /* T_BOOL */
-    bool b_value;
-    /* T_CHAR, T_STRING */
-    char *s_value;
-    /* T_FLOAT */
-    float f_value;
-    /* T_DOUBLE */
-    double d_value;
-    /* T_TIMESTAMP, T_DATE */
-    time_t t_value;
-    /* T_REFERENCE */
-    struct ValueItemSetNode *nest_value_item_set;
-  };
+    DataType data_type;
+    union {
+        /* T_INT, T_LONG */
+        int64_t i_value;
+        /* T_BOOL */
+        bool b_value;
+        /* T_CHAR, T_STRING */
+        char *s_value;
+        /* T_FLOAT */
+        float f_value;
+        /* T_DOUBLE */
+        double d_value;
+        /* T_TIMESTAMP, T_DATE */
+        time_t t_value;
+        /* T_REFERENCE */
+        struct ValueItemSetNode *nest_value_item_set;
+    };
 } ValueItemNode;
 
 /* ValueItemSetNode */
 typedef struct ValueItemSetNode {
-  ValueItemNode **value_item_node;
-  uint32_t num;
+    ValueItemNode **value_item_node;
+    uint32_t num;
 } ValueItemSetNode;
 
 /* AssignmentNode */
 typedef struct {
-  ColumnNode *column;
-  ValueItemNode *value;
+    ColumnNode *column;
+    ValueItemNode *value;
 } AssignmentNode;
 
 /* AssignmentSetNode */
 typedef struct {
-  AssignmentNode **assignment_node;
-  uint32_t num;
+    AssignmentNode **assignment_node;
+    uint32_t num;
 } AssignmentSetNode;
 
 /* ConditionNode */
 typedef struct ConditionNode {
-  ColumnNode *column;
-  OprType opr_type;
-  ValueItemNode *value;
-  ConnType conn_type;
-  struct ConditionNode *next;
-  struct ConditionNode *left;
-  struct ConditionNode *right;
-  ConditionNodeType type;
+    ColumnNode *column;
+    OprType opr_type;
+    ValueItemNode *value;
+    ConnType conn_type;
+    struct ConditionNode *next;
+    struct ConditionNode *left;
+    struct ConditionNode *right;
+    ConditionNodeType type;
 } ConditionNode;
 
 /* CreateTableNode */
 typedef struct {
-  char *table_name;
-  ColumnDefSetNode *column_def_set_node;
-  PrimaryKeyNode *primary_key_node;
+    char *table_name;
+    ColumnDefSetNode *column_def_set_node;
+    PrimaryKeyNode *primary_key_node;
 } CreateTableNode;
 
 /* SelectNode */
 typedef struct {
-  SelectItemsNode *select_items_node;
-  char *table_name;
-  ConditionNode *condition_node;
+    SelectItemsNode *select_items_node;
+    char *table_name;
+    ConditionNode *condition_node;
 } SelectNode;
 
 /* InsertNode */
 typedef struct {
-  bool all_column;
-  char *table_name;
-  ColumnSetNode *columns_set_node;
-  ValueItemSetNode *value_item_set_node;
+    bool all_column;
+    char *table_name;
+    ColumnSetNode *columns_set_node;
+    ValueItemSetNode *value_item_set_node;
 } InsertNode;
 
 /* UpdateNode */
 typedef struct {
-  char *table_name;
-  AssignmentSetNode *assignment_set_node;
-  ConditionNode *condition_node;
+    char *table_name;
+    AssignmentSetNode *assignment_set_node;
+    ConditionNode *condition_node;
 } UpdateNode;
 
 /* DeleteNode */
 typedef struct {
-  char *table_name;
-  ConditionNode *condition_node;
+    char *table_name;
+    ConditionNode *condition_node;
 } DeleteNode;
 
 /* DescribeNode */
 typedef struct {
-  char *table_name;
+    char *table_name;
 } DescribeNode;
 
 /* ShowNode */
 typedef struct {
-  ShowNodeType type;
+    ShowNodeType type;
 } ShowNode;
 
 /* ASTNode */
 typedef struct {
   StatementType statement_type;
   union {
-    CreateTableNode *create_table_node;
-    SelectNode *select_node;
-    InsertNode *insert_node;
-    UpdateNode *update_node;
-    DeleteNode *delete_node;
-    DescribeNode *describe_node;
-    ShowNode *show_node;
+        CreateTableNode *create_table_node;
+        SelectNode *select_node;
+        InsertNode *insert_node;
+        UpdateNode *update_node;
+        DeleteNode *delete_node;
+        DescribeNode *describe_node;
+        ShowNode *show_node;
   };
 } ASTNode;
 
 /* InputBuffer */
 typedef struct {
-  char *input;
-  size_t buffer_length;
-  ssize_t input_length;
+    char *input;
+    size_t buffer_length;
+    ssize_t input_length;
 } InputBuffer;
 
 /* Statement */
 typedef struct {
-  StmtType statement_type;
-  ASTNode *ast_node;
+    StmtType statement_type;
+    ASTNode *ast_node;
 } Statement;
 
 
 /* Pager */
 typedef struct {
-  int file_descriptor;
-  uint32_t file_length;
-  uint32_t size;
-  void *pages[MAX_TABLE_PAGE];
+    int file_descriptor;
+    uint32_t file_length;
+    uint32_t size;
+    void *pages[MAX_TABLE_PAGE];
 } Pager;
 
 /* MetaColumn */

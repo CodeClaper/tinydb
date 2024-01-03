@@ -5,6 +5,7 @@
 #include <string.h>
 #include "table.h"
 #include "copy.h"
+#include "free.h"
 #include "data.h"
 #include "index.h"
 #include "meta.h"
@@ -72,62 +73,83 @@ void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
 
 /* Copy Key value pair. */
 KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table) {
+    
+    /* check */
     if (key_value == NULL)
         return NULL;
+
+    /* copy key value */
     KeyValue *key_value_copy = db_malloc2(sizeof(KeyValue), "KeyValue");
     key_value_copy->key = db_malloc2(strlen(key_value->key) + 1, "Keyvalue.Key");
     strcpy(key_value_copy->key, key_value->key);
     MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key); 
+
     /*Meta column may be null, in fact, key aggregate function, key is min, max, sum, avg ect. there is no meta column. */
     key_value_copy->value = copy_value(key_value->value, key_value->data_type, meta_column);
     key_value_copy->data_type = key_value->data_type;
+
     return key_value_copy;
 }
 
 /* Copy row. */
 Row *copy_row(Row *row) {
+    /* check */
     if (row == NULL)
         return NULL;
     Table *table = open_table(row->table_name);
     if (table == NULL)
         return NULL;
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+
+    /* copy row */
     Row *row_copy = db_malloc2(sizeof(Row), "Row");
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type, primary_meta_column);
     row_copy->column_len = row->column_len;
     row_copy->table_name = db_malloc2(strlen(row->table_name) + 1, "Row.table_name");
     strcpy(row_copy->table_name, row->table_name);
     row_copy->data = db_malloc2(sizeof(KeyValue *) * row->column_len, "Row.data");
-    for(uint32_t i = 0; i < row->column_len; i++) {
-        *(row_copy->data + i) = copy_key_value(*(row->data + i), table->meta_table);
+
+    int i;
+    for(i = 0; i < row->column_len; i++) {
+        row_copy->data[i] = copy_key_value(row->data[i], table->meta_table);
     }
+
     return row_copy;
 }
 
 /* Copy row igonore system reserved columns. */
 Row *copy_row_without_reserved(Row *row) {
+    /* check */
     if (row == NULL)
         return NULL;
     Table *table = open_table(row->table_name);
     if (table == NULL)
         return NULL;
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+
+    /* copy row. */
     Row *row_copy = db_malloc2(sizeof(Row), "Row");
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type, primary_meta_column);
     row_copy->table_name = db_malloc2(strlen(row->table_name) + 1, "Row.table_name");
     strcpy(row_copy->table_name, row->table_name);
     row_copy->data = db_malloc2(sizeof(KeyValue *) * row->column_len, "Row.data");
+
     int i, j;
     for(i = 0, j = 0; i < row->column_len; i++) {
+        /* copy key value. */
         KeyValue *key_value_copy = copy_key_value(*(row->data + i), table->meta_table);
         
         /* Skip system reserved columns. */
         MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value_copy->key);
-        if (meta_column && meta_column->sys_reserved) continue;
+        if (meta_column && meta_column->sys_reserved) {
+            free_key_value(key_value_copy); /* Not need any more. */
+            continue;
+        }
 
         row_copy->data[j++] = key_value_copy;
         row_copy->column_len++;
     }
+
     return row_copy;
 }
 

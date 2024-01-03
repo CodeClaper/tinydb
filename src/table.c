@@ -93,9 +93,12 @@ Table *open_table(char *table_name) {
     /* Check valid. */
     assert_not_null(table_name, "Table name must be supported.\n");
 
+    /* Firstly try to get in cache. */
     Table *cache_table = find_cache_table(table_name);
     if (cache_table)
         return cache_table;
+
+    /* Cache missing, get from disk. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
         db_free(file_path);
@@ -113,7 +116,7 @@ Table *open_table(char *table_name) {
         initial_leaf_node(root_node, true);
     }
     table->meta_table = get_meta_table(table, table_name);
-    add_cache_table(table);
+    add_cache_table(table); /* add cache */
     db_free(file_path);
     return table;
 }

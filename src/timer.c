@@ -19,10 +19,11 @@
  * Return current system timestamp, and -1 if fail.
  * Supports four time level, SECOND, MILLISECOND, MICROSECOND, NANOSECOND. */
 int64_t get_current_sys_time(TIME_LEVEL time_level) {
-
     int64_t value;
     char time_str[32];
     struct timespec tv;
+
+    /* Get current timestamp. */
     if (clock_gettime(CLOCK_REALTIME, &tv)) {
         db_error("Generate next xid error.\n");
         return -1;
@@ -47,10 +48,10 @@ int64_t get_current_sys_time(TIME_LEVEL time_level) {
     return value;
 }
 
-/* Format time. */
+/* Get format time string. */
 char *format_time(char *format, time_t t) {
-    char *s = db_malloc2(20, "Date String value.");
+    char *res = db_malloc2(20, "Date String value.");
     struct tm *tm = localtime(&t);
-    strftime(s, 20, format, tm);
-    return s;
+    strftime(res, 20, format, tm);
+    return res;
 }

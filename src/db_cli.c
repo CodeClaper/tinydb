@@ -96,11 +96,11 @@ int try_connect(struct sockaddr_in *address) {
 /* re-connect. */
 int re_connect(struct sockaddr_in *address) {
 
-    printf("TinyDb server disconnect and try to re-connect...\n");
+    printf("TinyDb server disconnect and try to re-connect ...\n");
 
     re_try++;
     if (re_try > 3) {
-        printf("Retry times already exceed the limitation. \n");
+        printf("Retry times already exceed the maximum limitation. \n");
         exit(1);
     }
     int sock_fd = try_connect(address);
@@ -108,7 +108,7 @@ int re_connect(struct sockaddr_in *address) {
     if (sock_fd < 0)
         return re_connect(address);
     
-    printf("Try to re-connect TinyDb successfully.\n");
+    printf("Re-connect TinyDb successfully.\n");
 
     return sock_fd;
 }

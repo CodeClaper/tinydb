@@ -64,7 +64,7 @@ void error_result(DBResult *result, ExecuteStatus status, char *format, ...) {
 }
 
 /* Send out row. */
-static void db_send_row_result(Row *row) {
+static void db_send_row(Row *row) {
     db_send("{ ");
     int i = 0;
     for(i =0; i <row->column_len; i++) {
@@ -81,7 +81,7 @@ static void db_send_row_result(Row *row) {
 }
 
 /* Send out map result. */
-static void db_send_map_result(Map *map) {
+static void db_send_map(Map *map) {
     db_send("{ ");
     int i = 0;
     for(i =0; i <map->size; i++) {
@@ -108,9 +108,10 @@ static void db_send_select_result(DBResult *result) {
         select_result && select_result->row_size == 1 ? db_send("") : db_send("[");
         int i;
         for(i = 0; i < select_result->row_size; i++) {
-            Row *row = select_result->rows[i];
             /* Send out row. */
-            db_send_row_result(row);
+            Row *row = select_result->rows[i];
+            db_send_row(row);
+
             if (i < select_result->row_size - 1)
                 db_send(", ");
         }
@@ -134,7 +135,7 @@ static void db_send_map_list(DBResult *result) {
     uint32_t i = 0;
     for(i = 0; i < map_list->size; i++) {
         Map *map = map_list->data[i];
-        db_send_map_result(map);
+        db_send_map(map);
         if (i < map_list->size - 1)
             db_send(", ");
     }

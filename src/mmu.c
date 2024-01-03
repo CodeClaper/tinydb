@@ -342,9 +342,13 @@ void db_free(void *ptr) {
 /* Databese level mememory size. */
 size_t db_memesize() {
     size_t total = 0;
-    for (uint32_t i = 0; i < mtable->capacity; i++) {
+    int i;
+    for (i = 0; i < mtable->capacity; i++) {
         MEntry *entry = *(mtable->entry_list + i);
         while(entry) {
+#ifdef DEBUG
+            printf("%s \t", entry->data_type_name);
+#endif
             total += entry->size;
             entry = entry->next;
         }

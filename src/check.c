@@ -19,7 +19,8 @@
 
 /* Check ident node. */
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node, DBResult *result) {
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+    int i;
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_node->column_name) == 0)
             return true;
@@ -158,12 +159,13 @@ static bool check_function_node(FunctionNode *function_node, MetaTable *meta_tab
 
 /* Check column set node */
 static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *meta_table, DBResult *result) {
-     for (uint32_t i = 0; i < column_set_node->size; i++) {
-         ColumnNode *column_node = *(column_set_node->columns + i);
-         if (!check_column_node(meta_table, column_node, result))
-             return false;
-     }
-     return true;
+    int i;
+    for (i = 0; i < column_set_node->size; i++) {
+        ColumnNode *column_node = *(column_set_node->columns + i);
+        if (!check_column_node(meta_table, column_node, result))
+            return false;
+    }
+    return true;
 }
 
 /* Check select items if exist int meta column */

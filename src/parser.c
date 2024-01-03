@@ -11,6 +11,7 @@
 #include "intpr.h"
 #include "log.h"
 #include "y.tab.h"
+#include "asserts.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(void);
@@ -19,8 +20,9 @@ extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 extern int yyparse(ASTNode *node);
 
 Statement *new_statement(ASTNode *node) {
-    if (node == NULL)
-        return NULL;
+
+    assert_not_null(node, "ASTNode not allowed to be NULL. \n");
+
     Statement *statement = db_malloc2(sizeof(Statement), "Statement");
     switch(node->statement_type) {
         case BEGIN_TRANSACTION_STMT:

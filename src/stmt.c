@@ -93,18 +93,19 @@ static void statement_show(Statement *statement, DBResult *result) {
  * (8) BEGIN TRANSACTION
  * (9) COMMIT TRANSACTION
  * */
-DBResult *statement(char *sql) {
-    clock_t start, end;
-    DBResult *result = new_db_result();
-    start = clock();
-    if (is_empty(sql)) {
-        return result;
-    }
+void statement(char *sql) {
+
+    /* Check empty sql. */
+    if (is_empty(sql)) return;
+
     /* Execute statement. */
     Statement *statement = parse(sql);
-    if (statement == NULL) {
-        return result;
-    }
+    if (statement == NULL) return;
+
+    /* Execute statment */
+    clock_t start, end;
+    start = clock();
+    DBResult *result = new_db_result();
     switch(statement->statement_type) {
         case STMT_BEGINE_TRANSACTION:
             result->stmt_type = STMT_BEGINE_TRANSACTION;
@@ -143,15 +144,19 @@ DBResult *statement(char *sql) {
             statement_show(statement, result);
             break;
     }
+
     /* Commit transction manually. */
     auto_commit_transaction(result);
-    /* Free statement memory. */
-    free_statment(statement);
+
     /* Calulate duration. */
     end = clock();
     result->duration = (double)(end - start) / CLOCKS_PER_SEC;
     db_info("Duration: %lfs", result->duration);
+
     /* send result. */
     db_send_result(result);
-    return result;
+
+    /* Free memory. */
+    free_statment(statement);
+    free_db_result(result);
 }

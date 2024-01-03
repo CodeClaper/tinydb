@@ -36,6 +36,7 @@ static MapList *gen_table_list() {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
 
+                /* map */
                 Map *map = db_malloc2(sizeof(Map), "Map");
                 map->size = 3;
                 map->body = db_malloc2(sizeof(KeyValue *) * map->size, "Map.body");
@@ -78,9 +79,13 @@ static MapList *gen_table_list() {
 
 /* Generate memory info. */
 static MapList *gen_memory_info() {
+
+    /* map_list */
     MapList *map_list = db_malloc2(sizeof(MapList), "MapList");
     map_list->size = 1;
     map_list->data = db_malloc2(sizeof(Map *) * map_list->size, "MapList.data");
+
+    /* map */
     Map *map = db_malloc2(sizeof(Map), "Map");
     map->size = 3;
     map->body = db_malloc2(sizeof(KeyValue *) * map->size, "Map.body");

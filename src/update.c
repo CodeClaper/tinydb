@@ -22,23 +22,27 @@
 
 /* Adapt to column set node data type. */
 static ColumnSetNode *adapt_column_set_node(Table *table) {
+
+    ColumnSetNode *column_set_node = db_malloc2(sizeof(ColumnSetNode), "ColumnSetNode");
     MetaTable *meta_table = table->meta_table;
-    ColumnSetNode *column_set_node = db_malloc(sizeof(ColumnSetNode));
     column_set_node->size = meta_table->column_size;
-    column_set_node->columns = db_malloc(sizeof(ConditionNode *) * column_set_node->size);
-    for (uint32_t i = 0; i < column_set_node->size; i++) {
+    column_set_node->columns = db_malloc2(sizeof(ConditionNode *) * column_set_node->size, "ColumnSetNode.columns");
+
+    int i;
+    for (i = 0; i < column_set_node->size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        ColumnNode *column_node = db_malloc(sizeof(ColumnNode));
+        ColumnNode *column_node = db_malloc2(sizeof(ColumnNode), "ColumnNode");
         column_node->has_sub_column = false;
         column_node->column_name = strdup(meta_column->column_name);
-        *(column_set_node->columns + i) = column_node;
+        column_set_node->columns[i] = column_node;
     }
+
     return column_set_node;
 }
 
 /* Adapt to select items node data type.*/
 static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *table) {
-    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
+    SelectItemsNode *select_items_node = db_malloc2(sizeof(SelectItemsNode), "SelectItemsNode");
     select_items_node->type = SELECT_COLUMNS;
     select_items_node->column_set_node = adapt_column_set_node(table);
     return select_items_node;
@@ -46,7 +50,7 @@ static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *
 
 /* Adapt to query param data type.*/
 static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
-    QueryParam *query_param = db_malloc(sizeof(QueryParam));
+    QueryParam *query_param = db_malloc2(sizeof(QueryParam), "QueryParam");
     query_param->table_name = strdup(update_node->table_name);
     query_param->select_items = adapt_select_items_node(update_node, table);
     ConditionNode *condition_node_copy = copy_condition_node(update_node->condition_node);
@@ -56,7 +60,8 @@ static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
 
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node) {
-    for (uint32_t i = 0; i < row->column_len; i++) {
+    int i;
+    for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = *(row->data + i);
         if (strcmp(key_value->key, assign_node->column->column_name) == 0) {
             ValueItemNode *value = assign_node->value;
@@ -106,7 +111,8 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     uint32_t key_len = calc_primary_key_length(table);
 
     /* Handle each of assignment. */
-    for (uint32_t i = 0; i < assignment_set_node->num; i++) {
+    int i;
+    for (i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assign_node = *(assignment_set_node->assignment_node + i);
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
         update_cell(row, assign_node);
@@ -144,6 +150,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
 /* Execute update statment. */
 void exec_update_statment(UpdateNode *update_node, DBResult *result) {
 
+    /* Check table exists. */
     Table *table = open_table(update_node->table_name);
     if (table == NULL) {
         error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", update_node->table_name);

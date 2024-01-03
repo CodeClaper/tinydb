@@ -88,8 +88,8 @@ static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
     SelectItemsNode *select_items_node = query_param->select_items;
     Table *table = open_table(query_param->table_name);
     MetaTable *meta_table = table->meta_table;
-    uint32_t off_set = 0;
-    for (uint32_t i = 0; i < meta_table->all_column_size; i++) {
+    int i; uint32_t off_set = 0;
+    for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_name) == 0)
             break;
@@ -213,8 +213,8 @@ static bool satisfy_leaf_condition_node(void *destinct, ConditionNode *condition
     if (condition_node == NULL)
         return true;
 
-    uint32_t off_set = 0;
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+    int i; uint32_t off_set = 0;
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         /* Define the column. */
         if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
@@ -605,7 +605,8 @@ static void assign_function_row_data(Row *row, void *destinct, QueryParam *query
 
 /* Assign value to row data. */
 static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_param) {
-    for (uint32_t i = 0; i < row->column_len; i++) {
+    int i;
+    for (i = 0; i < row->column_len; i++) {
         MetaColumn *meta_column = find_select_item_meta_column(query_param, i);
 
         uint32_t off_set = calc_offset(query_param, meta_column->column_name);
@@ -648,6 +649,7 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t priamry_key_set_off = calc_offset(query_param, primary_key_meta_column->column_name);
     row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type, primary_key_meta_column);
+
     return row;
 }
 
@@ -686,11 +688,11 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 
     /* It`s necessary to use leaf node snapshot, beacuse when traversing cells, 
      * update or delete operation will change the data structure of leaf node,
-     * which may causes bug.
-     * */
+     * which may causes bug. */
     void *leaf_node_snapshot = copy_block(leaf_node, PAGE_SIZE);
 
-    for (uint32_t i = 0; i < cell_num; i++) {
+    int i;
+    for (i = 0; i < cell_num; i++) {
     
         /* Get leaf node cell value. */
         void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
@@ -721,16 +723,15 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     uint32_t keys_num, key_len;
     keys_num = get_internal_node_keys_num(internal_node);
     key_len = calc_primary_key_length(table);
+
     /* It`s necessary to use internal node snapshot, beacuse when traversing cells, 
      * update or delete operation will change the data structure of internal node,
-     * which may causes bug.
-     * */
+     * which may causes bug.*/
     void *internal_node_snapshot = copy_block(internal_node, PAGE_SIZE);
 
     /* Loop for each interanl node cell to check if satisfy condition. */
     int i;
     for (i = 0; i < keys_num; i++) {
-
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key */
@@ -791,8 +792,8 @@ SelectResult *new_select_result(char *table_name) {
     return select_result;
 }
 
-/* Generate select reuslt. */
-static void gen_select_result(QueryParam *query_param, SelectResult *select_result, ROW_HANDLER row_handler, void *arg) {
+/* Query with condition. */
+void query_with_condition(QueryParam *query_param, SelectResult *select_result, ROW_HANDLER row_handler, void *arg) {
     Table *table = open_table(query_param->table_name);
     if (table == NULL)
         return;
@@ -805,11 +806,6 @@ static void gen_select_result(QueryParam *query_param, SelectResult *select_resu
             select_from_internal_node(select_result, query_param, root, table, row_handler, arg);
             break;
     }
-}
-
-/* Query with condition. */
-void query_with_condition(QueryParam *query_param, SelectResult *select_result ,ROW_HANDLER row_handler, void *arg) {
-    gen_select_result(query_param, select_result, row_handler, arg);
 }
 
 /* Check if system reserved column by column name. */
@@ -1117,17 +1113,13 @@ static void exec_function_select_statement(QueryParam *query_param, DBResult *re
 }
 
 
-/* Execute plain select statement. 
- * For plain select statment (without sql function in select items), 
- * at first, execute count row function to get satisfied row number which
- * is important for next select operation.
- * */
+/* Execute plain select statement. */
 static void exec_plain_select_statement(QueryParam *query_param, DBResult *result) {
 
     /* Genrate select result. */
     SelectResult *select_result = new_select_result(query_param->table_name);
 
-    /* Send row data in json format. */
+    /* Count row number. */
     query_with_condition(query_param, select_result, count_row, NULL);
 
     /* Prepare enough memory space. */
@@ -1136,9 +1128,10 @@ static void exec_plain_select_statement(QueryParam *query_param, DBResult *resul
     /* Send row data in json format. */
     query_with_condition(query_param, select_result, send_row, NULL);
 
-    /* Assign exeuction result. */
+    /* success result. */
     success_result(result, "Query data successfully.");
 
+    /* Assign exeuction result. */
     result->rows = select_result->row_size;
     result->data = select_result;
 }

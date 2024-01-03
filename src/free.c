@@ -32,14 +32,19 @@ void free_refer(Refer *refer) {
 /* Free Row. */
 void free_row(Row *row) {
     if (row) {
-        for(uint32_t i = 0; i < row->column_len; i++) {
-            free_key_value(*(row->data + i));
-        }
-        db_free(row->data);
+        /* free key. */
         Table *table = open_table(row->table_name);
         MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
         free_value(row->key, primary_meta_column->column_type);
-        db_free(row->table_name);
+
+        /* free row data. */
+        for(uint32_t i = 0; i < row->column_len; i++) {
+            free_key_value(row->data[i]);
+        }
+        db_free(row->data);
+        /* table name. */
+        if (row->table_name)
+            db_free(row->table_name);
         db_free(row);
     }
 }
@@ -47,8 +52,21 @@ void free_row(Row *row) {
 /* Free SelectResult. */
 void free_select_result(SelectResult *select_result) {
     if (select_result) {
+        /* free table name. */
         if (select_result->table_name != NULL)
             db_free(select_result->table_name);
+
+        /* free rows. */
+        int i;
+        for (i = 0; i < select_result->row_size; i++) {
+            free_row(select_result->rows[i]);
+        }
+        db_free(select_result->rows);
+    
+        /* max row or min row. */
+        free_row(select_result->max_row);
+        free_row(select_result->min_row);
+
         db_free(select_result);
     }
 }
@@ -326,9 +344,12 @@ void free_show_tables_node(ShowNode *show_node) {
         db_free(show_node);
 }
 
-//Free ASTNode.
+/* Free ASTNode. */
 void free_ast_node(ASTNode *node) {
     switch(node->statement_type) {
+        case BEGIN_TRANSACTION_STMT:
+        case COMMIT_TRANSACTION_STMT:
+            break;
         case SELECT_STMT:
             free_select_node(node->select_node);
             break;
@@ -352,7 +373,7 @@ void free_ast_node(ASTNode *node) {
 }
 
 
-// Free statment
+/* Free statment */
 void free_statment(Statement *stmt) {
     if (stmt) {
         free_ast_node(stmt->ast_node);
@@ -360,7 +381,7 @@ void free_statment(Statement *stmt) {
     }
 }
 
-// Free table list
+/* Free table list */
 void free_table_list(TableList *table_list) {
     if (table_list) {
         for (uint32_t i = 0; i < table_list->count; i++) {
@@ -377,5 +398,59 @@ void free_lock_handle(LockHandle *lock_handle) {
         free_refer(lock_handle->refer);
         free_lock_handle(lock_handle->next);
         db_free(lock_handle);
+    }
+}
+
+/* Free TransactionHandle. */
+void free_transaction_handle(TransactionHandle *trans_handle) {
+    if (trans_handle) {
+        free_transaction_handle(trans_handle->next);
+        db_free(trans_handle);
+    }
+}
+
+/* Free Map. */
+void free_map(Map *map) {
+    if (map) {
+        int i;
+        for(i = 0; i < map->size; i++) {
+            free_key_value(map->body[i]);
+        }
+        db_free(map->body);
+        db_free(map);
+    }
+}
+
+/* Free MapList. */
+void free_map_list(MapList *map_list) {
+    if (map_list) {
+        int i;
+        for (i = 0; i < map_list->size; i++) {
+            free_map(map_list->data[i]);
+        }
+        db_free(map_list->data);
+        db_free(map_list);
+    }
+}
+
+/* Free DBResult. */
+void free_db_result(DBResult *result) {
+    if (result) {
+        if (result->table)
+            db_free(result->table);
+        if (result->message)
+            db_free(result->message);
+        switch(result->stmt_type) {
+            case STMT_SELECT:
+                free_select_result(result->data);
+                break;
+            case STMT_SHOW:
+            case STMT_DESCRIBE:
+                free_map_list(result->data);
+                break;
+            default:
+                break;
+        }
+        db_free(result);
     }
 }

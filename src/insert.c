@@ -108,7 +108,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_DATE: {
             switch(value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc(sizeof(struct tm));
+                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "tm");
                     strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
@@ -127,7 +127,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_TIMESTAMP: {
             switch(value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc(sizeof(struct tm));
+                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "tm");
                     strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
                     value_item_node->t_value = mktime(tmp_time);

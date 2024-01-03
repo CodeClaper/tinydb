@@ -62,6 +62,7 @@
 #include "mmu.h"
 #include "log.h"
 #include "copy.h"
+#include "free.h"
 #include "timer.h"
 #include "asserts.h"
 #include "ret.h"
@@ -99,23 +100,29 @@ static void register_transaction(TransactionHandle *trans_handle) {
 
 /* Destroy transaction. */
 static bool destroy_transaction(TransactionHandle *trans_handle) {
+
+    /* Maybe is the head. */
     if (xtable->head == trans_handle) {
         xtable->head = trans_handle->next;
         if (xtable->size == 1)
             xtable->tail = xtable->head;
+        trans_handle->next = NULL;
+        free_transaction_handle(trans_handle);
         xtable->size--;
         return true;
     }
 
+    /* Loop for find. */
     TransactionHandle *curr, *prev;
     prev = xtable->head;
-
     for (curr = xtable->head; curr != NULL; prev = curr, curr = curr->next) {
         if (curr == trans_handle) {
             if (xtable->tail == trans_handle)
                 xtable->tail = prev;
             /* Skip current. */
             prev->next = curr->next;
+            trans_handle->next = NULL;
+            free_transaction_handle(trans_handle);
             xtable->size--;
             return true;
         }        
@@ -189,7 +196,6 @@ void begin_transaction(DBResult *result) {
 
     /* Send message. */
     success_result(result, "Begin new transaction successfully and xid is %"PRId64".", trans_handle->xid);
-
 }
 
 /* Get current thread transction handle. 
@@ -231,17 +237,21 @@ void auto_commit_transaction(DBResult *result) {
     }
 }
 
-/* Check if row is visible for current transaction. 
+/* 
+ * Check if row is visible for current transaction. 
  *
  * Visible row must satisfy any of the follows conditions:
  * (1) the current transaction create the row, and the row is not deleted.
  * (2) other transaction creates the row, and transaction is committed and the row is not deleted.
- * (3) the row is deleted by another uncommitted transaction (which not creates the row)  
+ * (3) the row is deleted by another uncommitted transaction (which not creates the row)
  * */
 bool row_is_visible(Row *row) {
 
+    /* Get current transaction. */
     TransactionHandle *trans_handle = get_current_transaction();
     assert_not_null(trans_handle, "Not found current transaction.\n");
+
+    /* Get row created_xid and expired_xid. */
     int64_t row_created_xid = *(int64_t *)row->data[row->column_len - 2]->value;
     int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
 

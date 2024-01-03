@@ -13,4 +13,4 @@ Table *get_statement_table(Statement *stmt);
  * (6) SHOW TABLES AND SHOW MEMORY
  * (7) DESCRIBE TABLE
  * */
-DBResult *statement(char *sql);
+void statement(char *sql);

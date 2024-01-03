@@ -18,9 +18,9 @@ static char* LOG_LEVEL_NAME_LIST[] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR" 
 
 /* Get system time by format. */
 static char* get_sys_time(char *format) {
+    char *sys_time = db_malloc2(BUFF_SIZE, "String");
     time_t t_now;
     struct tm *tm_now;
-    char *sys_time = db_malloc2(BUFF_SIZE, "String");
     time(&t_now);
     tm_now = localtime(&t_now);
     strftime(sys_time, BUFF_SIZE, format, tm_now);
@@ -40,6 +40,7 @@ static void flush_log(char* msg) {
     }
     fputs(msg, file);
     fclose(file);
+    db_free(sys_date);
 }
 
 /* Db log. */
@@ -52,6 +53,7 @@ static void db_log(char *msg, LogLevel level) {
         sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[level], msg);
         fprintf(stdout, "%s", buff);
         flush_log(buff);
+        db_free(sys_time);
     }
 }
 
