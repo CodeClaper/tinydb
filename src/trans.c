@@ -84,6 +84,11 @@ void init_transaction() {
     xtable->size = 0;
 }
 
+/* Any running transaction. */
+bool any_transaction_running() {
+    return xtable->size > 0;
+}
+
 /* Register transaction. */
 static void register_transaction(TransactionHandle *trans_handle) {
     /* First registration. */
@@ -264,6 +269,12 @@ bool row_is_visible(Row *row) {
         return true;
     
     return false;
+}
+
+/* Check if a row has been deleted. */
+bool row_is_deleted(Row *row) {
+    int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
+    return row_expired_xid != 0;
 }
 
 /* Transaction operation for insert row. */

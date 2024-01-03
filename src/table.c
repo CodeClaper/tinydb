@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -13,6 +14,7 @@
 #include "cache.h"
 #include "common.h"
 #include "asserts.h"
+#include "utils.h"
 #include "meta.h"
 #include "misc.h"
 #include "node.h"
@@ -20,6 +22,29 @@
 #include "log.h"
 #include "index.h"
 #include "ret.h"
+
+/* Get table list. */
+TableList *get_table_list() {
+
+    TableList *table_list = db_malloc2(sizeof(TableList), "TableList");
+    table_list->count = 0;
+    table_list->table_name_list = db_malloc2(0, "table_list.table_name_list");
+
+    DIR *dir;
+    struct dirent *entry;
+    if ((dir = opendir(conf->data_dir)) ==NULL) 
+        fatals("System error, not found directory: ", conf->data_dir); 
+    else {
+        while((entry = readdir(dir)) != NULL) {
+            if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
+                table_list->table_name_list[table_list->count] = replace(entry->d_name, ".dbt", "");
+                table_list->count++;
+            }
+        }
+        closedir(dir);
+    }
+    return table_list;
+}
 
 /* Get table file path. */
 static char *table_file_path(char *table_name) {
@@ -65,23 +90,34 @@ void create_table(MetaTable *meta_table, DBResult *result) {
         return;
     }
     void *root_node = db_malloc2(PAGE_SIZE, "PAGE NODE");
-    // initialize root node
+
+    /* initialize root node */
     initial_leaf_node(root_node, true);
-    // set meta column
+
+    /* set meta column */
     set_column_size(root_node, meta_table->column_size);
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+    
+    /* assignment */
+    int i;
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = (MetaColumn *)(meta_table->meta_column[i]);
         void *destination = serialize_meta_column(meta_column);
         set_meta_column(root_node, destination, i);
     }
+
+    /* flush to disk. */
     lseek(descr, 0, SEEK_SET);
     ssize_t w_size = write(descr, root_node, PAGE_SIZE);
     if (w_size == -1) {
         error_result(result, EXECUTE_RW_DATABASE_FAIL, "Write table meta info error and errno %d.\n", errno);
         return;
     }
-    db_free(file_path);
+    
+    /* close desription. */
     close(descr);
+
+    /* free memory*/
+    db_free(file_path);
     db_free(root_node);
 
     success_result(result, "Table '%s' created successfully.", meta_table->table_name);

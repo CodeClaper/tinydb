@@ -217,8 +217,8 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
-    if (check_duplicate_key(cursor, row->key) && !row_is_deleted(cursor)) {
-        error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.\n", get_key_str(row->key, primary_key_meta_column->column_type));
+    if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
+        error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
         return NULL;
     }
 

@@ -121,6 +121,12 @@ static void db_send_select_result(DBResult *result) {
 }
 
 /* Send out db none data result. */
+static void db_send_nondata_rows_result(DBResult *result) {
+    db_send("{\"status\": %d, \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf}\n", 
+            result->status, result->success ? "true" : "false", result->message, result->rows, result->duration);
+}
+
+/* Send out db none data result. */
 static void db_send_nondata_result(DBResult *result) {
     db_send("{\"status\": %d, \"success\": %s, \"message\": \"%s\", \"duration\": %lf}\n", 
             result->status, result->success ? "true" : "false", result->message, result->duration);
@@ -152,6 +158,9 @@ void db_send_result(DBResult *result) {
         case STMT_SHOW:
         case STMT_DESCRIBE:
             db_send_map_list(result);
+            break;
+        case STMT_DELETE:
+            db_send_nondata_rows_result(result);
             break;
         default:
             db_send_nondata_result(result);

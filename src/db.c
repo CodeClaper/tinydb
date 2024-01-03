@@ -20,6 +20,7 @@
 #include "session.h"
 #include "misc.h"
 #include "conf.h"
+#include "gc.h"
 #include "log.h"
 
 /* Conf */
@@ -50,9 +51,15 @@ int main(void) {
     int client_secket = -1;
     struct sockaddr_in *client_name = sys_malloc(sizeof(struct sockaddr_in));
     socklen_t client_name_len = sizeof(*client_name);
-    pthread_t new_thread;
+    pthread_t new_thread, gc_thread;
     server_socket = startup(conf->port);
     db_info("Tinydb server start up successfully and listen port %d.", conf->port);
+
+    /* start gc */
+    if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)
+        fatal("Create new thread fail.");
+
+    /* listen */
     while(true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
         if (client_secket == -1)
@@ -61,5 +68,6 @@ int main(void) {
             fatal("Create new thread fail.");
     }
     end();
+
     return EXIT_SUCCESS;
 }

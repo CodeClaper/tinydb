@@ -73,8 +73,8 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row);
 /* Delete leaf node. */
 void delete_leaf_node_cell(Cursor *obs_cursor, void *key);
 
-/* If row is deleted*/
-bool row_is_deleted(Cursor *cursor);
+/* If cursor is deleted*/
+bool cursor_is_deleted(Cursor *cursor);
 
 /* Update row system reserved columns. */
 void update_row_sys_reserved_column(Row *row, Cursor *cursor);

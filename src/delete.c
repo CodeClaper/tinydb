@@ -34,6 +34,8 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
 
 /* Delete row */
 static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+
+    /* Cursor */
     Cursor *cursor = define_cursor(table, row->key);
     
     /* Only deal with row that is visible for current transaction. */
@@ -41,13 +43,15 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table, void
         update_transaction_state(row, TR_DELETE);
         update_row_sys_reserved_column(row, cursor);
     }
-    // delete_leaf_node_cell(cursor, row->key);
+
+    /* delete_leaf_node_cell(cursor, row->key); */
     select_result->row_size++;
 }
 
 /* Execute delete statment.*/
 void exec_delete_statement(DeleteNode *delete_node, DBResult *result) { 
 
+    /* Check table exists. */
     Table *table = open_table(delete_node->table_name);
     if (table == NULL) {
         error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", delete_node->table_name);
@@ -62,6 +66,8 @@ void exec_delete_statement(DeleteNode *delete_node, DBResult *result) {
 
     /* Query with condition, and delete satisfied condition row. */
     SelectResult *select_result = new_select_result(delete_node->table_name);
+
+    /* Query with condition and delete satisfied row. */
     query_with_condition(query_param, select_result, delete_row, NULL);
 
     /* Root fall back. */
@@ -69,5 +75,7 @@ void exec_delete_statement(DeleteNode *delete_node, DBResult *result) {
 
     /* Send out deleted result. */
     success_result(result, "Successfully deleted %d row data.\n", select_result->row_size);
+    
+    result->rows = select_result->row_size;
 }
 

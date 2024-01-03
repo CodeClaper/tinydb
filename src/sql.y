@@ -346,6 +346,15 @@ column_def:
                     column_def_node->allow_null = false;
                     $$ = column_def_node;
                 }
+            | column data_type PRIMARY KEY
+                {
+                    ColumnDefNode *column_def_node = make_column_def_node();
+                    column_def_node->column = $1;
+                    column_def_node->data_type = $2;
+                    column_def_node->is_primary = true;
+                    column_def_node->allow_null = false;
+                    $$ = column_def_node;
+                }
             | column data_type NOT NULLX
                 {
                     ColumnDefNode *column_def_node = make_column_def_node();

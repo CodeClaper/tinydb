@@ -22,9 +22,8 @@
 #define MB_THRESHOLD 1024 * KB_THRESHOLD
 #define GB_THRESHOLD 1024 * MB_THRESHOLD
 
-
-/*Gen table list.*/
-static MapList *gen_table_list() {
+/*Gen table map list.*/
+static MapList *gen_table_map_list() {
     DIR *dir;
     struct dirent *entry;
     MapList *map_list = db_malloc2(sizeof(MapList), "MapList");
@@ -78,7 +77,7 @@ static MapList *gen_table_list() {
 }
 
 /* Generate memory info. */
-static MapList *gen_memory_info() {
+static MapList *gen_memory_map_list() {
 
     /* map_list */
     MapList *map_list = db_malloc2(sizeof(MapList), "MapList");
@@ -121,13 +120,13 @@ static MapList *gen_memory_info() {
 void exec_show_statement(ShowNode *show_node, DBResult *result) {
     switch(show_node->type) {
         case SHOW_TABLES: {
-            MapList *map_list = gen_table_list();
+            MapList *map_list = gen_table_map_list();
             success_result(result, "Show tables executed successfully."); 
             result->data = map_list;
             break;
         }
         case SHOW_MEMORY: {
-            MapList *map_list = gen_memory_info();
+            MapList *map_list = gen_memory_map_list();
             success_result(result, "Show memory executed successfully."); 
             result->data = map_list;
             break;

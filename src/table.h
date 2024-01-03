@@ -1,6 +1,9 @@
 #include "data.h"
 #include "defs.h"
 
+/* Get table list. */
+TableList *get_table_list();
+
 /* Check if table exists. */
 bool check_table_exist(char *table_name); 
 

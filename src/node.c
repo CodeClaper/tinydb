@@ -829,7 +829,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
 }
 
 /* If row is deleted*/
-bool row_is_deleted(Cursor *cursor) {
+bool cursor_is_deleted(Cursor *cursor) {
 
     uint32_t key_len, value_len;
 

@@ -704,9 +704,8 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, query_param, table->meta_table);
 
-        /* Check if visible for current transaction. */
-        if (row_is_visible(row))
-            row_handler(row, select_result, table, arg);
+        /* Execute row handler. */
+        row_handler(row, select_result, table, arg);
 
         /* Free useless row. */
         free_row(row);
@@ -813,56 +812,25 @@ void query_with_condition(QueryParam *query_param, SelectResult *select_result, 
     }
 }
 
-/* Check if system reserved column by column name. */
-static bool is_sys_reserved(char *column_name) {
-    return column_name != NULL && 
-        (strcmp(column_name, CREATED_XID_COLUMN_NAME) == 0 || strcmp(column_name, EXPIRED_XID_COLUMN_NAME) == 0);
-}
-
-/* Send row data. */
-static void send_row_data(Row *row, Table *table) {
-    
-    int sys_reserved_column_size = table->meta_table->all_column_size - table->meta_table->column_size;
-
-    db_send("{");
-    int i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = *(row->data + i);
-
-        /* Skip system reserved column. */
-        MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value->key);
-        if (meta_column && meta_column->sys_reserved) continue;
-        
-        if (key_value->data_type == T_REFERENCE) {
-            Refer *refer = (Refer *) key_value->value;
-            Row *sub_row = define_row(refer);
-            db_send("\"%s\": ", key_value->key);
-            send_row_data(sub_row, table);
-        } else {
-            char *key_value_pair_str = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
-            db_send(key_value_pair_str);
-            db_free(key_value_pair_str);
-        }
-        /* If not the last column, these is ',' to split. */
-        if (i < row->column_len - sys_reserved_column_size - 1)
-            db_send(", ");
-    }
-    db_send("}");
-}
-
 /* Count number of row, used in the sql function count(1) */
 void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    select_result->row_size++;
+    /* Only count visible row. */
+    if (row_is_visible(row))
+        select_result->row_size++;
 }
 
 /* Send row data. */
-static void send_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
+static void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    /* Only select visible row. */
+    if (row_is_visible(row))
+        select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
 }
-
 
 /* Execute sum funciton */
 static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+    /* Only sum visible row. */
+    if (!row_is_visible(row)) 
+        return;
     KeyValue *key_value = row->data[0];
     switch(key_value->data_type) {
         case T_INT:
@@ -885,6 +853,10 @@ static void sum_row(Row *row, SelectResult *select_result, Table *table, void *a
 
 /* Execute max function. */
 static void max_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+
+    /* Only visible row. */
+    if (!row_is_visible(row))
+        return;
     
     /* Only look for first content of row data. */;
     KeyValue *key_value = row->data[0];
@@ -908,6 +880,10 @@ static void max_row(Row *row, SelectResult *select_result, Table *table, void *a
 /* Execute min function. */
 static void min_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     
+    /* Only for visible row. */
+    if (!row_is_visible(row))
+        return;
+
     /* Only look for first content of row data. */;
     KeyValue *key_value = row->data[0];
 
@@ -1131,7 +1107,7 @@ static void exec_plain_select_statement(QueryParam *query_param, DBResult *resul
     select_result->rows = db_malloc2(sizeof(Row *) * select_result->row_size, "SelectResult.Rows");
 
     /* Send row data in json format. */
-    query_with_condition(query_param, select_result, send_row, NULL);
+    query_with_condition(query_param, select_result, select_row, NULL);
 
     /* success result. */
     success_result(result, "Query data successfully.");
