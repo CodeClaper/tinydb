@@ -143,14 +143,18 @@ void free_value_item_node(ValueItemNode *value_item_node) {
             case T_FLOAT:
             case T_DOUBLE:
             case T_TIMESTAMP:
+            case T_LONG:
             case T_DATE:
                 break;
-            case T_STRING:
-                {
-                    if (value_item_node->s_value)
-                        db_free(value_item_node->s_value);
-                }
+            case T_STRING:{
+                if (value_item_node->s_value)
+                    db_free(value_item_node->s_value);
                 break;
+            }
+            case T_REFERENCE: {
+                free_value_item_set_node(value_item_node->nest_value_item_set);
+                break;
+            }
         }
         db_free(value_item_node);
     }
@@ -363,6 +367,8 @@ void free_ast_node(ASTNode *node) {
             break;
         case CREATE_TABLE_STMT:
             break;
+        case DROP_TABLE_STMT:
+            break;
         case DESCRIBE_STMT:
             break;
         case SHOW_STMT:
@@ -441,11 +447,11 @@ void free_db_result(DBResult *result) {
         if (result->message)
             db_free(result->message);
         switch(result->stmt_type) {
-            case STMT_SELECT:
+            case SELECT_STMT:
                 free_select_result(result->data);
                 break;
-            case STMT_SHOW:
-            case STMT_DESCRIBE:
+            case SHOW_STMT:
+            case DESCRIBE_STMT:
                 free_map_list(result->data);
                 break;
             default:

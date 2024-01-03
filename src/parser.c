@@ -24,36 +24,8 @@ Statement *new_statement(ASTNode *node) {
     assert_not_null(node, "ASTNode not allowed to be NULL. \n");
 
     Statement *statement = db_malloc2(sizeof(Statement), "Statement");
-    switch(node->statement_type) {
-        case BEGIN_TRANSACTION_STMT:
-            statement->statement_type = STMT_BEGINE_TRANSACTION;
-            break;
-        case COMMIT_TRANSACTION_STMT:
-            statement->statement_type = STMT_COMMIT_TRANSACTION;
-            break;
-        case CREATE_TABLE_STMT:
-            statement->statement_type = STMT_CREATE_TABLE;
-            break;
-        case SELECT_STMT:
-            statement->statement_type = STMT_SELECT;
-            break;
-        case INSERT_STMT:
-            statement->statement_type = STMT_INSERT;
-            break;
-        case UPDATE_STMT:
-            statement->statement_type = STMT_UPDATE;
-            break;
-        case DELETE_STMT:
-            statement->statement_type = STMT_DELETE;
-            break;
-        case DESCRIBE_STMT:
-            statement->statement_type = STMT_DESCRIBE;
-            break;
-        case SHOW_STMT:
-            statement->statement_type = STMT_SHOW;
-            break;
-    }
     statement->ast_node = node;
+    statement->statement_type = node->statement_type;
     return statement;
 }
 

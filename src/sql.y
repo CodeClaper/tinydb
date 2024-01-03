@@ -35,6 +35,7 @@ int yylex();
    AssignmentSetNode        *assignment_set_node;
    ConditionNode            *cond_node;
    CreateTableNode          *create_table_node;
+   DropTableNode            *drop_table_node;
    SelectNode               *select_node;
    InsertNode               *insert_node;
    UpdateNode               *update_node;
@@ -46,7 +47,7 @@ int yylex();
 
 %token NL
 %token <keyword> BEGINN COMMIT
-%token <keyword> CREATE SELECT INSERT UPDATE DELETE DESCRIBE
+%token <keyword> CREATE DROP SELECT INSERT UPDATE DELETE DESCRIBE
 %token <keyword> FROM
 %token <keyword> WHERE
 %token <keyword> INTO
@@ -94,6 +95,7 @@ int yylex();
 %type <update_node> update_statement
 %type <delete_node> delete_statement
 %type <create_table_node> create_table_statement
+%type <drop_table_node> drop_table_statement
 %type <describe_node> describe_statement
 %type <show_node> show_statement
 %type <ast_node> statement;
@@ -118,6 +120,11 @@ statement:
                 {
                     ast_node->statement_type = CREATE_TABLE_STMT;
                     ast_node->create_table_node = $1;
+                }
+            | drop_table_statement
+                {
+                    ast_node->statement_type = DROP_TABLE_STMT;
+                    ast_node->drop_table_node = $1;
                 }
             | select_statement 
                 {
@@ -171,6 +178,14 @@ create_table_statement:
                     create_table_node->column_def_set_node = $5;
                     create_table_node->primary_key_node = $7;
                     $$ = create_table_node;
+                }
+            ;
+drop_table_statement:
+            DROP TABLE table end
+                {
+                    DropTableNode *drop_table_node = make_drop_table_node();
+                    drop_table_node->table_name = $3;
+                    $$ = drop_table_node;
                 }
             ;
 select_statement:

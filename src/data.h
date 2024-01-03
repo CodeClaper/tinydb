@@ -47,16 +47,13 @@ typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
 
 /* StatementType */
-typedef enum { BEGIN_TRANSACTION_STMT, COMMIT_TRANSACTION_STMT, CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT } StatementType; // statement type
+typedef enum { BEGIN_TRANSACTION_STMT, COMMIT_TRANSACTION_STMT, CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT, DROP_TABLE_STMT } StatementType; // statement type
 
 /* Tansaction operation type. */
 typedef enum { TR_SELECT, TR_INSERT, TR_DELETE, TR_UPDATE } TransOpType;
 
 /* NodeType */
 typedef enum { LEAF_NODE, INTERNAL_NODE } NodeType;
-
-/* StatementType */
-typedef enum { STMT_BEGINE_TRANSACTION, STMT_COMMIT_TRANSACTION, STMT_CREATE_TABLE, STMT_SELECT, STMT_UPDATE, STMT_INSERT, STMT_DELETE, STMT_DESCRIBE, STMT_SHOW } StmtType;
 
 /* ExecuteResult */
 typedef enum { 
@@ -204,6 +201,11 @@ typedef struct {
     PrimaryKeyNode *primary_key_node;
 } CreateTableNode;
 
+/* DropTableNode */
+typedef struct {
+    char *table_name;
+} DropTableNode;
+
 /* SelectNode */
 typedef struct {
     SelectItemsNode *select_items_node;
@@ -247,6 +249,7 @@ typedef struct {
   StatementType statement_type;
   union {
         CreateTableNode *create_table_node;
+        DropTableNode *drop_table_node;
         SelectNode *select_node;
         InsertNode *insert_node;
         UpdateNode *update_node;
@@ -265,7 +268,7 @@ typedef struct {
 
 /* Statement */
 typedef struct {
-    StmtType statement_type;
+    StatementType statement_type;
     ASTNode *ast_node;
 } Statement;
 
@@ -409,7 +412,7 @@ typedef struct {
 /* Db execute result. */
 typedef struct {
     char *table;
-    StmtType stmt_type;
+    StatementType stmt_type;
     ExecuteStatus status;
     bool success;
     void *data;

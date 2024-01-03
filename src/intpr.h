@@ -43,6 +43,9 @@ void add_assignment_to_set(AssignmentSetNode *assignment_set_node, AssignmentNod
 // make a create table node.
 CreateTableNode *make_create_table_node();
 
+/* Make a DropTableNode. */
+DropTableNode *make_drop_table_node();
+
 // make a value item node.
 ValueItemNode *make_value_item_node();
 
@@ -87,4 +90,5 @@ ShowNode *make_show_node(ShowNodeType type);
 
 // make an ast node.
 ASTNode *make_ast_node();
+
 #endif

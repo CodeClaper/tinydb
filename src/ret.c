@@ -122,13 +122,13 @@ static void db_send_select_result(DBResult *result) {
 
 /* Send out db none data result. */
 static void db_send_nondata_rows_result(DBResult *result) {
-    db_send("{\"status\": %d, \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf}\n", 
+    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf }\n", 
             result->status, result->success ? "true" : "false", result->message, result->rows, result->duration);
 }
 
 /* Send out db none data result. */
 static void db_send_nondata_result(DBResult *result) {
-    db_send("{\"status\": %d, \"success\": %s, \"message\": \"%s\", \"duration\": %lf}\n", 
+    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\", \"duration\": %lf }\n", 
             result->status, result->success ? "true" : "false", result->message, result->duration);
 }
 
@@ -152,14 +152,14 @@ static void db_send_map_list(DBResult *result) {
 /* Send out db execution result. */
 void db_send_result(DBResult *result) {
     switch (result->stmt_type) {
-        case STMT_SELECT:
+        case SELECT_STMT:
             db_send_select_result(result);
             break;
-        case STMT_SHOW:
-        case STMT_DESCRIBE:
+        case SHOW_STMT:
+        case DESCRIBE_STMT:
             db_send_map_list(result);
             break;
-        case STMT_DELETE:
+        case DELETE_STMT:
             db_send_nondata_rows_result(result);
             break;
         default:

@@ -157,6 +157,12 @@ CreateTableNode *make_create_table_node() {
     return create_table_node;
 }
 
+/* Make a DropTableNode. */
+DropTableNode *make_drop_table_node() {
+    DropTableNode *drop_table_node = db_malloc2(sizeof(DropTableNode), "DropTableNode");
+    return drop_table_node;
+}
+
 // make a describe node.
 DescribeNode *make_describe_node() {
     DescribeNode *describe_node = db_malloc2(sizeof(DescribeNode), "DescribeNode");

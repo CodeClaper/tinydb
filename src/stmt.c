@@ -38,45 +38,52 @@ static void statement_commit_transaction(Statement *stmt, DBResult *result) {
     commit_transaction(result);
 }
 
-/*Create table Statement*/
+/* Create table Statement. */
 static void statement_create_table(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == STMT_CREATE_TABLE, "System error, create statement type error.\n");
+    assert_true(stmt->statement_type == CREATE_TABLE_STMT, "System error, create statement type error.\n");
     exec_create_table_statement(stmt->ast_node->create_table_node, result);
 }
 
+/* Drop table statement. */
+static void statement_drop_table(Statement *stmt, DBResult *result) {
+    assert_true(stmt->statement_type == DROP_TABLE_STMT, "System error, drop statement type error.\n");
+    drop_table(stmt->ast_node->drop_table_node->table_name, result);
+}
+
+
 /*Insert Statment*/
 static void statement_insert(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == STMT_INSERT, "System error, insert statement type error.\n");
+    assert_true(stmt->statement_type == INSERT_STMT, "System error, insert statement type error.\n");
     exec_insert_statement(stmt->ast_node->insert_node, result);
 }
 
 /*Select Statement*/
 static void statement_select(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == STMT_SELECT, "System error, select statement type error.\n");
+    assert_true(statement->statement_type == SELECT_STMT, "System error, select statement type error.\n");
     exec_select_statement(statement->ast_node->select_node, result); 
 }
 
 /*Update statemetn*/
 static void statement_update(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == STMT_UPDATE, "System error, update statement type error.\n");
+    assert_true(statement->statement_type == UPDATE_STMT, "System error, update statement type error.\n");
     exec_update_statment(statement->ast_node->update_node, result);
 }
 
 /*Delete Statement*/
 static void statement_delete(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == STMT_DELETE, "System error, delete statement type error.\n");
+    assert_true(statement->statement_type == DELETE_STMT, "System error, delete statement type error.\n");
     exec_delete_statement(statement->ast_node->delete_node, result);
 }
 
 /*Describe Statement*/
 static void statement_describe(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == STMT_DESCRIBE, "System error, describe statement type error.\n"); 
+    assert_true(statement->statement_type == DESCRIBE_STMT, "System error, describe statement type error.\n"); 
     exec_describe_statement(statement->ast_node->describe_node, result);
 }
 
 /*Show tables Statment*/
 static void statement_show(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == STMT_SHOW, "System error, show statmement type error.\n"); 
+    assert_true(statement->statement_type == SHOW_STMT, "System error, show statmement type error.\n"); 
     exec_show_statement(statement->ast_node->show_node, result);
 }
 
@@ -106,42 +113,37 @@ void statement(char *sql) {
     clock_t start, end;
     start = clock();
     DBResult *result = new_db_result();
+    result->stmt_type = statement->statement_type;
     switch(statement->statement_type) {
-        case STMT_BEGINE_TRANSACTION:
-            result->stmt_type = STMT_BEGINE_TRANSACTION;
+        case BEGIN_TRANSACTION_STMT:
             statement_begin_transaction(statement, result);
             break;
-        case STMT_COMMIT_TRANSACTION:
-            result->stmt_type = STMT_COMMIT_TRANSACTION;
+        case COMMIT_TRANSACTION_STMT:
             statement_commit_transaction(statement, result);
             break;
-        case STMT_CREATE_TABLE:
-            result->stmt_type = STMT_CREATE_TABLE;
+        case CREATE_TABLE_STMT:
             statement_create_table(statement, result);
             break;
-        case STMT_INSERT:
-            result->stmt_type = STMT_INSERT;
+        case INSERT_STMT:
             statement_insert(statement, result); 
             break; 
-        case STMT_SELECT:
-            result->stmt_type = STMT_SELECT;
+        case SELECT_STMT:
             statement_select(statement, result); 
             break; 
-        case STMT_UPDATE:
-            result->stmt_type = STMT_UPDATE;
+        case UPDATE_STMT:
             statement_update(statement, result); 
             break; 
-        case STMT_DELETE:
-            result->stmt_type = STMT_DELETE;
+        case DELETE_STMT:
             statement_delete(statement, result); 
             break; 
-        case STMT_DESCRIBE:
-            result->stmt_type = STMT_DESCRIBE;
+        case DESCRIBE_STMT:
             statement_describe(statement, result);
             break;
-        case STMT_SHOW:
-            result->stmt_type = STMT_SHOW;
+        case SHOW_STMT:
             statement_show(statement, result);
+            break;
+        case DROP_TABLE_STMT:
+            statement_drop_table(statement, result);
             break;
     }
 

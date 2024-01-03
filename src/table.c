@@ -197,16 +197,16 @@ Cursor *define_cursor(Table *table, void *key) {
     }
 }
 
-/* Delete an existed table. */
+/* Drop an existed table. */
 void drop_table(char *table_name, DBResult *result) {
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-        error_result(result, EXECUTE_TABLE_NOT_EXIST_FAIL, stderr, "Table '%s' not exists. \n", table_name);
+        error_result(result, EXECUTE_TABLE_NOT_EXIST_FAIL, "Table '%s' not exists.", table_name);
         db_free(file_path);
         return;
     }
     if (remove(file_path) == 0) {
-        success_result(result, "Table '%s' deleted success.\n", table_name);
+        success_result(result, "Table '%s' dropped success.", table_name);
         db_free(file_path);
         return;
     }
