@@ -44,28 +44,36 @@ static uint32_t calc_column_len(ColumnDefNode *column_def_node) {
 
 /* Check if priamry key column. */
 static bool if_primary_key_column(CreateTableNode *create_table_node, char *column_name) {
+    
+    /* Firstly, find in primary key node. */
     PrimaryKeyNode *primary_key_node = create_table_node->primary_key_node;
     if (primary_key_node) {
         if (strcmp(primary_key_node->column->column_name, column_name) == 0)
             return true;
     }
+    
+    /* Secondly, find in column define. */
     ColumnDefSetNode *column_def_set_node = create_table_node->column_def_set_node;
     for (uint32_t i = 0; i < column_def_set_node->size; i++) {
         ColumnDefNode *column_def_node = *(column_def_set_node->column_defs + i);
-        if (column_def_node->is_primary && strcmp(column_def_node->column->column_name, column_name))
+        if (column_def_node->is_primary && strcmp(column_def_node->column->column_name, column_name) == 0)
             return true;
     }
+
     return false;
 }
 
 /* Get meta column. */
-static MetaColumn *get_meta_column(CreateTableNode *create_table_node, int index, DBResult *result) {
+static MetaColumn *gen_meta_column(CreateTableNode *create_table_node, int index, DBResult *result) {
+
     MetaColumn *meta_column = db_malloc2(sizeof(MetaColumn), "MetaColumn");
     ColumnDefNode *column_def_node = *(create_table_node->column_def_set_node->column_defs + index);
     strcpy(meta_column->column_name, column_def_node->column->column_name); 
     meta_column->column_type = column_def_node->data_type;
     meta_column->is_primary = if_primary_key_column(create_table_node, meta_column->column_name);
     meta_column->column_length = calc_column_len(column_def_node);
+    
+    /* Special handling Reference. */
     if (meta_column->column_type == T_REFERENCE) {
         Table *table = open_table(column_def_node->table_name);
         if (table)
@@ -75,6 +83,7 @@ static MetaColumn *get_meta_column(CreateTableNode *create_table_node, int index
             return NULL;
         }
     }
+
     return meta_column;
 }
 
@@ -105,10 +114,10 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *re
         return NULL;
     }
 
-    int i, j; 
     /* User define. */
+    int i, j; 
     for (i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = get_meta_column(crete_table_node, i, result);
+        MetaColumn *meta_column = gen_meta_column(crete_table_node, i, result);
         if (meta_column == NULL) 
             return NULL;
         meta_table->meta_column[i] = meta_column;

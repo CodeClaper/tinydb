@@ -758,8 +758,10 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
 
     /* Don`t forget the right child. */
     uint32_t right_child_page_num = get_internal_node_right_child(internal_node_snapshot);
+
     /* Zero means there is no page. */
-    if (right_child_page_num == 0) return;
+    if (right_child_page_num == 0) 
+        return;
     void *right_child = get_page(table->pager, right_child_page_num);
     switch (get_node_type(right_child)) {
         case LEAF_NODE:
@@ -769,6 +771,9 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
             select_from_internal_node(select_result, query_param, right_child, table, row_handler, arg);
             break;
     }
+
+    /* free memory. */
+    db_free(internal_node_snapshot);
 }
 
 /* Convert from select node to query param */

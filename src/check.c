@@ -251,7 +251,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
                 uint32_t key_len = calc_primary_key_length(table);
                 void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
                 void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
-                if (equal(key, new_key, meta_column->column_type) && !row_is_deleted(cursor)) {
+                if (equal(key, new_key, meta_column->column_type) && !cursor_is_deleted(cursor)) {
                     error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
                     return false;
                 }
@@ -273,9 +273,19 @@ static bool check_duplicate_table(char *table_name, DBResult *result) {
 /* Check if support priamay key. 
  * Maybe it will allow to not support primary key, but now, must to do.  */
 static bool check_primary_null(CreateTableNode *create_table_node, DBResult *result) {
-    if (create_table_node->primary_key_node == NULL) 
-       error_result(result, EXECUTE_FAIL, "Must support primary key.");
-    return create_table_node->primary_key_node != NULL;
+
+    /* check primary key node. */
+    if (create_table_node->primary_key_node)
+        return true;
+
+    /* check column def define primary. */
+    int i;
+    for(i = 0; i < create_table_node->column_def_set_node->size; i++) {
+        if (create_table_node->column_def_set_node->column_defs[i]->is_primary)
+            return true;
+    }
+    error_result(result, EXECUTE_FAIL, "Must support primary key.");
+    return false;
 }
 
 /* Check if exists duplicate column name. */
