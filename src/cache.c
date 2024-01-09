@@ -13,58 +13,61 @@ typedef struct {
     uint32_t size;
 }TableCache;
 
-static TableCache *table_cache;
+static TableCache *t_cache;
 
-static void init() {
-    if (table_cache == NULL) {
-        table_cache = db_malloc(sizeof(TableCache));
-        table_cache->table_list = db_malloc(0);
-        table_cache->size = 0;
+/* Initialise table cache. */
+void init_table_cache() {
+    if (t_cache == NULL) {
+        t_cache = db_malloc(sizeof(TableCache));
+        t_cache->table_list = db_malloc(0);
+        t_cache->size = 0;
     }
 }
 
-// check if same table
-static bool same_table(Table *t1, Table *t2) {
-    if (t1->meta_table == NULL || t2->meta_table == NULL){
-        fprintf(stderr, "Table lack of meta table info.\n");
-        exit(EXECUTE_FAIL);
-        return false;
-    }
-    return strcmp(t1->meta_table->table_name, t2->meta_table->table_name) == 0;
-}
-
-// check if same table name
-static bool same_table_name(Table *t1, char *table_name) {
-    if (t1->meta_table == NULL || t1->meta_table->table_name == NULL) {
-        fprintf(stderr, "Table lack of meta table info.\n");
-        exit(EXECUTE_FAIL);
-    }
-    return strcmp(t1->meta_table->table_name, table_name) == 0;
-}
-
-// add cache table 
-void add_cache_table(Table *table) {
-    init();
+/* Add table cache. */
+void add_table_cache(Table *table) {
     int i;
-    for(i = 0; i < table_cache->size; i++) {
-        Table *current = *(table_cache->table_list + i);
-        if (same_table(current, table)) {
-            *(table_cache->table_list + i) = table; // replace free old table.
+    for(i = 0; i < t_cache->size; i++) {
+        Table *current = t_cache->table_list[i] ;
+        if (strcmp(current->meta_table->table_name, table->meta_table->table_name) == 0) {
+            /* Replace free old table. */
+            t_cache->table_list[i]  = table; 
             free_table(current);
             return;
         }
     }
-    *(table_cache->table_list + i) = table; // insert new cache.
-    table_cache->size++;
+    /* Insert new table cache. */
+    t_cache->size++;
+    t_cache->table_list = db_realloc(t_cache->table_list, sizeof(Table *) * t_cache->size);
+    t_cache->table_list[i] = table; 
 }
 
-//Find cache table by name, retrurn null if not exist.
-Table *find_cache_table(char *table_name) {
-    init();
-    for(int i = 0; i < table_cache->size; i++) {
-        Table *current = *(table_cache->table_list + i);
-        if (same_table_name(current, table_name))
+/* Find cache table by name, retrurn null if not exist. */
+Table *find_table_cache(char *table_name) {
+    int i;
+    for(i = 0; i < t_cache->size; i++) {
+        Table *current = *(t_cache->table_list + i);
+        if (strcmp(current->meta_table->table_name, table_name) == 0)
             return current;
     }
     return NULL;
+}
+
+/* Remove table cache. */
+void *remove_table_cache(char *table_name) {
+    int i, j;
+    for(i = 0; i < t_cache->size; i++) {
+        Table *current = t_cache->table_list[i];
+        if (strcmp(current->meta_table->table_name, table_name) == 0) {
+            /* Move to cover. */
+            for (j = i; j < t_cache->size - 1; j++) {
+                memcpy(t_cache->table_list + j, t_cache->table_list + j + 1, sizeof(Table *));
+            }
+            memset(t_cache->table_list + t_cache->size - 1, 0, sizeof(Table *));
+            t_cache->size--;
+            t_cache->table_list = db_realloc(t_cache->table_list, sizeof(Table *) * t_cache->size);
+            /* Free memory. */
+            free_table(current);     
+        }
+    }
 }

@@ -22,6 +22,7 @@
 #include "log.h"
 #include "index.h"
 #include "ret.h"
+#include "check.h"
 
 /* Get table list. */
 TableList *get_table_list() {
@@ -130,7 +131,7 @@ Table *open_table(char *table_name) {
     assert_not_null(table_name, "Table name must be supported.\n");
 
     /* Firstly try to get in cache. */
-    Table *cache_table = find_cache_table(table_name);
+    Table *cache_table = find_table_cache(table_name);
     if (cache_table)
         return cache_table;
 
@@ -140,20 +141,28 @@ Table *open_table(char *table_name) {
         db_free(file_path);
         return NULL;
     }
+    
+    /* Combine table. */
     Table *table = db_malloc2(sizeof(Table), "Table");
     Pager *pager = open_pager(file_path);
     if (pager == NULL) 
         return NULL;
     table->pager = pager;
-    table->root_page_num = 0; // Define root page is first page.
+    /* Define root page is first page. */
+    table->root_page_num = 0; 
     if (pager->size == 0) {
-        // New db file and initialize page 0 as leaf node.
+        /* New db file and initialize page 0 as leaf node. */
         void *root_node = get_page(pager, 0);
         initial_leaf_node(root_node, true);
     }
     table->meta_table = get_meta_table(table, table_name);
-    add_cache_table(table); /* add cache */
+
+    /* Add cache. */
+    add_table_cache(table);
+    
+    /* Free memory. */
     db_free(file_path);
+
     return table;
 }
 
@@ -199,15 +208,21 @@ Cursor *define_cursor(Table *table, void *key) {
 
 /* Drop an existed table. */
 void drop_table(char *table_name, DBResult *result) {
+    /* Check if exist the table. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
         error_result(result, EXECUTE_TABLE_NOT_EXIST_FAIL, "Table '%s' not exists.", table_name);
         db_free(file_path);
         return;
     }
+    /* Check if allowed to drop the table. */
+    if (!check_drop_table(table_name, result))
+        return;
     if (remove(file_path) == 0) {
         success_result(result, "Table '%s' dropped success.", table_name);
         db_free(file_path);
+        /* Remove table cache. */
+        remove_table_cache(table_name);
         return;
     }
     error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' deleted fail, error : %d", table_name, errno);
