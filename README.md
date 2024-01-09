@@ -63,6 +63,12 @@ The configure script is automatic generated, run it to to determine certain info
 If you want debug.
 
 ```shell
+./configure --enable-debug=yes CFLAGS='-g -O0'
+```
+
+If you want print out debug info.
+
+```shell
 ./configure --enable-debug=yes CFLAGS='-g -O0 -D DEBUG'
 ```
 
