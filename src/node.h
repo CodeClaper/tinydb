@@ -76,8 +76,8 @@ void delete_leaf_node_cell(Cursor *obs_cursor, void *key);
 /* If cursor is deleted*/
 bool cursor_is_deleted(Cursor *cursor);
 
-/* Update row system reserved columns. */
-void update_row_sys_reserved_column(Row *row, Cursor *cursor);
+/* Update row data. */
+void update_row_data(Row *row, Cursor *cursor);
 
 /* Root fall back. */
 void root_fall_back_root_node(Table *table);

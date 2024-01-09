@@ -75,15 +75,15 @@ char *replace(char *str, char *old_str, char *new_str) {
         new_str = "";
     ssize_t new_size = strlen(new_str);
     uint32_t index;
-    char *repl = db_malloc(str_size - old_size + new_size + 1);
+    char *repl = db_malloc2(str_size - old_size + new_size + 1, "String");
     for (index = 0; index < str_size; index++) {
-        char *temp = db_malloc(old_size + 1);
+        char *temp = db_malloc2(old_size + 1, "String");
         memcpy(temp, str + index, old_size);
         if (strcmp(temp, old_str) == 0) {
             memcpy(repl + index , new_str, new_size); 
             strcpy(repl + index + new_size, str + index + old_size);
             *(repl + str_size - old_size + new_size) = '\0';
-            free(temp);
+            db_free(temp);
             return repl;
         }
         db_free(temp);

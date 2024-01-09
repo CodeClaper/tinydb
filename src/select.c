@@ -705,10 +705,12 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         Row *row = generate_row(destinct, query_param, table->meta_table);
 
         /* Execute row handler. */
-        row_handler(row, select_result, table, arg);
+        Cursor *cursor = new_cursor(table, page_num, i);
+        row_handler(row, select_result, cursor, arg);
 
         /* Free useless row. */
         free_row(row);
+        free_cursor(cursor);
     }
     
     /* Free useless pointer. */
@@ -813,21 +815,21 @@ void query_with_condition(QueryParam *query_param, SelectResult *select_result, 
 }
 
 /* Count number of row, used in the sql function count(1) */
-void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+void count_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
     /* Only count visible row. */
     if (row_is_visible(row))
         select_result->row_size++;
 }
 
 /* Send row data. */
-static void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void select_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
     /* Only select visible row. */
     if (row_is_visible(row))
         select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
 }
 
 /* Execute sum funciton */
-static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void sum_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
     /* Only sum visible row. */
     if (!row_is_visible(row)) 
         return;
@@ -852,7 +854,7 @@ static void sum_row(Row *row, SelectResult *select_result, Table *table, void *a
 }
 
 /* Execute max function. */
-static void max_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void max_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
 
     /* Only visible row. */
     if (!row_is_visible(row))
@@ -878,7 +880,7 @@ static void max_row(Row *row, SelectResult *select_result, Table *table, void *a
 }
 
 /* Execute min function. */
-static void min_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void min_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
     
     /* Only for visible row. */
     if (!row_is_visible(row))

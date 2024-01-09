@@ -51,7 +51,9 @@ static void db_log(char *msg, LogLevel level) {
         char *sys_time = get_sys_time("%Y-%m-%d %H:%M:%S");
         char buff[BUFF_SIZE];
         sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[level], msg);
+#ifdef DEBUG
         fprintf(stdout, "%s", buff);
+#endif
         flush_log(buff);
         db_free(sys_time);
     }

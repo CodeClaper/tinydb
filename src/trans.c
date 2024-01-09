@@ -200,7 +200,7 @@ void begin_transaction(DBResult *result) {
     register_transaction(trans_handle);
 
     /* Send message. */
-    success_result(result, "Begin new transaction successfully and xid is %"PRId64".", trans_handle->xid);
+    success_result(result, "Begin new transaction successfully.");
 }
 
 /* Get current thread transction handle. 
@@ -228,7 +228,7 @@ void commit_transaction(DBResult *result) {
     
     db_info("Commit the transaction successfully and xid: %"PRId64".", trans_handle->xid);
 
-    success_result(result, "Commit the transaction successfully and xid: %"PRId64".", trans_handle->xid);
+    success_result(result, "Commit the transaction successfully");
 }
 
 /* Commit transaction automatically. */
@@ -305,7 +305,7 @@ static void transaction_delete_row(Row *row) {
     /* Get current transaction. */
     TransactionHandle *current_trans = get_current_transaction();
 
-    /* For expired_xid. */
+    /* Asssign current transaction id to  expired_xid. */
     *(int64_t *)row->data[row->column_len - 1]->value = current_trans->xid;
 }
 

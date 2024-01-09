@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include "node.h"
 #include "mmu.h"
+#include "free.h"
 #include "refer.h"
 #include "lock.h"
 #include "common.h"
@@ -466,7 +467,7 @@ static void reset_parent(Table *table, void *internal_node, uint32_t page_num) {
         flush_page(table->pager, child_page_num);
     }
 
-    /* Do`t forget the right child node. */
+    /* Don`t forget the right child node. */
     right_child_page_num = get_internal_node_right_child(internal_node);
     void *right_node = get_page(table->pager, right_child_page_num);
     set_parent_pointer(right_node, page_num);
@@ -475,15 +476,26 @@ static void reset_parent(Table *table, void *internal_node, uint32_t page_num) {
 }
 
 /* Covnert root node to leaf node */
-static void copy_root_to_leaf_node(void *root, void* leaf_node, uint32_t key_len, uint32_t value_len) {
+static void copy_root_to_leaf_node(Table *table, uint32_t new_page_num, uint32_t key_len, uint32_t value_len) {
+
+    void *root = get_page(table->pager, table->root_page_num);
+    void *leaf_node = get_page(table->pager, new_page_num);
+
+    char *table_name = table->meta_table->table_name;
+
     initial_leaf_node(leaf_node, false);
     set_leaf_node_cell_num(leaf_node, get_leaf_node_cell_num(root));
     set_leaf_node_next_leaf(leaf_node, get_leaf_node_next_leaf(root));
     uint32_t cell_num = get_leaf_node_cell_num(root); 
-    for(uint32_t i = 0; i< cell_num; i++) {
+
+    int i;
+    for(i = 0; i < cell_num; i++) {
         set_leaf_node_cell_key(leaf_node, i, key_len, value_len, get_leaf_node_cell_key(root, i, key_len, value_len)); 
-        memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, i), get_leaf_node_cell_value(root, key_len , value_len, i), value_len);
+        memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, i), get_leaf_node_cell_value(root, key_len, value_len, i), value_len);
+        /* Update refer. */
+        update_refer(table_name, table->root_page_num, i, new_page_num, i);
     }
+
     uint32_t column_size = get_column_size(root);
     uint32_t ROOT_LEAF_NODE_HEADER_SIZE = COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size;
     memset(root + ROOT_LEAF_NODE_HEADER_SIZE, 0, PAGE_SIZE - ROOT_LEAF_NODE_HEADER_SIZE);
@@ -519,7 +531,7 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num, ui
     void *left_child = get_page(table->pager, next_unused_page_num);
     switch(get_node_type(root)) {
         case LEAF_NODE:
-            copy_root_to_leaf_node(root, left_child, key_len, value_len);
+            copy_root_to_leaf_node(table, next_unused_page_num, key_len, value_len);
             break;
         case INTERNAL_NODE:
             copy_root_to_internal_node(root, left_child, key_len);
@@ -710,9 +722,12 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
 static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 
     /* Get cell key, value and cell lenght. */
-    uint32_t key_len = calc_primary_key_length(cursor->table);
-    uint32_t value_len = calc_table_row_length(cursor->table);
-    uint32_t cell_length = key_len + value_len;
+    uint32_t key_len, value_len, cell_length;
+    key_len = calc_primary_key_length(cursor->table);
+    value_len = calc_table_row_length(cursor->table);
+    cell_length = key_len + value_len;
+
+    char *table_name = cursor->table->meta_table->table_name;
 
     /* Get table primary key meta info. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
@@ -746,13 +761,15 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 
     /* Notice that, when i can be 0, can`t use uintXX_t as index data types
      * because uintXX_t can be 0, but can`t be negative number, always >= 0, and can`t stop the loop. */
-    for (int32_t i = cell_num; i >= 0; i--) {
+    int i; 
+    for (i = cell_num; i >= 0; i--) {
         /* If index greater than LEAF_SPLIT_COUNT, destination is new old, othersize, stay in the old node. */
         void *destination_node = i >= LEFT_SPLIT_COUNT ? new_node : old_node;
+        uint32_t destination_page = i  >= LEFT_SPLIT_COUNT ? next_unused_page_num : cursor->page_num;
 
         /* New position. */
-        uint32_t index_in_node = i % LEFT_SPLIT_COUNT;
-        void *destination = get_leaf_node_cell(destination_node, key_len, value_len, index_in_node);
+        uint32_t index_at_node = i % LEFT_SPLIT_COUNT;
+        void *destination = get_leaf_node_cell(destination_node, key_len, value_len, index_at_node);
 
         /* The cursor rigth cells should move one cell to the right to make space for the cursor, include the cell having the old same num as cursor.
          * The cursor leaf cells do`t need to make space.
@@ -761,15 +778,21 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
             /* Deposit cursor. */
             void *serial_data = serialize_row_data(row, cursor->table);
             memcpy(destination, serial_data, value_len);
+            set_leaf_node_cell_key(destination_node, index_at_node, key_len, value_len, row->key);
             db_free(serial_data);
-            set_leaf_node_cell_key(destination_node, index_in_node, key_len, value_len, row->key);
         } else if (i > cursor->cell_num) {
-            /* Right cells make cell space. */
+            /* Define new position, and right cells make cell space. */
             memcpy(destination, get_leaf_node_cell(old_node, key_len, value_len, i - 1), cell_length);
+            /* Update refer. */
+            update_refer(table_name, cursor->page_num, i - 1, destination_page, index_at_node);
         } else {
+            /* Define new position. */
             memcpy(destination, get_leaf_node_cell(old_node, key_len, value_len, i), cell_length);
+            /* Update refer. */
+            update_refer(table_name, cursor->page_num, i, destination_page, index_at_node);
         }
     }
+
     /* Set cell num */
     set_leaf_node_cell_num(old_node, LEFT_SPLIT_COUNT);
     set_leaf_node_cell_num(new_node, RIGHT_SPLIT_COUNT);
@@ -796,20 +819,33 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 
 /* Insert a new cell in leaf node */
 void insert_leaf_node_cell(Cursor *cursor, Row *row) {
+
     void *node = get_page(cursor->table->pager, cursor->page_num); 
-    uint32_t cell_num = get_leaf_node_cell_num(node);
-    uint32_t value_len = calc_table_row_length(cursor->table);
-    uint32_t key_len = calc_primary_key_length(cursor->table);
-    uint32_t cell_length = value_len + key_len;
+    
+    /* Get data. */ 
+    uint32_t cell_num, value_len, key_len, cell_length;
+    cell_num = get_leaf_node_cell_num(node);
+    value_len = calc_table_row_length(cursor->table);
+    key_len = calc_primary_key_length(cursor->table);
+    cell_length = value_len + key_len;
+
+    char *table_name = cursor->table->meta_table->table_name;
+
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) {
         insert_and_split_leaf_node(cursor, row);
     } else {
         if (cursor->cell_num < cell_num) {
             /* Make room for new cell. */
-            for (int i = cell_num; i > cursor->cell_num; i--) {
-                memcpy(get_leaf_node_cell(node, key_len, value_len, i), get_leaf_node_cell(node, key_len, value_len, i-1), cell_length);
+            int i;
+            for (i = cell_num; i > cursor->cell_num; i--) {
+                /* Movement. */
+                memcpy(get_leaf_node_cell(node, key_len, value_len, i), get_leaf_node_cell(node, key_len, value_len, i - 1), cell_length);
+                /* Update refer. */
+                update_refer(table_name, cursor->page_num, i - 1, cursor->page_num, i);
             }
         }
+        
+        /* Insert the new row. */
         set_leaf_node_cell_key(node, cursor->cell_num, key_len, value_len, row->key);
         void *destination = serialize_row_data(row, cursor->table);
         memcpy(get_leaf_node_cell_value(node, key_len, value_len, cursor->cell_num), destination, value_len);
@@ -822,9 +858,12 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
             MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
             update_internal_node_key(cursor->table, parent_node, old_max_key, row->key, key_len, value_len, primary_key_meta_column->column_type);
         }
+        
+        /* Cell number increases. */
         set_leaf_node_cell_num(node, ++cell_num);
         
-        flush_page(cursor->table->pager, cursor->page_num); /* flush into disk. */
+        /* Flush into disk. */
+        flush_page(cursor->table->pager, cursor->page_num);
     }
 }
 
@@ -854,7 +893,7 @@ bool cursor_is_deleted(Cursor *cursor) {
 }
 
 /* Update row system reserved columns. */
-void update_row_sys_reserved_column(Row *row, Cursor *cursor) {
+void update_row_data(Row *row, Cursor *cursor) {
 
     uint32_t key_len, value_len;
 

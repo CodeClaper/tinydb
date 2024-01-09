@@ -21,11 +21,20 @@ void free_meta_column(MetaColumn *meta_column);
 /* Free meta table. */
 void free_meta_table(MetaTable *meta_table);
 
+/* Free Pager. */
+void free_pager(Pager *pager);
+
 /* Free table. */
 void free_table(Table *table);
 
 /* Free cursor. */
 void free_cursor(Cursor *cursor);
+
+/* Free Refer. */
+void free_refer(Refer *refer);
+
+/* Free ReferUpdateEntity. */
+void free_refer_update_entity(ReferUpdateEntity *refer_update_entity);
 
 /* Free value item node. */
 void free_value_item_node(ValueItemNode *value_item_node);

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "free.h"
 #include "mmu.h"
+#include "refer.h"
 #include "table.h"
 #include "index.h"
 #include "misc.h"
@@ -26,6 +27,15 @@ void free_key_value(KeyValue *key_value) {
 void free_refer(Refer *refer) {
     if (refer) {
         db_free(refer);
+    }
+}
+
+/* Free ReferUpdateEntity. */
+void free_refer_update_entity(ReferUpdateEntity *refer_update_entity) {
+    if (refer_update_entity) {
+        free_refer(refer_update_entity->old_refer);
+        free_refer(refer_update_entity->new_refer);
+        db_free(refer_update_entity);
     }
 }
 
@@ -119,21 +129,36 @@ void free_column_set_node(ColumnSetNode *column_set_node) {
     }
 }
 
-/* Free table */
-void free_table(Table *table) {
-     
+/* Free Pager. */
+void free_pager(Pager *pager) {
+    if (pager) {
+        int i;
+        for (i = 0; i < pager->size; i++) {
+            db_free(pager->pages[i]);
+        }
+        db_free(pager);
+    }
 }
 
-//Free cursor
+/* Free table */
+void free_table(Table *table) {
+    if (table) {
+        free_pager(table->pager);
+        free_meta_table(table->meta_table);
+        db_free(table);
+    }
+}
+
+/* Free cursor. */
 void free_cursor(Cursor *cursor) {
     if (cursor) {
-        // use table for cache, not free.
-        free_table(cursor->table);
+        /* Table is used for cache, not free here. */
+        /*free_table(cursor->table);*/
         db_free(cursor);
     }
 } 
 
-//Free value item node.
+/* Free value item node. */
 void free_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node) {
         switch(value_item_node->data_type) {
@@ -160,7 +185,7 @@ void free_value_item_node(ValueItemNode *value_item_node) {
     }
 }
 
-//Free function value node.
+/* Free function value node. */
 void free_function_value_node(FunctionValueNode *function_value_node) {
     if (function_value_node) {
         switch(function_value_node->value_type) {
@@ -175,7 +200,7 @@ void free_function_value_node(FunctionValueNode *function_value_node) {
     }
 }
 
-//Free function node.
+/* Free function node. */
 void free_function_node(FunctionNode *function_node) {
     if (function_node) {
         free_function_value_node(function_node->value);
@@ -183,7 +208,7 @@ void free_function_node(FunctionNode *function_node) {
     } 
 }
 
-//Free column def node
+/* Free column def node. */
 void free_column_def_node(ColumnDefNode *column_def_node) {
     if (column_def_node) {
         free_column_node(column_def_node->column);
@@ -191,7 +216,7 @@ void free_column_def_node(ColumnDefNode *column_def_node) {
     }
 }
 
-//Free column def set node.
+/* Free column def set node. */
 void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
     if (column_def_set_node) {
         for(uint32_t i = 0; i < column_def_set_node->size; i++) {
@@ -202,7 +227,7 @@ void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
     } 
 }
 
-//Free value item set node.
+/* Free value item set node. */
 void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
     if (value_item_set_node) {
         for(uint32_t i = 0; i < value_item_set_node->num; i++) {
@@ -213,7 +238,7 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
     }
 }
 
-//Free primary key node.
+/* Free primary key node. */
 void free_primary_key_node(PrimaryKeyNode *primary_key_node) {
     if (primary_key_node != NULL) {
         free_column_node(primary_key_node->column);
@@ -221,7 +246,7 @@ void free_primary_key_node(PrimaryKeyNode *primary_key_node) {
     }
 }
 
-//Free select items node.
+/* Free select items node. */
 void free_select_items_node(SelectItemsNode *select_items_node) {
     if (select_items_node) {
         switch(select_items_node->type) {
@@ -238,7 +263,7 @@ void free_select_items_node(SelectItemsNode *select_items_node) {
     }
 }
 
-//Free assignment node.
+/* Free assignment node. */
 void free_assignment_node(AssignmentNode *assignment_node) {
     if (assignment_node) {
         free_column_node(assignment_node->column);
@@ -247,7 +272,7 @@ void free_assignment_node(AssignmentNode *assignment_node) {
     }
 }
 
-//Free assignment set node.
+/* Free assignment set node. */
 void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
     if (assignment_set_node) {
         for (uint32_t i = 0; i < assignment_set_node->num; i++) {
@@ -258,7 +283,7 @@ void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
     }
 }
 
-//Free condition node.
+/* Free condition node. */
 void free_condition_node(ConditionNode *condition_node) {
     if (condition_node) {
         switch(condition_node->type) {
@@ -276,7 +301,7 @@ void free_condition_node(ConditionNode *condition_node) {
     }
 }
 
-//Free query param.
+/* Free QueryParam. */
 void free_query_param(QueryParam *query_param) {
     if(query_param) {
         free_select_items_node(query_param->select_items);
@@ -288,7 +313,7 @@ void free_query_param(QueryParam *query_param) {
 }
 
 
-//Free select node.
+/* Free SelectNode. */
 void free_select_node(SelectNode *select_node) {
     if (select_node) {
         free_select_items_node(select_node->select_items_node);
@@ -299,7 +324,7 @@ void free_select_node(SelectNode *select_node) {
     }
 }
 
-//Free insert node.
+/* Free InsertNode. */
 void free_insert_node(InsertNode *insert_node) {
     if (insert_node != NULL) {
         if (insert_node->table_name)
@@ -311,7 +336,7 @@ void free_insert_node(InsertNode *insert_node) {
     }
 }
 
-//Free update node.
+/* Free UpdateNode. */
 void free_update_node(UpdateNode *update_node) {
     if (update_node) {
         if (update_node->table_name)
@@ -321,7 +346,7 @@ void free_update_node(UpdateNode *update_node) {
     } 
 }
 
-//Free delete node.
+/* Free delete node. */
 void free_delete_node(DeleteNode *delete_node) {
     if (delete_node) {
         if (delete_node->table_name)
@@ -331,7 +356,7 @@ void free_delete_node(DeleteNode *delete_node) {
     } 
 }
 
-//Free create table node.
+/* Free create table node. */
 void free_create_table_node(CreateTableNode *create_table_node) {
     if (create_table_node != NULL) {
         if (create_table_node->table_name)
@@ -342,7 +367,7 @@ void free_create_table_node(CreateTableNode *create_table_node) {
     }
 }
 
-//Free show tables node.
+/* Free show tables node. */
 void free_show_tables_node(ShowNode *show_node) {
     if (show_node)
         db_free(show_node);

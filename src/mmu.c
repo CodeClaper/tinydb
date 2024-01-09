@@ -29,13 +29,15 @@
 #include <pthread.h>
 #include "mmu.h"
 #include "asserts.h"
+#include "log.h"
 #include "data.h"
 #include "defs.h"
-#include "y.tab.h"
 
 #define MAXIMUM_CAPACITY 1<<31
 #define MININUM_CAPACITY 1<<10
 #define DEFAULT_LOAD_FACTOR 0.75
+
+#define MAX_ALLOCATE_SIZE 1 << 20
 
 static MHashTable *mtable;
 static uint32_t max_value;
@@ -79,7 +81,7 @@ void init_mem() {
 }
 
 /* Expand capacity of HashTable. */
-void expand_capacity() {
+static void expand_capacity() {
     uint32_t new_cap, old_cap, i;
     old_cap = mtable->capacity;
     /* Already max capacity, not allow to expand. */
@@ -135,7 +137,7 @@ void expand_capacity() {
 }
 
 /* Shrink capacity of HashTable. */
-void shrink_capacity() {
+static void shrink_capacity() {
     uint32_t new_cap, old_cap, i;
     old_cap = mtable->capacity;
     if (old_cap <= MININUM_CAPACITY)
@@ -168,7 +170,7 @@ void shrink_capacity() {
 }
 
 /* Insert new entry */
-void insert_entry(void *ptr, MEntry *entry) {
+static void insert_entry(void *ptr, MEntry *entry) {
     /* Lock */
     pthread_mutex_lock(&mutex);
     uint32_t index, treshold;
@@ -200,22 +202,24 @@ static void free_entry(MEntry *entry, bool alread_free_ptr) {
 }
 
 /* remove entry */
-void remove_entry(void *ptr, bool alread_free_ptr) {
+static void remove_entry(void *ptr, bool alread_free_ptr) {
     /* Lock */
     pthread_mutex_lock(&mutex);
+
     uint32_t index, treshold;
     MEntry *first, *prev, *current;
+
     index = get_index(ptr, mtable->capacity);
     first = mtable->entry_list[index];
     prev = first;
     current = first;
+
     if (current != NULL) {
         if (first->ptr == ptr) {
             mtable->entry_list[index] = first->next;
             free_entry(current, alread_free_ptr);
             mtable->num--;
-        } 
-        else {
+        } else {
             while((current = current->next)) {
                 if (current->ptr == ptr) {
                     prev->next = current->next;
@@ -227,6 +231,7 @@ void remove_entry(void *ptr, bool alread_free_ptr) {
             }
         }
     }
+    /* Shrink */
     treshold = (mtable->capacity >> 1) * DEFAULT_LOAD_FACTOR;
     if (mtable->num < treshold)
         shrink_capacity();
@@ -235,7 +240,7 @@ void remove_entry(void *ptr, bool alread_free_ptr) {
 }
 
 /* search entry. */
-MEntry *search_entry(void *ptr) {
+static MEntry *search_entry(void *ptr) {
     uint32_t index = get_index(ptr, mtable->capacity);
     MEntry *current = mtable->entry_list[index];
     if (current != NULL) {
@@ -247,12 +252,16 @@ MEntry *search_entry(void *ptr) {
     return NULL;
 }
 
-/* register a MEntry */
-static void register_entry(void *ptr, size_t size, const char *data_type_name) {
+/* Register a MEntry */
+static void register_entry(void *ptr, size_t size, char *data_type_name) {
+    if (search_entry(ptr) != NULL) {
+        assert_null(search_entry(ptr), "System error, pointer [%p] data type [%s] already registered.\n", ptr, data_type_name); 
+    }
     MEntry *entry = sys_malloc(sizeof(MEntry));
     entry->ptr = ptr;
     entry->size = size;
-    strcpy(entry->data_type_name, data_type_name == NULL ? "Unknown" : data_type_name);
+    entry->next = NULL;
+    strcpy(entry->data_type_name, data_type_name);
     insert_entry(ptr, entry);
 }
 
@@ -265,13 +274,12 @@ static void change_entry(void *old_ptr, void* new_ptr ,size_t resize) {
         entry->size = resize;
     } else {
         remove_entry(old_ptr, true);
-        register_entry(new_ptr, resize, NULL);
+        register_entry(new_ptr, resize, "Unknown");
     }
 }
 
 /* Free MEntry
- * First check if exist, only exists then free, avoid to double free.
- **/
+ * First check if exist, only exists then free, avoid to double free. */
 static void unregister_entry(void *ptr) {
      remove_entry(ptr, false);
 }
@@ -292,7 +300,7 @@ void *sys_malloc(size_t size) {
 void *sys_realloc(void *ptr, size_t size) {
     void *ret = realloc(ptr, size);
     if (ret == NULL) {
-        fprintf(stderr, "Not enough to rallocate.");
+        fprintf(stderr, "Not enough memory to rallocate.");
         exit(EXIT_FAILURE);
     }
     return ret;
@@ -300,21 +308,23 @@ void *sys_realloc(void *ptr, size_t size) {
 
 /* database level mallocate. */
 void *db_malloc(size_t size) {
+    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
     void *ret = malloc(size);
     if (ret == NULL) {
-        fprintf(stderr, "Not enough to allocate.");
+        fprintf(stderr, "Not enough memory to allocate.");
         exit(EXIT_FAILURE);
     }
     memset(ret, 0, size);
-    register_entry(ret, size, NULL);
+    register_entry(ret, size, "Unknown");
     return ret;
 }
 
 /* database level mallocate, inputing data type name is for trace purposes. */
 void *db_malloc2(size_t size, char *data_type_name) {
+    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
     void *ret = malloc(size);
     if (ret == NULL) {
-        fprintf(stderr, "Not enough to allocate.");
+        fprintf(stderr, "Not enough memory to allocate.");
         exit(EXIT_FAILURE);
     }
     memset(ret, 0, size);
@@ -324,9 +334,15 @@ void *db_malloc2(size_t size, char *data_type_name) {
 
 /* database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
+    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
+    /* When size is zero, realloc return null, which is not we need. */
+    if (size == 0) {
+        db_free(ptr);
+        return db_malloc(size);
+    }
     void *ret = realloc(ptr, size);
     if (ret == NULL) {
-        fprintf(stderr, "Not enough to rallocate.");
+        fprintf(stderr, "Not enough memory to rallocate.");
         exit(EXIT_FAILURE);
     }
     change_entry(ptr, ret, size);

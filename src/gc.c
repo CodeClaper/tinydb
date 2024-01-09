@@ -13,6 +13,7 @@
 #include "gc.h"
 #include "data.h"
 #include "mmu.h"
+#include "free.h"
 #include "trans.h"
 #include "table.h"
 #include "node.h"
@@ -42,6 +43,9 @@ void loop_gc() {
         for(i = 0; i < table_list->count; i++) {
             gc_table(table_list->table_name_list[i]); 
         }
+
+        /* Free memory. */
+        free_table_list(table_list);
     }
 }
 
@@ -62,13 +66,10 @@ static QueryParam *fake_query_param(Table *table) {
 }
 
 /* Gc row*/
-void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+void gc_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
     /* Only for deleted row. */
     if (!row_is_deleted(row))
         return;
-
-    /* Cursor */
-    Cursor *cursor = define_cursor(table, row->key);
 
     /* delete row. */
     delete_leaf_node_cell(cursor, row->key);
@@ -76,8 +77,6 @@ void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
 /* Gc table */
 void gc_table(char *table_name) {
-
-    db_info("Start GC table '%s'", table_name);
 
     /* Check table exist. */
     Table *table = open_table(table_name);
@@ -90,5 +89,9 @@ void gc_table(char *table_name) {
     SelectResult *select_result = new_select_result(table_name);
 
     query_with_condition(query_param, select_result, gc_row, NULL);
+    
+    /* Free memory. */
+    free_query_param(query_param);
+    free_select_result(select_result);
 }
 

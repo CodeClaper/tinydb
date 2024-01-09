@@ -233,7 +233,7 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     free_cursor(cursor);
     free_row(row);
 
-    success_result(result, "Insert one row data successfully.");
+    success_result(result, "Insert one row data to table '%s' successfully.", insert_node->table_name);
     result->rows = 1;
     return refer;    
 }

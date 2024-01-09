@@ -3,9 +3,9 @@
  * DBResult is the json format that db finally output, include flows:
  * [status]   The status is statement execution result.
  * [success]  Whether execution result successful or fail.
- * [rows]     The number of influent rows.
- * [data]     Query data.
  * [message]  Output message.
+ * [data]     Query data.
+ * [rows]     The number of rows affected.
  * [duration] The execution time.
  * =============================================================================================================================
  * */
@@ -19,6 +19,10 @@
 #include "ret.h"
 #include "log.h"
 #include "meta.h"
+#include "copy.h"
+#include "free.h"
+#include "trans.h"
+#include "select.h"
 #include "asserts.h"
 #include "session.h"
 
@@ -68,10 +72,31 @@ static void db_send_row(Row *row) {
     db_send("{ ");
     int i = 0;
     for(i =0; i <row->column_len; i++) {
+
         KeyValue *key_value = *(row->data + i);
-        char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
-        db_send(key_value_pair);
-        db_free(key_value_pair);
+        switch (key_value->data_type) {
+            case T_REFERENCE: {
+                db_send("\"%s\": ", key_value->key);
+                Refer *refer = (Refer *) key_value->value;
+                assert_not_null(refer, "Try to get Reference type value fail.\n");
+                Row *sub_row = define_row(refer);
+                if (row_is_deleted(sub_row)) 
+                    db_send("null");
+                else {
+                    Row *sim_row = copy_row_without_reserved(sub_row);
+                    db_send_row(sim_row);
+                    free_row(sim_row);
+                }
+                free_row(sub_row);
+                break;
+            }
+            default: {
+                char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
+                db_send(key_value_pair);
+                db_free(key_value_pair);
+                break;
+            }
+        }
 
         /* split with ',' */
         if (i < row->column_len - 1) 
@@ -86,6 +111,7 @@ static void db_send_map(Map *map) {
     int i = 0;
     for(i =0; i <map->size; i++) {
         KeyValue *key_value = *(map->body + i);
+
         char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
         db_send(key_value_pair);
         db_free(key_value_pair);
@@ -116,8 +142,10 @@ static void db_send_select_result(DBResult *result) {
                 db_send(", ");
         }
         select_result && select_result->row_size == 1 ? db_send("") : db_send("]");
+
+        db_send(", \"rows\": %d", result->rows);
     }
-    db_send(", \"rows\": %d, \"duration\": %lf }\n", result->rows, result->duration);
+    db_send(", \"duration\": %lf }\n", result->duration);
 }
 
 /* Send out db none data result. */

@@ -1,13 +1,13 @@
 #include "data.h"
 
 /* Function pointer about row handler */
-typedef void (*ROW_HANDLER)(Row *, SelectResult *select_result, Table *table, void *arg);
+typedef void (*ROW_HANDLER)(Row *, SelectResult *select_result, Cursor *Cursor, void *arg);
 
 /* Generate new select result structure. */
 SelectResult *new_select_result(char *table_name);
 
 /* Count number of row, used in the sql function count(1) */
-void count_row(Row *row, SelectResult *select_result, Table *table, void *arg);
+void count_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg);
 
 /* Define row by refer. */
 Row *define_row(Refer *refer);
