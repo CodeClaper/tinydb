@@ -111,3 +111,6 @@ m4/lt~obsolete.m4
 Makefile
 
 test/pytest/unit/__pycache__
+.pytest_cache/
+.cache/
+compile_commands.json
