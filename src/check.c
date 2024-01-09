@@ -16,6 +16,7 @@
 #include "misc.h"
 #include "select.h"
 #include "ret.h"
+#include "refer.h"
 
 /* Check ident node. */
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node, DBResult *result) {
@@ -375,4 +376,33 @@ bool check_create_table_node(CreateTableNode *create_table_node, DBResult *resul
     return check_duplicate_table(create_table_node->table_name, result)
            && check_duplicate_column_name(create_table_node->column_def_set_node, result)
            && check_primary_null(create_table_node, result);
+}
+
+static bool if_table_used_refer(char *table_name, char *refer_table_name, DBResult *result) {
+    Table *table = open_table(table_name);
+    assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
+    MetaTable *meta_table = table->meta_table;
+
+    int i;
+    for(i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *current_meta_column = meta_table->meta_column[i];
+        if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
+            error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' is refered by column [%s] in table '%s', so it cant`t be droped.", refer_table_name, current_meta_column->column_name, table_name);
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/* Chech allowed to drop table. */
+bool check_drop_table(char *table_name, DBResult *result) {
+    TableList *table_list = get_table_list();
+    int i;
+    for (i = 0; i < table_list->count; i++) {
+        char *curent_table_name = table_list->table_name_list[i];
+        if (if_table_used_refer(curent_table_name, table_name, result))
+            return false;
+    }
+    return true;
 }
