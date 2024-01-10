@@ -185,9 +185,9 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
     ColumnNode *column_node_copy = db_malloc(sizeof(ColumnNode), SDT_COLUMN_NODE);
     column_node_copy->has_sub_column = column_node->has_sub_column;
     if (column_node_copy->sub_column_name) {
-        column_node_copy->sub_column_name = strdup(column_node->sub_column_name);
+        column_node_copy->sub_column_name = db_strdup(column_node->sub_column_name);
     }
-    column_node_copy->column_name = strdup(column_node->column_name);
+    column_node_copy->column_name = db_strdup(column_node->column_name);
     return column_node_copy;
 }
 
@@ -213,7 +213,7 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     switch(value_item_node->data_type) {
         case T_CHAR:
         case T_STRING:
-            value_item_node_copy->s_value = strdup(value_item_node->s_value);
+            value_item_node_copy->s_value = db_strdup(value_item_node->s_value);
             break;
         case T_INT:
         case T_LONG:
@@ -320,7 +320,7 @@ QueryParam *copy_query_param(QueryParam *query_param) {
     if (query_param == NULL)
         return NULL;
     QueryParam *query_param_copy = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param_copy->table_name = strdup(query_param->table_name);
+    query_param_copy->table_name = db_strdup(query_param->table_name);
     query_param_copy->condition_node = copy_condition_node(query_param->condition_node); 
     query_param_copy->select_items = copy_select_items_node(query_param->select_items);
     return query_param_copy;

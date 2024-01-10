@@ -286,7 +286,7 @@ static void transaction_insert_row(Row *row) {
 
     /* Fro created_xid */
     KeyValue *created_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    created_xid_col->key = strdup("created_xid");
+    created_xid_col->key = db_strdup("created_xid");
     created_xid_col->value = copy_value(&current_trans->xid, T_LONG, NULL);
     created_xid_col->data_type = T_LONG;
     row->data[row->column_len - 2] = created_xid_col;
@@ -294,7 +294,7 @@ static void transaction_insert_row(Row *row) {
     /* For expired_xid */
     int64_t zero = 0;
     KeyValue *expired_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    expired_xid_col->key = strdup("expired_xid");
+    expired_xid_col->key = db_strdup("expired_xid");
     expired_xid_col->value = copy_value(&zero, T_LONG, NULL);
     expired_xid_col->data_type = T_LONG;
     row->data[row->column_len - 1] = expired_xid_col;

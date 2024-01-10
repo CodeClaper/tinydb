@@ -53,7 +53,7 @@ void loop_gc() {
 static QueryParam *fake_query_param(Table *table) {
     /* query_param */
     QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = strdup(table->meta_table->table_name);
+    query_param->table_name = db_strdup(table->meta_table->table_name);
 
     /* select_items_node */
     SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);

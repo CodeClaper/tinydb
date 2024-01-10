@@ -181,7 +181,7 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
     MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
     void *root_node = get_page(table->pager, table->root_page_num);
     uint32_t column_size = get_column_size(root_node);
-    meta_table->table_name = strdup(table_name);
+    meta_table->table_name = db_strdup(table_name);
     meta_table->column_size = 0;
     meta_table->all_column_size = 0;
     for (int i = 0; i < column_size; i++) {

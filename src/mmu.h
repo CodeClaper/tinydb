@@ -15,6 +15,10 @@ void *db_malloc(size_t size, SysDataType stype);
 /* Database level reallocate */
 void *db_realloc(void *ptr, size_t size);
 
+
+/* Database level db_strdup. */
+char *db_strdup(char *str);
+
 /* Database level mememory free. */
 void db_free(void *ptr);
 

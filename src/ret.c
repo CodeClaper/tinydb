@@ -49,7 +49,7 @@ void success_result(DBResult *result, char *format, ...) {
     vsprintf(buff, format, ap);
     result->status = EXECUTE_SUCCESS;
     result->success = true;
-    result->message = strdup(buff);
+    result->message = db_strdup(buff);
     db_info(buff);
     va_end(ap);
 }
@@ -62,7 +62,7 @@ void error_result(DBResult *result, ExecuteStatus status, char *format, ...) {
     vsprintf(buff, format, ap);
     result->status = status;
     result->success = false;
-    result->message = strdup(buff);
+    result->message = db_strdup(buff);
     db_error("%s", buff);
     va_end(ap);
 }

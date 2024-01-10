@@ -46,21 +46,21 @@ static MapList *gen_table_map_list() {
 
                 /* name */
                 KeyValue *key_value_name = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-                key_value_name->key = strdup("table_name");
+                key_value_name->key = db_strdup("table_name");
                 key_value_name->value = replace(entry->d_name, ".dbt", "");
                 key_value_name->data_type = T_STRING;
                 map->body[0] = key_value_name;
 
                 /* size */
                 KeyValue *key_value_size = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-                key_value_size->key = strdup("table_size");
+                key_value_size->key = db_strdup("table_size");
                 key_value_size->value = copy_value(&info.st_size, T_INT, NULL);
                 key_value_size->data_type = T_INT;
                 map->body[1] = key_value_size;
 
                 /* create_time */
                 KeyValue *key_value_created = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-                key_value_created->key = strdup("create_time");
+                key_value_created->key = db_strdup("create_time");
                 key_value_created->value = format_time("%Y-%m-%d", info.st_ctim.tv_sec);
                 key_value_created->data_type = T_STRING;
                 map->body[2] = key_value_created;
@@ -91,21 +91,21 @@ static MapList *gen_memory_map_list() {
     /* used_memory. */
     KeyValue *key_value_mem = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     uint32_t mmsize = db_memesize();
-    key_value_mem->key = strdup("used_memory");
+    key_value_mem->key = db_strdup("used_memory");
     key_value_mem->value = copy_value(&mmsize, T_INT, NULL);
     key_value_mem->data_type = T_INT;
     map->body[0] = key_value_mem;
 
     KeyValue *key_value_cap = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     uint32_t cap = mtable_capacity();
-    key_value_cap->key = strdup("mtable_capacity");
+    key_value_cap->key = db_strdup("mtable_capacity");
     key_value_cap->value = copy_value(&cap, T_INT, NULL);
     key_value_cap->data_type = T_INT;
     map->body[1] = key_value_cap;
 
     KeyValue *key_value_num = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     uint32_t num = mentry_num();
-    key_value_num->key = strdup("mentry_num");
+    key_value_num->key = db_strdup("mentry_num");
     key_value_num->value = copy_value(&num, T_INT, NULL);
     key_value_num->data_type = T_INT;
     map->body[2] = key_value_num;

@@ -107,7 +107,7 @@ MetaColumn *copy_sys_meta_column(char *table_name, int index) {
 /* Generate meta table by create table node. */
 static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *result) {
     MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
-    meta_table->table_name = strdup(crete_table_node->table_name);
+    meta_table->table_name = db_strdup(crete_table_node->table_name);
     meta_table->column_size = get_column_size(crete_table_node);
     if (meta_table->column_size > MAX_COLUMN_SIZE) {
         error_result(result, EXECUTE_EXCEEDED_MAX_COLUMN ,"Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);

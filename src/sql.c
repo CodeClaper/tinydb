@@ -1645,7 +1645,7 @@ yyreduce:
 #line 231 "sql.y"
                 {
                     DescribeNode *node = make_describe_node();
-                    node->table_name = strdup((yyvsp[-1].s_value));
+                    node->table_name = db_strdup((yyvsp[-1].s_value));
                     (yyval.describe_node) = node;
                 }
 #line 1652 "sql.c"
@@ -1833,7 +1833,7 @@ yyreduce:
 #line 341 "sql.y"
                 {
                     ColumnNode *column_node = make_column_node();
-                    column_node->column_name = strdup((yyvsp[0].s_value));
+                    column_node->column_name = db_strdup((yyvsp[0].s_value));
                     column_node->exist_table_name = false;
                     (yyval.column_node) = column_node;
                 }
@@ -1844,8 +1844,8 @@ yyreduce:
 #line 348 "sql.y"
                 {
                     ColumnNode *column_node = make_column_node();
-                    column_node->column_name = strdup((yyvsp[-2].s_value));
-                    column_node->table_name = strdup((yyvsp[0].s_value));
+                    column_node->column_name = db_strdup((yyvsp[-2].s_value));
+                    column_node->table_name = db_strdup((yyvsp[0].s_value));
                     column_node->exist_table_name = true;
                     (yyval.column_node) = column_node;
                 }

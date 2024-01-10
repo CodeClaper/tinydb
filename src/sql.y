@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "intpr.h"
+#include "mmu.h"
 #include "y.tab.h"
 
 int yywrap() {
@@ -260,7 +261,7 @@ describe_statement:
             DESCRIBE table end
                 {
                     DescribeNode *node = make_describe_node();
-                    node->table_name = strdup($2);
+                    node->table_name = db_strdup($2);
                     $$ = node;
                 }
             ;
@@ -403,15 +404,15 @@ column:
             IDENTIFIER
                 {
                     ColumnNode *column_node = make_column_node();
-                    column_node->column_name = strdup($1);
+                    column_node->column_name = db_strdup($1);
                     column_node->has_sub_column = false;
                     $$ = column_node;
                 }
             | IDENTIFIER POINT IDENTIFIER
                 {
                     ColumnNode *column_node = make_column_node();
-                    column_node->column_name = strdup($1);
-                    column_node->sub_column_name = strdup($3);
+                    column_node->column_name = db_strdup($1);
+                    column_node->sub_column_name = db_strdup($3);
                     column_node->has_sub_column = true;
                     $$ = column_node;
                 }

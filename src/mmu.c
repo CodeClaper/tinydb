@@ -282,7 +282,7 @@ static void unregister_entry(void *ptr) {
      remove_entry(ptr, false);
 }
 
-/* system level mallocate. */
+/* System level mallocate. */
 void *sys_malloc(size_t size) {
     void *ret = malloc(size);
     if (ret == NULL) {
@@ -294,7 +294,7 @@ void *sys_malloc(size_t size) {
 }
 
 
-/* system level reallocate. */
+/* System level reallocate. */
 void *sys_realloc(void *ptr, size_t size) {
     void *ret = realloc(ptr, size);
     if (ret == NULL) {
@@ -304,7 +304,7 @@ void *sys_realloc(void *ptr, size_t size) {
     return ret;
 }
 
-/* database level mallocate. */
+/* Database level mallocate. */
 void *db_malloc(size_t size, SysDataType stype) {
     assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
 
@@ -316,7 +316,7 @@ void *db_malloc(size_t size, SysDataType stype) {
     return ret;
 }
 
-/* database level reallocate. */
+/* Database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
     assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
 
@@ -332,6 +332,16 @@ void *db_realloc(void *ptr, size_t size) {
     void *ret = realloc(ptr, size);
     assert_not_null(ret, "Not enough memory to rallocate.");
     change_entry(ptr, ret, size, entry->stype);
+
+    return ret;
+}
+
+/* Database level db_strdup. */
+char *db_strdup(char *str) {
+    char *ret = strdup(str);
+    assert_not_null(ret, "Not enough memory to strdup.\n");
+
+    register_entry(ret, strlen(str), SDT_STRING);
 
     return ret;
 }

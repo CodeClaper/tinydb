@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "data.h"
+#include "mmu.h"
 #include "intpr.h"
 #include "ret.h"
 #include "y.tab.h"
@@ -68,12 +69,12 @@ count                   return COUNT;
 avg                     return AVG;
 true                    return TRUE;
 false                   return FALSE;
-[a-zA-Z][a-zA-Z0-9_]*   { yylval.s_value = strdup(yytext); return IDENTIFIER;} 
+[a-zA-Z][a-zA-Z0-9_]*   { yylval.s_value = db_strdup(yytext); return IDENTIFIER;} 
 [0-9]+                  { yylval.i_value = atoi(yytext); return INTVALUE;}
 [0-9]+	|
 [0-9]+"."[0-9]* |
 "."[0-9]*	            { yylval.f_value = atof(yytext); return FLOATVALUE; }
-'[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.s_value = strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.s_value =  strdup(str);} return STRINGVALUE;} 
+'[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.s_value = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.s_value =  strdup(str);} return STRINGVALUE;} 
 '[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
 [ \t]           /* igonore space */

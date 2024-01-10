@@ -73,7 +73,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     switch(meta_column->column_type) {
         case T_CHAR:
         case T_STRING:
-            return strdup((char *)value_item_node->s_value);
+            return db_strdup((char *)value_item_node->s_value);
         case T_INT:
         case T_LONG:
             return &(value_item_node->i_value);
@@ -142,7 +142,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         }
         case T_REFERENCE: {
             InsertNode *nest_insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
-            nest_insert_node->table_name = strdup(meta_column->table_name);
+            nest_insert_node->table_name = db_strdup(meta_column->table_name);
             nest_insert_node->all_column = true;
             nest_insert_node->value_item_set_node = value_item_node->nest_value_item_set;
             return exec_insert_statement(nest_insert_node, result);
@@ -161,7 +161,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         return NULL;
     }
     MetaTable *meta_table = table->meta_table;
-    row->table_name = strdup(meta_table->table_name);
+    row->table_name = db_strdup(meta_table->table_name);
     row->column_len = meta_table->all_column_size;
     row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
 
@@ -172,7 +172,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         if (meta_column->sys_reserved) continue;
 
         KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value->key = strdup(meta_column->column_name);
+        key_value->key = db_strdup(meta_column->column_name);
         key_value->data_type = meta_column->column_type;
         if (insert_node->all_column)
             key_value->value = get_column_value(insert_node, i, meta_column, result);

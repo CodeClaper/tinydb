@@ -33,28 +33,28 @@ static MapList *gen_describe_result(MetaTable *meta_table) {
 
         /* filed */
         KeyValue *key_value_field = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value_field->key = strdup("field");
-        key_value_field->value = strdup(meta_column->column_name);
+        key_value_field->key = db_strdup("field");
+        key_value_field->value = db_strdup(meta_column->column_name);
         key_value_field->data_type = T_STRING;
         map->body[0] = key_value_field;
 
         /* type */
         KeyValue *key_value_type = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value_type->key = strdup("type");
+        key_value_type->key = db_strdup("type");
         key_value_type->value = DATA_TYPE_NAMES[meta_column->column_type];
         key_value_type->data_type = T_STRING;
         map->body[1] = key_value_type;
 
         /* primary key */
         KeyValue *key_value_key = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value_key->key = strdup("primary_key");
+        key_value_key->key = db_strdup("primary_key");
         key_value_key->value = copy_value(&meta_column->is_primary, T_BOOL, NULL);
         key_value_key->data_type = T_BOOL;
         map->body[2] = key_value_key;
 
         /* primary key */
         KeyValue *key_value_size = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value_size->key = strdup("size");
+        key_value_size->key = db_strdup("size");
         key_value_size->value = copy_value(&meta_column->column_length, T_INT, NULL);
         key_value_size->data_type = T_INT;
         map->body[3] = key_value_size;

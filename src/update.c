@@ -33,7 +33,7 @@ static ColumnSetNode *adapt_column_set_node(Table *table) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         ColumnNode *column_node = db_malloc(sizeof(ColumnNode), SDT_COLUMN_NODE);
         column_node->has_sub_column = false;
-        column_node->column_name = strdup(meta_column->column_name);
+        column_node->column_name = db_strdup(meta_column->column_name);
         column_set_node->columns[i] = column_node;
     }
 
@@ -51,7 +51,7 @@ static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *
 /* Adapt to query param data type.*/
 static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
     QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = strdup(update_node->table_name);
+    query_param->table_name = db_strdup(update_node->table_name);
     query_param->select_items = adapt_select_items_node(update_node, table);
     ConditionNode *condition_node_copy = copy_condition_node(update_node->condition_node);
     query_param->condition_node = tree(condition_node_copy);
@@ -88,7 +88,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                 case T_CHAR:
                 case T_STRING:
                     db_free(key_value->value); /* free old memory. */
-                    key_value->value = strdup(value->s_value);
+                    key_value->value = db_strdup(value->s_value);
                     break;
                 case T_REFERENCE:
                     fatal("Not implement yet.");
