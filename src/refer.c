@@ -22,8 +22,9 @@
 #include "node.h"
 #include "asserts.h"
 
-/* Generate new Refer. */
-Refer *new_refer(char *table_name, uint32_t page_num, uint32_t cell_num) {
+/* Generate new Refer. 
+ * Note: if page_num is -1 and cell_num is -1 which means refer null. */
+static Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num) {
     Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
     strcpy(refer->table_name, table_name);
     refer->page_num = page_num;
@@ -38,6 +39,12 @@ Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
     cursor->page_num = page_num;
     cursor->cell_num = cell_num;
     return cursor;
+}
+
+/* Check if refer null. 
+ * If page number is -1 and cell number is -1, it means refer null. */
+bool refer_null(Refer *refer) {
+    return refer->page_num == -1 && refer->cell_num == -1;
 }
 
 /* Generate new ReferUpdateEntity. */
@@ -56,6 +63,7 @@ Refer *convert_refer(Cursor *cursor) {
     strcpy(refer->table_name, cursor->table->meta_table->table_name);
     refer->page_num = cursor->page_num;
     refer->cell_num = cursor->cell_num;
+
     return refer;
 }
 
@@ -120,9 +128,16 @@ static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cu
 
 
 /* Update row refer. */
-static void update_row_refer(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+static void update_row_refer(Row *row, SelectResult *select_result, Table *table, void *arg) {
+
+    /* ReferUpdateEntity */
     ReferUpdateEntity *refer_update_entity = (ReferUpdateEntity *) arg;
-    MetaTable *meta_table = cursor->table->meta_table;
+
+    /* Curosr */
+    Cursor *cursor = define_cursor(table, row->key);
+
+    /* MetaTable */
+    MetaTable *meta_table = table->meta_table;
 
     int i;
     for(i = 0; i < meta_table->column_size; i++) {
@@ -156,8 +171,8 @@ static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update
 /* Update Refer 
  * When referenct target be changed (updated or deleted), 
  * must to update row reference value which pointer to it. */
-void update_refer(char *table_name, uint32_t old_page_num, uint32_t old_cell_num, 
-                  uint32_t new_page_num, uint32_t new_cell_num) {
+void update_refer(char *table_name, int32_t old_page_num, int32_t old_cell_num, 
+                  int32_t new_page_num, int32_t new_cell_num) {
    
     Refer *old_one = new_refer(table_name, old_page_num, old_cell_num);
     Refer *new_one = new_refer(table_name, new_page_num, new_cell_num);

@@ -33,16 +33,15 @@ static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
 }
 
 /* Delete row */
-static void delete_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
     /* Only deal with row that is visible for current transaction. */
     if (row_is_visible(row)) {
+        Cursor *cursor = define_cursor(table, row->key);
         update_transaction_state(row, TR_DELETE);
         update_row_data(row, cursor);
+        select_result->row_size++;
     }
-
-    /* delete_leaf_node_cell(cursor, row->key); */
-    select_result->row_size++;
 }
 
 /* Execute delete statment.*/

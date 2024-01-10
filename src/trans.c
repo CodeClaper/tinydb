@@ -238,7 +238,7 @@ void auto_commit_transaction(DBResult *result) {
     /* Only deal with auto-commit transaction. */
     if (trans_handle && trans_handle->auto_commit) {
         /* Destroy transaction. */
-        assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and  tid is %ld.", trans_handle->xid, trans_handle->tid);
+        assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
         db_info("Auto commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
     }
 }

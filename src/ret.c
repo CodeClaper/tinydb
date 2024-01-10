@@ -31,6 +31,7 @@ DBResult *new_db_result() {
 
     /* New DbResule and initialize it. */
     DBResult *result = db_malloc(sizeof(DBResult), SDT_DB_RESULT);
+
     result->status = EXECUTE_FAIL;
     result->success = false;
     result->message = NULL;
@@ -75,18 +76,22 @@ static void db_send_row(Row *row) {
 
         KeyValue *key_value = *(row->data + i);
         switch (key_value->data_type) {
+            /* Specially deal with T_REFERENCE data. */
             case T_REFERENCE: {
                 db_send("\"%s\": ", key_value->key);
+
                 Refer *refer = (Refer *) key_value->value;
                 assert_not_null(refer, "Try to get Reference type value fail.\n");
+
                 Row *sub_row = define_row(refer);
-                if (row_is_deleted(sub_row)) 
+                if (sub_row == NULL || row_is_deleted(sub_row)) 
                     db_send("null");
                 else {
                     Row *sim_row = copy_row_without_reserved(sub_row);
                     db_send_row(sim_row);
                     free_row(sim_row);
                 }
+
                 free_row(sub_row);
                 break;
             }

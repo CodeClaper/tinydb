@@ -522,8 +522,8 @@ typedef struct {
 /* Refer */
 typedef struct Refer{
     char table_name[MAX_TABLE_NAME_LEN];
-    uint32_t page_num;
-    uint32_t cell_num;
+    int32_t page_num;
+    int32_t cell_num;
 }Refer;
 
 typedef struct ReferUpdateEntity {

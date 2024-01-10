@@ -60,8 +60,8 @@ int main(void) {
     db_info("Tinydb server start up successfully and listen port %d.", conf->port);
 
     /* start gc */
-    /*if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)*/
-        /*fatal("Create new thread fail.");*/
+    if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)
+        fatal("Create new thread fail.");
 
     /* listen */
     while(true) {

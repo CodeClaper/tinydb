@@ -655,9 +655,17 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
 
 /* Define row by refer. */
 Row *define_row(Refer *refer) {
-    uint32_t key_len, value_len;
+    /* Check table exists. */
     Table *table = open_table(refer->table_name);
-    if (table == NULL) return NULL;
+    if (table == NULL) 
+        return NULL;
+
+    /* CHeck if refer null. */
+    if (refer_null(refer))
+        return NULL;
+
+    /* Data */
+    uint32_t key_len, value_len;
     value_len = calc_table_row_length(table);
     key_len = calc_primary_key_length(table);
     void *leaf_node = get_page(table->pager, refer->page_num);
@@ -682,9 +690,10 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
     void *leaf_node = get_page(table->pager, page_num);
 
     /* Get cell number, key length and value lenght. */
-    uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
-    uint32_t value_len = calc_table_row_length(table);
-    uint32_t key_len = calc_primary_key_length(table);
+    uint32_t key_len, value_len, cell_num ;
+    key_len = calc_primary_key_length(table);
+    value_len = calc_table_row_length(table);
+    cell_num = get_leaf_node_cell_num(leaf_node);
 
     /* It`s necessary to use leaf node snapshot, beacuse when traversing cells, 
      * update or delete operation will change the data structure of leaf node,
@@ -705,12 +714,10 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         Row *row = generate_row(destinct, query_param, table->meta_table);
 
         /* Execute row handler. */
-        Cursor *cursor = new_cursor(table, page_num, i);
-        row_handler(row, select_result, cursor, arg);
+        row_handler(row, select_result, table, arg);
 
         /* Free useless row. */
         free_row(row);
-        free_cursor(cursor);
     }
     
     /* Free useless pointer. */
@@ -815,24 +822,25 @@ void query_with_condition(QueryParam *query_param, SelectResult *select_result, 
 }
 
 /* Count number of row, used in the sql function count(1) */
-void count_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only count visible row. */
     if (row_is_visible(row))
         select_result->row_size++;
 }
 
 /* Send row data. */
-static void select_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+static void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only select visible row. */
     if (row_is_visible(row))
         select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
 }
 
 /* Execute sum funciton */
-static void sum_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only sum visible row. */
     if (!row_is_visible(row)) 
         return;
+
     KeyValue *key_value = row->data[0];
     switch(key_value->data_type) {
         case T_INT:
@@ -850,11 +858,12 @@ static void sum_row(Row *row, SelectResult *select_result, Cursor *cursor, void 
             select_result->sum += 0;
             break;
     }
+
     select_result->row_size++;
 }
 
 /* Execute max function. */
-static void max_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+static void max_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
     /* Only visible row. */
     if (!row_is_visible(row))
@@ -880,7 +889,7 @@ static void max_row(Row *row, SelectResult *select_result, Cursor *cursor, void 
 }
 
 /* Execute min function. */
-static void min_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+static void min_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     
     /* Only for visible row. */
     if (!row_is_visible(row))

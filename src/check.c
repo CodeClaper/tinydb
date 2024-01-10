@@ -31,43 +31,43 @@ static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node, DB
 }
 
 /* Check if type convert pass. */
-static bool if_convert_type(DataType source, DataType target, char *column_name, DBResult *result) {
-    bool re;
+static bool if_convert_type(DataType source, DataType target, char *column_name, char *table_name, DBResult *result) {
+    bool flag;
     switch(source) {
         case T_BOOL:
-            re = target == T_BOOL;
+            flag = target == T_BOOL;
             break;
         case T_INT:
-            re = target == T_INT;
+            flag = target == T_INT;
             break;
         case T_LONG:
-            re = target == T_INT || target == T_LONG;
+            flag = target == T_INT || target == T_LONG;
             break;
         case T_FLOAT:
-            re = target == T_INT || target == T_FLOAT;
+            flag = target == T_INT || target == T_FLOAT;
             break;
         case T_DOUBLE:
-            re = target == T_INT || target == T_DOUBLE;
+            flag = target == T_INT || target == T_DOUBLE;
             break;
         case T_CHAR:
-            re = target == T_CHAR || target == T_STRING;
+            flag = target == T_CHAR || target == T_STRING;
             break;
         case T_STRING:
-            re = target == T_CHAR || target == T_STRING;
+            flag = target == T_CHAR || target == T_STRING;
             break;
         case T_TIMESTAMP:
-            re = target == T_TIMESTAMP || target == T_STRING;
+            flag = target == T_TIMESTAMP || target == T_STRING;
             break;
         case T_DATE:
-            re = target == T_DATE || target == T_STRING;
+            flag = target == T_DATE || target == T_STRING;
             break;
         case T_REFERENCE:
-            re = target == T_REFERENCE;
+            flag = target == T_REFERENCE;
             break;
     }
-    if (!re)
-       error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Data type convert fail for column '%s'.", column_name);
-    return re;
+    if (!flag)
+       error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Can`t convert data type [%s] to [%s] for column '%s' in table '%s'",DATA_TYPE_NAMES[target], DATA_TYPE_NAMES[source], column_name, table_name);
+    return flag;
 }
 
 /* Check value if valid. 
@@ -109,8 +109,10 @@ static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *re
             assert_true(comp_result == 0, "Regex compile fail.\n");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
             regfree(&reegex);
+
             if (exe_result == REG_NOMATCH) 
                 db_error("Try to convert value '%s' to timestamp fail\n", (char *) value);
+
             return exe_result == REG_NOERROR;
         }
         case T_DATE: {
@@ -123,8 +125,10 @@ static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *re
             assert_true(comp_result == 0, "Regex compile fail.\n");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
             regfree(&reegex);
+
             if (exe_result == REG_NOMATCH) 
                 db_error("Try to convert value '%s' to timestamp fail\n", (char *) value);
+
             return exe_result == REG_NOERROR;
         }
         default:
@@ -137,7 +141,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *re
 static bool check_value_item_node(MetaTable *meta_table, char *column_name ,ValueItemNode *value_item_node, DBResult *result) {
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, result)) 
+        if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name, result)) 
             return true;
     }
     error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Column '%s' data type error.", column_name);
@@ -191,7 +195,7 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
         case EXEC_CONDITION: {
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
             return check_column_node(meta_table, condition_node->column, result) // check select column
-                   && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name, result) // check column type
+                   && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name, meta_table->table_name, result) // check column type
                    && check_value_valid(meta_column, get_value_from_value_item_node(condition_node->value, meta_column->column_type), result); // check if value valid
         }
     }
@@ -229,7 +233,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
 
         /* Check column, check type, check if value valid. */
         if (!check_column_node(table->meta_table, column_node, result) 
-            || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, result) 
+            || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name, result) 
             || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column->column_type), result))
             return false;
 
@@ -328,7 +332,7 @@ bool check_insert_node(InsertNode *insert_node, DBResult *result) {
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
             /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, result))  
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name, result))  
                 return false;
             /* Checke value valid. */
             if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type), result))
@@ -342,12 +346,13 @@ bool check_insert_node(InsertNode *insert_node, DBResult *result) {
             return false;
         }
 
-        for (uint32_t i = 0; i < insert_node->columns_set_node->size; i++) {
+        int i;
+        for (i = 0; i < insert_node->columns_set_node->size; i++) {
             ColumnNode *column_node = *(insert_node->columns_set_node->columns + i);
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, result)) 
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name, result)) 
                 return false;
             /* Check value valid. */
             if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type), result)) 
@@ -378,6 +383,7 @@ bool check_create_table_node(CreateTableNode *create_table_node, DBResult *resul
            && check_primary_null(create_table_node, result);
 }
 
+/* Check if table uses refer. */
 static bool if_table_used_refer(char *table_name, char *refer_table_name, DBResult *result) {
     Table *table = open_table(table_name);
     assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
@@ -387,7 +393,7 @@ static bool if_table_used_refer(char *table_name, char *refer_table_name, DBResu
     for(i = 0; i < meta_table->column_size; i++) {
         MetaColumn *current_meta_column = meta_table->meta_column[i];
         if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
-            error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' is refered by column [%s] in table '%s', so it cant`t be droped.", refer_table_name, current_meta_column->column_name, table_name);
+            error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' is refered by column '%s' in table '%s', so it cant`t be droped.", refer_table_name, current_meta_column->column_name, table_name);
             return true;
         }
     }

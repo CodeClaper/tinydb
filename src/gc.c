@@ -66,10 +66,13 @@ static QueryParam *fake_query_param(Table *table) {
 }
 
 /* Gc row*/
-void gc_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
+void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only for deleted row. */
     if (!row_is_deleted(row))
         return;
+
+    /* Cursor */
+    Cursor * cursor = define_cursor(table, row->key);
 
     /* delete row. */
     delete_leaf_node_cell(cursor, row->key);
@@ -77,6 +80,10 @@ void gc_row(Row *row, SelectResult *select_result, Cursor *cursor, void *arg) {
 
 /* Gc table */
 void gc_table(char *table_name) {
+
+#ifdef DEBUG
+    printf("GC table '%s'\n", table_name);
+#endif
 
     /* Check table exist. */
     Table *table = open_table(table_name);

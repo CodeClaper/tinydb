@@ -496,6 +496,7 @@ static void copy_root_to_leaf_node(Table *table, uint32_t new_page_num, uint32_t
         update_refer(table_name, table->root_page_num, i, new_page_num, i);
     }
 
+    /* Make clear outsides header. */
     uint32_t column_size = get_column_size(root);
     uint32_t ROOT_LEAF_NODE_HEADER_SIZE = COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size;
     memset(root + ROOT_LEAF_NODE_HEADER_SIZE, 0, PAGE_SIZE - ROOT_LEAF_NODE_HEADER_SIZE);
@@ -831,9 +832,9 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
 
     char *table_name = cursor->table->meta_table->table_name;
 
-    if (overflow_leaf_node(node, key_len, value_len, cell_num)) {
+    if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
-    } else {
+    else {
         if (cursor->cell_num < cell_num) {
             /* Make room for new cell. */
             int i;
@@ -1063,11 +1064,11 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
     void *obs_key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
     
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
+
     /* Theoretically, key and obs_key should be equal. */
-    if (!equal(obs_key, key, primary_key_meta_column->column_type)) {
-        fprintf(stderr, "System error, should delete key '%s' but delete key '%s' in fact. ", (char *)key, (char *)obs_key);
-        exit(1);
-    }
+    assert_true(equal(obs_key, key, primary_key_meta_column->column_type), "System error, should delete key '%s' but delete key '%s' in fact. ", (char *)key, (char *)obs_key);
+
+    char *table_name = cursor->table->meta_table->table_name;
 
     /* Need to check if the last cell in the leaf node. */
     if (cursor->cell_num == cell_num - 1) {
@@ -1076,28 +1077,38 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
         if (!is_root_node(leaf_node)) {
             uint32_t parent_page = get_parent_pointer(leaf_node);
             void *parent_node = get_page(cursor->table->pager, parent_page);
+
             /* If cell num is zero, it means it`s the only one in the leaf node, 
              * after delete it we also need to delete the cell in internal node. 
              * If not zero, it means these are sibling cells, just replace it with its previous cell. */
-            if (cursor->cell_num != 0) {
+            if (cursor->cell_num == 0)
+                delete_internal_node_cell(cursor->table, parent_page, obs_key, primary_key_meta_column->column_type);
+            else {
                 void *obs_previous_key = get_leaf_node_cell_key(leaf_node, cursor->cell_num - 1, key_len, value_len);
                 update_internal_node_key(cursor->table, parent_node, obs_key, obs_previous_key, key_len, value_len, primary_key_meta_column->column_type);
                 flush_page(cursor->table->pager, parent_page);
-            } else 
-                delete_internal_node_cell(cursor->table, parent_page, obs_key, primary_key_meta_column->column_type);
+            }
         }
 
         /* If old cell is the last one, just make it null. */
         memset(get_leaf_node_cell(leaf_node, key_len, value_len, cell_num - 1), 0, cell_length);
+
+        /* Update refer null. */
+        update_refer(table_name, cursor->page_num, cell_num - 1, -1, -1);
     } else {
 
         /* Move right cell forward to cover the obsolute cell sapce. */
         for (uint32_t i = cursor->cell_num; i < cell_num; i++) {
-            if (i != cell_num -1)
-                memcpy(get_leaf_node_cell(leaf_node, key_len, value_len, i), get_leaf_node_cell(leaf_node, key_len, value_len, i + 1), cell_length);
-            else  
+            if (i == cell_num - 1) 
                 memset(get_leaf_node_cell(leaf_node, key_len, value_len, i), 0, cell_length);
+            else {
+                memcpy(get_leaf_node_cell(leaf_node, key_len, value_len, i), get_leaf_node_cell(leaf_node, key_len, value_len, i + 1), cell_length);
+                /* Update postion-changed row refer. */
+                update_refer(table_name, cursor->page_num, i + 1, cursor->page_num, i);
+            }
         }
+        /* Update deleted row refer. */
+        update_refer(table_name, cursor->page_num, cursor->cell_num, -1, -1);
     }
 
     /* Decrease cell number. */

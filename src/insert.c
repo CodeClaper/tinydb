@@ -142,9 +142,11 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         }
         case T_REFERENCE: {
             InsertNode *nest_insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
+
             nest_insert_node->table_name = db_strdup(meta_column->table_name);
             nest_insert_node->all_column = true;
             nest_insert_node->value_item_set_node = value_item_node->nest_value_item_set;
+
             return exec_insert_statement(nest_insert_node, result);
         }
     }
@@ -153,19 +155,25 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 
 /* Generate insert row. */
 static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
-    uint32_t i;
     Row *row = db_malloc(sizeof(Row), SDT_ROW);
+
+    /* Table and MetaTable. */
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {
         error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", insert_node->table_name);
         return NULL;
     }
     MetaTable *meta_table = table->meta_table;
+    
+    /* Combination */
     row->table_name = db_strdup(meta_table->table_name);
     row->column_len = meta_table->all_column_size;
     row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
-
+    
+    /* Row data. */
+    int i;
     for(i = 0; i < row->column_len; i++) {
+
         MetaColumn *meta_column = meta_table->meta_column[i];
 
         /* Ship system reserved. */
@@ -174,13 +182,19 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = db_strdup(meta_column->column_name);
         key_value->data_type = meta_column->column_type;
+
         if (insert_node->all_column)
             key_value->value = get_column_value(insert_node, i, meta_column, result);
         else {
             int index = get_column_index(insert_node, key_value->key);          
             key_value->value = get_column_value(insert_node, index, meta_column, result);
         }
-        assert_not_null(key_value->value, "Get value fail when insertion.\n");
+
+        /* Value of KeyValue may be null when it is Refer. */
+        if (key_value->data_type == T_REFERENCE && key_value->value == NULL)
+            return NULL;
+
+        assert_not_null(key_value->value, "System error, get key value fail.");
 
         /* Check if primary key column. */
         if (meta_column->is_primary) 
@@ -188,7 +202,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         *(row->data + i) = key_value;
     }
 
-    /* Transaction for insert. */
+    /* Update row transaction state for insert. */
     update_transaction_state(row, TR_INSERT);
 
     return row;
@@ -197,8 +211,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
 /* Execute insert statement. */
 Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     
-    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
-
+    /* Check if table exists. */
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {
         error_result(result, EXECUTE_OPEN_DATABASE_FAIL, "Try to open table '%s' fail.", insert_node->table_name);
@@ -214,8 +227,8 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
         result->status = EXECUTE_FAIL;
         return NULL;
     }
+
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
-    void *root_node = get_page(table->pager, table->root_page_num); 
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
         error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
@@ -225,9 +238,8 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
 
-    refer->cell_num = cursor->cell_num;
-    refer->page_num = cursor->page_num;
-    strcpy(refer->table_name, insert_node->table_name);
+    /* Convert to Refer. */
+    Refer *refer = convert_refer(cursor);
 
     /* Free unuesed memeory */
     free_cursor(cursor);
