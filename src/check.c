@@ -75,7 +75,7 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
  * */
 static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *result) {
     if (value == NULL) {
-        error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Try to convert NULL '%s' to %s fail.", data_type_name(meta_column->column_type));
+        error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Try to convert NULL '%s' to %s fail.", DATA_TYPE_NAMES[meta_column->column_type]);
         return false;
     }
     switch(meta_column->column_type) {

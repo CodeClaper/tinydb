@@ -78,7 +78,7 @@ static int64_t next_xid() {
 
 /* Initialise transaction. */
 void init_transaction() {
-    xtable = db_malloc2(sizeof(TransactionTable), "TransactionTable");
+    xtable = db_malloc(sizeof(TransactionTable), SDT_TRANSACTION_TABLE);
     xtable->head = NULL;
     xtable->tail = NULL;
     xtable->size = 0;
@@ -164,7 +164,7 @@ static TransactionHandle *find_transaction() {
 static TransactionHandle *new_transaction() {
 
     /* Generate new transaction. */
-    TransactionHandle *trans_handle = db_malloc2(sizeof(TransactionHandle), "TransactionHandle");
+    TransactionHandle *trans_handle = db_malloc(sizeof(TransactionHandle), SDT_TRANSACTION_HANDLE);
     trans_handle->xid = next_xid();
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = true;
@@ -189,7 +189,7 @@ void begin_transaction(DBResult *result) {
     }
 
     /* Generate new transaction. */
-    trans_handle = db_malloc2(sizeof(TransactionHandle), "TransactionHandle");
+    trans_handle = db_malloc(sizeof(TransactionHandle), SDT_TRANSACTION_HANDLE);
     trans_handle->xid = next_xid();
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = false;
@@ -226,7 +226,7 @@ void commit_transaction(DBResult *result) {
     /* Destroy transaction. */
     assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and thread tid %ld.", trans_handle->xid, trans_handle->tid);
     
-    db_info("Commit the transaction successfully and xid: %"PRId64".", trans_handle->xid);
+    db_info("Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
 
     success_result(result, "Commit the transaction successfully");
 }
@@ -239,6 +239,7 @@ void auto_commit_transaction(DBResult *result) {
     if (trans_handle && trans_handle->auto_commit) {
         /* Destroy transaction. */
         assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and  tid is %ld.", trans_handle->xid, trans_handle->tid);
+        db_info("Auto commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
     }
 }
 
@@ -284,7 +285,7 @@ static void transaction_insert_row(Row *row) {
     TransactionHandle *current_trans = get_current_transaction();
 
     /* Fro created_xid */
-    KeyValue *created_xid_col = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *created_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     created_xid_col->key = strdup("created_xid");
     created_xid_col->value = copy_value(&current_trans->xid, T_LONG, NULL);
     created_xid_col->data_type = T_LONG;
@@ -292,7 +293,7 @@ static void transaction_insert_row(Row *row) {
 
     /* For expired_xid */
     int64_t zero = 0;
-    KeyValue *expired_xid_col = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *expired_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     expired_xid_col->key = strdup("expired_xid");
     expired_xid_col->value = copy_value(&zero, T_LONG, NULL);
     expired_xid_col->data_type = T_LONG;

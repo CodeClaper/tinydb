@@ -27,9 +27,9 @@
 /* Get table list. */
 TableList *get_table_list() {
 
-    TableList *table_list = db_malloc2(sizeof(TableList), "TableList");
+    TableList *table_list = db_malloc(sizeof(TableList), SDT_TABLE_LIST);
     table_list->count = 0;
-    table_list->table_name_list = db_malloc2(0, "table_list.table_name_list");
+    table_list->table_name_list = db_malloc(0, SDT_POINTER);
 
     DIR *dir;
     struct dirent *entry;
@@ -54,7 +54,7 @@ static char *table_file_path(char *table_name) {
         exit(EXIT_FAILURE);
     }
     int len = strlen(conf->data_dir) + strlen(table_name) + strlen(".dbt") + 1;
-    char *file_path = db_malloc2(len, "String value");
+    char *file_path = db_malloc(len, SDT_STRING);
     sprintf(file_path, "%s%s%s", conf->data_dir, table_name, ".dbt");
     return file_path;
 }
@@ -90,7 +90,7 @@ void create_table(MetaTable *meta_table, DBResult *result) {
         error_result(result, EXECUTE_OPEN_DATABASE_FAIL, "Open database file '%s' fail.\n", file_path);
         return;
     }
-    void *root_node = db_malloc2(PAGE_SIZE, "PAGE NODE");
+    void *root_node = db_malloc(PAGE_SIZE, SDT_VOID);
 
     /* initialize root node */
     initial_leaf_node(root_node, true);
@@ -143,7 +143,7 @@ Table *open_table(char *table_name) {
     }
     
     /* Combine table. */
-    Table *table = db_malloc2(sizeof(Table), "Table");
+    Table *table = db_malloc(sizeof(Table), SDT_TABLE);
     Pager *pager = open_pager(file_path);
     if (pager == NULL) 
         return NULL;
@@ -168,7 +168,7 @@ Table *open_table(char *table_name) {
 
 /* Define cursor when meet leaf node. */
 static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t page_num, void *key) {
-    Cursor *cursor = db_malloc2(sizeof(Cursor), "Cursor");
+    Cursor *cursor = db_malloc(sizeof(Cursor), SDT_CURSOR);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
     uint32_t row_len = calc_table_row_length(table);

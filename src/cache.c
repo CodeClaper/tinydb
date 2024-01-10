@@ -8,18 +8,13 @@
 
 #define MAX_TABLE_CACHE_SIZE 100
 
-typedef struct {
-    Table **table_list;
-    uint32_t size;
-}TableCache;
-
 static TableCache *t_cache;
 
 /* Initialise table cache. */
 void init_table_cache() {
     if (t_cache == NULL) {
-        t_cache = db_malloc(sizeof(TableCache));
-        t_cache->table_list = db_malloc(0);
+        t_cache = db_malloc(sizeof(TableCache),SDT_TABLE_CACHE);
+        t_cache->table_list = db_malloc(0, SDT_POINTER);
         t_cache->size = 0;
     }
 }

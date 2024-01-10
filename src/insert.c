@@ -108,7 +108,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_DATE: {
             switch(value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "tm");
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
                     strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
@@ -127,7 +127,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_TIMESTAMP: {
             switch(value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "tm");
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
                     strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
                     value_item_node->t_value = mktime(tmp_time);
@@ -141,7 +141,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             break;
         }
         case T_REFERENCE: {
-            InsertNode *nest_insert_node = db_malloc2(sizeof(InsertNode), "InsertNode");
+            InsertNode *nest_insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
             nest_insert_node->table_name = strdup(meta_column->table_name);
             nest_insert_node->all_column = true;
             nest_insert_node->value_item_set_node = value_item_node->nest_value_item_set;
@@ -154,7 +154,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 /* Generate insert row. */
 static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
     uint32_t i;
-    Row *row = db_malloc(sizeof(Row));
+    Row *row = db_malloc(sizeof(Row), SDT_ROW);
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {
         error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", insert_node->table_name);
@@ -163,7 +163,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
     MetaTable *meta_table = table->meta_table;
     row->table_name = strdup(meta_table->table_name);
     row->column_len = meta_table->all_column_size;
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len);
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
 
     for(i = 0; i < row->column_len; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
@@ -171,7 +171,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         /* Ship system reserved. */
         if (meta_column->sys_reserved) continue;
 
-        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = strdup(meta_column->column_name);
         key_value->data_type = meta_column->column_type;
         if (insert_node->all_column)
@@ -197,7 +197,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
 /* Execute insert statement. */
 Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     
-    Refer *refer = db_malloc2(sizeof(Refer), "Refer");
+    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
 
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {

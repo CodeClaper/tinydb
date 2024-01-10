@@ -12,9 +12,6 @@ void free_row(Row *row);
 /* Free select result. */
 void free_select_result(SelectResult *select_result);
 
-/* Free input buffer. */
-void free_input_buffer(InputBuffer *input_buffer);
-
 /* Free meta column. */
 void free_meta_column(MetaColumn *meta_column);
 

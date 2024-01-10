@@ -21,12 +21,134 @@
 #define CREATED_XID_COLUMN_NAME  "created_xid"
 #define EXPIRED_XID_COLUMN_NAME  "expired_xid"
 
+/* System Data type. */
+typedef enum SysDataType{
+    SDT_VOID,
+    SDT_STRING,
+    SDT_INT,
+    SDT_BOOL,
+    SDT_FLOAT,
+    SDT_DOUBLE,
+    SDT_TIME_T,
+    SDT_POINTER,
+    SDT_COLUMN_NODE,
+    SDT_COLUMN_SET_NODE,
+    SDT_FUNCTION_VALUE_NODE,
+    SDT_FUNCTION_NODE,
+    SDT_SELECT_ITEMS_NODE,
+    SDT_COLUMN_DEF_NODE,
+    SDT_COLUMN_DEF_SET_NODE,
+    SDT_PRIMARY_KEY_NODE,
+    SDT_VALUE_ITEM_NODE,
+    SDT_VALUE_ITEM_SET_NODE,
+    SDT_ASSIGNMENT_NODE,
+    SDT_ASSIGNMENT_SET_NODE,
+    SDT_CONDITION_NODE,
+    SDT_CREATE_TABLE_NODE,
+    SDT_DROP_TABLE_NODE,
+    SDT_SELECT_NODE,
+    SDT_INSERT_NODE,
+    SDT_UPDATE_NODE,
+    SDT_DELETE_NODE,
+    SDT_DESCRIBE_NODE,
+    SDT_SHOW_NODE,
+    SDT_AST_NODE,
+    SDT_STATEMENT,
+    SDT_PAGER,
+    SDT_META_COLUMN,
+    SDT_META_TABLE,
+    SDT_TABLE,
+    SDT_TABLE_CACHE,
+    SDT_CURSOR,
+    SDT_KEY_VALUE,
+    SDT_MAP,
+    SDT_MAP_LIST,
+    SDT_ROW,
+    SDT_QUERY_PARAM,
+    SDT_SELECT_RESULT,
+    SDT_TABLE_LIST,
+    SDT_MENTRY,
+    SDT_MHASH_TABLE,
+    SDT_SESSION,
+    SDT_CONF,
+    SDT_REFER,
+    SDT_REFER_UPDATE_ENTITY,
+    SDT_INSERT_EXECUTE_RESULT,
+    SDT_DB_RESULT,
+    SDT_LOCK_HANDLE,
+    SDT_LOCK_TABLE,
+    SDT_TRANSACTION_HANDLE,
+    SDT_TRANSACTION_TABLE
+}SysDataType;
+
+static char *SYS_DATA_TYPE_NAMES[] = { \
+   "VOID",\
+   "STRING",\ 
+   "INT",\ 
+   "BOOL",\
+   "FLOAT",\
+   "DOUBLE",\
+   "TIME_T",\
+   "POINTER",\
+   "COLUMN_NODE",\
+   "COLUMN_SET_NODE",\
+   "FUNCTION_VALUE_NODE",\
+   "FUNCTION_NODE",\
+   "SELECT_ITEMS_NODE",\
+   "COLUMN_DEF_NODE",\
+   "COLUMN_DEF_SET_NODE",\
+   "PRIMARY_KEY_NODE",\
+   "VALUE_ITEM_NODE",\
+   "VALUE_ITEM_SET_NODE",\
+   "ASSIGNMENT_NODE",\
+   "ASSIGNMENT_SET_NODE",\
+   "CONDITION_NODE",\
+   "CREATE_TABLE_NODE",\
+   "DROP_TABLE_NODE",\
+   "SELECT_NODE",\
+   "INSERT_NODE",\
+   "UPDATE_NODE",\
+   "DELETE_NODE",\
+   "DESCRIBE_NODE",\
+   "SHOW_NODE",\
+   "AST_NODE",\
+   "STATEMENT",\
+   "PAGER",\
+   "META_COLUMN",\
+   "META_TABLE",\
+   "TABLE",\
+   "TABLE_CACEH",\
+   "CURSOR",\
+   "KEY_VALUE",\
+   "MAP",\
+   "MAP_LIST",\
+   "ROW",\
+   "QUERY_PARAM",\
+   "SELECT_RESULT",\
+   "TABLE_LIST",\
+   "MENTRY",\
+   "MHASH_TABLE",\
+   "SESSION",\
+   "CONF",\
+   "REFER",\
+   "REFER_UPDATE_ENTITY",\
+   "INSERT_EXECUTE_RESULT",\
+   "DB_RESULT",\
+   "LOCK_HANDLE",\
+   "LOCK_TABLE",\
+   "TRANSACTION_HANDLE",\
+   "TRANSACTION_TABLE" \
+};
 
 /* OprType */
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE, O_IN, O_LIKE } OprType;
 
 /* DataType */
-typedef enum { T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
+typedef enum DataType { T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
+
+/* DataTypeNames */
+static char *DATA_TYPE_NAMES[] = \
+    {"bool",  "char",  "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
 
 /* FunctionType */
 typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
@@ -259,19 +381,11 @@ typedef struct {
   };
 } ASTNode;
 
-/* InputBuffer */
-typedef struct {
-    char *input;
-    size_t buffer_length;
-    ssize_t input_length;
-} InputBuffer;
-
 /* Statement */
 typedef struct {
     StatementType statement_type;
     ASTNode *ast_node;
 } Statement;
-
 
 /* Pager */
 typedef struct {
@@ -292,7 +406,7 @@ typedef struct {
 } MetaColumn;
 
 /* MetaTable */
-typedef struct {
+typedef struct MetaTable {
     char *table_name;
     MetaColumn *meta_column[MAX_COLUMN_SIZE];
     uint32_t column_size;       /* size of column, excluding system reserved columns. */
@@ -300,39 +414,51 @@ typedef struct {
 } MetaTable;
 
 /* Table */
-typedef struct {
+typedef struct Table {
     Pager *pager;
     uint32_t root_page_num;
     MetaTable *meta_table;
 } Table;
 
+/* TableCache */
+typedef struct TableCache {
+    Table **table_list;
+    uint32_t size;
+}TableCache;
+
+/* TableList */
+typedef struct TableList {
+  char **table_name_list;
+  uint32_t count;
+} TableList;
+
 /* Cursor */
-typedef struct {
+typedef struct Cursor {
     Table *table;
     uint32_t page_num;
     uint32_t cell_num;
 } Cursor;
 
 /* KeyValue */
-typedef struct {
+typedef struct KeyValue {
     char *key;
     void *value;
     DataType data_type;
 } KeyValue;
 
 /* Map */
-typedef struct {
+typedef struct Map {
     KeyValue **body;
     uint32_t size;
 } Map;
 
-typedef struct {
+typedef struct MapList {
     Map **data;
     uint32_t size;
 }MapList;
 
 /* Row */
-typedef struct {
+typedef struct Row {
     void *key;
     char *table_name;
     KeyValue **data;
@@ -340,14 +466,14 @@ typedef struct {
 } Row;
 
 /* QueryParam */
-typedef struct {
+typedef struct QueryParam {
     char *table_name;
     SelectItemsNode *select_items;
     ConditionNode *condition_node;
 } QueryParam;
 
 /* SelectResult */
-typedef struct {
+typedef struct SelectResult {
     char *table_name;   /* Table name. */
     uint32_t row_size;  /* Row size. */
     Row **rows;         /* Selected rows. */
@@ -357,17 +483,12 @@ typedef struct {
     double sum; /* The sum value, used in function sum. */
 } SelectResult;
 
-/* TableList */
-typedef struct {
-  char **table_name_list;
-  uint32_t count;
-} TableList;
 
 /* MEntry */
 typedef struct MEntry {
     void *ptr;
     size_t size;
-    char data_type_name[48];
+    SysDataType stype;
     struct MEntry *next;
 } MEntry;
 

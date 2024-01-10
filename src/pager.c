@@ -19,7 +19,7 @@
 
 /* Open the pager. */
 Pager *open_pager(char *table_file_path){
-    Pager *pager = db_malloc2(sizeof(Pager), "Pager");
+    Pager *pager = db_malloc(sizeof(Pager), SDT_PAGER);
     /*int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);*/
     int file_descriptor = open(table_file_path, O_RDWR);
     if (file_descriptor == -1) {
@@ -48,7 +48,7 @@ void *get_page(Pager *pager, int page_num) {
     }
     if (pager->pages[page_num] == NULL) {
         /* Cache dismiss, allocate memory and load file. */
-        void *page = db_malloc2(PAGE_SIZE, "Page");
+        void *page = db_malloc(PAGE_SIZE, SDT_VOID);
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
         if (read_bytes == -1) {

@@ -66,7 +66,7 @@ static bool if_primary_key_column(CreateTableNode *create_table_node, char *colu
 /* Get meta column. */
 static MetaColumn *gen_meta_column(CreateTableNode *create_table_node, int index, DBResult *result) {
 
-    MetaColumn *meta_column = db_malloc2(sizeof(MetaColumn), "MetaColumn");
+    MetaColumn *meta_column = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
     ColumnDefNode *column_def_node = *(create_table_node->column_def_set_node->column_defs + index);
     strcpy(meta_column->column_name, column_def_node->column->column_name); 
     meta_column->column_type = column_def_node->data_type;
@@ -89,7 +89,7 @@ static MetaColumn *gen_meta_column(CreateTableNode *create_table_node, int index
 
 /* Copy system meta column. */
 MetaColumn *copy_sys_meta_column(char *table_name, int index) {
-    MetaColumn *meta_column = db_malloc2(sizeof(MetaColumn), "MetaColumn");
+    MetaColumn *meta_column = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
     MetaColumn sys_reserved_column = SYS_RESERVED_COLUMNS[index];
 
     /* Copy each field. */
@@ -106,7 +106,7 @@ MetaColumn *copy_sys_meta_column(char *table_name, int index) {
 
 /* Generate meta table by create table node. */
 static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *result) {
-    MetaTable *meta_table = db_malloc2(sizeof(MetaTable), "MetaTable");
+    MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
     meta_table->table_name = strdup(crete_table_node->table_name);
     meta_table->column_size = get_column_size(crete_table_node);
     if (meta_table->column_size > MAX_COLUMN_SIZE) {

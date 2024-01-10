@@ -34,7 +34,7 @@ volatile static LockTable *ltable; /* Store lock handle list. */
 void init_lock() {
 
     /* Initialise lock handle table. */
-    ltable = db_malloc2(sizeof(LockTable), "LockTable");
+    ltable = db_malloc(sizeof(LockTable), SDT_LOCK_TABLE);
     ltable->head = NULL;
     ltable->tail = NULL;
     ltable->size = 0;
@@ -115,7 +115,7 @@ static bool destroy_lock_handle(LockHandle *lock_handle) {
 
 /* Generate new lock handle. */
 static LockHandle *new_lock_handle(Refer *refer) {
-    LockHandle *lock_handle = db_malloc2(sizeof(LockHandle), "LockHandle");
+    LockHandle *lock_handle = db_malloc(sizeof(LockHandle), SDT_LOCK_HANDLE);
     memset(lock_handle, 0, sizeof(LockHandle));
     lock_handle->refer = copy_refer(refer);
     lock_handle->next = NULL;

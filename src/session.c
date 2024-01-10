@@ -26,7 +26,7 @@ void init_session() {
 
 /* Generate new session. */
 Session *new_session(int client) {
-    Session *session = db_malloc2(sizeof(Session), "Session");
+    Session *session = db_malloc(sizeof(Session), SDT_SESSION);
     session->client = client;
     session->frequency = 0;
     session->volumn = 0;

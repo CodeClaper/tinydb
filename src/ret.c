@@ -30,7 +30,7 @@
 DBResult *new_db_result() {
 
     /* New DbResule and initialize it. */
-    DBResult *result = db_malloc2(sizeof(DBResult), "DBResult");
+    DBResult *result = db_malloc(sizeof(DBResult), SDT_DB_RESULT);
     result->status = EXECUTE_FAIL;
     result->success = false;
     result->message = NULL;

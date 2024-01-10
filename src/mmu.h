@@ -10,10 +10,7 @@ void *sys_malloc(size_t size);
 void *sys_realloc(void *ptr, size_t size);
 
 /* Database level mallocate. */
-void *db_malloc(size_t size);
-
-/* Database level mallocate. */
-void *db_malloc2(size_t size, char *data_type_name);
+void *db_malloc(size_t size, SysDataType stype);
 
 /* Database level reallocate */
 void *db_realloc(void *ptr, size_t size);

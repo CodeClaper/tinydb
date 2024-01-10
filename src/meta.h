@@ -1,8 +1,5 @@
 #include "data.h"
 
-/* Get data type name. */
-char *data_type_name(DataType data_type);
-
 /*Get key value pair string. */
 char *get_key_value_pair_str(char *key, void *value, DataType data_type);
 

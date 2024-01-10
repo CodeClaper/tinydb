@@ -23,9 +23,10 @@ Statement *new_statement(ASTNode *node) {
 
     assert_not_null(node, "ASTNode not allowed to be NULL. \n");
 
-    Statement *statement = db_malloc2(sizeof(Statement), "Statement");
+    Statement *statement = db_malloc(sizeof(Statement), SDT_STATEMENT);
     statement->ast_node = node;
     statement->statement_type = node->statement_type;
+
     return statement;
 }
 
@@ -33,12 +34,16 @@ Statement *new_statement(ASTNode *node) {
 Statement *parse(char *sql) {
     if (sql == NULL)
         return NULL;
-    trim(sql);/* Remove space characters, includes '\f', '\n', '\r', '\t', '\v'*/
+
+    trim(sql); /* Remove space characters, includes '\f', '\n', '\r', '\t', '\v'*/
     db_debug("Execute sql: %s", sql);
+
     size_t size = strlen(sql);
     char buff[size + 1];
     sprintf(buff, "%s%c", sql, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(buff);
-    ASTNode *node = db_malloc2(sizeof(ASTNode), "ASTNode");
+
+    ASTNode *node = db_malloc(sizeof(ASTNode), SDT_AST_NODE);
+
     return yyparse(node) == 0 ? new_statement(node) : NULL;
 }

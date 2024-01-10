@@ -166,7 +166,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
         case T_TIMESTAMP: {
             switch (value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "struct tm");
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
                     strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->t_value = mktime(tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
@@ -182,7 +182,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
         case T_DATE: {
             switch (value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc2(sizeof(struct tm), "struct tm");
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
                     strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
@@ -341,7 +341,7 @@ static void assign_function_count_row_data(Row *row, void *destine, QueryParam *
     MetaTable *meta_table = table->meta_table;
 
     int32_t val = 1;
-    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = strdup(COUNT_NAME);
     key_value->value = copy_value(&val, T_INT, NULL);
     key_value->data_type = T_INT;
@@ -353,7 +353,7 @@ static void assign_function_count_row_data(Row *row, void *destine, QueryParam *
         MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
         assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
         uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = strdup(sys_reserved_meta_column->column_name);
         key_value->value = copy_value(destine + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
         key_value->data_type = sys_reserved_meta_column->column_type;
@@ -374,7 +374,7 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
     FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
 
     /* Instance key value */
-    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = strdup(SUM_NAME);
 
     /* According function value type, these are diffrent ways to deal with the row data: 
@@ -453,7 +453,7 @@ static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *que
         MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
         assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
         uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = strdup(sys_reserved_meta_column->column_name);
         key_value->value = copy_value(destine + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
         key_value->data_type = sys_reserved_meta_column->column_type;
@@ -474,7 +474,7 @@ static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *q
     FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
 
     /* Instance key value */
-    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = strdup(MAX_NAME);
 
     /* According function input value type, these are diffrent ways to deal with the row data: 
@@ -511,7 +511,7 @@ static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *q
         MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
         assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
         uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = strdup(sys_reserved_meta_column->column_name);
         key_value->value = copy_value(destinct + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
         key_value->data_type = sys_reserved_meta_column->column_type;
@@ -533,7 +533,7 @@ static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *q
     FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
 
     /* Instance key value */
-    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = strdup(MIN_NAME);
 
     /* According function input value type, these are diffrent ways to deal with the row data: 
@@ -570,7 +570,7 @@ static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *q
         MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
         assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
         uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = strdup(sys_reserved_meta_column->column_name);
         key_value->value = copy_value(destinct + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
         key_value->data_type = sys_reserved_meta_column->column_type;
@@ -612,7 +612,7 @@ static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_pa
         uint32_t off_set = calc_offset(query_param, meta_column->column_name);
         
         /* Generate a key value pair. */
-        KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = strdup(meta_column->column_name);
         key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
         key_value->data_type = meta_column->column_type;
@@ -629,12 +629,12 @@ static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *met
       return NULL;
 
     /* Define row data. */
-    Row *row = db_malloc2(sizeof(Row), "Row");
+    Row *row = db_malloc(sizeof(Row), SDT_ROW);
     row->column_len = get_query_columns_num(query_param);
     row->table_name = strdup(query_param->table_name);
 
     /* Assignment values to row data. */
-    row->data = db_malloc2(sizeof(KeyValue *) * row->column_len, "Row.data");
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
     switch (query_param->select_items->type) {
         case SELECT_ALL:
         case SELECT_COLUMNS:
@@ -663,9 +663,9 @@ Row *define_row(Refer *refer) {
     void *leaf_node = get_page(table->pager, refer->page_num);
     void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
     
-    QueryParam *query_param = db_malloc2(sizeof(QueryParam), "QueryParam");
+    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = strdup(refer->table_name);
-    query_param->select_items = db_malloc2(sizeof(SelectItemsNode), "SelectItemsNode");
+    query_param->select_items = db_malloc(sizeof(SelectItemsNode), SDT_QUERY_PARAM);
     query_param->select_items->type = SELECT_ALL;
 
     Row *row = generate_row(destinct, query_param, table->meta_table);
@@ -779,7 +779,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
 
 /* Convert from select node to query param */
 QueryParam *convert_query_param(SelectNode *select_node) {
-    QueryParam *query_param = db_malloc2(sizeof(QueryParam), "QueryParam");
+    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = strdup(select_node->table_name);
     query_param->select_items = copy_select_items_node(select_node->select_items_node);
     ConditionNode *condition_node_copy = copy_condition_node(select_node->condition_node);
@@ -790,7 +790,7 @@ QueryParam *convert_query_param(SelectNode *select_node) {
 
 /* Generate new select result structure. */
 SelectResult *new_select_result(char *table_name) {
-    SelectResult *select_result = db_malloc2(sizeof(SelectResult), "SelectResult");
+    SelectResult *select_result = db_malloc(sizeof(SelectResult), SDT_SELECT_RESULT);
     select_result->row_size = 0;
     select_result->table_name = strdup(table_name);
     select_result->sum = 0;
@@ -920,16 +920,16 @@ static void exec_function_count(QueryParam *query_param, DBResult *result) {
     int32_t row_size = select_result->row_size;
     /* Prepare enough memory space. */
     select_result->row_size = 1;
-    select_result->rows = db_malloc2(sizeof(Row *) * select_result->row_size, "SelectResult.Rows");
+    select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
 
     /* For the count row. */
-    Row *row = db_malloc2(sizeof(Row), "Row");
+    Row *row = db_malloc(sizeof(Row), SDT_ROW);
     row->table_name = strdup(query_param->table_name);
-    row->data = db_malloc2(sizeof(KeyValue *) * 1, "Row.data");
+    row->data = db_malloc(sizeof(KeyValue *) * 1, SDT_POINTER);
     row->column_len = 1;
 
     /* For key value. */
-    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = strdup(COUNT_NAME);
     key_value->value = copy_value(&row_size, T_INT, NULL);
     key_value->data_type = T_INT;
@@ -956,16 +956,16 @@ static void exec_function_sum(QueryParam *query_param, DBResult *result) {
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
     select_result->row_size = 1;
-    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
 
     /* For the SUM row. */
-    Row *row = db_malloc2(sizeof(Row), "Row");
+    Row *row = db_malloc(sizeof(Row), SDT_ROW);
     row->table_name = strdup(query_param->table_name);
-    row->data = db_malloc2(sizeof(KeyValue *) * 1, "Row.data");
+    row->data = db_malloc(sizeof(KeyValue *) * 1, SDT_POINTER);
     row->column_len = 1;
 
     /* For key value. */
-    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = strdup(SUM_NAME);
     key_value->value = copy_value(&select_result->sum, T_DOUBLE, NULL);
     key_value->data_type = T_DOUBLE;
@@ -992,16 +992,16 @@ static void exec_function_avg(QueryParam *query_param, DBResult *result) {
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
     select_result->row_size = 1;
-    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
 
     /* For the SUM row. */
-    Row *row = db_malloc2(sizeof(Row), "Row");
+    Row *row = db_malloc(sizeof(Row), SDT_ROW);
     row->table_name = strdup(query_param->table_name);
-    row->data = db_malloc2(sizeof(KeyValue *) * 1, "Row.data");
+    row->data = db_malloc(sizeof(KeyValue *) * 1, SDT_ROW);
     row->column_len = 1;
 
     /* For key value. */
-    KeyValue *key_value = db_malloc2(sizeof(KeyValue), "KeyValue");
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = strdup(AVG_NAME);
     double value = select_result->sum / row_size;
     key_value->value = copy_value(&value, T_DOUBLE, NULL);
@@ -1029,7 +1029,7 @@ static void exec_function_max(QueryParam *query_param, DBResult *result) {
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
     select_result->row_size = 1;
-    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
 
     /* For the SUM row. */
     Row *row = copy_row(select_result->max_row);
@@ -1055,7 +1055,7 @@ static void exec_function_min(QueryParam *query_param, DBResult *result) {
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
     select_result->row_size = 1;
-    select_result->rows = db_malloc2(sizeof(Row *) * 1, "SelectResult.Rows");
+    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
 
     /* For the SUM row. */
     Row *row = copy_row(select_result->min_row);
@@ -1106,7 +1106,7 @@ static void exec_plain_select_statement(QueryParam *query_param, DBResult *resul
     query_with_condition(query_param, select_result, count_row, NULL);
 
     /* Prepare enough memory space. */
-    select_result->rows = db_malloc2(sizeof(Row *) * select_result->row_size, "SelectResult.Rows");
+    select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
 
     /* Send row data in json format. */
     query_with_condition(query_param, select_result, select_row, NULL);

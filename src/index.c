@@ -12,7 +12,7 @@
 #include "misc.h"
 
 
-//Check if key already exists in db
+/* Check if key already exists  */
  bool check_duplicate_key(Cursor *cursor, void *key) {
     void *node = get_page(cursor->table->pager, cursor->page_num);
     uint32_t value_len = calc_table_row_length(cursor->table);
@@ -22,7 +22,7 @@
     return equal(target, key, primary_key_meta_column->column_type);
 }
 
-//Get meta column of primary key.
+/* Get meta column of primary key. */
 MetaColumn *get_primary_key_meta_column(MetaTable *meta_table) {
     for(uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
@@ -32,39 +32,32 @@ MetaColumn *get_primary_key_meta_column(MetaTable *meta_table) {
     return NULL; //may be return system built-in primary key, but now, return null temporiarily.
 }
 
-//Get key string value.
+/* Get key string value. */
 char *get_key_str(void *key, DataType data_type) {
     switch(data_type) {
         case T_BOOL: 
-            {
-                return *(bool *)key ? "true" : "false";
-            }
+            return *(bool *)key ? "true" : "false";
         case T_CHAR:
         case T_STRING:
-            {
-                return (char *)key;
-            }
-        case T_INT:
-            {
-                char *str = db_malloc2(100, "Int String value");
-                sprintf(str, "%d", *(uint32_t *)key);
-                return str;
-            }
-        case T_DOUBLE:
-            {
-                char *str = db_malloc2(100, "Double String value");
-                sprintf(str, "%lf", *(double *)key);
-                return str;
-            }
-        case T_FLOAT:
-            {
-                char *str = db_malloc2(100, "Float String vlaue");
-                sprintf(str, "%f", *(float *)key);
-                return str;
-            }
+            return (char *)key;
+        case T_INT: {
+            char *str = db_malloc(50, SDT_STRING);
+            sprintf(str, "%d", *(uint32_t *)key);
+            return str;
+        }
+        case T_DOUBLE: {
+            char *str = db_malloc(50, SDT_STRING);
+            sprintf(str, "%lf", *(double *)key);
+            return str;
+        }
+        case T_FLOAT: {
+            char *str = db_malloc(50, SDT_STRING);
+            sprintf(str, "%f", *(float *)key);
+            return str;
+        }
         case T_DATE:
         case T_TIMESTAMP:
-            fatal("Not supported data type");
+            fatal("Not allowed data type as primary key.");
     }
     return NULL;
 }

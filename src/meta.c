@@ -21,15 +21,6 @@
 #define DEFAULT_REFERENCE_LENGTH    48
 
 
-/* Data type name list. */
-static char *data_type_name_list[] = \
-    {"bool",  "char",  "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
-
-/* Get data type name. */
-char *data_type_name(DataType data_type) {
-    return data_type_name_list[data_type];
-}
-
 /* Column type length */
 uint32_t default_data_len(DataType column_type) {
     switch (column_type) {
@@ -62,51 +53,51 @@ uint32_t default_data_len(DataType column_type) {
 char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
     switch(data_type) {
         case T_BOOL: {
-            uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc2(len, "BOOL String value");
+            uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/
+            char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %s", key, (*(bool *)value ? "true" : "false"));
             return s;
         }
         case T_INT: {
-            uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc2(len, "Int String value");
+            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %d", key, *(int32_t *)value);
             return s;
         }
         case T_LONG: {
-            uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc2(len, "Int String value");
+            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %" PRIu64, key, *(int64_t *)value);
             return s;
         }
         case T_CHAR: {
-            uint32_t len = strlen(key) + 6 + 1; /*len = key len + symbol len + value len.*/ 
-            char *s = db_malloc2(len, "Char String value");
+            uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/ 
+            char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": \'%c\'", key, *(char *)value);
             return s;
         }
         case T_STRING: {
             uint32_t len = strlen(key) + 6 + strlen(value); /*len = key len + symbol len + value len.*/
-            char *s = db_malloc2(len, "String value");
+            char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": \"%s\"", key, (char *)value);
             return s;
         }
         case T_FLOAT: {
-            uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc2(len, "Float String value");
+            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %f", key, *(float *)value);
             return s;
         }
         case T_DOUBLE: {
-            uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc2(len, "Double String value");
+            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %lf", key, *(double *)value);
             return s;
         }
         case T_TIMESTAMP: {
             char temp[90];
-            uint32_t len = strlen(key) + 4 + 100; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc2(len, "Timestamp String value.");
+            uint32_t len = strlen(key) + 30; /*len = key len + symbol len + value len.*/
+            char *s = db_malloc(len, SDT_STRING);
             time_t t = *(time_t *)value;
             struct tm *tmp_time = localtime(&t);
             strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
@@ -116,7 +107,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
         case T_DATE: {
             char temp[90];
             uint32_t len = strlen(key) + 4 + 100; /*len =key len + symbol len + value len*/
-            char *s = db_malloc2(len, "Date String value.");
+            char *s = db_malloc(len, SDT_STRING);
             time_t t = *(time_t *)value;
             struct tm *tmp_time = localtime(&t);
             strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
@@ -187,7 +178,7 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
 
     /* Check valid. */
     assert_not_null(table_name,"Input table name can`t be null.");
-    MetaTable *meta_table = db_malloc2(sizeof(MetaTable), "MetaTable");
+    MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
     void *root_node = get_page(table->pager, table->root_page_num);
     uint32_t column_size = get_column_size(root_node);
     meta_table->table_name = strdup(table_name);
@@ -195,7 +186,7 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
     meta_table->all_column_size = 0;
     for (int i = 0; i < column_size; i++) {
         MetaColumn *current = get_meta_column_by_index(root_node, i);
-        meta_table->meta_column[i] = db_malloc2(sizeof(MetaColumn), "MetaColumn");
+        meta_table->meta_column[i] = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
         memcpy(meta_table->meta_column[i], current , sizeof(MetaColumn));
 
         /* Skip to system reserved column. */

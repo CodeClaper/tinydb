@@ -81,15 +81,6 @@ void free_select_result(SelectResult *select_result) {
     }
 }
 
-/* Free input buffer. */
-void free_input_buffer(InputBuffer *input_buffer) {
-    if (input_buffer != NULL) {
-        if (input_buffer->input != NULL)
-            db_free(input_buffer->input);
-        db_free(input_buffer);
-    }
-}
-
 /* Free meta column. */
 void free_meta_column(MetaColumn *meta_column) {
     if (meta_column) {

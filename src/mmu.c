@@ -253,20 +253,18 @@ static MEntry *search_entry(void *ptr) {
 }
 
 /* Register a MEntry */
-static void register_entry(void *ptr, size_t size, char *data_type_name) {
-    if (search_entry(ptr) != NULL) {
-        assert_null(search_entry(ptr), "System error, pointer [%p] data type [%s] already registered.\n", ptr, data_type_name); 
-    }
+static void register_entry(void *ptr, size_t size, SysDataType stype) {
+    assert_null(search_entry(ptr), "System error, pointer [%p] data type [%d] already registered.\n", ptr, stype); 
     MEntry *entry = sys_malloc(sizeof(MEntry));
     entry->ptr = ptr;
     entry->size = size;
+    entry->stype = stype;
     entry->next = NULL;
-    strcpy(entry->data_type_name, data_type_name);
     insert_entry(ptr, entry);
 }
 
 /* Change MEntry`s size. */
-static void change_entry(void *old_ptr, void* new_ptr ,size_t resize) {
+static void change_entry(void *old_ptr, void* new_ptr, size_t resize, SysDataType stype) {
     if (old_ptr == new_ptr) {
         MEntry *entry = search_entry(old_ptr);
         assert_not_null(entry, "System error, try to find MEntry fail.\n");
@@ -274,7 +272,7 @@ static void change_entry(void *old_ptr, void* new_ptr ,size_t resize) {
         entry->size = resize;
     } else {
         remove_entry(old_ptr, true);
-        register_entry(new_ptr, resize, "Unknown");
+        register_entry(new_ptr, resize, stype);
     }
 }
 
@@ -307,45 +305,34 @@ void *sys_realloc(void *ptr, size_t size) {
 }
 
 /* database level mallocate. */
-void *db_malloc(size_t size) {
+void *db_malloc(size_t size, SysDataType stype) {
     assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
-    void *ret = malloc(size);
-    if (ret == NULL) {
-        fprintf(stderr, "Not enough memory to allocate.");
-        exit(EXIT_FAILURE);
-    }
-    memset(ret, 0, size);
-    register_entry(ret, size, "Unknown");
-    return ret;
-}
 
-/* database level mallocate, inputing data type name is for trace purposes. */
-void *db_malloc2(size_t size, char *data_type_name) {
-    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
     void *ret = malloc(size);
-    if (ret == NULL) {
-        fprintf(stderr, "Not enough memory to allocate.");
-        exit(EXIT_FAILURE);
-    }
+    assert_not_null(ret, "Not enough memory to allocate.");
     memset(ret, 0, size);
-    register_entry(ret, size, data_type_name);
+    register_entry(ret, size, stype);
+
     return ret;
 }
 
 /* database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
     assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
+
+    MEntry *entry = search_entry(ptr);
+    assert_not_null(entry, "System error, searhc entry [%p] fail", ptr);
+
     /* When size is zero, realloc return null, which is not we need. */
     if (size == 0) {
         db_free(ptr);
-        return db_malloc(size);
+        return db_malloc(size, entry->stype);
     }
+
     void *ret = realloc(ptr, size);
-    if (ret == NULL) {
-        fprintf(stderr, "Not enough memory to rallocate.");
-        exit(EXIT_FAILURE);
-    }
-    change_entry(ptr, ret, size);
+    assert_not_null(ret, "Not enough memory to rallocate.");
+    change_entry(ptr, ret, size, entry->stype);
+
     return ret;
 }
 
@@ -363,12 +350,15 @@ size_t db_memesize() {
         MEntry *entry = *(mtable->entry_list + i);
         while(entry) {
 #ifdef DEBUG
-            printf("%s \t", entry->data_type_name);
+            printf("%s \t", SYS_DATA_TYPE_NAMES[entry->stype]);
 #endif
             total += entry->size;
             entry = entry->next;
         }
     }
+#ifdef DEBUG
+            printf("\n");
+#endif
     return total;
 }
 

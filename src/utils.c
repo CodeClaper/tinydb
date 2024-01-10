@@ -51,7 +51,7 @@ char *substr(char *str, uint32_t start, uint32_t end) {
     ssize_t str_size = strlen(str);
     if (start >= str_size || end >= str_size)
         return NULL;
-    char *substr = db_malloc(end - start + 1);
+    char *substr = db_malloc(end - start + 1, SDT_STRING);
     uint index = 0;
     for (uint32_t i = 0; i <str_size; i++) {
         if (start <= i && i <= end) {
@@ -75,9 +75,9 @@ char *replace(char *str, char *old_str, char *new_str) {
         new_str = "";
     ssize_t new_size = strlen(new_str);
     uint32_t index;
-    char *repl = db_malloc2(str_size - old_size + new_size + 1, "String");
+    char *repl = db_malloc(str_size - old_size + new_size + 1, SDT_STRING);
     for (index = 0; index < str_size; index++) {
-        char *temp = db_malloc2(old_size + 1, "String");
+        char *temp = db_malloc(old_size + 1, SDT_STRING);
         memcpy(temp, str + index, old_size);
         if (strcmp(temp, old_str) == 0) {
             memcpy(repl + index , new_str, new_size); 

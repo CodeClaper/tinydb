@@ -17,14 +17,14 @@
 
 /* Adapt to select items node data type. */
 static SelectItemsNode *adapt_select_items_node() {
-    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
+    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
     select_items_node->type = SELECT_ALL;
     return select_items_node;
 }
 
 /* Adapt to query param data type. */
 static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
-    QueryParam *query_param = db_malloc(sizeof(QueryParam));
+    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = strdup(delete_node->table_name);
     query_param->select_items = adapt_select_items_node();
     ConditionNode *condition_node_copy = copy_condition_node(delete_node->condition_node);

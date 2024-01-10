@@ -24,7 +24,7 @@
 
 /* Generate new Refer. */
 Refer *new_refer(char *table_name, uint32_t page_num, uint32_t cell_num) {
-    Refer *refer = db_malloc2(sizeof(Refer), "Refer");
+    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
     strcpy(refer->table_name, table_name);
     refer->page_num = page_num;
     refer->cell_num = cell_num;
@@ -33,7 +33,7 @@ Refer *new_refer(char *table_name, uint32_t page_num, uint32_t cell_num) {
 
 /* Generate new cursor. */
 Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
-    Cursor *cursor = db_malloc2(sizeof(Cursor), "Cursor");
+    Cursor *cursor = db_malloc(sizeof(Cursor), SDT_CURSOR);
     cursor->table = table;
     cursor->page_num = page_num;
     cursor->cell_num = cell_num;
@@ -42,7 +42,7 @@ Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
 
 /* Generate new ReferUpdateEntity. */
 static ReferUpdateEntity *new_refer_update_entity(Refer *old_refer, Refer *new_refer) {
-    ReferUpdateEntity *refer_update_entity = db_malloc2(sizeof(ReferUpdateEntity), "ReferUpdateEntity");
+    ReferUpdateEntity *refer_update_entity = db_malloc(sizeof(ReferUpdateEntity), SDT_REFER_UPDATE_ENTITY);
     refer_update_entity->old_refer = old_refer;
     refer_update_entity->new_refer = new_refer;
 }
@@ -52,7 +52,7 @@ Refer *convert_refer(Cursor *cursor) {
     if (cursor == NULL) 
         return NULL;
     /* Generate new refer. */
-    Refer *refer = db_malloc2(sizeof(Refer), "Refer");
+    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
     strcpy(refer->table_name, cursor->table->meta_table->table_name);
     refer->page_num = cursor->page_num;
     refer->cell_num = cursor->cell_num;
@@ -79,11 +79,11 @@ static bool if_table_refer_to(char *table_name, char *refer_table_name) {
 /* Fake QueryParam. */
 static QueryParam *fake_query_param(Table *table) {
     /* query_param */
-    QueryParam *query_param = db_malloc2(sizeof(QueryParam), "QueryParam");
+    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = strdup(table->meta_table->table_name);
 
     /* select_items_node */
-    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode));
+    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
     select_items_node->type = SELECT_ALL;
     
     query_param->select_items = select_items_node;

@@ -23,15 +23,15 @@
 /* Adapt to column set node data type. */
 static ColumnSetNode *adapt_column_set_node(Table *table) {
 
-    ColumnSetNode *column_set_node = db_malloc2(sizeof(ColumnSetNode), "ColumnSetNode");
+    ColumnSetNode *column_set_node = db_malloc(sizeof(ColumnSetNode), SDT_COLUMN_SET_NODE);
     MetaTable *meta_table = table->meta_table;
     column_set_node->size = meta_table->column_size;
-    column_set_node->columns = db_malloc2(sizeof(ConditionNode *) * column_set_node->size, "ColumnSetNode.columns");
+    column_set_node->columns = db_malloc(sizeof(ConditionNode *) * column_set_node->size, SDT_POINTER);
 
     int i;
     for (i = 0; i < column_set_node->size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        ColumnNode *column_node = db_malloc2(sizeof(ColumnNode), "ColumnNode");
+        ColumnNode *column_node = db_malloc(sizeof(ColumnNode), SDT_COLUMN_NODE);
         column_node->has_sub_column = false;
         column_node->column_name = strdup(meta_column->column_name);
         column_set_node->columns[i] = column_node;
@@ -42,7 +42,7 @@ static ColumnSetNode *adapt_column_set_node(Table *table) {
 
 /* Adapt to select items node data type.*/
 static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *table) {
-    SelectItemsNode *select_items_node = db_malloc2(sizeof(SelectItemsNode), "SelectItemsNode");
+    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
     select_items_node->type = SELECT_COLUMNS;
     select_items_node->column_set_node = adapt_column_set_node(table);
     return select_items_node;
@@ -50,7 +50,7 @@ static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *
 
 /* Adapt to query param data type.*/
 static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
-    QueryParam *query_param = db_malloc2(sizeof(QueryParam), "QueryParam");
+    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = strdup(update_node->table_name);
     query_param->select_items = adapt_select_items_node(update_node, table);
     ConditionNode *condition_node_copy = copy_condition_node(update_node->condition_node);
