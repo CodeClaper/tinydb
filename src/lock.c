@@ -20,10 +20,9 @@
 #include "data.h"
 #include "asserts.h"
 #include "mmu.h"
-#include "node.h"
 #include "meta.h"
 #include "pager.h"
-#include "node.h"
+#include "ltree.h"
 #include "copy.h"
 #include "free.h"
 

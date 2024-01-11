@@ -11,7 +11,7 @@
 #include "mmu.h"
 #include "common.h"
 #include "misc.h"
-#include "node.h"
+#include "ltree.h"
 #include "asserts.h"
 #include "pager.h"
 

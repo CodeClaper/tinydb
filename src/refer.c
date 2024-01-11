@@ -19,7 +19,7 @@
 #include "copy.h"
 #include "free.h"
 #include "select.h"
-#include "node.h"
+#include "ltree.h"
 #include "asserts.h"
 
 /* Generate new Refer. 

@@ -13,7 +13,7 @@
 #include "misc.h"
 #include "table.h"
 #include "meta.h"
-#include "node.h"
+#include "ltree.h"
 #include "table.h"
 #include "pager.h"
 #include "index.h"

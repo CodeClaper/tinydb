@@ -9,7 +9,7 @@
 #include "table.h"
 #include "log.h"
 #include "opr.h"
-#include "node.h"
+#include "ltree.h"
 #include "pager.h"
 #include "meta.h"
 #include "index.h"

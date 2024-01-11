@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +13,6 @@
 #include "data.h"
 #include "mmu.h"
 #include "misc.h"
-#include "y.tab.h"
 
 static pthread_key_t key;
 

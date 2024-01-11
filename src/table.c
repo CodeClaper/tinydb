@@ -17,7 +17,7 @@
 #include "utils.h"
 #include "meta.h"
 #include "misc.h"
-#include "node.h"
+#include "ltree.h"
 #include "pager.h"
 #include "log.h"
 #include "index.h"

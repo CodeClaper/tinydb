@@ -5,7 +5,7 @@
 #include "index.h"
 #include "mmu.h"
 #include "pager.h"
-#include "node.h"
+#include "ltree.h"
 #include "meta.h"
 #include "opr.h"
 #include "common.h"

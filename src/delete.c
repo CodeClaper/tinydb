@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include "delete.h"
@@ -9,7 +8,7 @@
 #include "cond.h"
 #include "select.h"
 #include "refer.h"
-#include "node.h"
+#include "ltree.h"
 #include "check.h"
 #include "trans.h"
 #include "session.h"

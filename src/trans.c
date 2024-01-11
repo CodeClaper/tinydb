@@ -53,7 +53,6 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <math.h>
 #include <string.h>
 #include <time.h>
 #include "data.h"

@@ -11,7 +11,7 @@
 #include "opr.h"
 #include "table.h"
 #include "pager.h"
-#include "node.h"
+#include "ltree.h"
 #include "check.h"
 #include "free.h"
 #include "misc.h"

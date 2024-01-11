@@ -16,12 +16,15 @@
 #include "free.h"
 #include "trans.h"
 #include "table.h"
-#include "node.h"
+#include "ltree.h"
 #include "select.h"
 #include "asserts.h"
 #include "log.h"
 
 #define DEFAULT_GC_INTERVAL 30
+
+/* Check if allow to GC for now. */
+static bool allow_gc();
 
 /* loop GC */
 void loop_gc() {
@@ -31,10 +34,8 @@ void loop_gc() {
 
         sleep(DEFAULT_GC_INTERVAL); /* Sleep specified interval. */
         
-        /* Wait all transaction committed. */
-        while(any_transaction_running()) {
-            usleep(10);
-        }
+        if (!allow_gc())
+            continue;
 
         /* loop each of tables to gc. */
         TableList *table_list = get_table_list();
@@ -47,6 +48,18 @@ void loop_gc() {
         /* Free memory. */
         free_table_list(table_list);
     }
+}
+
+/* Check if allow to GC for now. 
+ * Conditions: 
+ * (1) No transaction running.
+ * */
+static bool allow_gc() {
+    /* Wait all transaction committed. */
+    while(any_transaction_running()) {
+        usleep(10);
+    }
+    return true;
 }
 
 /* Fake QueryParam. */

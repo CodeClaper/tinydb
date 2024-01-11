@@ -4,7 +4,6 @@
  * Besides, Update statement, delete statement also use these module for query under conditon.
  * ===========================================================================================
  * */
-#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -26,7 +25,7 @@
 #include "mmu.h"
 #include "meta.h"
 #include "misc.h"
-#include "node.h"
+#include "ltree.h"
 #include "opr.h"
 #include "pager.h"
 #include "select.h"

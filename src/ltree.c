@@ -1,6 +1,6 @@
 /**
- * ========================== Disk Mapping Node ======================================
- * Node module is the core mudule for TinyDB.
+ * ========================== Disk Mapping B+TREE ======================================
+ * The ltree module is the core mudule for TinyDB.
  * - A database file is divided into a whole number pages.
  * - A page includes meta data and cells.
  * - Meta data includes node type, is root leaf node, parent pointer and cell number.
@@ -22,7 +22,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/types.h>
-#include "node.h"
+#include "ltree.h"
 #include "mmu.h"
 #include "free.h"
 #include "refer.h"
