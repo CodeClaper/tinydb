@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +11,7 @@
 #include "copy.h"
 #include "session.h"
 #include "ret.h"
+#include "log.h"
 
 /*Get table name.*/
 static char *get_table_name(DescribeNode *describe_node) {
@@ -70,11 +71,14 @@ void exec_describe_statement(DescribeNode *describe_node, DBResult *result) {
     char *table_name = get_table_name(describe_node); 
     Table *table = open_table(table_name);
     if (table == NULL) {
-        error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", table_name);
+        db_log(ERROR, "Table '%s' not exist.", table_name);
         return;
     }
 
     MapList *map_list = gen_describe_result(table->meta_table);
-    success_result(result, "Describe executed successfully.");
+    
+    /* Success resule. */
+    result->success = true;
     result->data = map_list;
+    db_log(SUCCESS, "Describe executed successfully.");
 }

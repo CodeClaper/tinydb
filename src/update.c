@@ -19,6 +19,7 @@
 #include "asserts.h"
 #include "session.h"
 #include "ret.h"
+#include "log.h"
 
 /* Adapt to column set node data type. */
 static ColumnSetNode *adapt_column_set_node(Table *table) {
@@ -153,7 +154,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     /* Check table exists. */
     Table *table = open_table(update_node->table_name);
     if (table == NULL) {
-        error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", update_node->table_name);
+        db_log(ERROR, "Try to open table '%s' fail.", update_node->table_name);
         return;
     }
 
@@ -167,12 +168,15 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     query_with_condition(query_param, select_result, count_row, NULL);
 
     /* Check out update node. */
-    if (!check_update_node(update_node, select_result, result)) return;
+    if (!check_update_node(update_node, select_result)) 
+        return;
 
     /* Query with update row operation. */
     query_with_condition(query_param, select_result, update_row, update_node->assignment_set_node);
 
-    /* Send out update result. */
-    success_result(result, "Successfully updated %d row data.\n", select_result->row_size);
+    result->success = true;
+    result->rows = select_result->row_size;
+
+    db_log(SUCCESS, "Successfully updated %d row data.", select_result->row_size);
 
 }

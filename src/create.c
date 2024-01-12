@@ -79,7 +79,7 @@ static MetaColumn *gen_meta_column(CreateTableNode *create_table_node, int index
         if (table)
             strcpy(meta_column->table_name, column_def_node->table_name);
         else {
-            error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Table '%s' not exists.", column_def_node->table_name);
+            db_log(ERROR, "Table '%s' not exists.", column_def_node->table_name);
             return NULL;
         }
     }
@@ -110,7 +110,7 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *re
     meta_table->table_name = db_strdup(crete_table_node->table_name);
     meta_table->column_size = get_column_size(crete_table_node);
     if (meta_table->column_size > MAX_COLUMN_SIZE) {
-        error_result(result, EXECUTE_EXCEEDED_MAX_COLUMN ,"Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
+        db_log(ERROR,"Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
         return NULL;
     }
 
@@ -135,12 +135,16 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *re
 void exec_create_table_statement(CreateTableNode *create_table_node, DBResult *result) {
 
     /* Check valid. */
-    if (!check_create_table_node(create_table_node, result)) return;
+    if (!check_create_table_node(create_table_node)) return;
 
     MetaTable *meta_table = gen_meta_table(create_table_node, result);
     if (meta_table == NULL) return;
 
-    create_table(meta_table, result);
+    if (create_table(meta_table, result)) {
+        result->success = true;
+        result->rows = 0;
+        db_log(SUCCESS, "Table '%s' created successfully.");
+    }
 
     db_free(meta_table);
 }

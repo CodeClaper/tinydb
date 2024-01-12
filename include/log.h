@@ -1,16 +1,11 @@
 #include "data.h"
 
-/* Db log for error level. */
-void db_error(char *format, ...);
 
-/* Db log for warn level. */
-void db_warn(char *format, ...);
+/* Initialise Log */
+void init_log();
 
-/* Db log for info level. */
-void db_info(char *format, ...);
+/* Log. */
+void db_log(LogLevel lev, char *format, ...);
 
-/* Db log for debug level. */
-void db_debug(char *format, ...);
-
-/* Db log for trace level. */
-void db_trace(char *format, ...);
+/* Get log message. */
+char *get_log_msg();

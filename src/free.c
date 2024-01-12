@@ -476,3 +476,12 @@ void free_db_result(DBResult *result) {
         db_free(result);
     }
 }
+
+/* Free LogEntry.*/
+void free_log_entry(LogEntry *log_entry) {
+    if (log_entry) {
+        if (log_entry->message)
+            db_free(log_entry->message);
+        db_free(log_entry);
+    }
+}

@@ -75,20 +75,20 @@ bool check_table_exist(char *table_name) {
 }
 
 /* Create a new table. */
-void create_table(MetaTable *meta_table, DBResult *result) {
+bool create_table(MetaTable *meta_table, DBResult *result) {
     if (meta_table == NULL) {
-        error_result(result, EXECUTE_TABLE_CREATE_FAIL, "Try to create table fail.");
-        return;
+        db_log(ERROR, "Try to create table fail.");
+        return false;
     }
     char *file_path = table_file_path(meta_table->table_name);
     if (table_file_exist(file_path)) {
-        error_result(result, EXECUTE_TABLE_CREATE_FAIL, "Table '%s' already exists. \n", meta_table->table_name);
-        return;
+        db_log(ERROR, "Table '%s' already exists. \n", meta_table->table_name);
+        return false;
     }
     int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (descr == -1) {
-        error_result(result, EXECUTE_OPEN_DATABASE_FAIL, "Open database file '%s' fail.\n", file_path);
-        return;
+        db_log(ERROR, "Open database file '%s' fail.\n", file_path);
+        return false;
     }
     void *root_node = db_malloc(PAGE_SIZE, SDT_VOID);
 
@@ -110,8 +110,8 @@ void create_table(MetaTable *meta_table, DBResult *result) {
     lseek(descr, 0, SEEK_SET);
     ssize_t w_size = write(descr, root_node, PAGE_SIZE);
     if (w_size == -1) {
-        error_result(result, EXECUTE_RW_DATABASE_FAIL, "Write table meta info error and errno %d.\n", errno);
-        return;
+        db_log(ERROR, "Write table meta info error and errno %d.\n", errno);
+        return false;
     }
     
     /* close desription. */
@@ -121,7 +121,7 @@ void create_table(MetaTable *meta_table, DBResult *result) {
     db_free(file_path);
     db_free(root_node);
 
-    success_result(result, "Table '%s' created successfully.", meta_table->table_name);
+    return true;
 }
 
 /* Open a table file. */
@@ -207,24 +207,28 @@ Cursor *define_cursor(Table *table, void *key) {
 }
 
 /* Drop an existed table. */
-void drop_table(char *table_name, DBResult *result) {
+bool drop_table(char *table_name, DBResult *result) {
     /* Check if exist the table. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-        error_result(result, EXECUTE_TABLE_NOT_EXIST_FAIL, "Table '%s' not exists.", table_name);
+        db_log(ERROR, "Table '%s' not exists.", table_name);
         db_free(file_path);
-        return;
+        return false;
     }
     /* Check if allowed to drop the table. */
-    if (!check_drop_table(table_name, result))
-        return;
+    if (!check_drop_table(table_name))
+        return false;
+
+    /* Disk remove. */
     if (remove(file_path) == 0) {
-        success_result(result, "Table '%s' dropped success.", table_name);
         db_free(file_path);
         /* Remove table cache. */
         remove_table_cache(table_name);
-        return;
+        return true;
     }
-    error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' deleted fail, error : %d", table_name, errno);
+
     db_free(file_path);
+    db_log(ERROR, "Table '%s' deleted fail, error : %d", table_name, errno);
+
+    return false;
 }

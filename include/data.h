@@ -2,8 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <ctype.h>
+#include <sys/types.h>
 
 #ifndef DATA_H
 #define DATA_H
@@ -78,7 +77,9 @@ typedef enum SysDataType{
     SDT_LOCK_HANDLE,
     SDT_LOCK_TABLE,
     SDT_TRANSACTION_HANDLE,
-    SDT_TRANSACTION_TABLE
+    SDT_TRANSACTION_TABLE,
+    SDT_LOG_ENTRY,
+    SDT_LOG_TABLE
 }SysDataType;
 
 static char *SYS_DATA_TYPE_NAMES[] = { \
@@ -137,7 +138,9 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "LOCK_HANDLE",\
    "LOCK_TABLE",\
    "TRANSACTION_HANDLE",\
-   "TRANSACTION_TABLE" \
+   "TRANSACTION_TABLE",\
+   "LOG_ENTRY",\
+   "LOG_TABLE"\
 };
 
 /* OprType */
@@ -197,7 +200,17 @@ typedef enum {
 } ExecuteStatus;
 
 /* LogLevel */
-typedef enum { TRACE_LEVEL, DEBUG_LEVEL, INFO_LEVEL, WARN_LEVEL, ERROR_LEVLE } LogLevel;
+typedef enum { 
+    TRACE,      /* Show detail infomation. */ 
+    DEBUGER,    /* Show infomation to help debuger,*/
+    INFO,       /* DB running Infomation. */
+    SUCCESS,    /* Success result to client. */
+    WARN,       /* For unexpected messages including sql syntaxt error, reapeated begin transaction or commit .etc. */ 
+    ERROR,      /* Abort transaction. */
+    TATAL,      /* Abort process. */
+    PANIC       /* Shut down the database. */
+} 
+LogLevel;
 
 /* Lock level. */
 typedef enum { LEVEL_ROW, LEVEL_TABLE } LockLevel;
@@ -538,9 +551,8 @@ typedef struct {
 
 /* Db execute result. */
 typedef struct {
-    char *table;
     StatementType stmt_type;
-    ExecuteStatus status;
+    char *table;
     bool success;
     void *data;
     uint32_t rows;
@@ -580,4 +592,19 @@ typedef struct {
     TransactionHandle *tail;
     uint32_t size;
 } TransactionTable; 
+
+/* LogEntry puts current pthread messsage. */
+typedef struct LogEntry {
+    int64_t tid;           /* pthread id */
+    char *message;          /* mssage */
+    struct LogEntry *next;  /* next */
+} LogEntry;
+
+/* LogEntry Collector. */
+typedef struct LogTable {
+    LogEntry *head;
+    LogEntry *tail;
+    uint32_t size;
+} LogTable;
+
 #endif

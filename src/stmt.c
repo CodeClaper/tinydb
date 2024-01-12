@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,7 +46,11 @@ static void statement_create_table(Statement *stmt, DBResult *result) {
 /* Drop table statement. */
 static void statement_drop_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == DROP_TABLE_STMT, "System error, drop statement type error.\n");
-    drop_table(stmt->ast_node->drop_table_node->table_name, result);
+    if (drop_table(stmt->ast_node->drop_table_node->table_name, result)) {
+        result->success = true;
+        result->rows = 0;
+        db_log(SUCCESS, "Table '%s' droped successfully.");
+    }
 }
 
 
@@ -102,50 +105,56 @@ static void statement_show(Statement *statement, DBResult *result) {
  * */
 void statement(char *sql) {
 
-    /* Check empty sql. */
-    if (is_empty(sql)) return;
-
-    /* Execute statement. */
-    Statement *statement = parse(sql);
-    if (statement == NULL) return;
 
     /* Execute statment */
     clock_t start, end;
     start = clock();
     DBResult *result = new_db_result();
-    result->stmt_type = statement->statement_type;
-    switch(statement->statement_type) {
-        case BEGIN_TRANSACTION_STMT:
-            statement_begin_transaction(statement, result);
-            break;
-        case COMMIT_TRANSACTION_STMT:
-            statement_commit_transaction(statement, result);
-            break;
-        case CREATE_TABLE_STMT:
-            statement_create_table(statement, result);
-            break;
-        case INSERT_STMT:
-            statement_insert(statement, result); 
-            break; 
-        case SELECT_STMT:
-            statement_select(statement, result); 
-            break; 
-        case UPDATE_STMT:
-            statement_update(statement, result); 
-            break; 
-        case DELETE_STMT:
-            statement_delete(statement, result); 
-            break; 
-        case DESCRIBE_STMT:
-            statement_describe(statement, result);
-            break;
-        case SHOW_STMT:
-            statement_show(statement, result);
-            break;
-        case DROP_TABLE_STMT:
-            statement_drop_table(statement, result);
-            break;
-    }
+
+    /* Check empty sql. */
+    if (!is_empty(sql)) {
+        /* Execute statement. */
+        Statement *statement = parse(sql);
+        if (statement) {
+            result->stmt_type = statement->statement_type;
+
+            switch(statement->statement_type) {
+                case BEGIN_TRANSACTION_STMT:
+                    statement_begin_transaction(statement, result);
+                    break;
+                case COMMIT_TRANSACTION_STMT:
+                    statement_commit_transaction(statement, result);
+                    break;
+                case CREATE_TABLE_STMT:
+                    statement_create_table(statement, result);
+                    break;
+                case INSERT_STMT:
+                    statement_insert(statement, result); 
+                    break; 
+                case SELECT_STMT:
+                    statement_select(statement, result); 
+                    break; 
+                case UPDATE_STMT:
+                    statement_update(statement, result); 
+                    break; 
+                case DELETE_STMT:
+                    statement_delete(statement, result); 
+                    break; 
+                case DESCRIBE_STMT:
+                    statement_describe(statement, result);
+                    break;
+                case SHOW_STMT:
+                    statement_show(statement, result);
+                    break;
+                case DROP_TABLE_STMT:
+                    statement_drop_table(statement, result);
+                    break;
+            }
+
+            /* Free memory. */
+            free_statment(statement);
+        }
+    } 
 
     /* Commit transction manually. */
     auto_commit_transaction(result);
@@ -153,12 +162,10 @@ void statement(char *sql) {
     /* Calulate duration. */
     end = clock();
     result->duration = (double)(end - start) / CLOCKS_PER_SEC;
-    db_info("Duration: %lfs", result->duration);
+    db_log(INFO, "Duration: %lfs", result->duration);
 
     /* send result. */
     db_send_result(result);
 
-    /* Free memory. */
-    free_statment(statement);
     free_db_result(result);
 }

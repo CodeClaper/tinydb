@@ -30,7 +30,9 @@ Conf *conf;
 /* init */
 static void init() {
     /* Initialise memory manager unit. */
-    init_mem(); 
+    init_mem();
+    /* Initialise log. */
+    init_log();
     /* Initialise session. */
     init_session();
     /* Initialise lock. */
@@ -57,7 +59,7 @@ int main(void) {
     socklen_t client_name_len = sizeof(*client_name);
     pthread_t new_thread, gc_thread;
     server_socket = startup(conf->port);
-    db_info("Tinydb server start up successfully and listen port %d.", conf->port);
+    db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
 
     /* start gc */
     if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)

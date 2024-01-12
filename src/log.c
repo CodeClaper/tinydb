@@ -1,30 +1,151 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <time.h>
 #include "log.h"
-#include "session.h"
 #include "mmu.h"
-#include "lock.h"
+#include "free.h"
 #include "data.h"
 #include "defs.h"
+#include "timer.h"
+#include "trans.h"
 #include "misc.h"
+#include "asserts.h"
 
-static char* LOG_LEVEL_NAME_LIST[] = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR" };
+/* Log Level names */
+static char* LOG_LEVEL_NAME_LIST[] = { "TRACE", "DEBUG", "INFO", "SUCCS", "WARN", "ERROR", "TATAL", "PANIC" };
+
+/* Lock */
+static pthread_mutex_t mutex;
+
+
+static LogTable *ltable;
+
+
+/* Initialise Log */
+void init_log() {
+    ltable = db_malloc(sizeof(LogTable), SDT_LOG_TABLE);
+    ltable->head = NULL;
+    ltable->tail = NULL;
+    ltable->size = 0;
+
+    /* Initialise tmux. */
+    pthread_mutex_init(&mutex, NULL);
+}
+
+/* Seach current pthread LogEntry. 
+ * Return NULL if not found. */
+static LogEntry *search_log_entry() {
+    int64_t tid = pthread_self();
+    LogEntry *current = ltable->head;
+    while (current) {
+        if (current->tid == tid)
+            break;
+        current = current->next;
+    }
+    return current;
+}
+
+/* Generate new LogEntry*/
+static LogEntry *new_log_entry(char *msg) {
+    LogEntry *entry = db_malloc(sizeof(LogEntry), SDT_LOG_ENTRY);
+    entry->message = db_strdup(msg);
+    entry->tid = pthread_self();
+    entry->next = NULL;
+    return entry;
+}
+
+/* Register new LogEntry. */
+static void register_log_entry(LogEntry *entry) {
+    pthread_mutex_lock(&mutex);
+
+    if (ltable->size == 0) {
+        ltable->head = entry;
+        ltable->tail = entry;
+        ltable->size++;
+    } else {
+        ltable->tail->next = entry;
+        ltable->tail = entry;
+        ltable->size++;
+    }
+
+    /* Unlock */
+    pthread_mutex_unlock(&mutex);
+}
+
+static void destroy_log_entry() {
+    assert_true(ltable->size > 0, "Log table error.");
+    
+    /*Lock*/
+    pthread_mutex_lock(&mutex);
+
+    int64_t tid = pthread_self();
+    LogEntry *current = ltable->head;
+    LogEntry *prev = ltable->head;
+    
+    /* Maybe is head. */
+    if (current->tid == tid) {
+        ltable->head = ltable->head->next;
+        
+        /* When size is one, head and tail all become NULL. */
+        if (ltable->size == 1) 
+            ltable->tail = ltable->head;
+
+        free_log_entry(current);        
+        ltable->size--;
+    } else {
+        /* Loop to check. */
+        for (;current != NULL; prev = current, current = current->next) {
+            if (current->tid == tid) {
+                /* If tail, tail end back. */
+                if (current == ltable->tail) 
+                    ltable->tail = prev;
+
+                prev->next = current->next;
+                free_log_entry(current);
+                ltable->size--;
+                break;
+            }
+        }
+    }
+
+    /* Unlock */
+    pthread_mutex_unlock(&mutex);
+}
+
+/* Store log message. */
+static void store_log_msg(char *msg) {
+    LogEntry *entry = search_log_entry();
+    if (entry) {
+        /* If aleady exists LogEntry, replace message, keep the latest message. */
+        char *old_msg = entry->message;
+        entry->message = db_strdup(msg);
+        db_free(old_msg);
+    } else 
+        register_log_entry(new_log_entry(msg));
+}
+
+/* Get log message. */
+char *get_log_msg() {
+    char *msg = NULL;
+    LogEntry *entry = search_log_entry();
+    if (entry) {
+        msg = db_strdup(entry->message); 
+        destroy_log_entry();
+    }
+    return msg;
+}
 
 /* Get system time by format. */
 static char* get_sys_time(char *format) {
-    char *sys_time = db_malloc(BUFF_SIZE, SDT_STRING);
     time_t t_now;
     struct tm *tm_now;
     time(&t_now);
-    tm_now = localtime(&t_now);
-    strftime(sys_time, BUFF_SIZE, format, tm_now);
-    return sys_time;
+    return format_time(format, t_now);
 }
 
 /* Flush log message to disk. */
@@ -44,67 +165,42 @@ static void flush_log(char* msg) {
 }
 
 /* Db log. */
-static void db_log(char *msg, LogLevel level) {
+void db_log(LogLevel lev, char *format, ...) {
+
+    /* Combinate message. */
+    char message[BUFF_SIZE];
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(message, format, ap);
+    va_end(ap);
 
     /* Only print higher level log. */
-    if (level >= conf->log_level) {
+    if (lev >= conf->log_level) {
         char *sys_time = get_sys_time("%Y-%m-%d %H:%M:%S");
         char buff[BUFF_SIZE];
-        sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[level], msg);
+        sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[lev], message);
 #ifdef DEBUG
         fprintf(stdout, "%s", buff);
 #endif
         flush_log(buff);
         db_free(sys_time);
     }
+
+    /* According to LogLevel, diffent treatments. */
+    switch(lev) {
+        case WARN:
+        case SUCCESS:
+            store_log_msg(message);
+            break;
+        case ERROR:
+            store_log_msg(message);
+            /* Trigger transaction roll back. */
+            rollback();
+            break;
+        case PANIC:
+            exit(1);
+        default:
+            break;
+    }
 }
 
-/* Db log for error level. */
-void db_error(char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buff[BUFF_SIZE];
-    vsprintf(buff, format, ap);
-    db_log(buff, ERROR_LEVLE);
-    va_end(ap);
-}
-
-/* Db log for warn level. */
-void db_warn(char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buff[BUFF_SIZE];
-    vsprintf(buff, format, ap);
-    db_log(buff, WARN_LEVEL);
-    va_end(ap);
-}
-
-/* Db log for info level. */
-void db_info(char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buff[BUFF_SIZE];
-    vsprintf(buff, format, ap);
-    db_log(buff, INFO_LEVEL);
-    va_end(ap);
-}
-
-/* Db log for debug level. */
-void db_debug(char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buff[BUFF_SIZE];
-    vsprintf(buff, format, ap);
-    db_log(buff, DEBUG_LEVEL);
-    va_end(ap);
-}
-
-/* Db log for trace level. */
-void db_trace(char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buff[BUFF_SIZE];
-    vsprintf(buff, format, ap);
-    db_log(buff, TRACE_LEVEL);
-    va_end(ap);
-}

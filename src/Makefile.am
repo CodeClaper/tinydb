@@ -1,4 +1,4 @@
-BUILT_SOURCES = data.h
+BUILT_SOURCES = ../include/data.h
 AM_YFLAGS = -d
 if DEBUG
 AM_CFLAGS = -g -O0 -w -I../include/
@@ -14,5 +14,5 @@ tinydb_SOURCES = db.c asserts.c asserts.h cache.c cache.h check.c check.h common
 				 misc.c misc.h ltree.c ltree.h opr.c opr.h pager.c pager.h refer.c refer.h ret.c ret.h select.c select.h \
 				 server.c server.h session.c session.h show.c show.h stmt.c stmt.h table.c table.h timer.c timer.h trans.c trans.h \
 				 parser.c parser.h update.c update.h utils.c utils.h y.tab.c y.tab.h 
-tinydb_cli_SOURCES = db_cli.c asserts.c asserts.h utils.c utils.h mmu.c mmu.h
+tinydb_cli_SOURCES = db_cli.c 
 tinydb_cli_LDADD = -lreadline -ltinfo

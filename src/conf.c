@@ -13,7 +13,7 @@
 #include "utils.h"
 
 #define DEFAULT_CONF_FILE "/etc/tinydb.cnf"
-#define DEFAULT_LOG_LEVEL DEBUG_LEVEL
+#define DEFAULT_LOG_LEVEL DEBUGER
 
 /* Read config file. */
 char *read_conf(char *title, char *key) {
@@ -58,15 +58,15 @@ char *read_conf(char *title, char *key) {
 
 static LogLevel define_log_level(char *level) {
     if (strcasecmp(level, "TRACE") == 0)
-        return TRACE_LEVEL;
+        return TRACE;
     else if (strcasecmp(level, "DEBUG") == 0)
-        return DEBUG_LEVEL;
+        return DEBUGER;
     else if (strcasecmp(level, "INFO") == 0)
-        return INFO_LEVEL;
+        return INFO;
     else if (strcasecmp(level, "WARN") == 0)
-        return WARN_LEVEL;
+        return WARN;
     else if (strcasecmp(level, "ERROR") == 0)
-        return ERROR_LEVLE;
+        return ERROR;
     else
         return DEFAULT_LOG_LEVEL;
 }

@@ -74,7 +74,7 @@ static bool destroy_lock_handle(LockHandle *lock_handle) {
     /* Maybe head. */
     if (ltable->head == lock_handle) {
         ltable->head = ltable->head->next;
-        /* When size is 1, head and tail all becomes null. */
+        /* When size is 1, head and tail all become null. */
         if (ltable->size == 1)
             ltable->tail = ltable->head;
         ltable->size--;

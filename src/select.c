@@ -923,8 +923,6 @@ static void exec_function_count(QueryParam *query_param, DBResult *result) {
     /* Count row number. */
     query_with_condition(query_param, select_result, count_row, NULL);
 
-    success_result(result, "Count function exeucted successfully.");
-
     int32_t row_size = select_result->row_size;
     /* Prepare enough memory space. */
     select_result->row_size = 1;
@@ -947,6 +945,9 @@ static void exec_function_count(QueryParam *query_param, DBResult *result) {
     select_result->rows[0] = row;
     result->data = select_result;
     result->rows = row_size;
+    result->success = true;
+
+    db_log(SUCCESS, "Count function exeucted successfully.");
 }
 
 /* Execute aggregate function sum(). */
@@ -958,8 +959,6 @@ static void exec_function_sum(QueryParam *query_param, DBResult *result) {
     /* Plus row data. */
     query_with_condition(query_param, select_result, sum_row, NULL);
 
-    /* success result. */
-    success_result(result, "Sum function exeucted successfully.");
 
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
@@ -983,6 +982,9 @@ static void exec_function_sum(QueryParam *query_param, DBResult *result) {
     select_result->rows[0] = row;
     result->data = select_result;
     result->rows = row_size;
+    result->success = true;
+
+    db_log(SUCCESS, "Sum function exeucted successfully.");
 } 
 
 /* Execute aggregate function avg(). */
@@ -993,9 +995,6 @@ static void exec_function_avg(QueryParam *query_param, DBResult *result) {
 
     /* Plus row data. */
     query_with_condition(query_param, select_result, sum_row, NULL);
-
-    /* success result. */
-    success_result(result, "Avg function exeucted successfully.");
 
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
@@ -1020,6 +1019,9 @@ static void exec_function_avg(QueryParam *query_param, DBResult *result) {
     select_result->rows[0] = row;
     result->data = select_result;
     result->rows = row_size;
+    result->success = true;
+
+    db_log(SUCCESS, "Avg function exeucted successfully.");
 }
 
 /* Execute aggregate function max(). */
@@ -1030,9 +1032,6 @@ static void exec_function_max(QueryParam *query_param, DBResult *result) {
 
     /* Max row. */
     query_with_condition(query_param, select_result, max_row, NULL);
-
-    /* success result. */
-    success_result(result, "Max function executed successfully.");
 
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
@@ -1045,7 +1044,9 @@ static void exec_function_max(QueryParam *query_param, DBResult *result) {
     select_result->rows[0] = row;
     result->data = select_result;
     result->rows = row_size;
+    result->success = true;
 
+    db_log(SUCCESS, "Max function executed successfully.");
 }
 
 /* Execute aggregate function min(). */
@@ -1057,8 +1058,6 @@ static void exec_function_min(QueryParam *query_param, DBResult *result) {
     /* Min row. */
     query_with_condition(query_param, select_result, min_row, NULL);
 
-    /* success result. */
-    success_result(result, "Min function executed successfully.");
 
     int row_size = select_result->row_size;
     /* Prepare enough memory space. */
@@ -1071,6 +1070,10 @@ static void exec_function_min(QueryParam *query_param, DBResult *result) {
     select_result->rows[0] = row;
     result->data = select_result;
     result->rows = row_size;
+    result->success = true;
+
+    /* success result. */
+    db_log(SUCCESS, "Min function executed successfully.");
 }
 
 
@@ -1119,19 +1122,21 @@ static void exec_plain_select_statement(QueryParam *query_param, DBResult *resul
     /* Send row data in json format. */
     query_with_condition(query_param, select_result, select_row, NULL);
 
-    /* success result. */
-    success_result(result, "Query data successfully.");
 
     /* Assign exeuction result. */
     result->rows = select_result->row_size;
     result->data = select_result;
+    result->success = true;
+
+    /* success result. */
+    db_log(SUCCESS, "Query data successfully.");
 }
 
 
 /* Execute select statement. */
 void exec_select_statement(SelectNode *select_node, DBResult *result) {
     QueryParam *query_param = convert_query_param(select_node);
-    if (check_query_param(query_param, result)) {
+    if (check_query_param(query_param)) {
         switch(query_param->select_items->type) {
             case SELECT_ALL:
             case SELECT_COLUMNS:

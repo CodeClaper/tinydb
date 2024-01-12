@@ -1,4 +1,8 @@
+#include <stdarg.h>
+#include <stdio.h>
 #include "asserts.h"
+#include "data.h"
+#include "log.h"
 
 /* The assert module support some common determination of whether the condition is established. */
 
@@ -7,9 +11,10 @@ void assert_true(bool condition, char *format, ...) {
     if (!condition) {
         va_list ap;
         va_start(ap, format);
-        vfprintf(stderr, format, ap);
+        char buff[BUFF_SIZE];
+        vsprintf(buff, format, ap);
         va_end(ap);
-        exit(1);
+        db_log(PANIC, buff);
     }
 }
 
@@ -18,9 +23,10 @@ void assert_false(bool condition, char *format, ...) {
     if (condition) {
         va_list ap;
         va_start(ap, format);
-        vfprintf(stderr, format, ap);
+        char buff[BUFF_SIZE];
+        vsprintf(buff, format, ap);
         va_end(ap);
-        exit(1);
+        db_log(PANIC, buff);
     }
 }
 
@@ -29,9 +35,10 @@ void assert_not_null(void *express, char *format, ...) {
     if (!express) {
         va_list ap;
         va_start(ap, format);
-        vfprintf(stderr, format, ap);
+        char buff[BUFF_SIZE];
+        vsprintf(buff, format, ap);
         va_end(ap);
-        exit(1);
+        db_log(PANIC, buff);
     }
 }
 
@@ -40,8 +47,9 @@ void assert_null(void *express, char *format, ...) {
     if (express) {
         va_list ap;
         va_start(ap, format);
-        vfprintf(stderr, format, ap);
+        char buff[BUFF_SIZE];
+        vsprintf(buff, format, ap);
         va_end(ap);
-        exit(1);
+        db_log(PANIC, buff);
     }
 }

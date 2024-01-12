@@ -1,4 +1,4 @@
-#include <string.h>
+#include <ctype.h>
 #include <sys/socket.h>
 #include "utils.h"
 #include "mmu.h"

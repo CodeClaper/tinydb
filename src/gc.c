@@ -95,7 +95,7 @@ void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 void gc_table(char *table_name) {
 
 #ifdef DEBUG
-    printf("GC table '%s'\n", table_name);
+    db_log(TRACE, "GC table '%s'\n", table_name);
 #endif
 
     /* Check table exist. */

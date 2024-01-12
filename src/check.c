@@ -15,23 +15,22 @@
 #include "index.h"
 #include "misc.h"
 #include "select.h"
-#include "ret.h"
 #include "refer.h"
 
 /* Check ident node. */
-static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node, DBResult *result) {
+static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
     int i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_node->column_name) == 0)
             return true;
     }
-    error_result(result, EXECUTE_UNKNOWN_COLUMN, "Unknown column '%s' in table '%s'", column_node->column_name, meta_table->table_name);
+    db_log(ERROR, "Unknown column '%s' in table '%s'", column_node->column_name, meta_table->table_name);
     return false;
 }
 
 /* Check if type convert pass. */
-static bool if_convert_type(DataType source, DataType target, char *column_name, char *table_name, DBResult *result) {
+static bool if_convert_type(DataType source, DataType target, char *column_name, char *table_name) {
     bool flag;
     switch(source) {
         case T_BOOL:
@@ -66,16 +65,16 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
             break;
     }
     if (!flag)
-       error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Can`t convert data type [%s] to [%s] for column '%s' in table '%s'",DATA_TYPE_NAMES[target], DATA_TYPE_NAMES[source], column_name, table_name);
+       db_log(ERROR, "Can`t convert data type [%s] to [%s] for column '%s' in table '%s'", DATA_TYPE_NAMES[target], DATA_TYPE_NAMES[source], column_name, table_name);
     return flag;
 }
 
 /* Check value if valid. 
  * Because, CHAR, DATE, TIMESTAMP use '%s' format to pass value, thus check it.
  * */
-static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *result) {
+static bool check_value_valid(MetaColumn *meta_column, void* value) {
     if (value == NULL) {
-        error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Try to convert NULL '%s' to %s fail.", DATA_TYPE_NAMES[meta_column->column_type]);
+        db_log(ERROR, "Try to convert NULL '%s' to %s fail.", DATA_TYPE_NAMES[meta_column->column_type]);
         return false;
     }
     switch(meta_column->column_type) {
@@ -90,13 +89,13 @@ static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *re
             /* For CHAR type, only allow one character. */
             size_t len = strlen((char *) value);
             if (len != 1)
-                db_error("Try to convert value '%s' to CHAR type fail\n", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to CHAR type fail\n", (char *) value);
             return len == 1;
         }
         case T_STRING: {
             size_t size = strlen(value);
             if (size > meta_column->column_length)
-                db_error("Exceed the limit of data length: %d > %d, for column '%s'\n", size, meta_column->column_length, meta_column->column_name);
+                db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'\n", size, meta_column->column_length, meta_column->column_name);
             return size <= meta_column->column_length;
         }
         case T_TIMESTAMP: {   
@@ -111,7 +110,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *re
             regfree(&reegex);
 
             if (exe_result == REG_NOMATCH) 
-                db_error("Try to convert value '%s' to timestamp fail\n", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to timestamp fail\n", (char *) value);
 
             return exe_result == REG_NOERROR;
         }
@@ -127,7 +126,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *re
             regfree(&reegex);
 
             if (exe_result == REG_NOMATCH) 
-                db_error("Try to convert value '%s' to timestamp fail\n", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to timestamp fail\n", (char *) value);
 
             return exe_result == REG_NOERROR;
         }
@@ -138,18 +137,18 @@ static bool check_value_valid(MetaColumn *meta_column, void* value, DBResult *re
 }
 
 /* Check ident node. */
-static bool check_value_item_node(MetaTable *meta_table, char *column_name ,ValueItemNode *value_item_node, DBResult *result) {
+static bool check_value_item_node(MetaTable *meta_table, char *column_name ,ValueItemNode *value_item_node) {
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name, result)) 
+        if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name)) 
             return true;
     }
-    error_result(result, EXECUTE_CONVERT_DATA_TYPE_FAIL, "Column '%s' data type error.", column_name);
+    db_log(ERROR, "Column '%s' data type error.", column_name);
     return false;
 }
 
 /* Check function node */
-static bool check_function_node(FunctionNode *function_node, MetaTable *meta_table, DBResult *result) {
+static bool check_function_node(FunctionNode *function_node, MetaTable *meta_table) {
     FunctionValueNode *value_node = function_node->value;
     switch(value_node->value_type) {
         case V_INT:
@@ -157,73 +156,74 @@ static bool check_function_node(FunctionNode *function_node, MetaTable *meta_tab
             return true;
         case V_COLUMN: {
             ColumnNode *column = value_node->column;
-            return check_column_node(meta_table, column, result); 
+            return check_column_node(meta_table, column); 
         }
     }
 }
 
 /* Check column set node */
-static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *meta_table, DBResult *result) {
+static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *meta_table) {
     int i;
     for (i = 0; i < column_set_node->size; i++) {
         ColumnNode *column_node = *(column_set_node->columns + i);
-        if (!check_column_node(meta_table, column_node, result))
+        if (!check_column_node(meta_table, column_node))
             return false;
     }
     return true;
 }
 
 /* Check select items if exist int meta column */
-static bool check_select_items(SelectItemsNode *select_items_node, MetaTable *meta_table, DBResult *result) {
+static bool check_select_items(SelectItemsNode *select_items_node, MetaTable *meta_table) {
     switch(select_items_node->type) {
         case SELECT_ALL:
             return true;
         case SELECT_COLUMNS:
-            return check_column_set_node(select_items_node->column_set_node, meta_table, result);
+            return check_column_set_node(select_items_node->column_set_node, meta_table);
         case SELECT_FUNCTION:
-            return check_function_node(select_items_node->function_node, meta_table, result);
+            return check_function_node(select_items_node->function_node, meta_table);
     }
 }
 
 /* Check condition node. */
-static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_table, DBResult *result) {
+static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_table) {
     if (condition_node == NULL)
         return true;
     switch(condition_node->type) {
         case LOGIC_CONDITION:
-            return check_condition_node(condition_node->left, meta_table, result) && check_condition_node(condition_node->right, meta_table, result);
+            return check_condition_node(condition_node->left, meta_table) 
+                && check_condition_node(condition_node->right, meta_table);
         case EXEC_CONDITION: {
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
-            return check_column_node(meta_table, condition_node->column, result) // check select column
-                   && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name, meta_table->table_name, result) // check column type
-                   && check_value_valid(meta_column, get_value_from_value_item_node(condition_node->value, meta_column->column_type), result); // check if value valid
+            return check_column_node(meta_table, condition_node->column) // check select column
+                   && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
+                   && check_value_valid(meta_column, get_value_from_value_item_node(condition_node->value, meta_column->column_type)); // check if value valid
         }
     }
 }
 
 /* check column set. */
-static bool check_column_set(ColumnSetNode *column_set_node, MetaTable *meta_table, DBResult *result) {
+static bool check_column_set(ColumnSetNode *column_set_node, MetaTable *meta_table) {
     for (uint32_t i = 0; i < column_set_node->size; i++) {
         ColumnNode *column_node = *(column_set_node->columns + i);
-        if (!check_column_node(meta_table, column_node, result))
+        if (!check_column_node(meta_table, column_node))
             return false;
     } 
     return true;
 }
 
 /* Check query param. */
-bool check_query_param(QueryParam *query_param, DBResult *result) {
+bool check_query_param(QueryParam *query_param) {
     Table *table = open_table(query_param->table_name);
     if (table == NULL) {
-        error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' not exists.", query_param->table_name);
+        db_log(ERROR, "Table '%s' not exists.", query_param->table_name);
         return false;
     }
-    return check_select_items(query_param->select_items, table->meta_table, result) 
-             && check_condition_node(query_param->condition_node, table->meta_table, result);
+    return check_select_items(query_param->select_items, table->meta_table) 
+             && check_condition_node(query_param->condition_node, table->meta_table);
 }
 
 /* Check assignment set node */
-static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Table *table, SelectResult *select_result, DBResult *result) { 
+static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Table *table, SelectResult *select_result) { 
     for (uint32_t i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assignment_node = *(assignment_set_node->assignment_node + i);
         ColumnNode *column_node = assignment_node->column;
@@ -232,9 +232,9 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
 
         /* Check column, check type, check if value valid. */
-        if (!check_column_node(table->meta_table, column_node, result) 
-            || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name, result) 
-            || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column->column_type), result))
+        if (!check_column_node(table->meta_table, column_node) 
+            || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name) 
+            || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column->column_type)))
             return false;
 
         /* It means to change the primary key column and may cause duplicate key. */
@@ -246,7 +246,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
              * Thirdly, if priamry key is assigned to different value, should check if key aleady exists, avoid cause duplicate.
              * */
             if (select_result->row_size > 1) {
-                error_result(result, EXECUTE_DUPLICATE_KEY, "Duaplicate key not allowed.");
+                db_log(ERROR, "Duaplicate key not allowed.");
                 return false;
             }
             if (select_result->row_size == 1) {
@@ -257,7 +257,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
                 void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
                 void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
                 if (equal(key, new_key, meta_column->column_type) && !cursor_is_deleted(cursor)) {
-                    error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
+                    db_log(ERROR, "key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
                     return false;
                 }
             }
@@ -267,9 +267,9 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
 }
 
 /* Check if table alreay exist. */
-static bool check_duplicate_table(char *table_name, DBResult *result) {
+static bool check_duplicate_table(char *table_name) {
     if (check_table_exist(table_name)) {
-        error_result(result, EXECUTE_TABLE_CREATE_FAIL, "Table '%s' already exists.", table_name); 
+        db_log(ERROR, "Table '%s' already exists.", table_name); 
         return false;
     } else 
         return true;
@@ -277,7 +277,7 @@ static bool check_duplicate_table(char *table_name, DBResult *result) {
 
 /* Check if support priamay key. 
  * Maybe it will allow to not support primary key, but now, must to do.  */
-static bool check_primary_null(CreateTableNode *create_table_node, DBResult *result) {
+static bool check_primary_null(CreateTableNode *create_table_node) {
 
     /* check primary key node. */
     if (create_table_node->primary_key_node)
@@ -289,19 +289,19 @@ static bool check_primary_null(CreateTableNode *create_table_node, DBResult *res
         if (create_table_node->column_def_set_node->column_defs[i]->is_primary)
             return true;
     }
-    error_result(result, EXECUTE_FAIL, "Must support primary key.");
+    db_log(ERROR, "Must support primary key.");
     return false;
 }
 
 /* Check if exists duplicate column name. */
-static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node, DBResult *result) {
+static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
     int i, j;
     for(i = 0; i < column_def_set_node->size; i++) {
         ColumnDefNode *column_def_node1 = column_def_set_node->column_defs[i];
         for(j = 0; j < column_def_set_node->size; j++) {
             ColumnDefNode *column_def_node2 = column_def_set_node->column_defs[j];
             if (i !=j && strcmp(column_def_node1->column->column_name, column_def_node2->column->column_name) == 0) {
-                error_result(result, EXECUTE_DUPLICATE_COLUMN, "Not allow duplicate column name '%s' in the same table.", column_def_node1->column->column_name);
+                db_log(ERROR, "Not allow duplicate column name '%s' in the same table.", column_def_node1->column->column_name);
                 return false;
             }
         }
@@ -310,7 +310,7 @@ static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node, D
 }
 
 /* Check insert node. */
-bool check_insert_node(InsertNode *insert_node, DBResult *result) {
+bool check_insert_node(InsertNode *insert_node) {
 
     /* Check table exist.*/
     Table *table = open_table(insert_node->table_name);
@@ -324,7 +324,7 @@ bool check_insert_node(InsertNode *insert_node, DBResult *result) {
         
         /* Check column number equals the insert values number. */
         if (meta_table->column_size != insert_node->value_item_set_node->num) {
-            error_result(result, EXECUTE_NOT_MATCH_COLUMN, "Column count doesn't match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
+            db_log(ERROR, "Column count doesn't match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
             return false;
         }
 
@@ -332,17 +332,17 @@ bool check_insert_node(InsertNode *insert_node, DBResult *result) {
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
             /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name, result))  
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
                 return false;
             /* Checke value valid. */
-            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type), result))
+            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type)))
                 return false;
         }
     } else {
 
         /* Check column number equals the insert values number. */
         if (insert_node->columns_set_node->size  != insert_node->value_item_set_node->num) {
-            db_error("Column count doesn't match value count\n");
+            db_log(ERROR, "Column count doesn't match value count\n");
             return false;
         }
 
@@ -352,10 +352,10 @@ bool check_insert_node(InsertNode *insert_node, DBResult *result) {
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name, result)) 
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
                 return false;
             /* Check value valid. */
-            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type), result)) 
+            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type))) 
                 return false;
         }
     }
@@ -363,28 +363,28 @@ bool check_insert_node(InsertNode *insert_node, DBResult *result) {
 }
 
 /* Check for update node. */
-bool check_update_node(UpdateNode *update_node, SelectResult *select_result, DBResult *result) {
+bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
     Table *table = open_table(update_node->table_name);
     return table != NULL 
-           && check_assignment_set_node(update_node->assignment_set_node, table, select_result, result) 
-           && check_condition_node(update_node->condition_node, table->meta_table, result);
+           && check_assignment_set_node(update_node->assignment_set_node, table, select_result) 
+           && check_condition_node(update_node->condition_node, table->meta_table);
 }
 
 /* Check for delete node. */
-bool check_delete_node(DeleteNode *delete_node, DBResult *result) {
+bool check_delete_node(DeleteNode *delete_node) {
     Table *table = open_table(delete_node->table_name);
-    return check_condition_node(delete_node->condition_node, table->meta_table, result);
+    return check_condition_node(delete_node->condition_node, table->meta_table);
 }
 
 /* Check for create table node. */
-bool check_create_table_node(CreateTableNode *create_table_node, DBResult *result) {
-    return check_duplicate_table(create_table_node->table_name, result)
-           && check_duplicate_column_name(create_table_node->column_def_set_node, result)
-           && check_primary_null(create_table_node, result);
+bool check_create_table_node(CreateTableNode *create_table_node) {
+    return check_duplicate_table(create_table_node->table_name)
+           && check_duplicate_column_name(create_table_node->column_def_set_node)
+           && check_primary_null(create_table_node);
 }
 
 /* Check if table uses refer. */
-static bool if_table_used_refer(char *table_name, char *refer_table_name, DBResult *result) {
+static bool if_table_used_refer(char *table_name, char *refer_table_name) {
     Table *table = open_table(table_name);
     assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
     MetaTable *meta_table = table->meta_table;
@@ -393,7 +393,7 @@ static bool if_table_used_refer(char *table_name, char *refer_table_name, DBResu
     for(i = 0; i < meta_table->column_size; i++) {
         MetaColumn *current_meta_column = meta_table->meta_column[i];
         if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
-            error_result(result, EXECUTE_TABLE_DROP_FAIL, "Table '%s' is refered by column '%s' in table '%s', so it cant`t be droped.", refer_table_name, current_meta_column->column_name, table_name);
+            db_log(ERROR , "Table '%s' is refered by column '%s' in table '%s', so it cant`t be droped.", refer_table_name, current_meta_column->column_name, table_name);
             return true;
         }
     }
@@ -402,12 +402,12 @@ static bool if_table_used_refer(char *table_name, char *refer_table_name, DBResu
 
 
 /* Chech allowed to drop table. */
-bool check_drop_table(char *table_name, DBResult *result) {
+bool check_drop_table(char *table_name) {
     TableList *table_list = get_table_list();
     int i;
     for (i = 0; i < table_list->count; i++) {
         char *curent_table_name = table_list->table_name_list[i];
-        if (if_table_used_refer(curent_table_name, table_name, result))
+        if (if_table_used_refer(curent_table_name, table_name))
             return false;
     }
     return true;

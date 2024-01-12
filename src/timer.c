@@ -24,7 +24,7 @@ int64_t get_current_sys_time(TIME_LEVEL time_level) {
 
     /* Get current timestamp. */
     if (clock_gettime(CLOCK_REALTIME, &tv)) {
-        db_error("Generate next xid error.\n");
+        db_log(PANIC, "Generate next xid error.\n");
         return -1;
     }
 

@@ -1,5 +1,4 @@
 #include <netinet/in.h>
-#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,7 +12,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <pthread.h>
-#include "utils.h"
+#include <stdbool.h>
 
 #define MAX_BUFF_SIZE 1<<20
 #define DEFAULT_HOST "127.0.0.1"
@@ -21,6 +20,19 @@
 #define BUFF_SIZE 1024
 
 int re_try;
+
+/* Check if empty string. */
+static bool is_empty(char *s) {
+    if (s == NULL) return true;
+    size_t size = strlen(s);
+    if (size == 0)
+        return true;
+    for(int i = 0; i < size; i++) {
+        if (*(s + i) != ' ')
+            return false;
+    }
+    return true;
+}
 
 /* Execute meta stament. */
 static bool meta_statment(char *input) {

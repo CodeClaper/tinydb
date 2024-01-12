@@ -16,6 +16,7 @@
 #include "session.h"
 #include "asserts.h"
 #include "ret.h"
+#include "log.h"
 #include "timer.h"
 
 #define KB_THRESHOLD 1024
@@ -120,14 +121,16 @@ void exec_show_statement(ShowNode *show_node, DBResult *result) {
     switch(show_node->type) {
         case SHOW_TABLES: {
             MapList *map_list = gen_table_map_list();
-            success_result(result, "Show tables executed successfully."); 
+            result->success = true;
             result->data = map_list;
+            db_log(SUCCESS, "Show tables executed successfully."); 
             break;
         }
         case SHOW_MEMORY: {
             MapList *map_list = gen_memory_map_list();
-            success_result(result, "Show memory executed successfully."); 
+            result->success = true;
             result->data = map_list;
+            db_log(SUCCESS, "Show memory executed successfully."); 
             break;
         }
     }

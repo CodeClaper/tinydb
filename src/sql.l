@@ -6,9 +6,8 @@
 #include "data.h"
 #include "mmu.h"
 #include "intpr.h"
-#include "ret.h"
-#include "y.tab.h"
 #include "log.h"
+#include "y.tab.h"
 int lineno = 1;
 int yyerror(const char *s);
 int yylex();
@@ -82,8 +81,6 @@ false                   return FALSE;
 %%
 
 int yyerror(const char *s) {
-    DBResult *result = new_db_result();
-	error_result(result, EXECUTE_SQL_ERROR ,"Sql syntax error near '%s' ", yytext);
-    db_send_result(result);
+	db_log(WARN, "Sql syntax error near [%s].", yytext);
     return 0;
 }

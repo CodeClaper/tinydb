@@ -1,7 +1,4 @@
-#include <stdio.h>
 #include <stdbool.h>
-#include <stdarg.h>
-#include <stdlib.h>
 
 /* Assert condition is true. */
 void assert_true(bool condition, char *format, ...);

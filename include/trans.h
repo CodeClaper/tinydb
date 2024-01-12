@@ -19,6 +19,9 @@ void commit_transaction(DBResult *result);
 /* Commit transaction automatically. */
 void auto_commit_transaction(DBResult *result);
 
+/* transaction roll back. */
+void rollback();
+
 /* Check if row is visible for current transaction. */
 bool row_is_visible(Row *row);
 

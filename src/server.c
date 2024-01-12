@@ -2,8 +2,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -48,7 +46,7 @@ void accept_request(void *arg) {
     char buf[1024];
     Session *session = new_session(client);
     set_session(session);
-    db_info("Client ID '%ld' connect successfully.", pthread_self());
+    db_log(INFO, "Client ID '%ld' connect successfully.", pthread_self());
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
         statement(buf);   
@@ -57,5 +55,5 @@ void accept_request(void *arg) {
     }
     close(client);
     destroy_session();
-    db_info("Client ID '%ld' disconnect.", pthread_self());
+    db_log(INFO, "Client ID '%ld' disconnect.", pthread_self());
 }

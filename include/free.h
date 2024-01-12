@@ -96,3 +96,5 @@ void free_map_list(MapList *map_list);
 /* Free DBResult. */
 void free_db_result(DBResult *result);
 
+/* Free LogEntry.*/
+void free_log_entry(LogEntry *log_entry);

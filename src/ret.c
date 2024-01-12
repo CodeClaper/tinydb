@@ -1,7 +1,6 @@
 /*
  * =============================================== Result Module ===============================================================
  * DBResult is the json format that db finally output, include flows:
- * [status]   The status is statement execution result.
  * [success]  Whether execution result successful or fail.
  * [message]  Output message.
  * [data]     Query data.
@@ -12,7 +11,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include "data.h"
 #include "mmu.h"
@@ -32,7 +30,6 @@ DBResult *new_db_result() {
     /* New DbResule and initialize it. */
     DBResult *result = db_malloc(sizeof(DBResult), SDT_DB_RESULT);
 
-    result->status = EXECUTE_FAIL;
     result->success = false;
     result->message = NULL;
     result->data = NULL;
@@ -42,31 +39,6 @@ DBResult *new_db_result() {
     return result;
 }
 
-/* Success resule. */
-void success_result(DBResult *result, char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buff[BUFF_SIZE];
-    vsprintf(buff, format, ap);
-    result->status = EXECUTE_SUCCESS;
-    result->success = true;
-    result->message = db_strdup(buff);
-    db_info(buff);
-    va_end(ap);
-}
-
-/* Error result. */
-void error_result(DBResult *result, ExecuteStatus status, char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buff[BUFF_SIZE];
-    vsprintf(buff, format, ap);
-    result->status = status;
-    result->success = false;
-    result->message = db_strdup(buff);
-    db_error("%s", buff);
-    va_end(ap);
-}
 
 /* Send out row. */
 static void db_send_row(Row *row) {
@@ -130,9 +102,7 @@ static void db_send_map(Map *map) {
 
 /* Send out db select execution result. */
 static void db_send_select_result(DBResult *result) {
-    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\"",
-            result->status, result->success ? "true" : "false", result->message);
-
+    db_send("{ \"success\": %s, \"message\": \"%s\"", result->success ? "true" : "false", get_log_msg());
     if (result->success) {
         db_send(", \"data\": ");
         SelectResult *select_result = result->data;
@@ -155,21 +125,21 @@ static void db_send_select_result(DBResult *result) {
 
 /* Send out db none data result. */
 static void db_send_nondata_rows_result(DBResult *result) {
-    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf }\n", 
-            result->status, result->success ? "true" : "false", result->message, result->rows, result->duration);
+    db_send("{ \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf }\n", 
+             result->success ? "true" : "false", get_log_msg(), result->rows, result->duration);
 }
 
 /* Send out db none data result. */
 static void db_send_nondata_result(DBResult *result) {
-    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\", \"duration\": %lf }\n", 
-            result->status, result->success ? "true" : "false", result->message, result->duration);
+    db_send("{ \"success\": %s, \"message\": \"%s\", \"duration\": %lf }\n", 
+            result->success ? "true" : "false", get_log_msg(), result->duration);
 }
 
 /* Send out db show tables result. */
 static void db_send_map_list(DBResult *result) {
     MapList *map_list = (MapList *)result->data;
-    db_send("{ \"status\": %d, \"success\": %s, \"message\": \"%s\", \"data\": ",
-            result->status, result->success ? "true" : "false", result->message);
+
+    db_send("{ \"success\": %s, \"message\": \"%s\", \"data\": ", result->success ? "true" : "false", get_log_msg());
     map_list->size == 1 ? db_send("") : db_send("[");
     uint32_t i = 0;
     for(i = 0; i < map_list->size; i++) {

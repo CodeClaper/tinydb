@@ -160,7 +160,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
     /* Table and MetaTable. */
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {
-        error_result(result, EXECUTE_TABLE_OPEN_FAIL, "Try to open table '%s' fail.", insert_node->table_name);
+        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
         return NULL;
     }
     MetaTable *meta_table = table->meta_table;
@@ -208,30 +208,31 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
     return row;
 }
 
-/* Execute insert statement. */
+/* Execute insert statement. 
+ * If successfully, return the Refer which maybe used by other table.
+ * If fail, return NULL. 
+ * */
 Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     
     /* Check if table exists. */
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {
-        error_result(result, EXECUTE_OPEN_DATABASE_FAIL, "Try to open table '%s' fail.", insert_node->table_name);
+        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
         return NULL;
     }
 
     /* Check if insert node valid. */
-    if (!check_insert_node(insert_node, result)) 
+    if (!check_insert_node(insert_node)) 
         return NULL;
 
     Row *row = generate_insert_row(insert_node, result);
-    if (row == NULL) {
-        result->status = EXECUTE_FAIL;
+    if (row == NULL) 
         return NULL;
-    }
 
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
-        error_result(result, EXECUTE_DUPLICATE_KEY, "key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
+        db_log(ERROR, "key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
         return NULL;
     }
 
@@ -244,9 +245,11 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     /* Free unuesed memeory */
     free_cursor(cursor);
     free_row(row);
-
-    success_result(result, "Insert one row data to table '%s' successfully.", insert_node->table_name);
+    
+    result->success = true;
     result->rows = 1;
+
+    db_log(SUCCESS, "Insert one row data to table '%s' successfully.", insert_node->table_name);
     return refer;    
 }
 
