@@ -2,13 +2,31 @@
 
 ## Introduction
 
-TinyDb (can also be called tinydb as well) is a light, statble and effecive object-oriented database engine.  TinyDb is intended to design and store more intuitive data model. When you use object-oriented language to build program like java, python etc,  the object  data structure in the code and the table structure in the TinyDb database have direct one-to-one mapping relationship. By TinyDb, you can easily save the data in memory to disk without unnecessary data structure conversion as well as reading data from disk.
+TinyDb (can also be called tinydb as well) is a light, statble and effecive object-oriented relational database engine. TinyDb is intended to design and store more intuitive data model. When you use object-oriented language to build program like java, python etc,  the object  data structure in the code and the table structure in the TinyDb database have direct one-to-one mapping relationship. By TinyDb, you can easily save the data in memory to disk without unnecessary data structure conversion as well as reading data from disk.
 
 ## Requirements
 
 ### Linux OS
 
-TinyDb is a server-side database engine and currently only support linux environment. 
+TinyDb is a server-side database engine and only support Linux environment for now. 
+
+### GNU Autotools
+
+TinyDb uses GNU Automake as the tool to compile the program.  To install [GNU build system](https://en.wikipedia.org/wiki/GNU_build_system), also known as Autotools, you need to install autoconf and automake packages.
+
+**Debian** or **Ubuntu**
+
+```shell
+sudo apt-get install autoconf automake
+```
+
+**Centos**
+
+```shell
+yum install autoconf automake
+```
+
+
 
 ### Lex & Yacc
 
@@ -46,8 +64,6 @@ yum install readline-devel
 
 ## Compile
 
-TinyDb uses GNU Automake as the tool to compile the program. 
-
 Firstly, generate configuration scripts.
 
 ```shell
@@ -60,7 +76,7 @@ The configure script is automatic generated, run it to to determine certain info
 ./configure
 ```
 
-If you want debug.
+If you want to use GDB debug.
 
 ```shell
 ./configure --enable-debug=yes CFLAGS='-g -O0'
@@ -92,7 +108,7 @@ make
 - [x] Query data with aggregate function sum, avg, max, min, count
 - [x] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference.
 - [x] Data type valid check.
-- [x] Implement MVCC , support transaction and support the four types of transaction isolation levels.
+- [x] Implement MVCC, support transaction and support the four types of transaction isolation levels.
 - [ ] ACID.
 - [ ] Subquery.
 - [ ] Support index, B+Tree index store
