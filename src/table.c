@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -16,7 +15,6 @@
 #include "asserts.h"
 #include "utils.h"
 #include "meta.h"
-#include "misc.h"
 #include "ltree.h"
 #include "pager.h"
 #include "log.h"
@@ -34,7 +32,7 @@ TableList *get_table_list() {
     DIR *dir;
     struct dirent *entry;
     if ((dir = opendir(conf->data_dir)) ==NULL) 
-        fatals("System error, not found directory: ", conf->data_dir); 
+        db_log(PANIC, "System error, not found directory: ", conf->data_dir); 
     else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
@@ -124,7 +122,9 @@ bool create_table(MetaTable *meta_table, DBResult *result) {
     return true;
 }
 
-/* Open a table file. */
+/* Open a table file. 
+ * Return Table or NULL if not exists.
+ * */
 Table *open_table(char *table_name) {
 
     /* Check valid. */
@@ -166,45 +166,6 @@ Table *open_table(char *table_name) {
     return table;
 }
 
-/* Define cursor when meet leaf node. */
-static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t page_num, void *key) {
-    Cursor *cursor = db_malloc(sizeof(Cursor), SDT_CURSOR);
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
-    uint32_t row_len = calc_table_row_length(table);
-    uint32_t key_len = calc_primary_key_length(table);
-    cursor->table = table;
-    cursor->page_num = page_num;
-    cursor->cell_num = get_leaf_node_cell_index(leaf_node, key, cell_num, key_len, row_len, primary_meta_column->column_type);
-    return cursor;
-}
-
-/* Define cursor when meet internal node. */
-static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
-    uint keys_num = get_internal_node_keys_num(internal_node);
-    uint32_t key_len = calc_primary_key_length(table);
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
-    void *child_node = get_page(table->pager, child_page_num);
-    
-    switch(get_node_type(child_node)) {
-        case LEAF_NODE:
-            return define_cursor_leaf_node(table, child_node, child_page_num, key);
-        case INTERNAL_NODE:
-            return define_cursor_internal_node(table, child_node, key);
-    }
-}
-
-/* Define cursor. */
-Cursor *define_cursor(Table *table, void *key) {
-    void *root_node = get_page(table->pager, table->root_page_num);
-    switch(get_node_type(root_node)) {
-        case LEAF_NODE:
-            return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
-        case INTERNAL_NODE:
-            return define_cursor_internal_node(table, root_node, key);
-    }
-}
 
 /* Drop an existed table. */
 bool drop_table(char *table_name, DBResult *result) {

@@ -12,13 +12,13 @@
 #include "mmu.h"
 #include "lock.h"
 #include "trans.h"
+#include "xlog.h"
 #include "parser.h"
 #include "stmt.h"
 #include "free.h"
 #include "server.h"
 #include "common.h"
 #include "session.h"
-#include "misc.h"
 #include "conf.h"
 #include "gc.h"
 #include "cache.h"
@@ -39,6 +39,8 @@ static void init() {
     init_lock();
     /* Initialise transaction. */
     init_transaction();
+    /* Initialise xlog. */
+    init_xlog();
     /* Initialise table cache. */
     init_table_cache();
     /* Load configuration. */
@@ -63,15 +65,15 @@ int main(void) {
 
     /* start gc */
     if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)
-        fatal("Create new thread fail.");
+        db_log(PANIC, "Create new thread fail.");
 
     /* listen */
     while(true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
         if (client_secket == -1)
-            fatal("Socket accept fail.");
+            db_log(PANIC, "Socket accept fail.");
         if (pthread_create(&new_thread, NULL, (void *)accept_request, (void *)(intptr_t)client_secket) != 0)
-            fatal("Create new thread fail.");
+            db_log(PANIC, "Create new thread fail.");
     }
     end();
 

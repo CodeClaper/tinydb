@@ -47,7 +47,7 @@ int yylex();
 };
 
 %token NL
-%token <keyword> BEGINN COMMIT
+%token <keyword> BEGINN COMMIT ROLLBACK
 %token <keyword> CREATE DROP SELECT INSERT UPDATE DELETE DESCRIBE
 %token <keyword> FROM
 %token <keyword> WHERE
@@ -117,6 +117,10 @@ statement:
                 {
                     ast_node->statement_type = COMMIT_TRANSACTION_STMT;
                 }
+            | rollback_transaction_statement
+                {
+                    ast_node->statement_type = ROLLBACK_TRANSACTION_STMT;
+                }
             | create_table_statement
                 {
                     ast_node->statement_type = CREATE_TABLE_STMT;
@@ -163,6 +167,9 @@ begin_transaction_statement:
             ;
 commit_transaction_statement:
             COMMIT end
+            ;
+rollback_transaction_statement:
+            ROLLBACK end
             ;
 create_table_statement: 
             CREATE TABLE table LEFTPAREN column_defs RIGHTPAREN end

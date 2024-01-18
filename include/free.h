@@ -98,3 +98,6 @@ void free_db_result(DBResult *result);
 
 /* Free LogEntry.*/
 void free_log_entry(LogEntry *log_entry);
+
+/* Free XLogEntry. */
+void free_xlog_entry(XLogEntry *xlog_entry);

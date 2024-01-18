@@ -6,7 +6,6 @@
 #include "mmu.h"
 #include "data.h"
 #include "common.h"
-#include "misc.h"
 #include "utils.h"
 #include "intpr.h"
 #include "log.h"

@@ -24,7 +24,6 @@
 #include "log.h"
 #include "mmu.h"
 #include "meta.h"
-#include "misc.h"
 #include "ltree.h"
 #include "opr.h"
 #include "pager.h"
@@ -125,7 +124,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
                     value_item_node->data_type = T_CHAR;
                     return value_item_node->s_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }
@@ -143,7 +142,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
                 case T_FLOAT:
                     return &value_item_node->f_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }
@@ -158,7 +157,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
                 case T_DOUBLE:
                     return &value_item_node->d_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }
@@ -174,7 +173,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
                 case T_TIMESTAMP:
                     return &value_item_node->t_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }
@@ -193,14 +192,14 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
                 case T_DATE:
                     return &value_item_node->t_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
              }
              break;
         }
         case T_REFERENCE:
             return value_item_node->nest_value_item_set; 
         default:
-            fatal("Not implement yet.");
+            db_log(PANIC, "Not implement yet.");
     }
     return NULL;
 }
@@ -249,7 +248,7 @@ static bool satisfy_internal_condition_node(void *min_key, void *max_key, void *
             return greater(target_key, min_key, key_data_type);
         case O_IN:
         case O_LIKE:
-            fatal("Not implement yet.");
+            db_log(PANIC, "Not implement yet.");
     }
     return true;
 }
@@ -483,7 +482,7 @@ static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *q
      * */
     switch (function_value_node->value_type) {
         case V_ALL: 
-            fatal("Not allow use all as max function input value.");
+            db_log(ERROR, "Not allow use all as max function input value.");
             break;
         case V_INT: {
             key_value->value = &function_value_node->i_value;
@@ -542,7 +541,7 @@ static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *q
      * */
     switch (function_value_node->value_type) {
         case V_ALL: 
-            fatal("Not allow use all as min function input value.");
+            db_log(ERROR, "Not allow use all as min function input value.");
             break;
         case V_INT: {
             key_value->value = &function_value_node->i_value;

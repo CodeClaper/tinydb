@@ -8,8 +8,8 @@
 #include "ltree.h"
 #include "meta.h"
 #include "opr.h"
+#include "log.h"
 #include "common.h"
-#include "misc.h"
 
 
 /* Check if key already exists  */
@@ -57,7 +57,7 @@ char *get_key_str(void *key, DataType data_type) {
         }
         case T_DATE:
         case T_TIMESTAMP:
-            fatal("Not allowed data type as primary key.");
+            db_log(PANIC, "Not allowed data type as primary key.");
     }
     return NULL;
 }

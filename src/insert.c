@@ -10,7 +10,6 @@
 #include "insert.h"
 #include "mmu.h"
 #include "common.h"
-#include "misc.h"
 #include "table.h"
 #include "meta.h"
 #include "ltree.h"
@@ -89,7 +88,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                     value_item_node->data_type = T_DOUBLE;
                     return &value_item_node->d_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }
@@ -101,7 +100,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                     value_item_node->data_type = T_FLOAT;
                     return &value_item_node->f_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }
@@ -120,7 +119,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                 case T_DATE:
                     return &value_item_node->t_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }
@@ -136,7 +135,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                 case T_TIMESTAMP:
                     return &value_item_node->t_value;
                 default:
-                    fatal("Data type error.");
+                    db_log(PANIC, "Data type error.");
             }
             break;
         }

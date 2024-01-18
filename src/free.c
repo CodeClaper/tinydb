@@ -5,7 +5,7 @@
 #include "refer.h"
 #include "table.h"
 #include "index.h"
-#include "misc.h"
+#include "xlog.h"
 
 /* Free value */
 void free_value(void *value, DataType data_type) {
@@ -483,5 +483,14 @@ void free_log_entry(LogEntry *log_entry) {
         if (log_entry->message)
             db_free(log_entry->message);
         db_free(log_entry);
+    }
+}
+
+/* Free XLogEntry. */
+void free_xlog_entry(XLogEntry *xlog_entry) {
+    if (xlog_entry) {
+        free_refer(xlog_entry->refer);
+        free_xlog_entry(xlog_entry->next);
+        db_free(xlog_entry);
     }
 }

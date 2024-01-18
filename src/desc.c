@@ -5,7 +5,6 @@
 #include "data.h"
 #include "desc.h"
 #include "mmu.h"
-#include "misc.h"
 #include "table.h"
 #include "meta.h"
 #include "copy.h"

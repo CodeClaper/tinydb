@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include "pager.h"
 #include "mmu.h"
-#include "misc.h"
+#include "log.h"
 
 /* Open the pager. */
 Pager *open_pager(char *table_file_path){
@@ -32,7 +32,7 @@ Pager *open_pager(char *table_file_path){
     pager->size = (file_length / PAGE_SIZE);
 
     if (file_length % PAGE_SIZE != 0) {
-        fatal("Db file is not a whole number pages");
+        db_log(PANIC, "Db file is not a whole number pages");
     }
     for(uint32_t i = 0; i < MAX_TABLE_PAGE ; i++) {
         pager->pages[i] = NULL;
@@ -52,7 +52,7 @@ void *get_page(Pager *pager, int page_num) {
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
         if (read_bytes == -1) {
-            fatald("Table file read error and errno", errno);
+            db_log(PANIC, "Table file read error and errno", errno);
         }
         pager->pages[page_num] = page;
     }
@@ -66,7 +66,7 @@ void *get_page(Pager *pager, int page_num) {
 /* Flush page to disk. */
 void flush_page(Pager *pager, uint32_t page_num) {
     if (pager->pages[page_num] == NULL) {
-        fatal("Tried to flush null page to disk");
+        db_log(ERROR, "Tried to flush null page to disk");
     } 
     off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * page_num, SEEK_SET);
     if (offset == -1) {
@@ -75,7 +75,7 @@ void flush_page(Pager *pager, uint32_t page_num) {
     }
     ssize_t write_size = write(pager->file_descriptor, pager->pages[page_num], PAGE_SIZE);
     if (write_size == -1) {
-        fatald("Try to write page error and errno", errno);        
+        db_log(PANIC, "Try to write page error and errno", errno);        
     }
 }
 

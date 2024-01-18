@@ -14,8 +14,8 @@
 #include "ltree.h"
 #include "check.h"
 #include "free.h"
-#include "misc.h"
 #include "trans.h"
+#include "refer.h"
 #include "asserts.h"
 #include "session.h"
 #include "ret.h"
@@ -92,7 +92,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     key_value->value = db_strdup(value->s_value);
                     break;
                 case T_REFERENCE:
-                    fatal("Not implement yet.");
+                    db_log(PANIC, "Not implement yet.");
                     break;
             }    
         }

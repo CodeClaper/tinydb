@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include "table.h"
@@ -9,9 +8,9 @@
 #include "data.h"
 #include "index.h"
 #include "meta.h"
+#include "log.h"
 #include "asserts.h"
 #include "common.h"
-#include "misc.h"
 #include "mmu.h"
 
 /* Copy value. */
@@ -67,7 +66,7 @@ void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
             return refer;
         }
         default:
-            fatal("Not supported data type.");
+            db_log(PANIC, "Not supported data type.");
     }    
 }
 

@@ -9,7 +9,6 @@
 #include "server.h"
 #include "mmu.h"
 #include "common.h"
-#include "misc.h"
 #include "stmt.h"
 #include "free.h"
 #include "session.h"
@@ -22,19 +21,17 @@ int startup(u_short port) {
     struct sockaddr_in *address = sys_malloc(sizeof(struct sockaddr_in));
     httpd = socket(PF_INET, SOCK_STREAM, 0);
     if (httpd == -1)
-        fatal("Create socket fail.");
+        db_log(PANIC, "Create socket fail.");
     memset(address, 0, sizeof(struct sockaddr_in));
     address->sin_family = AF_INET;
     address->sin_port = htons(port);
     address->sin_addr.s_addr = htonl(INADDR_ANY);
-    if ((setsockopt(httpd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) < 0) {
-        fatal("Set socket option fail.");
-    }
-    if (bind(httpd, (struct sockaddr *)address, sizeof(*address)) < 0) {
-        fatal("Bind socket fail.");
-    }
+    if ((setsockopt(httpd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) < 0) 
+        db_log(PANIC, "Set socket option fail.");
+    if (bind(httpd, (struct sockaddr *)address, sizeof(*address)) < 0) 
+        db_log(PANIC, "Bind socket fail.");
     if (listen(httpd, 10) < 0) {
-        fatal("Socket listen fail.");
+        db_log(PANIC, "Socket listen fail.");
     }
     return httpd;
 }

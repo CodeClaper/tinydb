@@ -8,7 +8,6 @@
 #include "show.h"
 #include "mmu.h"
 #include "common.h"
-#include "misc.h"
 #include "utils.h"
 #include "mmu.h"
 #include "free.h"
@@ -31,7 +30,7 @@ static MapList *gen_table_map_list() {
     map_list->size = 0;
     map_list->data = db_malloc(0, SDT_POINTER);
     if ((dir = opendir(conf->data_dir)) ==NULL) 
-        fatals("System error, not found directory: ", conf->data_dir); 
+        db_log(PANIC, "System error, not found directory: ", conf->data_dir); 
     else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {

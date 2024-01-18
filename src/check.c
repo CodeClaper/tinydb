@@ -13,7 +13,6 @@
 #include "pager.h"
 #include "meta.h"
 #include "index.h"
-#include "misc.h"
 #include "select.h"
 #include "refer.h"
 
@@ -131,7 +130,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             return exe_result == REG_NOERROR;
         }
         default:
-            fatal("Not implement yet.");
+            db_log(PANIC, "Not implement yet.");
     }
 
 }

@@ -19,7 +19,10 @@
 #include "copy.h"
 #include "free.h"
 #include "select.h"
+#include "meta.h"
+#include "index.h"
 #include "ltree.h"
+#include "pager.h"
 #include "asserts.h"
 
 /* Generate new Refer. 
@@ -40,6 +43,56 @@ Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
     cursor->cell_num = cell_num;
     return cursor;
 }
+
+
+/* Define cursor when meet leaf node. */
+static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t page_num, void *key) {
+    Cursor *cursor = db_malloc(sizeof(Cursor), SDT_CURSOR);
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
+    uint32_t row_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
+    cursor->table = table;
+    cursor->page_num = page_num;
+    cursor->cell_num = get_leaf_node_cell_index(leaf_node, key, cell_num, key_len, row_len, primary_meta_column->column_type);
+    return cursor;
+}
+
+/* Define cursor when meet internal node. */
+static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
+    uint keys_num = get_internal_node_keys_num(internal_node);
+    uint32_t key_len = calc_primary_key_length(table);
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
+    void *child_node = get_page(table->pager, child_page_num);
+    
+    switch(get_node_type(child_node)) {
+        case LEAF_NODE:
+            return define_cursor_leaf_node(table, child_node, child_page_num, key);
+        case INTERNAL_NODE:
+            return define_cursor_internal_node(table, child_node, key);
+    }
+}
+
+/* Define Cursor. */
+Cursor *define_cursor(Table *table, void *key) {
+    void *root_node = get_page(table->pager, table->root_page_num);
+    switch(get_node_type(root_node)) {
+        case LEAF_NODE:
+            return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
+        case INTERNAL_NODE:
+            return define_cursor_internal_node(table, root_node, key);
+    }
+}
+
+/* Define Refer */
+Refer *define_refer(Row *row) {
+    Table *table = open_table(row->table_name);
+    Cursor *cursor = define_cursor(table, row->key);
+
+    return convert_refer(cursor);
+}
+
 
 /* Check if refer null. 
  * If page number is -1 and cell number is -1, it means refer null. */
@@ -65,6 +118,15 @@ Refer *convert_refer(Cursor *cursor) {
     refer->cell_num = cursor->cell_num;
 
     return refer;
+}
+
+/* Convert to Cursor from Refer. */
+Cursor *convert_cursor(Refer *refer) {
+    if (refer == NULL)
+        return NULL;
+    Table *table = open_table(refer->table_name);
+
+    return new_cursor(table, refer->page_num, refer->cell_num);
 }
 
 /* Check if table has column refer to. */

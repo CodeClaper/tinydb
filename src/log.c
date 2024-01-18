@@ -12,8 +12,7 @@
 #include "data.h"
 #include "defs.h"
 #include "timer.h"
-#include "trans.h"
-#include "misc.h"
+#include "xlog.h"
 #include "asserts.h"
 
 /* Log Level names */
@@ -22,7 +21,7 @@ static char* LOG_LEVEL_NAME_LIST[] = { "TRACE", "DEBUG", "INFO", "SUCCS", "WARN"
 /* Lock */
 static pthread_mutex_t mutex;
 
-
+/* LogTable Buffer. */
 static LogTable *ltable;
 
 
@@ -195,8 +194,8 @@ void db_log(LogLevel lev, char *format, ...) {
         case ERROR:
             store_log_msg(message);
             /* Trigger transaction roll back. */
-            rollback();
             break;
+        case FATAL:
         case PANIC:
             exit(1);
         default:

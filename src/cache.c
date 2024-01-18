@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include "cache.h"
@@ -54,15 +53,16 @@ void *remove_table_cache(char *table_name) {
     for(i = 0; i < t_cache->size; i++) {
         Table *current = t_cache->table_list[i];
         if (strcmp(current->meta_table->table_name, table_name) == 0) {
-            /* Move to cover. */
+            /* Right moves to cover. */
             for (j = i; j < t_cache->size - 1; j++) {
                 memcpy(t_cache->table_list + j, t_cache->table_list + j + 1, sizeof(Table *));
             }
             memset(t_cache->table_list + t_cache->size - 1, 0, sizeof(Table *));
-            t_cache->size--;
-            t_cache->table_list = db_realloc(t_cache->table_list, sizeof(Table *) * t_cache->size);
             /* Free memory. */
             free_table(current);     
+            break;
         }
     }
+    t_cache->size--;
+    t_cache->table_list = db_realloc(t_cache->table_list, sizeof(Table *) * t_cache->size);
 }

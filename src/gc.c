@@ -13,13 +13,14 @@
 #include "gc.h"
 #include "data.h"
 #include "mmu.h"
+#include "log.h"
 #include "free.h"
 #include "trans.h"
 #include "table.h"
 #include "ltree.h"
+#include "refer.h"
 #include "select.h"
 #include "asserts.h"
-#include "log.h"
 
 #define DEFAULT_GC_INTERVAL 30
 

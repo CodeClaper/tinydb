@@ -9,8 +9,8 @@
 #include <time.h>
 #include "meta.h"
 #include "mmu.h"
+#include "log.h"
 #include "common.h"
-#include "misc.h"
 #include "ltree.h"
 #include "asserts.h"
 #include "pager.h"
@@ -45,7 +45,7 @@ uint32_t default_data_len(DataType column_type) {
         case T_REFERENCE:
             return DEFAULT_REFERENCE_LENGTH;
         default:
-            fatal("Unknown column type");
+            db_log(PANIC, "Unknown column type");
   }
 }
 
@@ -115,7 +115,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
             return s;
         }
         default:
-            fatal("Not support data type");
+            db_log(PANIC, "Not support data type");
     }
     return NULL;
 }
@@ -137,7 +137,7 @@ uint32_t calc_primary_key_length(Table *table) {
        if (meta_column->is_primary)
            return meta_column->column_length;
      }
-     fatal("Not found primary key.");
+     db_log(PANIC, "Not found primary key.");
      return -1;
 }
 

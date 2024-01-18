@@ -29,11 +29,11 @@
 #include "lock.h"
 #include "common.h"
 #include "asserts.h"
-#include "misc.h"
 #include "const.h"
 #include "pager.h"
 #include "meta.h"
 #include "opr.h"
+#include "log.h"
 #include "index.h"
 
 /* If obsolute node. */
@@ -1203,7 +1203,7 @@ static void *get_row_value(Row *row, MetaColumn *meta_column) {
         if (strcmp(column_name, row->data[i]->key) == 0)
            return row->data[i]->value;
     }
-    fatals("Inner error, unknown column ", column_name);
+    db_log(PANIC, "Inner error, unknown column ", column_name);
     return NULL;
 }
 

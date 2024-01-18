@@ -4,7 +4,6 @@
 #include "cond.h"
 #include "mmu.h"
 #include "common.h"
-#include "misc.h"
 #include "copy.h"
 #include "asserts.h"
 

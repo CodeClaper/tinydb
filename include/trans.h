@@ -6,12 +6,15 @@ void init_transaction();
 /* Any running transaction. */
 bool any_transaction_running();
 
+/* New transaction which will be committed automatically. */
+void auto_begin_transaction();
+
 /* New transaction which will be commited automatically. */
 void begin_transaction(DBResult *result);
 
 /* Get current thread transction handle. 
- * Firstly, try to find in the xtable, is not found, create new one. */
-TransactionHandle *get_current_transaction();
+ * Return current thread transaction, return NULL if not found. */
+TransactionHandle *find_transaction();
 
 /* Commit transaction manually. */
 void commit_transaction(DBResult *result);
@@ -19,8 +22,8 @@ void commit_transaction(DBResult *result);
 /* Commit transaction automatically. */
 void auto_commit_transaction(DBResult *result);
 
-/* transaction roll back. */
-void rollback();
+/* Rollback transaction. */
+void rollback_transaction(DBResult *result);
 
 /* Check if row is visible for current transaction. */
 bool row_is_visible(Row *row);

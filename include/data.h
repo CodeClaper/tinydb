@@ -79,7 +79,9 @@ typedef enum SysDataType{
     SDT_TRANSACTION_HANDLE,
     SDT_TRANSACTION_TABLE,
     SDT_LOG_ENTRY,
-    SDT_LOG_TABLE
+    SDT_LOG_TABLE,
+    SDT_XLOG_ENTRY,
+    SDT_XLOG_TABLE
 }SysDataType;
 
 static char *SYS_DATA_TYPE_NAMES[] = { \
@@ -140,7 +142,9 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "TRANSACTION_HANDLE",\
    "TRANSACTION_TABLE",\
    "LOG_ENTRY",\
-   "LOG_TABLE"\
+   "LOG_TABLE",\
+   "XLOG_ENTRY",\
+   "XLOG_TABLE"\
 };
 
 /* OprType */
@@ -172,7 +176,7 @@ typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
 
 /* StatementType */
-typedef enum { BEGIN_TRANSACTION_STMT, COMMIT_TRANSACTION_STMT, CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT, DROP_TABLE_STMT } StatementType; // statement type
+typedef enum { BEGIN_TRANSACTION_STMT, COMMIT_TRANSACTION_STMT, ROLLBACK_TRANSACTION_STMT, CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT, DROP_TABLE_STMT } StatementType; // statement type
 
 /* Tansaction operation type. */
 typedef enum { TR_SELECT, TR_INSERT, TR_DELETE, TR_UPDATE } TransOpType;
@@ -207,7 +211,7 @@ typedef enum {
     SUCCESS,    /* Success result to client. */
     WARN,       /* For unexpected messages including sql syntaxt error, reapeated begin transaction or commit .etc. */ 
     ERROR,      /* Abort transaction. */
-    TATAL,      /* Abort process. */
+    FATAL,      /* Abort process. */
     PANIC       /* Shut down the database. */
 } 
 LogLevel;
@@ -220,6 +224,9 @@ typedef enum LockMode { RD_MODE, WR_MODE } LockMode;
 
 /* The Four Transaction Isolation Level. */
 typedef enum { READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE } TransIsolationLevel;
+
+/* DDL Type. */
+typedef enum DDLType { DDL_INSERT,  DDL_UPDATE, DDL_DELETE } DDLType;
 
 /* ColumnNode */
 typedef struct {
@@ -606,5 +613,20 @@ typedef struct LogTable {
     LogEntry *tail;
     uint32_t size;
 } LogTable;
+
+
+/* XLogEntry */
+typedef struct XLogEntry {
+    int64_t xid;    /* Transaction Id */
+    Refer *refer;   /* Row refer. */
+    DDLType type;  /* DDL type. */
+    struct XLogEntry *next; /* Next */
+}XLogEntry;
+
+/* XLogEntry */
+typedef struct XLogTable {
+    XLogEntry **list;
+    uint32_t size;
+} XLogTable;
 
 #endif

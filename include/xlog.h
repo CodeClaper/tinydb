@@ -1,8 +1,15 @@
 #include "data.h"
-#include <stdint.h>
 
-typedef struct XLogEntity {
-    char *LSN;      /* Log Sequence Number */
-    int64_t x_id;   /* Transaction Id */
-}XLogEntity;
+
+/* Initialise XLOG. */
+void init_xlog();
+
+/* Insert into XLogEntry. */
+void insert_xlog_entry(Refer *refer, DDLType type) ;
+
+/* Commit Xlog. */
+void commit_xlog();
+
+/* Execute rollback. */
+void execute_roll_back();
 

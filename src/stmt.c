@@ -1,13 +1,9 @@
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <time.h>
 #include "stmt.h"
 #include "mmu.h"
 #include "common.h"
 #include "asserts.h"
-#include "misc.h"
 #include "parser.h"
 #include "table.h"
 #include "create.h"
@@ -37,6 +33,12 @@ static void statement_commit_transaction(Statement *stmt, DBResult *result) {
     commit_transaction(result);
 }
 
+/* Rollback tranasction statement. */
+static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
+    assert_true(stmt->statement_type == ROLLBACK_TRANSACTION_STMT, "System error, rollback tranasction statement type error.\n");
+    rollback_transaction(result);
+}
+
 /* Create table Statement. */
 static void statement_create_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == CREATE_TABLE_STMT, "System error, create statement type error.\n");
@@ -53,28 +55,31 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
     }
 }
 
-
 /*Insert Statment*/
 static void statement_insert(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == INSERT_STMT, "System error, insert statement type error.\n");
+    auto_begin_transaction();
     exec_insert_statement(stmt->ast_node->insert_node, result);
 }
 
 /*Select Statement*/
 static void statement_select(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == SELECT_STMT, "System error, select statement type error.\n");
+    auto_begin_transaction();
     exec_select_statement(statement->ast_node->select_node, result); 
 }
 
 /*Update statemetn*/
 static void statement_update(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == UPDATE_STMT, "System error, update statement type error.\n");
+    auto_begin_transaction();
     exec_update_statment(statement->ast_node->update_node, result);
 }
 
 /*Delete Statement*/
 static void statement_delete(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == DELETE_STMT, "System error, delete statement type error.\n");
+    auto_begin_transaction();
     exec_delete_statement(statement->ast_node->delete_node, result);
 }
 
@@ -124,6 +129,9 @@ void statement(char *sql) {
                     break;
                 case COMMIT_TRANSACTION_STMT:
                     statement_commit_transaction(statement, result);
+                    break;
+                case ROLLBACK_TRANSACTION_STMT:
+                    statement_roolback_transaction(statement, result);
                     break;
                 case CREATE_TABLE_STMT:
                     statement_create_table(statement, result);

@@ -57,65 +57,66 @@ extern int yydebug;
     NL = 258,                      /* NL  */
     BEGINN = 259,                  /* BEGINN  */
     COMMIT = 260,                  /* COMMIT  */
-    CREATE = 261,                  /* CREATE  */
-    DROP = 262,                    /* DROP  */
-    SELECT = 263,                  /* SELECT  */
-    INSERT = 264,                  /* INSERT  */
-    UPDATE = 265,                  /* UPDATE  */
-    DELETE = 266,                  /* DELETE  */
-    DESCRIBE = 267,                /* DESCRIBE  */
-    FROM = 268,                    /* FROM  */
-    WHERE = 269,                   /* WHERE  */
-    INTO = 270,                    /* INTO  */
-    SET = 271,                     /* SET  */
-    VALUES = 272,                  /* VALUES  */
-    TABLE = 273,                   /* TABLE  */
-    SHOW = 274,                    /* SHOW  */
-    TABLES = 275,                  /* TABLES  */
-    MAX = 276,                     /* MAX  */
-    MIN = 277,                     /* MIN  */
-    COUNT = 278,                   /* COUNT  */
-    SUM = 279,                     /* SUM  */
-    AVG = 280,                     /* AVG  */
-    TRUE = 281,                    /* TRUE  */
-    FALSE = 282,                   /* FALSE  */
-    NOT = 283,                     /* NOT  */
-    NULLX = 284,                   /* NULLX  */
-    CHAR = 285,                    /* CHAR  */
-    INT = 286,                     /* INT  */
-    LONG = 287,                    /* LONG  */
-    STRING = 288,                  /* STRING  */
-    BOOL = 289,                    /* BOOL  */
-    FLOAT = 290,                   /* FLOAT  */
-    DOUBLE = 291,                  /* DOUBLE  */
-    DATE = 292,                    /* DATE  */
-    TIMESTAMP = 293,               /* TIMESTAMP  */
-    PRIMARY = 294,                 /* PRIMARY  */
-    KEY = 295,                     /* KEY  */
-    EQ = 296,                      /* EQ  */
-    NE = 297,                      /* NE  */
-    GT = 298,                      /* GT  */
-    GE = 299,                      /* GE  */
-    LT = 300,                      /* LT  */
-    LE = 301,                      /* LE  */
-    IN = 302,                      /* IN  */
-    LIKE = 303,                    /* LIKE  */
-    AND = 304,                     /* AND  */
-    OR = 305,                      /* OR  */
-    ALL = 306,                     /* ALL  */
-    COMMA = 307,                   /* COMMA  */
-    SEMICOLON = 308,               /* SEMICOLON  */
-    QUOTE = 309,                   /* QUOTE  */
-    POINT = 310,                   /* POINT  */
-    LEFTPAREN = 311,               /* LEFTPAREN  */
-    RIGHTPAREN = 312,              /* RIGHTPAREN  */
-    SYSTEM = 313,                  /* SYSTEM  */
-    CONFIG = 314,                  /* CONFIG  */
-    MEMORY = 315,                  /* MEMORY  */
-    IDENTIFIER = 316,              /* IDENTIFIER  */
-    INTVALUE = 317,                /* INTVALUE  */
-    FLOATVALUE = 318,              /* FLOATVALUE  */
-    STRINGVALUE = 319              /* STRINGVALUE  */
+    ROLLBACK = 261,                /* ROLLBACK  */
+    CREATE = 262,                  /* CREATE  */
+    DROP = 263,                    /* DROP  */
+    SELECT = 264,                  /* SELECT  */
+    INSERT = 265,                  /* INSERT  */
+    UPDATE = 266,                  /* UPDATE  */
+    DELETE = 267,                  /* DELETE  */
+    DESCRIBE = 268,                /* DESCRIBE  */
+    FROM = 269,                    /* FROM  */
+    WHERE = 270,                   /* WHERE  */
+    INTO = 271,                    /* INTO  */
+    SET = 272,                     /* SET  */
+    VALUES = 273,                  /* VALUES  */
+    TABLE = 274,                   /* TABLE  */
+    SHOW = 275,                    /* SHOW  */
+    TABLES = 276,                  /* TABLES  */
+    MAX = 277,                     /* MAX  */
+    MIN = 278,                     /* MIN  */
+    COUNT = 279,                   /* COUNT  */
+    SUM = 280,                     /* SUM  */
+    AVG = 281,                     /* AVG  */
+    TRUE = 282,                    /* TRUE  */
+    FALSE = 283,                   /* FALSE  */
+    NOT = 284,                     /* NOT  */
+    NULLX = 285,                   /* NULLX  */
+    CHAR = 286,                    /* CHAR  */
+    INT = 287,                     /* INT  */
+    LONG = 288,                    /* LONG  */
+    STRING = 289,                  /* STRING  */
+    BOOL = 290,                    /* BOOL  */
+    FLOAT = 291,                   /* FLOAT  */
+    DOUBLE = 292,                  /* DOUBLE  */
+    DATE = 293,                    /* DATE  */
+    TIMESTAMP = 294,               /* TIMESTAMP  */
+    PRIMARY = 295,                 /* PRIMARY  */
+    KEY = 296,                     /* KEY  */
+    EQ = 297,                      /* EQ  */
+    NE = 298,                      /* NE  */
+    GT = 299,                      /* GT  */
+    GE = 300,                      /* GE  */
+    LT = 301,                      /* LT  */
+    LE = 302,                      /* LE  */
+    IN = 303,                      /* IN  */
+    LIKE = 304,                    /* LIKE  */
+    AND = 305,                     /* AND  */
+    OR = 306,                      /* OR  */
+    ALL = 307,                     /* ALL  */
+    COMMA = 308,                   /* COMMA  */
+    SEMICOLON = 309,               /* SEMICOLON  */
+    QUOTE = 310,                   /* QUOTE  */
+    POINT = 311,                   /* POINT  */
+    LEFTPAREN = 312,               /* LEFTPAREN  */
+    RIGHTPAREN = 313,              /* RIGHTPAREN  */
+    SYSTEM = 314,                  /* SYSTEM  */
+    CONFIG = 315,                  /* CONFIG  */
+    MEMORY = 316,                  /* MEMORY  */
+    IDENTIFIER = 317,              /* IDENTIFIER  */
+    INTVALUE = 318,                /* INTVALUE  */
+    FLOATVALUE = 319,              /* FLOATVALUE  */
+    STRINGVALUE = 320              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -127,65 +128,66 @@ extern int yydebug;
 #define NL 258
 #define BEGINN 259
 #define COMMIT 260
-#define CREATE 261
-#define DROP 262
-#define SELECT 263
-#define INSERT 264
-#define UPDATE 265
-#define DELETE 266
-#define DESCRIBE 267
-#define FROM 268
-#define WHERE 269
-#define INTO 270
-#define SET 271
-#define VALUES 272
-#define TABLE 273
-#define SHOW 274
-#define TABLES 275
-#define MAX 276
-#define MIN 277
-#define COUNT 278
-#define SUM 279
-#define AVG 280
-#define TRUE 281
-#define FALSE 282
-#define NOT 283
-#define NULLX 284
-#define CHAR 285
-#define INT 286
-#define LONG 287
-#define STRING 288
-#define BOOL 289
-#define FLOAT 290
-#define DOUBLE 291
-#define DATE 292
-#define TIMESTAMP 293
-#define PRIMARY 294
-#define KEY 295
-#define EQ 296
-#define NE 297
-#define GT 298
-#define GE 299
-#define LT 300
-#define LE 301
-#define IN 302
-#define LIKE 303
-#define AND 304
-#define OR 305
-#define ALL 306
-#define COMMA 307
-#define SEMICOLON 308
-#define QUOTE 309
-#define POINT 310
-#define LEFTPAREN 311
-#define RIGHTPAREN 312
-#define SYSTEM 313
-#define CONFIG 314
-#define MEMORY 315
-#define IDENTIFIER 316
-#define INTVALUE 317
-#define FLOATVALUE 318
-#define STRINGVALUE 319
+#define ROLLBACK 261
+#define CREATE 262
+#define DROP 263
+#define SELECT 264
+#define INSERT 265
+#define UPDATE 266
+#define DELETE 267
+#define DESCRIBE 268
+#define FROM 269
+#define WHERE 270
+#define INTO 271
+#define SET 272
+#define VALUES 273
+#define TABLE 274
+#define SHOW 275
+#define TABLES 276
+#define MAX 277
+#define MIN 278
+#define COUNT 279
+#define SUM 280
+#define AVG 281
+#define TRUE 282
+#define FALSE 283
+#define NOT 284
+#define NULLX 285
+#define CHAR 286
+#define INT 287
+#define LONG 288
+#define STRING 289
+#define BOOL 290
+#define FLOAT 291
+#define DOUBLE 292
+#define DATE 293
+#define TIMESTAMP 294
+#define PRIMARY 295
+#define KEY 296
+#define EQ 297
+#define NE 298
+#define GT 299
+#define GE 300
+#define LT 301
+#define LE 302
+#define IN 303
+#define LIKE 304
+#define AND 305
+#define OR 306
+#define ALL 307
+#define COMMA 308
+#define SEMICOLON 309
+#define QUOTE 310
+#define POINT 311
+#define LEFTPAREN 312
+#define RIGHTPAREN 313
+#define SYSTEM 314
+#define CONFIG 315
+#define MEMORY 316
+#define IDENTIFIER 317
+#define INTVALUE 318
+#define FLOATVALUE 319
+#define STRINGVALUE 320
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -224,7 +226,7 @@ union YYSTYPE
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 
-#line 228 "y.tab.h"
+#line 230 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

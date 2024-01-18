@@ -3,8 +3,17 @@
 /* Generate new cursor. */
 Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num);
 
+/* Define cursor. */
+Cursor *define_cursor(Table *table, void *key);
+
+/* Define Refer. */
+Refer *define_refer(Row *row);
+
 /* Convert to refer from cursor. */
 Refer *convert_refer(Cursor *cursor);
+
+/* Convert to Cursor from Refer. */
+Cursor *convert_cursor(Refer *refer);
 
 /* Check if refer null. 
  * If page number is -1 and cell number is -1, it means refer null. */

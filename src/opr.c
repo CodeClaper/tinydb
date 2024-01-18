@@ -2,9 +2,9 @@
 #include <string.h>
 #include <time.h>
 #include "common.h"
-#include "misc.h"
-#include "opr.h"
 #include "intpr.h"
+#include "opr.h"
+#include "log.h"
 
 /*Equal operation (=).*/
 bool equal(void *source, void *target, DataType data_type) {
@@ -199,7 +199,7 @@ bool eval(OprType op_type, void *source, void *target, DataType data_type) {
             return less_equal(source, target, data_type);
         case O_IN:
         case O_LIKE:
-            fatal("not supported operation type");
+            db_log(PANIC, "Not supported operation type");
         default:
             return false;
     }

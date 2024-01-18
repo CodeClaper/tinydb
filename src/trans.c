@@ -63,8 +63,10 @@
 #include "copy.h"
 #include "free.h"
 #include "timer.h"
+#include "refer.h"
 #include "asserts.h"
 #include "ret.h"
+#include "xlog.h"
 
 
 static TransactionTable *xtable; /* Store activ transactions. */
@@ -146,34 +148,40 @@ static bool is_active(int64_t xid) {
 
 /* Find transaction handle by thread id. 
  * If not found, return NULL. */
-static TransactionHandle *find_transaction() {
+TransactionHandle *find_transaction() {
 
     /* Current thread id. */
-    int64_t t_id = pthread_self();
+    int64_t tid = pthread_self();
 
     TransactionHandle *current;
     for(current = xtable->head; current != NULL; current = current->next) {
-        if (current->tid == t_id) 
+        if (current->tid == tid) 
             return current;
     }
     return NULL;
 }
 
 /* New transaction which will be committed automatically. */
-static TransactionHandle *new_transaction() {
+void auto_begin_transaction() {
+
+    TransactionHandle *trans_handle;
+
+    trans_handle = find_transaction();
+    if (trans_handle) {
+        return;
+    }
 
     /* Generate new transaction. */
-    TransactionHandle *trans_handle = db_malloc(sizeof(TransactionHandle), SDT_TRANSACTION_HANDLE);
+    trans_handle = db_malloc(sizeof(TransactionHandle), SDT_TRANSACTION_HANDLE);
     trans_handle->xid = next_xid();
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = true;
 
-    db_log(INFO, "Begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
+    db_log(INFO, "Auto begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
 
     /* Register the transaction. */
     register_transaction(trans_handle);
 
-    return trans_handle;
 }
 
 /* Begin a new transaction which need be committed manually. */
@@ -203,16 +211,6 @@ void begin_transaction(DBResult *result) {
     db_log(SUCCESS, "Begin new transaction successfully.");
 }
 
-/* Get current thread transction handle. 
- * Firstly, try to find in the xtable, is not found, create new one. */
-TransactionHandle *get_current_transaction() {
-    TransactionHandle * trans_handle = find_transaction();
-    if (trans_handle)
-        return trans_handle;
-    else
-        return new_transaction();
-}
-
 /* Commit transaction manually. */
 void commit_transaction(DBResult *result) {
 
@@ -223,6 +221,9 @@ void commit_transaction(DBResult *result) {
     }
     assert_false(trans_handle->auto_commit, "System Logic error, transaction is auto committed but found in manual commit funciton.");
     
+    /* Commit Xlog. */
+    commit_xlog();
+
     /* Destroy transaction. */
     assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and thread tid %ld.", trans_handle->xid, trans_handle->tid);
     
@@ -239,17 +240,30 @@ void auto_commit_transaction(DBResult *result) {
 
     /* Only deal with auto-commit transaction. */
     if (trans_handle && trans_handle->auto_commit) {
+        int64_t xid = trans_handle->xid; 
+
+        /* Commit Xlog. */
+        commit_xlog();
+
         /* Destroy transaction. */
-        assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
-        db_log(INFO, "Auto commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
+        assert_true(destroy_transaction(trans_handle), "Destroy transaction handle error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
+
+
+        db_log(INFO, "Auto commit the transaction xid: %"PRId64" successfully.", xid);
     }
 }
 
 /* Tranasction rollback. */
-void rollback() {
+void rollback_transaction(DBResult *result) {
     TransactionHandle *trans_handle = find_transaction();
-    assert_not_null(trans_handle, "System errror, found transaction handle fail.");
-    db_log(INFO, "Transaction xid: %"PRId64" rollback.", trans_handle->xid);
+    if (trans_handle) {
+        execute_roll_back();
+        result->success = true;
+        commit_transaction(result);
+        db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
+    } else {
+        db_log(WARN, "Not found transaction to rollback.");
+    }
 }
 
 /* 
@@ -263,8 +277,7 @@ void rollback() {
 bool row_is_visible(Row *row) {
 
     /* Get current transaction. */
-    TransactionHandle *trans_handle = get_current_transaction();
-    assert_not_null(trans_handle, "Not found current transaction.\n");
+    TransactionHandle *trans_handle = find_transaction();
 
     /* Get row created_xid and expired_xid. */
     int64_t row_created_xid = *(int64_t *)row->data[row->column_len - 2]->value;
@@ -291,7 +304,7 @@ bool row_is_deleted(Row *row) {
 static void transaction_insert_row(Row *row) {
 
     /* Get current transaction. */
-    TransactionHandle *current_trans = get_current_transaction();
+    TransactionHandle *current_trans = find_transaction();
 
     /* Fro created_xid */
     KeyValue *created_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
@@ -307,16 +320,25 @@ static void transaction_insert_row(Row *row) {
     expired_xid_col->value = copy_value(&zero, T_LONG, NULL);
     expired_xid_col->data_type = T_LONG;
     row->data[row->column_len - 1] = expired_xid_col;
+
+    /* Record insert xlog. */
+    Refer *refer = define_refer(row);
+    insert_xlog_entry(refer, DDL_INSERT);
 }
 
 /* Tranasction operation for delete row. */
 static void transaction_delete_row(Row *row) {
     
     /* Get current transaction. */
-    TransactionHandle *current_trans = get_current_transaction();
+    TransactionHandle *current_trans = find_transaction();
 
-    /* Asssign current transaction id to  expired_xid. */
+    /* Asssign current transaction id to expired_xid. */
     *(int64_t *)row->data[row->column_len - 1]->value = current_trans->xid;
+
+
+    /* Record delete xlog. */
+    Refer *refer = define_refer(row);
+    insert_xlog_entry(refer, DDL_DELETE);
 }
 
 /* Update transaction state. */

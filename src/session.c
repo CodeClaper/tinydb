@@ -12,7 +12,6 @@
 #include <pthread.h>
 #include "data.h"
 #include "mmu.h"
-#include "misc.h"
 
 static pthread_key_t key;
 

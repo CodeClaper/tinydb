@@ -15,6 +15,7 @@ int yylex();
 %%
 begin                   return BEGINN;
 commit                  return COMMIT;
+rollback                return ROLLBACK;
 create                  return CREATE;
 drop                    return DROP;
 select                  return SELECT;
