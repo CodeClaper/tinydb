@@ -10,6 +10,7 @@
  * ==============================================================================================================================
  * */
 
+#include <pthread.h>
 #include <stdint.h>
 #include <string.h>
 #include "xlog.h"
@@ -21,6 +22,8 @@
 #include "refer.h"
 #include "select.h"
 #include "asserts.h"
+
+static pthread_mutex_t mutex;
 
 /* XLogTable Buffer. */
 static XLogTable *xtable;
@@ -36,6 +39,7 @@ void init_xlog() {
     xtable = db_malloc(sizeof(XLogTable), SDT_XLOG_TABLE);
     xtable->size = 0;
     xtable->list = db_malloc(sizeof(XLogEntry *) * xtable->size, SDT_POINTER);
+    pthread_mutex_init(&mutex, NULL);
 }
 
 /* Genrate new XLogEntry. */
@@ -45,13 +49,14 @@ static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
     entry->next = NULL;
     entry->refer = copy_refer(refer);
     entry->xid = xid;
-
     return entry;
 }
 
 
 /* Insert into XLogEntry. */
 void insert_xlog_entry(Refer *refer, DDLType type) {
+    pthread_mutex_lock(&mutex);
+
     TransactionHandle *handle = find_transaction();
     XLogEntry *entry = new_xlog_entry(handle->xid, refer, type);
 
@@ -61,6 +66,7 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
         if (head->xid == handle->xid) {
             entry->next = head;
             xtable->list[i] = entry;
+            pthread_mutex_unlock(&mutex);
             return;
         }
     }
@@ -68,10 +74,16 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
     xtable->list = db_realloc(xtable->list, sizeof(XLogEntry *) * (xtable->size + 1));
     xtable->list[i] = entry;
     xtable->size++;
+
+    pthread_mutex_unlock(&mutex);
 }
 
 /* Commit XLog . */
 void commit_xlog() {
+    
+    /* Lock */
+    pthread_mutex_lock(&mutex);
+
     TransactionHandle *handle = find_transaction();
 
     int i, j;
@@ -92,6 +104,8 @@ void commit_xlog() {
             break;     
         }
     }
+
+    pthread_mutex_unlock(&mutex);
 }
 
 /* Execute rollback. */

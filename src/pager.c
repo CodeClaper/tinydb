@@ -43,8 +43,7 @@ Pager *open_pager(char *table_file_path){
 /* Get page of a pager by page number. */
 void *get_page(Pager *pager, int page_num) {
     if (page_num >= MAX_TABLE_PAGE) {
-        fprintf(stderr, "Try to fetch page number out of bounds: %d >= %d", page_num, MAX_TABLE_PAGE);
-        exit(1);
+        db_log(PANIC, "Try to fetch page number out of bounds: %d >= %d", page_num, MAX_TABLE_PAGE);
     }
     if (pager->pages[page_num] == NULL) {
         /* Cache dismiss, allocate memory and load file. */

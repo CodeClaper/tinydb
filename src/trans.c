@@ -69,6 +69,8 @@
 #include "xlog.h"
 
 
+static pthread_mutex_t mutex;
+
 static TransactionTable *xtable; /* Store activ transactions. */
 
 /* Generate next xid. 
@@ -83,6 +85,8 @@ void init_transaction() {
     xtable->head = NULL;
     xtable->tail = NULL;
     xtable->size = 0;
+
+    pthread_mutex_init(&mutex, NULL);
 }
 
 /* Any running transaction. */
@@ -92,6 +96,9 @@ bool any_transaction_running() {
 
 /* Register transaction. */
 static void register_transaction(TransactionHandle *trans_handle) {
+
+    pthread_mutex_lock(&mutex);
+
     /* First registration. */
     if (xtable->size == 0) {
         xtable->head = trans_handle;
@@ -102,10 +109,13 @@ static void register_transaction(TransactionHandle *trans_handle) {
         xtable->tail = trans_handle;
         xtable->size++;
     }
+
+    pthread_mutex_unlock(&mutex);
 }
 
 /* Destroy transaction. */
 static bool destroy_transaction(TransactionHandle *trans_handle) {
+    pthread_mutex_lock(&mutex);
 
     /* Maybe is the head. */
     if (xtable->head == trans_handle) {
@@ -115,6 +125,7 @@ static bool destroy_transaction(TransactionHandle *trans_handle) {
         trans_handle->next = NULL;
         free_transaction_handle(trans_handle);
         xtable->size--;
+        pthread_mutex_unlock(&mutex);
         return true;
     }
 
@@ -130,9 +141,12 @@ static bool destroy_transaction(TransactionHandle *trans_handle) {
             trans_handle->next = NULL;
             free_transaction_handle(trans_handle);
             xtable->size--;
+            pthread_mutex_unlock(&mutex);
             return true;
         }        
     }
+
+    pthread_mutex_unlock(&mutex);
     return false;
 }
 
@@ -261,9 +275,9 @@ void rollback_transaction(DBResult *result) {
         result->success = true;
         commit_transaction(result);
         db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
-    } else {
+    } 
+    else 
         db_log(WARN, "Not found transaction to rollback.");
-    }
 }
 
 /* 

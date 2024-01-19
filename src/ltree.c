@@ -63,9 +63,6 @@ static uint32_t next_avaliable_page_num(Pager *pager) {
     for (i = 0; i < pager->size; i++) {
         if (is_obsolute_node(pager->pages[i])) {
             set_obsolute_node(pager->pages[i], false);
-            #if defined (DEBUG)
-            printf("Page [%d] is obsolute and recycle to use. \n", i);
-            #endif
             return i;
         }
     }

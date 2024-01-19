@@ -597,7 +597,7 @@ typedef struct TransactionHandle {
 typedef struct {
     TransactionHandle *head;
     TransactionHandle *tail;
-    uint32_t size;
+    volatile uint32_t size;
 } TransactionTable; 
 
 /* LogEntry puts current pthread messsage. */
