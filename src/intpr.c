@@ -76,6 +76,12 @@ ConditionNode *make_cond_node() {
     return cond_node;
 }
 
+/* Make a LimitNode. */
+LimitNode *make_limit_node() {
+    LimitNode *limit_node = db_malloc(sizeof(LimitNode), SDT_LIMIT_NODE);
+    return limit_node;
+}
+
 /* make an assignment node. */
 AssignmentNode *make_assignment_node() {
     AssignmentNode *assignment_node = db_malloc(sizeof(AssignmentNode), SDT_ASSIGNMENT_NODE);

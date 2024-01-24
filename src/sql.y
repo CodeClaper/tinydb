@@ -35,6 +35,7 @@ int yylex();
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
    ConditionNode            *cond_node;
+   LimitNode                *limit_node;
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
    SelectNode               *select_node;
@@ -55,6 +56,7 @@ int yylex();
 %token <keyword> SET
 %token <keyword> VALUES
 %token <keyword> TABLE
+%token <keyword> LIMIT
 %token <keyword> SHOW
 %token <keyword> TABLES
 %token <keyword> MAX MIN COUNT SUM AVG
@@ -83,6 +85,7 @@ int yylex();
 %type <column_def_set_node> column_defs
 %type <primary_key_node> primary_key_statement
 %type <cond_node> cond
+%type <limit_node> opt_limit
 %type <assignment_node> assignment
 %type <assignment_set_node> assignments
 %type <conn_type> conn
@@ -197,19 +200,21 @@ drop_table_statement:
                 }
             ;
 select_statement:
-            SELECT select_items FROM table WHERE cond  end
+            SELECT select_items FROM table WHERE cond opt_limit end
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
                     select_node->table_name = $4;
                     select_node->condition_node = $6;
+                    select_node->limit_node = $7;
                     $$ = select_node;
                 }
-            | SELECT select_items FROM table end
+            | SELECT select_items FROM table opt_limit end
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
                     select_node->table_name = $4;
+                    select_node->limit_node = $5;
                     $$ = select_node;
                 }
             ;
@@ -526,6 +531,26 @@ cond:
                     cond_node->next = $5;
                     cond_node->type = EXEC_CONDITION;
                     $$ = cond_node;
+                }
+            ;
+opt_limit:  
+            // empty
+                {
+                    $$ = NULL;
+                }
+            | LIMIT INTVALUE
+                {
+                    LimitNode *limit_node = make_limit_node();
+                    limit_node->start = 0;
+                    limit_node->end = $2;
+                    $$ = limit_node;
+                }
+            | LIMIT INTVALUE COMMA INTVALUE
+                {
+                    LimitNode *limit_node = make_limit_node();
+                    limit_node->start = $2;
+                    limit_node->end = $4;
+                    $$ = limit_node;
                 }
             ;
 opr: 

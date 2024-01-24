@@ -292,6 +292,13 @@ void free_condition_node(ConditionNode *condition_node) {
     }
 }
 
+/* Free LimitNode. */
+void free_limit_node(LimitNode *limit_node) {
+    if (limit_node) {
+        db_free(limit_node);
+    }
+}
+
 /* Free QueryParam. */
 void free_query_param(QueryParam *query_param) {
     if(query_param) {
@@ -299,6 +306,7 @@ void free_query_param(QueryParam *query_param) {
         free_condition_node(query_param->condition_node);
         if (query_param->table_name)
             db_free(query_param->table_name);
+        free_limit_node(query_param->limit_node);
         db_free(query_param);
     }
 }
@@ -311,6 +319,7 @@ void free_select_node(SelectNode *select_node) {
         if (select_node->table_name) 
             db_free(select_node->table_name);
         free_condition_node(select_node->condition_node);
+        free_limit_node(select_node->limit_node);
         db_free(select_node);
     }
 }

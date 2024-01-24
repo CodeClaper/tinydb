@@ -295,6 +295,16 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     return condition_node_copy;
 }
 
+/* Copy LimitNode. */
+LimitNode *copy_limit_node(LimitNode *limit_node) {
+    if (limit_node == NULL)
+        return NULL;
+    LimitNode *limit_node_copy = db_malloc(sizeof(LimitNode), SDT_LIMIT_NODE);
+    limit_node_copy->start = limit_node->start;
+    limit_node_copy->end = limit_node->end;
+    return limit_node_copy;
+}
+
 /* Copy select items node. */
 SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
     if (select_items_node == NULL)

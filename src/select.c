@@ -712,7 +712,7 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         Row *row = generate_row(destinct, query_param, table->meta_table);
 
         /* Execute row handler. */
-        row_handler(row, select_result, table, arg);
+        row_handler(row, select_result, table, query_param);
 
         /* Free useless row. */
         free_row(row);
@@ -790,6 +790,7 @@ QueryParam *convert_query_param(SelectNode *select_node) {
     ConditionNode *condition_node_copy = copy_condition_node(select_node->condition_node);
     query_param->condition_node = tree(condition_node_copy); // generate condition tree.
     clean_next(query_param->condition_node);
+    query_param->limit_node = copy_limit_node(select_node->limit_node);
     return query_param;
 }
 
@@ -797,6 +798,8 @@ QueryParam *convert_query_param(SelectNode *select_node) {
 SelectResult *new_select_result(char *table_name) {
     SelectResult *select_result = db_malloc(sizeof(SelectResult), SDT_SELECT_RESULT);
     select_result->row_size = 0;
+    select_result->row_index = 0;
+    select_result->limit_index = 0;
     select_result->table_name = db_strdup(table_name);
     select_result->sum = 0;
     select_result->rows = NULL;
@@ -821,22 +824,55 @@ void query_with_condition(QueryParam *query_param, SelectResult *select_result, 
 
 /* Count number of row, used in the sql function count(1) */
 void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    /* Only count visible row. */
-    if (row_is_visible(row))
-        select_result->row_size++;
+    /* Only select visible row. */
+    if (!row_is_visible(row)) 
+        return;
+
+    QueryParam *query_param = (QueryParam *) arg;
+    LimitNode *limit_node = query_param->limit_node;
+
+    if (limit_node)
+        select_result->limit_index++;
+
+    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
+        return;
+
+    select_result->row_size++;
 }
 
 /* Send row data. */
 static void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only select visible row. */
-    if (row_is_visible(row))
-        select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
+    if (!row_is_visible(row)) 
+        return;
+
+    /* Limit */
+    QueryParam *query_param = (QueryParam *) arg;
+    LimitNode *limit_node = query_param->limit_node;
+
+    if (limit_node)
+        select_result->limit_index++;
+
+    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
+        return;
+
+    select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
 }
 
 /* Execute sum funciton */
 static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only sum visible row. */
     if (!row_is_visible(row)) 
+        return;
+
+    /* Limit */
+    QueryParam *query_param = (QueryParam *) arg;
+    LimitNode *limit_node = query_param->limit_node;
+
+    if (limit_node)
+        select_result->limit_index++;
+
+    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
         return;
 
     KeyValue *key_value = row->data[0];
@@ -866,6 +902,16 @@ static void max_row(Row *row, SelectResult *select_result, Table *table, void *a
     /* Only visible row. */
     if (!row_is_visible(row))
         return;
+
+    /* Limit */
+    QueryParam *query_param = (QueryParam *) arg;
+    LimitNode *limit_node = query_param->limit_node;
+
+    if (limit_node)
+        select_result->limit_index++;
+
+    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
+        return;
     
     /* Only look for first content of row data. */;
     KeyValue *key_value = row->data[0];
@@ -891,6 +937,16 @@ static void min_row(Row *row, SelectResult *select_result, Table *table, void *a
     
     /* Only for visible row. */
     if (!row_is_visible(row))
+        return;
+
+    /* Limit */
+    QueryParam *query_param = (QueryParam *) arg;
+    LimitNode *limit_node = query_param->limit_node;
+
+    if (limit_node)
+        select_result->limit_index++;
+
+    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
         return;
 
     /* Only look for first content of row data. */;
@@ -1117,6 +1173,8 @@ static void exec_plain_select_statement(QueryParam *query_param, DBResult *resul
 
     /* Prepare enough memory space. */
     select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
+
+    select_result->limit_index = 0;
 
     /* Send row data in json format. */
     query_with_condition(query_param, select_result, select_row, NULL);

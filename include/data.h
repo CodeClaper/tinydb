@@ -43,6 +43,7 @@ typedef enum SysDataType{
     SDT_ASSIGNMENT_NODE,
     SDT_ASSIGNMENT_SET_NODE,
     SDT_CONDITION_NODE,
+    SDT_LIMIT_NODE,
     SDT_CREATE_TABLE_NODE,
     SDT_DROP_TABLE_NODE,
     SDT_SELECT_NODE,
@@ -106,6 +107,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "ASSIGNMENT_NODE",\
    "ASSIGNMENT_SET_NODE",\
    "CONDITION_NODE",\
+   "LIMIT_NODE",\
    "CREATE_TABLE_NODE",\
    "DROP_TABLE_NODE",\
    "SELECT_NODE",\
@@ -336,6 +338,12 @@ typedef struct ConditionNode {
     ConditionNodeType type;
 } ConditionNode;
 
+/* LimitNode */
+typedef struct LimitNode {
+    int32_t start;
+    int32_t end;
+} LimitNode;
+
 /* CreateTableNode */
 typedef struct {
     char *table_name;
@@ -353,6 +361,7 @@ typedef struct {
     SelectItemsNode *select_items_node;
     char *table_name;
     ConditionNode *condition_node;
+    LimitNode *limit_node;
 } SelectNode;
 
 /* InsertNode */
@@ -490,17 +499,19 @@ typedef struct QueryParam {
     char *table_name;
     SelectItemsNode *select_items;
     ConditionNode *condition_node;
+    LimitNode *limit_node;
 } QueryParam;
 
 /* SelectResult */
 typedef struct SelectResult {
     char *table_name;   /* Table name. */
     uint32_t row_size;  /* Row size. */
-    Row **rows;         /* Selected rows. */
     int32_t row_index;  /* current row index. */
+    int32_t limit_index;/* Current limit index. */
+    Row **rows;         /* Selected rows. */
     Row *max_row;       /* The max row, used in funciton max. */
     Row *min_row;       /* The min row, used in funciton min. */
-    double sum; /* The sum value, used in function sum. */
+    double sum;         /* The sum value, used in function sum. */
 } SelectResult;
 
 

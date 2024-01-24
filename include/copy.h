@@ -34,6 +34,9 @@ FunctionNode *copy_function_node(FunctionNode *function_node);
 /* Copy condition node. */
 ConditionNode *copy_condition_node(ConditionNode *condition_node);
 
+/* Copy LimitNode. */
+LimitNode *copy_limit_node(LimitNode *limit_node);
+
 /* Copy select items node. */
 SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node);
 
