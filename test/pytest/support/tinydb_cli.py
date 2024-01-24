@@ -23,8 +23,8 @@ class TinyDbClient:
                     break
                 writer.write(response)
             ret = writer.getvalue()
-            print("TinyDb receive: " + ret)
-            self.close()
+            print(f"TinyDb receive: {ret}")
+            writer.close()
             return json.loads(ret)
                
         except Exception as e:
