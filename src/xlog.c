@@ -44,7 +44,7 @@ void init_xlog() {
 
 /* Genrate new XLogEntry. */
 static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
-    XLogEntry *entry = db_malloc(sizeof(Refer), SDT_XLOG_ENTRY);
+    XLogEntry *entry = db_malloc(sizeof(XLogEntry), SDT_XLOG_ENTRY);
     entry->type = type;
     entry->next = NULL;
     entry->refer = copy_refer(refer);

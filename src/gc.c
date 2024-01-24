@@ -101,7 +101,7 @@ void gc_table(char *table_name) {
 
     /* Check table exist. */
     Table *table = open_table(table_name);
-    assert_not_null(table, "System error, table not exist.\n");
+    assert_not_null(table, "System error, table '%s' not exist.", table_name);
 
     /* fake query param. */
     QueryParam *query_param = fake_query_param(table);
