@@ -1,6 +1,5 @@
 # insert_test.py
 
-import pytest
 from support.tinydb_cli import TinyDbClient
 
 client = TinyDbClient("127.0.0.1", 4083)    
