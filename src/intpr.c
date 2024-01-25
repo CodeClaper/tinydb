@@ -1,9 +1,4 @@
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
 #include "intpr.h"
 #include "data.h"
 #include "mmu.h"
@@ -47,6 +42,12 @@ void add_column_to_set(ColumnSetNode *column_set_node, ColumnNode *column_node) 
     column_set_node->columns = db_realloc(column_set_node->columns, sizeof(ColumnNode *) * (column_set_node->size + 1));
     *(column_set_node->columns + column_set_node->size) = column_node;
     column_set_node->size++;
+}
+
+/* Make a ReferValue. */
+ReferValue *make_refer_value() {
+    ReferValue *refer_value = db_malloc(sizeof(ReferValue), SDT_REFER_VALUE);
+    return refer_value;
 }
 
 /* make a value item node. */

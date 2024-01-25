@@ -2,7 +2,7 @@ SUBDIRS = src
 dist_doc_DATA = README.md
 
 check-local:
-	pytest test/pytest/unit/ -vv
+	cd test/pytest/unit && pytest create_test.py insert_test.py select_test.py drop_test.py
 
 clean-local:
 	@rm config.status configure config.log

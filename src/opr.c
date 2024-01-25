@@ -1,8 +1,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
-#include "common.h"
-#include "intpr.h"
+#include "refer.h"
 #include "opr.h"
 #include "log.h"
 
@@ -31,6 +30,11 @@ bool equal(void *source, void *target, DataType data_type) {
             return *(time_t *)source == *(time_t *)target;
         case T_DATE:
             return *(time_t *)source == *(time_t *)target;
+        case T_REFERENCE:
+            return refer_equals(source, target);
+        default:
+            db_log(ERROR, "Not implement data type when operate equal.");
+            break;
     }
     return false;
 }
@@ -60,6 +64,11 @@ bool not_equal(void *source, void *target, DataType data_type) {
             return *(time_t *)source != *(time_t *)target;
         case T_DATE:
             return *(time_t *)source != *(time_t *)target;
+        case T_REFERENCE:
+            return !refer_equals(source, target);
+        default:
+            db_log(ERROR, "Not implement data type when operate not equal.");
+            break;
     }
     return false;
 }
@@ -89,6 +98,12 @@ bool greater(void *source, void *target, DataType data_type) {
             return *(bool *)source > *(bool *)target;
         case T_DATE:
             return *(time_t *)source > *(time_t *)target;
+        case T_REFERENCE:
+            db_log(PANIC, "Refer data not allowed to be operated greater.");
+            break;
+        default:
+            db_log(ERROR, "Not implement data type when operate greater.");
+            break;
     }
     return false;
 }
@@ -118,6 +133,12 @@ bool greater_equal(void *source, void *target, DataType data_type) {
             return *(bool *)source >= *(bool *)target;
         case T_DATE:
             return *(time_t *)source >= *(time_t *)target;
+        case T_REFERENCE:
+            db_log(PANIC, "Refer data not allowed to be operated greater equal.");
+            break;
+        default:
+            db_log(ERROR, "Not implement data type when operate greater equal.");
+            break;
     }
     return false;
 }
@@ -147,6 +168,12 @@ bool less(void *source, void *target, DataType data_type) {
             return *(bool *)source < *(bool *)target;
         case T_DATE:
             return *(time_t *)source < *(time_t *)target;
+        case T_REFERENCE:
+            db_log(PANIC, "Refer data not allowed to be operated less.");
+            break;
+        default:
+            db_log(ERROR, "Not implement data type when operate less.");
+            break;
     }
     return false;
 }
@@ -176,6 +203,12 @@ bool less_equal(void *source, void *target, DataType data_type) {
             return *(bool *)source <= *(bool *)target;
         case T_DATE:
             return *(time_t *)source <= *(time_t *)target;
+        case T_REFERENCE:
+            db_log(PANIC, "Refer data not allowed to be operated less equal.");
+            break;
+        default:
+            db_log(ERROR, "Not implement data type when operate less equal.");
+            break;
     }
     return false;
 }
@@ -199,8 +232,9 @@ bool eval(OprType op_type, void *source, void *target, DataType data_type) {
             return less_equal(source, target, data_type);
         case O_IN:
         case O_LIKE:
-            db_log(PANIC, "Not supported operation type");
         default:
-            return false;
+            db_log(ERROR, "Not supported operation type");
+            break;
     }
+    return false;
 }

@@ -18,7 +18,9 @@
 #include "index.h"
 #include "asserts.h"
 #include "session.h"
+#include "select.h"
 #include "check.h"
+#include "copy.h"
 #include "free.h"
 #include "lock.h"
 #include "refer.h"
@@ -26,6 +28,13 @@
 #include "log.h"
 #include "ret.h"
 
+
+/* Make a fake InsertNode. */
+static InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node);
+/* Make a fake QueryParam. */
+static QueryParam *fake_query_param(char *table_name, ConditionNode *condition_node);
+/* Make a fake SelectItemsNode. */
+static SelectItemsNode *fake_select_all_items_node();
 
 /* Get column number of insert statement. */
 static uint32_t get_insert_column_size(InsertNode *insert_node, MetaTable *meta_table) {
@@ -67,8 +76,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 
     /* Different data type column, has diffrenet way to get value.
      * Data type CHAR, STRING, DATE, TIMESTAMP both use '%s' format to pass value.
-     * And int value may be also FLOAT or DOUBLE. Column meta info helps to define the real data type.
-     * */
+     * And int value may be also FLOAT or DOUBLE. Column meta info helps to define the real data type. */
     switch(meta_column->column_type) {
         case T_CHAR:
         case T_STRING:
@@ -140,20 +148,34 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             break;
         }
         case T_REFERENCE: {
-            InsertNode *nest_insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
-
-            nest_insert_node->table_name = db_strdup(meta_column->table_name);
-            nest_insert_node->all_column = true;
-            nest_insert_node->value_item_set_node = value_item_node->nest_value_item_set;
-
-            return exec_insert_statement(nest_insert_node, result);
+            switch (value_item_node->r_value->type) {
+                case DIRECTLY: {
+                    InsertNode *insert_node = fake_insert_node(meta_column->table_name, value_item_node->r_value->nest_value_item_set);
+                    Refer *refer = exec_insert_statement(insert_node, result);
+                    free_insert_node(insert_node);
+                    return refer;
+                }
+                case INDIRECTLY: {
+                    return fetch_refer(meta_column, value_item_node->r_value->condition);
+                }
+            }
+            break;
         }
     }
-    return NULL;
+}
+
+/* Make a fake InsertNode. */
+static InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node) {
+    InsertNode *insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
+    insert_node->table_name = db_strdup(table_name);
+    insert_node->all_column = true;
+    insert_node->value_item_set_node = copy_value_item_set_node(value_item_set_node);
+    return insert_node;
 }
 
 /* Generate insert row. */
 static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
+
     Row *row = db_malloc(sizeof(Row), SDT_ROW);
 
     /* Table and MetaTable. */
@@ -231,7 +253,8 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
-        db_log(ERROR, "key '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type));
+        db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
+               get_key_str(row->key, primary_key_meta_column->column_type), insert_node->table_name);
         return NULL;
     }
 

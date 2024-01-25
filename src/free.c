@@ -168,7 +168,7 @@ void free_value_item_node(ValueItemNode *value_item_node) {
                 break;
             }
             case T_REFERENCE: {
-                free_value_item_set_node(value_item_node->nest_value_item_set);
+                free_refer_value(value_item_node->r_value);
                 break;
             }
         }
@@ -296,6 +296,20 @@ void free_condition_node(ConditionNode *condition_node) {
 void free_limit_node(LimitNode *limit_node) {
     if (limit_node) {
         db_free(limit_node);
+    }
+}
+
+/* Free ReferValue. */
+void free_refer_value(ReferValue *refer_value) {
+    if (refer_value) {
+        switch (refer_value->type) {
+            case DIRECTLY:
+                free_value_item_set_node(refer_value->nest_value_item_set);
+                break;
+            case INDIRECTLY:
+                free_condition_node(refer_value->condition);
+                break;
+        }
     }
 }
 

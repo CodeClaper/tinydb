@@ -38,6 +38,7 @@ typedef enum SysDataType{
     SDT_COLUMN_DEF_NODE,
     SDT_COLUMN_DEF_SET_NODE,
     SDT_PRIMARY_KEY_NODE,
+    SDT_REFER_VALUE,
     SDT_VALUE_ITEM_NODE,
     SDT_VALUE_ITEM_SET_NODE,
     SDT_ASSIGNMENT_NODE,
@@ -102,6 +103,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "COLUMN_DEF_NODE",\
    "COLUMN_DEF_SET_NODE",\
    "PRIMARY_KEY_NODE",\
+   "REFER_VALUE",\
    "VALUE_ITEM_NODE",\
    "VALUE_ITEM_SET_NODE",\
    "ASSIGNMENT_NODE",\
@@ -287,6 +289,23 @@ typedef struct {
     ColumnNode *column;
 } PrimaryKeyNode;
 
+/* ReferFetchType */
+typedef enum ReferFetchType {
+    DIRECTLY = 1,
+    INDIRECTLY
+}ReferFetchType;
+
+/* ReferValue */
+typedef struct ReferValue {
+    ReferFetchType type;
+    union {
+        /* For directly. */
+        struct ValueItemSetNode *nest_value_item_set;
+        /* For indirectly. */
+        struct ConditionNode *condition;
+    };
+} ReferValue;
+
 /* ValueItemNode */
 typedef struct {
     DataType data_type;
@@ -304,7 +323,7 @@ typedef struct {
         /* T_TIMESTAMP, T_DATE */
         time_t t_value;
         /* T_REFERENCE */
-        struct ValueItemSetNode *nest_value_item_set;
+        ReferValue *r_value;
     };
 } ValueItemNode;
 

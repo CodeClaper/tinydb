@@ -24,6 +24,10 @@
 #include "ltree.h"
 #include "pager.h"
 #include "asserts.h"
+#include "log.h"
+
+/* Fake QueryParam. */
+static QueryParam *fake_query_param(Table *table);
 
 /* Generate new Refer. 
  * Note: if page_num is -1 and cell_num is -1 which means refer null. */
@@ -93,11 +97,47 @@ Refer *define_refer(Row *row) {
     return convert_refer(cursor);
 }
 
+/* Fetch Refer. */
+Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
+    /* Make a fake QueryParam. */
+    Table *table = open_table(meta_column->table_name);
+    QueryParam *query_param = fake_query_param(table);
+    query_param->condition_node = copy_condition_node(condition_node);
+
+    /* Make a new SelectResult. */
+    SelectResult *select_result = new_select_result(meta_column->table_name);
+    query_with_condition(query_param, select_result, count_row, NULL);
+    /* Prepare enough memory space. */
+    select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
+    query_with_condition(query_param, select_result, select_row, NULL);
+
+    Refer *refer = NULL;
+    if (select_result->row_size == 0) 
+        db_log(ERROR, "Not found any satisfied condition row in table '%s'", meta_column->table_name);
+    else {
+        /* Take the first row as refered. Maybe row size should be one, but now there is no check. */
+        Row *row = select_result->rows[0];
+        refer = define_refer(row);
+    }
+    free_query_param(query_param);
+    free_select_result(select_result);
+
+    return refer;
+}
+
 
 /* Check if refer null. 
  * If page number is -1 and cell number is -1, it means refer null. */
 bool refer_null(Refer *refer) {
     return refer->page_num == -1 && refer->cell_num == -1;
+}
+
+/* Make a NULL Refer. */
+Refer *make_null_refer() {
+    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
+    refer->page_num = -1;
+    refer->cell_num = -1;
+    return refer;
 }
 
 /* Generate new ReferUpdateEntity. */
@@ -163,7 +203,7 @@ static QueryParam *fake_query_param(Table *table) {
 }
 
 /* Check if refer equals. */
-static bool refer_equals(Refer *refer1, Refer *refer2) {
+bool refer_equals(Refer *refer1, Refer *refer2) {
     return strcmp(refer1->table_name, refer2->table_name) == 0
             && refer1->page_num == refer2->page_num 
             && refer1->cell_num == refer2->cell_num;

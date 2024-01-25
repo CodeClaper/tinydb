@@ -19,6 +19,7 @@ int yylex();
    float                    f_value;
    bool                     b_value;
    char                     *keyword;
+   ReferValue               *r_value;
    DataType                 data_type;
    OprType                  opr_type;
    ConnType                 conn_type;
@@ -60,6 +61,7 @@ int yylex();
 %token <keyword> SHOW
 %token <keyword> TABLES
 %token <keyword> MAX MIN COUNT SUM AVG
+%token <keyword> REF
 %token <keyword> TRUE FALSE
 %token <keyword> NOT
 %token <keyword> NULLX
@@ -75,6 +77,7 @@ int yylex();
 %token <f_value> FLOATVALUE
 %token <s_value> STRINGVALUE
 %type <b_value> BOOLVALUE
+%type <r_value> REFERVALUE
 %type <s_value> table
 %type <select_items_node> select_items 
 %type <column_node> column
@@ -471,12 +474,30 @@ value_item:
                     node->data_type = T_FLOAT;
                     $$ = node;
                 }
-            | LEFTPAREN value_items RIGHTPAREN
+            | REFERVALUE
                 {
                     ValueItemNode *node = make_value_item_node();
-                    node->nest_value_item_set = $2;
+                    node->r_value = $1;
                     node->data_type = T_REFERENCE;
                     $$ = node;
+                }
+            ;
+REFERVALUE:
+            /* Directly insert way. */
+            LEFTPAREN value_items RIGHTPAREN
+                {
+                    ReferValue *refer = make_refer_value();
+                    refer->type = DIRECTLY;
+                    refer->nest_value_item_set = $2;
+                    $$ = refer;
+                }
+            /* Indirectly fetch already row refer. */
+            | REF LEFTPAREN cond RIGHTPAREN 
+                {
+                    ReferValue *refer = make_refer_value();
+                    refer->type = INDIRECTLY;
+                    refer->condition = $3;
+                    $$ = refer;
                 }
             ;
 BOOLVALUE:

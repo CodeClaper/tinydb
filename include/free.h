@@ -30,6 +30,9 @@ void free_cursor(Cursor *cursor);
 /* Free Refer. */
 void free_refer(Refer *refer);
 
+/* Free ReferValue. */
+void free_refer_value(ReferValue *refer_value);
+
 /* Free ReferUpdateEntity. */
 void free_refer_update_entity(ReferUpdateEntity *refer_update_entity);
 

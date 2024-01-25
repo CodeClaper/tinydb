@@ -113,11 +113,10 @@ static uint32_t get_query_columns_num(QueryParam *query_param) {
 }
 
 /* Get value from value item node. */
-void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType meta_data_type) {
-
+void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column) {
     /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
      * So we must use meta column data type to define which data type of the value. */
-    switch (meta_data_type) { 
+    switch (meta_column->column_type) { 
         case T_CHAR: {
             switch (value_item_node->data_type) {
                 case T_STRING:
@@ -196,33 +195,21 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, DataType me
              }
              break;
         }
-        case T_REFERENCE:
-            return value_item_node->nest_value_item_set; 
+        case T_REFERENCE: {
+            switch (value_item_node->r_value->type) {
+                case DIRECTLY:
+                    db_log(ERROR, "Not support directly fetch refer when query.");
+                    return make_null_refer();
+                case INDIRECTLY: {
+                    return fetch_refer(meta_column, value_item_node->r_value->condition);
+                }
+            }
+            break;
+        }
         default:
             db_log(PANIC, "Not implement yet.");
     }
     return NULL;
-}
-
-/*Check if the row include the condition node. */
-static bool satisfy_leaf_condition_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
-
-    /* If without condition, of course the key include, so just return true. */
-    if (condition_node == NULL)
-        return true;
-
-    int i; uint32_t off_set = 0;
-    for (i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-        /* Define the column. */
-        if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
-            void *value = destinct + off_set;
-            void *target = get_value_from_value_item_node(condition_node->value, meta_column->column_type);
-            return eval(condition_node->opr_type, value, target, meta_column->column_type);
-        }
-        off_set += meta_column->column_length;
-    }
-    return false;
 }
 
 /* Check the tagert key if include the internal node.
@@ -269,7 +256,7 @@ static bool include_logic_internal_node(void *min_key, void *max_key, ConditionN
 static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
 
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node, meta_table);
-    void *target_key = get_value_from_value_item_node(condition_node->value, cond_meta_column->column_type);
+    void *target_key = get_value_from_value_item_node(condition_node->value, cond_meta_column);
 
     /* Skipped the internal node must satisfy tow factors: 
      * key column and not satisfied internal node condition. */
@@ -306,7 +293,22 @@ static bool include_logic_leaf_node(void *destinct, ConditionNode *condition_nod
 
 /* Check if include leaf node if the condition is exec condition. */
 static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
-    return satisfy_leaf_condition_node(destinct, condition_node, meta_table);
+    /* If without condition, of course the key include, so just return true. */
+    if (condition_node == NULL)
+        return true;
+
+    int i; uint32_t off_set = 0;
+    for (i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        /* Define the column. */
+        if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
+            void *value = destinct + off_set;
+            void *target = get_value_from_value_item_node(condition_node->value, meta_column);
+            return eval(condition_node->opr_type, value, target, meta_column->column_type);
+        }
+        off_set += meta_column->column_length;
+    }
+    return false;
 }
 
 /* Check if the key include the leaf node. */
@@ -840,8 +842,8 @@ void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     select_result->row_size++;
 }
 
-/* Send row data. */
-static void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+/* Select row data. */
+void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;

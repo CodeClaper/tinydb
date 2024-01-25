@@ -73,7 +73,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
         case T_CHAR: {
             uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/ 
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": \'%c\'", key, *(char *)value);
+            sprintf(s, "\"%s\": \"%c\"", key, *(char *)value);
             return s;
         }
         case T_STRING: {

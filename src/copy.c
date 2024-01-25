@@ -231,13 +231,26 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
         case T_DATE:
             value_item_node_copy->t_value = value_item_node->t_value;
             break;
-        case T_REFERENCE: {
-            value_item_node_copy->nest_value_item_set = db_malloc(sizeof(ValueItemSetNode), SDT_VALUE_ITEM_SET_NODE);
-            memcpy(value_item_node_copy->nest_value_item_set, value_item_node->nest_value_item_set, sizeof(ValueItemSetNode));
+        case T_REFERENCE: 
+            value_item_node_copy->r_value = copy_refer_value(value_item_node->r_value);
             break;
-        }
     }
     return value_item_node_copy;
+}
+
+/* Copy ValueItemSetNode. */
+ValueItemSetNode *copy_value_item_set_node(ValueItemSetNode *value_item_set_node) {
+    if (value_item_set_node == NULL)
+        return NULL;
+    ValueItemSetNode *copy = db_malloc(sizeof(ValueItemSetNode), SDT_VALUE_ITEM_SET_NODE);
+    copy->num = value_item_set_node->num;
+    copy->value_item_node = db_malloc(sizeof(ValueItemNode *) * value_item_set_node->num, SDT_POINTER);
+
+    int i;
+    for (i = 0; i < value_item_set_node->num; i++) {
+        copy->value_item_node[i] = copy_value_item_node(value_item_set_node->value_item_node[i]);
+    }
+    return copy;
 }
 
 /*Copy function value node. */
@@ -303,6 +316,23 @@ LimitNode *copy_limit_node(LimitNode *limit_node) {
     limit_node_copy->start = limit_node->start;
     limit_node_copy->end = limit_node->end;
     return limit_node_copy;
+}
+
+/* Copy ReferValue. */
+ReferValue *copy_refer_value(ReferValue *refer_value) {
+    if (refer_value == NULL)
+        return NULL;
+    ReferValue *refer_value_copy = db_malloc(sizeof(ReferValue), SDT_REFER_VALUE);
+    refer_value_copy->type = refer_value->type;
+    switch (refer_value->type) {
+        case DIRECTLY:
+            refer_value_copy->nest_value_item_set = copy_value_item_set_node(refer_value->nest_value_item_set);
+            break;
+        case INDIRECTLY:
+            refer_value_copy->condition = copy_condition_node(refer_value->condition);
+            break;
+    }
+    return refer_value_copy;
 }
 
 /* Copy select items node. */

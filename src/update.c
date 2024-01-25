@@ -121,7 +121,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
 
             /* Which means to change primary key, and may casuse space cell movement. */
             void *old_key = row->key;
-            void *new_key = get_value_from_value_item_node(assign_node->value, meta_column->column_type);
+            void *new_key = get_value_from_value_item_node(assign_node->value, meta_column);
             if (equal(old_key, new_key, meta_column->column_type)) 
                 continue;  /* The Key value not change, nothing to do. */
             else {

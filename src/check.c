@@ -69,11 +69,10 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
 }
 
 /* Check value if valid. 
- * Because, CHAR, DATE, TIMESTAMP use '%s' format to pass value, thus check it.
- * */
+ * Because, CHAR, DATE, TIMESTAMP use '%s' format to pass value, thus check it. */
 static bool check_value_valid(MetaColumn *meta_column, void* value) {
     if (value == NULL) {
-        db_log(ERROR, "Try to convert NULL '%s' to %s fail.", DATA_TYPE_NAMES[meta_column->column_type]);
+        db_log(ERROR, "Attempt to convert NULL to data type '%s' of column '%s' in table '%s' fail.", DATA_TYPE_NAMES[meta_column->column_type], meta_column->column_name, meta_column->table_name);
         return false;
     }
     switch(meta_column->column_type) {
@@ -183,6 +182,29 @@ static bool check_select_items(SelectItemsNode *select_items_node, MetaTable *me
     }
 }
 
+/* Check opr if allowd. */
+static bool check_opr(OprType opr_type, DataType data_type) {
+    switch (opr_type) {
+        case O_EQ:
+        case O_NE:
+            return true;
+        case O_GE:
+        case O_GT:
+        case O_LT:
+        case O_LE:
+        case O_IN:
+        case O_LIKE: {
+            if (data_type == T_REFERENCE) {
+                db_log(ERROR, "Reference data type only allowed operated equal or not equal.");
+                return false;
+            }
+            return true;
+        }
+        default:
+            db_log(PANIC, "Unknown opration type.");
+    }
+}
+
 /* Check condition node. */
 static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_table) {
     if (condition_node == NULL)
@@ -195,7 +217,8 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
             return check_column_node(meta_table, condition_node->column) // check select column
                    && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
-                   && check_value_valid(meta_column, get_value_from_value_item_node(condition_node->value, meta_column->column_type)); // check if value valid
+                   && check_value_valid(meta_column, get_value_from_value_item_node(condition_node->value, meta_column)) // check if value valid
+                   && check_opr(condition_node->opr_type, meta_column->column_type);
         }
     }
 }
@@ -233,7 +256,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
         /* Check column, check type, check if value valid. */
         if (!check_column_node(table->meta_table, column_node) 
             || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name) 
-            || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column->column_type)))
+            || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column)))
             return false;
 
         /* It means to change the primary key column and may cause duplicate key. */
@@ -249,7 +272,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
                 return false;
             }
             if (select_result->row_size == 1) {
-                void *new_key = get_value_from_value_item_node(value_node, meta_column->column_type);
+                void *new_key = get_value_from_value_item_node(value_node, meta_column);
                 Cursor *cursor = define_cursor(table, new_key);
                 uint32_t value_len = calc_table_row_length(table);
                 uint32_t key_len = calc_primary_key_length(table);
@@ -334,7 +357,7 @@ bool check_insert_node(InsertNode *insert_node) {
             if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
                 return false;
             /* Checke value valid. */
-            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type)))
+            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column)))
                 return false;
         }
     } else {
@@ -354,7 +377,7 @@ bool check_insert_node(InsertNode *insert_node) {
             if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
                 return false;
             /* Check value valid. */
-            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column->column_type))) 
+            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column))) 
                 return false;
         }
     }

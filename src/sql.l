@@ -68,6 +68,7 @@ min                     return MIN;
 sum                     return SUM;
 count                   return COUNT;
 avg                     return AVG;
+ref                     return REF;
 true                    return TRUE;
 false                   return FALSE;
 [a-zA-Z][a-zA-Z0-9_]*   { yylval.s_value = db_strdup(yytext); return IDENTIFIER;} 
