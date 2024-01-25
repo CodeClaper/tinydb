@@ -1,5 +1,4 @@
 #include "data.h"
-#include "intpr.h"
 
 /* Generate the binary tree of condition. */
 ConditionNode *tree(ConditionNode *head);

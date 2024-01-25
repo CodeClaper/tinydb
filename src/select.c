@@ -20,7 +20,6 @@
 #include "copy.h"
 #include "free.h"
 #include "index.h"
-#include "intpr.h"
 #include "log.h"
 #include "mmu.h"
 #include "meta.h"
