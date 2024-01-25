@@ -106,12 +106,14 @@ make
 - [x] Query special column data using sql
 - [x] Query data under conditions using sql
 - [x] Query data with aggregate function sum, avg, max, min, count
-- [x] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference.
-- [x] Data type valid check.
-- [x] Implement MVCC, support transaction and support the four types of transaction isolation levels.
-- [ ] ACID.
-- [ ] Subquery.
+- [x] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference
+- [x] Data type valid check
+- [x] Implement MVCC, support transaction and support the four types of transaction isolation levels
+- [ ] ACID
+- [ ] Refer function for manipulating Reference Data.
+- [ ] Subquery
+- [ ] Join query
 - [ ] Support index, B+Tree index store
-- [ ] Create view using sql
+- [ ] Support view
 - [ ] Bin Log 
 - [ ] Distributed
