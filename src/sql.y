@@ -21,7 +21,7 @@ int yylex();
    char                     *keyword;
    ReferValue               *r_value;
    DataType                 data_type;
-   OprType                  opr_type;
+   CompareType              compare_type;
    ConnType                 conn_type;
    ColumnDefNode            *column_def_node;
    ColumnDefSetNode         *column_def_set_node;
@@ -35,7 +35,7 @@ int yylex();
    PrimaryKeyNode           *primary_key_node;
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
-   ConditionNode            *cond_node;
+   ConditionNode            *condition_node;
    LimitNode                *limit_node;
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
@@ -87,13 +87,13 @@ int yylex();
 %type <column_def_node> column_def
 %type <column_def_set_node> column_defs
 %type <primary_key_node> primary_key_statement
-%type <cond_node> cond
+%type <condition_node> condition
 %type <limit_node> opt_limit
 %type <assignment_node> assignment
 %type <assignment_set_node> assignments
 %type <conn_type> conn
 %type <data_type> data_type
-%type <opr_type> opr
+%type <compare_type> compare
 %type <function_value_node> function_value
 %type <function_value_node> non_all_function_value
 %type <function_node> function
@@ -203,7 +203,7 @@ drop_table_statement:
                 }
             ;
 select_statement:
-            SELECT select_items FROM table WHERE cond opt_limit end
+            SELECT select_items FROM table WHERE condition opt_limit end
                 {
                     SelectNode *select_node = make_select_node();
                     select_node->select_items_node = $2;
@@ -248,7 +248,7 @@ update_statement:
                     node->assignment_set_node = $4;
                     $$ = node;
                 }
-            | UPDATE table SET assignments WHERE cond end
+            | UPDATE table SET assignments WHERE condition end
                 {
                     UpdateNode *node = make_update_node();
                     node->table_name = $2;
@@ -264,7 +264,7 @@ delete_statement:
                     node->table_name = $3;
                     $$ = node;
                 }
-            | DELETE FROM table WHERE cond end
+            | DELETE FROM table WHERE condition end
                 {
                     DeleteNode *node = make_delete_node();
                     node->table_name = $3;
@@ -492,7 +492,7 @@ REFERVALUE:
                     $$ = refer;
                 }
             /* Indirectly fetch already row refer. */
-            | REF LEFTPAREN cond RIGHTPAREN 
+            | REF LEFTPAREN condition RIGHTPAREN 
                 {
                     ReferValue *refer = make_refer_value();
                     refer->type = INDIRECTLY;
@@ -532,21 +532,21 @@ assignment:
                     $$ = node;
                 }
           ;
-cond: 
-            column opr value_item
+condition: 
+            column compare value_item
                 {
                     ConditionNode *cond_node = make_cond_node();
                     cond_node->column = $1;
-                    cond_node->opr_type = $2;
+                    cond_node->compare_type = $2;
                     cond_node->value = $3;
                     cond_node->type = EXEC_CONDITION;
                     $$ = cond_node;
                 }
-            | column opr value_item conn cond
+            | column compare value_item conn condition
                 {
                     ConditionNode *cond_node = make_cond_node();
                     cond_node->column = $1;
-                    cond_node->opr_type = $2;
+                    cond_node->compare_type = $2;
                     cond_node->value = $3;
                     cond_node->conn_type = $4;
                     cond_node->next = $5;
@@ -574,15 +574,13 @@ opt_limit:
                     $$ = limit_node;
                 }
             ;
-opr: 
+compare: 
             EQ      { $$ = O_EQ; }
             | NE    { $$ = O_NE; }
             | GT    { $$ = O_GT; }
             | GE    { $$ = O_GE; }
             | LT    { $$ = O_LT; }
             | LE    { $$ = O_LE; }
-            | IN    { $$ = O_IN; }
-            | LIKE  { $$ = O_LIKE; }
             ;
 conn: 
             AND     { $$ = C_AND; }

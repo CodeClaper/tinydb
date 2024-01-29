@@ -151,8 +151,8 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "XLOG_TABLE"\
 };
 
-/* OprType */
-typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE, O_IN, O_LIKE } OprType;
+/* CompareType */
+typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE } CompareType;
 
 /* DataType */
 typedef enum DataType { T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
@@ -348,7 +348,7 @@ typedef struct {
 /* ConditionNode */
 typedef struct ConditionNode {
     ColumnNode *column;
-    OprType opr_type;
+    CompareType compare_type;
     ValueItemNode *value;
     ConnType conn_type;
     struct ConditionNode *next;

@@ -1,8 +1,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
+#include "compare.h"
 #include "refer.h"
-#include "opr.h"
 #include "log.h"
 
 /*Equal operation (=).*/
@@ -216,8 +216,8 @@ bool less_equal(void *source, void *target, DataType data_type) {
 /* Eval, now supported operation: 
  * EQ NE GT GE LT LE 
  * */
-bool eval(OprType op_type, void *source, void *target, DataType data_type) {
-    switch(op_type) {
+bool eval(CompareType compare_type, void *source, void *target, DataType data_type) {
+    switch(compare_type) {
         case O_EQ:
             return equal(source, target, data_type);
         case O_NE:
@@ -230,10 +230,8 @@ bool eval(OprType op_type, void *source, void *target, DataType data_type) {
             return less(source, target, data_type);
         case O_LE:
             return less_equal(source, target, data_type);
-        case O_IN:
-        case O_LIKE:
         default:
-            db_log(ERROR, "Not supported operation type");
+            db_log(ERROR, "Unknown compare type.");
             break;
     }
     return false;

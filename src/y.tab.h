@@ -206,7 +206,7 @@ union YYSTYPE
    char                     *keyword;
    ReferValue               *r_value;
    DataType                 data_type;
-   OprType                  opr_type;
+   CompareType              compare_type;
    ConnType                 conn_type;
    ColumnDefNode            *column_def_node;
    ColumnDefSetNode         *column_def_set_node;
@@ -220,7 +220,7 @@ union YYSTYPE
    PrimaryKeyNode           *primary_key_node;
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
-   ConditionNode            *cond_node;
+   ConditionNode            *condition_node;
    LimitNode                *limit_node;
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;

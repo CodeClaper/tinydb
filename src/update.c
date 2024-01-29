@@ -8,7 +8,7 @@
 #include "select.h"
 #include "copy.h"
 #include "cond.h"
-#include "opr.h"
+#include "compare.h"
 #include "table.h"
 #include "pager.h"
 #include "ltree.h"

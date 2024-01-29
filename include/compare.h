@@ -1,6 +1,5 @@
 #include "data.h"
 
-
 // Equal operation.
 bool equal(void *source, void *target, DataType data_type);
 
@@ -20,4 +19,4 @@ bool less(void *source, void *target, DataType data_type);
 bool less_equal(void *source, void *target, DataType data_type);
 
 // Eval
-bool eval(OprType op_type, void *source, void *target, DataType data_type);
+bool eval(CompareType compare_type, void *source, void *target, DataType data_type);

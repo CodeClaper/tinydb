@@ -32,7 +32,7 @@
 #include "const.h"
 #include "pager.h"
 #include "meta.h"
-#include "opr.h"
+#include "compare.h"
 #include "log.h"
 #include "index.h"
 

@@ -24,7 +24,7 @@
 #include "mmu.h"
 #include "meta.h"
 #include "ltree.h"
-#include "opr.h"
+#include "compare.h"
 #include "pager.h"
 #include "select.h"
 #include "table.h"
@@ -218,8 +218,8 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
  * @param opr_type operation type
  * @param key_data_type data type of key
  * */
-static bool satisfy_internal_condition_node(void *min_key, void *max_key, void *target_key, OprType opr_type, DataType key_data_type) {
-    switch (opr_type) {
+static bool satisfy_internal_condition_node(void *min_key, void *max_key, void *target_key, CompareType compare_type, DataType key_data_type) {
+    switch (compare_type) {
         case O_EQ:
             return less(min_key, target_key, key_data_type) && less_equal(target_key, max_key, key_data_type);
         case O_NE:
@@ -232,9 +232,8 @@ static bool satisfy_internal_condition_node(void *min_key, void *max_key, void *
             return greater(target_key, min_key, key_data_type);
         case O_LE:
             return greater(target_key, min_key, key_data_type);
-        case O_IN:
-        case O_LIKE:
-            db_log(PANIC, "Not implement yet.");
+        default:
+            db_log(PANIC, "Unknown compare type.");
     }
     return true;
 }
@@ -260,7 +259,7 @@ static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNo
     /* Skipped the internal node must satisfy tow factors: 
      * key column and not satisfied internal node condition. */
     return !cond_meta_column->is_primary 
-        || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->opr_type, cond_meta_column->column_type);
+        || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->compare_type, cond_meta_column->column_type);
 }
 
 /* Check if include the internal node. */
@@ -303,7 +302,7 @@ static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node
         if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
             void *value = destinct + off_set;
             void *target = get_value_from_value_item_node(condition_node->value, meta_column);
-            return eval(condition_node->opr_type, value, target, meta_column->column_type);
+            return eval(condition_node->compare_type, value, target, meta_column->column_type);
         }
         off_set += meta_column->column_length;
     }

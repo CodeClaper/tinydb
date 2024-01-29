@@ -7,9 +7,9 @@
 #include "pager.h"
 #include "ltree.h"
 #include "meta.h"
-#include "opr.h"
-#include "log.h"
+#include "compare.h"
 #include "common.h"
+#include "log.h"
 
 
 /* Check if key already exists  */

@@ -5,10 +5,10 @@
 #include <regex.h>
 #include "check.h"
 #include "asserts.h"
+#include "compare.h"
 #include "data.h"
 #include "table.h"
 #include "log.h"
-#include "opr.h"
 #include "ltree.h"
 #include "pager.h"
 #include "meta.h"
@@ -183,17 +183,15 @@ static bool check_select_items(SelectItemsNode *select_items_node, MetaTable *me
 }
 
 /* Check opr if allowd. */
-static bool check_opr(OprType opr_type, DataType data_type) {
-    switch (opr_type) {
+static bool check_opr(CompareType compare_type, DataType data_type) {
+    switch (compare_type) {
         case O_EQ:
         case O_NE:
             return true;
         case O_GE:
         case O_GT:
         case O_LT:
-        case O_LE:
-        case O_IN:
-        case O_LIKE: {
+        case O_LE: {
             if (data_type == T_REFERENCE) {
                 db_log(ERROR, "Reference data type only allowed operated equal or not equal.");
                 return false;
@@ -218,7 +216,7 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
             return check_column_node(meta_table, condition_node->column) // check select column
                    && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
                    && check_value_valid(meta_column, get_value_from_value_item_node(condition_node->value, meta_column)) // check if value valid
-                   && check_opr(condition_node->opr_type, meta_column->column_type);
+                   && check_opr(condition_node->compare_type, meta_column->column_type);
         }
     }
 }

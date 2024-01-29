@@ -300,7 +300,7 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
             break;
         case EXEC_CONDITION:
             condition_node_copy->column = copy_column_node(condition_node->column);
-            condition_node_copy->opr_type = condition_node->opr_type;
+            condition_node_copy->compare_type = condition_node->compare_type;
             condition_node_copy->value = copy_value_item_node(condition_node->value);
             condition_node_copy->conn_type = condition_node->conn_type;
             break;
