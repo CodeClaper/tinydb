@@ -36,6 +36,7 @@ int yylex();
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
    ConditionNode            *condition_node;
+   ComparisonNode           *comparison_node;
    LimitNode                *limit_node;
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
@@ -47,6 +48,11 @@ int yylex();
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 };
+
+%left OR
+%left AND
+%left '+' '-'
+%left '*' '/'  
 
 %token NL
 %token <keyword> BEGINN COMMIT ROLLBACK
@@ -63,12 +69,11 @@ int yylex();
 %token <keyword> MAX MIN COUNT SUM AVG
 %token <keyword> REF
 %token <keyword> TRUE FALSE
-%token <keyword> NOT
 %token <keyword> NULLX
 %token <keyword> CHAR INT LONG STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> PRIMARY KEY
 %token <keyword> EQ NE GT GE LT LE IN LIKE
-%token <keyword> AND OR
+%token <keyword> AND OR NOT
 %token <keyword> ALL
 %token <keyword> COMMA SEMICOLON QUOTE POINT LEFTPAREN RIGHTPAREN
 %token <keyword> SYSTEM CONFIG MEMORY
@@ -88,6 +93,7 @@ int yylex();
 %type <column_def_set_node> column_defs
 %type <primary_key_node> primary_key_statement
 %type <condition_node> condition
+%type <comparison_node> predicate
 %type <limit_node> opt_limit
 %type <assignment_node> assignment
 %type <assignment_set_node> assignments
@@ -533,27 +539,40 @@ assignment:
                 }
           ;
 condition: 
-            column compare value_item
+          condition OR condition
                 {
-                    ConditionNode *cond_node = make_cond_node();
-                    cond_node->column = $1;
-                    cond_node->compare_type = $2;
-                    cond_node->value = $3;
-                    cond_node->type = EXEC_CONDITION;
-                    $$ = cond_node;
+                    ConditionNode *condition = make_condition_node();
+                    condition->conn_type = C_OR;
+                    condition->left = $1;
+                    condition->right = $3;
+                    $$ = condition;
                 }
-            | column compare value_item conn condition
+          | condition AND condition
                 {
-                    ConditionNode *cond_node = make_cond_node();
-                    cond_node->column = $1;
-                    cond_node->compare_type = $2;
-                    cond_node->value = $3;
-                    cond_node->conn_type = $4;
-                    cond_node->next = $5;
-                    cond_node->type = EXEC_CONDITION;
-                    $$ = cond_node;
+                    ConditionNode *condition = make_condition_node();
+                    condition->conn_type = C_AND;
+                    condition->left = $1;
+                    condition->right = $3;
+                    $$ = condition;
                 }
-            ;
+          | predicate
+                {
+                    ConditionNode *condition = make_condition_node();
+                    condition->conn_type = C_NONE;
+                    condition->comparison = $1;
+                    $$ = condition;
+                }
+          ;
+predicate:
+          column compare value_item
+                {
+                    ComparisonNode *comparison_node = make_comparison_node();
+                    comparison_node->column = $1;
+                    comparison_node->type = $2;
+                    comparison_node->value = $3;
+                    $$ = comparison_node;
+                }
+          ;
 opt_limit:  
             // empty
                 {

@@ -44,6 +44,7 @@ typedef enum SysDataType{
     SDT_ASSIGNMENT_NODE,
     SDT_ASSIGNMENT_SET_NODE,
     SDT_CONDITION_NODE,
+    SDT_COMPARISON_NODE,
     SDT_LIMIT_NODE,
     SDT_CREATE_TABLE_NODE,
     SDT_DROP_TABLE_NODE,
@@ -109,6 +110,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "ASSIGNMENT_NODE",\
    "ASSIGNMENT_SET_NODE",\
    "CONDITION_NODE",\
+   "COMPARISON_NODE",\
    "LIMIT_NODE",\
    "CREATE_TABLE_NODE",\
    "DROP_TABLE_NODE",\
@@ -165,7 +167,7 @@ static char *DATA_TYPE_NAMES[] = \
 typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
 
 /* ConnType */
-typedef enum { C_OR, C_AND } ConnType; // connector type
+typedef enum { C_OR, C_AND, C_NONE} ConnType; // connector type
 
 /* FunctionValueType */
 typedef enum { V_INT, V_COLUMN, V_ALL } FunctionValueType; // value type.
@@ -347,15 +349,17 @@ typedef struct {
 
 /* ConditionNode */
 typedef struct ConditionNode {
-    ColumnNode *column;
-    CompareType compare_type;
-    ValueItemNode *value;
     ConnType conn_type;
-    struct ConditionNode *next;
     struct ConditionNode *left;
     struct ConditionNode *right;
-    ConditionNodeType type;
+    struct ComparisonNode *comparison;
 } ConditionNode;
+
+typedef struct ComparisonNode {
+    CompareType type;
+    ColumnNode *column;
+    ValueItemNode *value;
+} ComparisonNode;
 
 /* LimitNode */
 typedef struct LimitNode {

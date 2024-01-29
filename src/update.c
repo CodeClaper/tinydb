@@ -7,7 +7,6 @@
 #include "meta.h"
 #include "select.h"
 #include "copy.h"
-#include "cond.h"
 #include "compare.h"
 #include "table.h"
 #include "pager.h"
@@ -54,8 +53,7 @@ static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
     QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = db_strdup(update_node->table_name);
     query_param->select_items = adapt_select_items_node(update_node, table);
-    ConditionNode *condition_node_copy = copy_condition_node(update_node->condition_node);
-    query_param->condition_node = tree(condition_node_copy);
+    query_param->condition_node = copy_condition_node(update_node->condition_node);
     return query_param;
 }
 

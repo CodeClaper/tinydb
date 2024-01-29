@@ -25,7 +25,10 @@ ColumnSetNode *make_column_set_node();
 void add_column_to_set(ColumnSetNode *column_set_node, ColumnNode *column_node);
 
 /* make a condition node. */
-ConditionNode *make_cond_node();
+ConditionNode *make_condition_node();
+
+/* Make a ComparisonNode. */
+ComparisonNode *make_comparison_node();
 
 /* Make a LimitNode. */
 LimitNode *make_limit_node();

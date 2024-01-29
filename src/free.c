@@ -274,20 +274,27 @@ void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
     }
 }
 
+void free_comnparison_node(ComparisonNode *comparison_node) {
+    if (comparison_node) {
+        free_column_node(comparison_node->column);
+        free_value_item_node(comparison_node->value);
+        db_free(comparison_node);
+    }
+}
+
 /* Free condition node. */
 void free_condition_node(ConditionNode *condition_node) {
     if (condition_node) {
-        switch(condition_node->type) {
-            case LOGIC_CONDITION:
+        switch(condition_node->conn_type) {
+            case C_OR:
+            case C_AND:
                 break;
-            case EXEC_CONDITION:
-                free_column_node(condition_node->column);
-                free_value_item_node(condition_node->value);
+            case C_NONE:
+                free_comnparison_node(condition_node->comparison);
                 break;
         }
         free_condition_node(condition_node->left);
         free_condition_node(condition_node->right);
-        free_condition_node(condition_node->next);
         db_free(condition_node);
     }
 }

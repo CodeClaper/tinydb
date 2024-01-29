@@ -373,19 +373,19 @@ static const flex_int16_t yy_accept[215] =
        59,   59,   59,   59,   59,   59,   59,    0,   68,   62,
        17,   55,   59,   59,   59,   59,   59,   59,   59,   59,
 
-       59,   59,   59,   59,   59,   59,   59,   59,   24,   23,
-       59,   59,   51,   59,   52,   33,   59,   59,   56,   59,
-       59,   20,   59,   59,   53,   59,   59,   59,   59,   59,
-       59,   59,   59,   31,   26,   59,   59,   59,   59,   30,
-       59,   59,   59,    5,   59,   59,   11,   59,   19,   59,
-       25,   59,   34,   59,   59,   59,   15,   59,   59,   59,
+       59,   59,   59,   59,   59,   59,   59,   59,   25,   24,
+       59,   59,   51,   59,   52,   19,   59,   59,   56,   59,
+       59,   21,   59,   59,   53,   59,   59,   59,   59,   59,
+       59,   59,   59,   32,   27,   59,   59,   59,   59,   31,
+       59,   59,   59,    5,   59,   59,   11,   59,   20,   59,
+       26,   59,   34,   59,   59,   59,   15,   59,   59,   59,
        59,   57,   59,   59,   59,    1,   59,   59,   54,   59,
-       59,   59,   59,   58,   27,   59,   14,   59,   59,   59,
+       59,   59,   59,   58,   28,   59,   14,   59,   59,   59,
        59,   59,   59,   12,   59,   59,   59,   13,    2,   37,
-        4,    9,   59,   28,    7,   36,   59,   59,    6,   29,
+        4,    9,   59,   29,    7,   36,   59,   59,    6,   30,
 
-       35,   16,   59,    8,   21,   59,   22,   59,   59,   10,
-        3,   59,   32,    0
+       35,   16,   59,    8,   22,   59,   23,   59,   59,   10,
+        3,   59,   33,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -949,77 +949,77 @@ return OR;
 case 19:
 YY_RULE_SETUP
 #line 34 "sql.l"
-return INTO;
+return NOT;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 35 "sql.l"
-return SET;
+return INTO;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
 #line 36 "sql.l"
-return VALUES;
+return SET;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 37 "sql.l"
-return PRIMARY;
+return VALUES;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 38 "sql.l"
-return KEY;
+return PRIMARY;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 39 "sql.l"
-return INT;
+return KEY;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 40 "sql.l"
-return LONG;
+return INT;
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
 #line 41 "sql.l"
-return CHAR;
+return LONG;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
 #line 42 "sql.l"
-return FLOAT;
+return CHAR;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
 #line 43 "sql.l"
-return DOUBLE;
+return FLOAT;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
 #line 44 "sql.l"
-return STRING;
+return DOUBLE;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 45 "sql.l"
-return DATE;
+return STRING;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 46 "sql.l"
-return BOOL;
+return DATE;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 47 "sql.l"
-return TIMESTAMP;
+return BOOL;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
 #line 48 "sql.l"
-return NOT;
+return TIMESTAMP;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP

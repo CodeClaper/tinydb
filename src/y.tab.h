@@ -82,29 +82,29 @@ extern int yydebug;
     REF = 283,                     /* REF  */
     TRUE = 284,                    /* TRUE  */
     FALSE = 285,                   /* FALSE  */
-    NOT = 286,                     /* NOT  */
-    NULLX = 287,                   /* NULLX  */
-    CHAR = 288,                    /* CHAR  */
-    INT = 289,                     /* INT  */
-    LONG = 290,                    /* LONG  */
-    STRING = 291,                  /* STRING  */
-    BOOL = 292,                    /* BOOL  */
-    FLOAT = 293,                   /* FLOAT  */
-    DOUBLE = 294,                  /* DOUBLE  */
-    DATE = 295,                    /* DATE  */
-    TIMESTAMP = 296,               /* TIMESTAMP  */
-    PRIMARY = 297,                 /* PRIMARY  */
-    KEY = 298,                     /* KEY  */
-    EQ = 299,                      /* EQ  */
-    NE = 300,                      /* NE  */
-    GT = 301,                      /* GT  */
-    GE = 302,                      /* GE  */
-    LT = 303,                      /* LT  */
-    LE = 304,                      /* LE  */
-    IN = 305,                      /* IN  */
-    LIKE = 306,                    /* LIKE  */
-    AND = 307,                     /* AND  */
-    OR = 308,                      /* OR  */
+    NULLX = 286,                   /* NULLX  */
+    CHAR = 287,                    /* CHAR  */
+    INT = 288,                     /* INT  */
+    LONG = 289,                    /* LONG  */
+    STRING = 290,                  /* STRING  */
+    BOOL = 291,                    /* BOOL  */
+    FLOAT = 292,                   /* FLOAT  */
+    DOUBLE = 293,                  /* DOUBLE  */
+    DATE = 294,                    /* DATE  */
+    TIMESTAMP = 295,               /* TIMESTAMP  */
+    PRIMARY = 296,                 /* PRIMARY  */
+    KEY = 297,                     /* KEY  */
+    EQ = 298,                      /* EQ  */
+    NE = 299,                      /* NE  */
+    GT = 300,                      /* GT  */
+    GE = 301,                      /* GE  */
+    LT = 302,                      /* LT  */
+    LE = 303,                      /* LE  */
+    IN = 304,                      /* IN  */
+    LIKE = 305,                    /* LIKE  */
+    AND = 306,                     /* AND  */
+    OR = 307,                      /* OR  */
+    NOT = 308,                     /* NOT  */
     ALL = 309,                     /* ALL  */
     COMMA = 310,                   /* COMMA  */
     SEMICOLON = 311,               /* SEMICOLON  */
@@ -155,29 +155,29 @@ extern int yydebug;
 #define REF 283
 #define TRUE 284
 #define FALSE 285
-#define NOT 286
-#define NULLX 287
-#define CHAR 288
-#define INT 289
-#define LONG 290
-#define STRING 291
-#define BOOL 292
-#define FLOAT 293
-#define DOUBLE 294
-#define DATE 295
-#define TIMESTAMP 296
-#define PRIMARY 297
-#define KEY 298
-#define EQ 299
-#define NE 300
-#define GT 301
-#define GE 302
-#define LT 303
-#define LE 304
-#define IN 305
-#define LIKE 306
-#define AND 307
-#define OR 308
+#define NULLX 286
+#define CHAR 287
+#define INT 288
+#define LONG 289
+#define STRING 290
+#define BOOL 291
+#define FLOAT 292
+#define DOUBLE 293
+#define DATE 294
+#define TIMESTAMP 295
+#define PRIMARY 296
+#define KEY 297
+#define EQ 298
+#define NE 299
+#define GT 300
+#define GE 301
+#define LT 302
+#define LE 303
+#define IN 304
+#define LIKE 305
+#define AND 306
+#define OR 307
+#define NOT 308
 #define ALL 309
 #define COMMA 310
 #define SEMICOLON 311
@@ -221,6 +221,7 @@ union YYSTYPE
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
    ConditionNode            *condition_node;
+   ComparisonNode           *comparison_node;
    LimitNode                *limit_node;
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
@@ -232,7 +233,7 @@ union YYSTYPE
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 
-#line 236 "y.tab.h"
+#line 237 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

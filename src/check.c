@@ -207,16 +207,18 @@ static bool check_opr(CompareType compare_type, DataType data_type) {
 static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_table) {
     if (condition_node == NULL)
         return true;
-    switch(condition_node->type) {
-        case LOGIC_CONDITION:
+    switch(condition_node->conn_type) {
+        case C_AND:
+        case C_OR:
             return check_condition_node(condition_node->left, meta_table) 
                 && check_condition_node(condition_node->right, meta_table);
-        case EXEC_CONDITION: {
-            MetaColumn *meta_column = get_meta_column_by_name(meta_table, condition_node->column->column_name);
-            return check_column_node(meta_table, condition_node->column) // check select column
-                   && if_convert_type(meta_column->column_type, condition_node->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
-                   && check_value_valid(meta_column, get_value_from_value_item_node(condition_node->value, meta_column)) // check if value valid
-                   && check_opr(condition_node->compare_type, meta_column->column_type);
+        case C_NONE: {
+            ComparisonNode *comparison = condition_node->comparison;
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, comparison->column->column_name);
+            return check_column_node(meta_table, comparison->column) // check select column
+                   && if_convert_type(meta_column->column_type, comparison->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
+                   && check_value_valid(meta_column, get_value_from_value_item_node(comparison->value, meta_column)) // check if value valid
+                   && check_opr(comparison->type, meta_column->column_type);
         }
     }
 }

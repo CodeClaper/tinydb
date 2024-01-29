@@ -16,7 +16,6 @@
 #include <time.h>
 #include "check.h"
 #include "common.h"
-#include "cond.h"
 #include "copy.h"
 #include "free.h"
 #include "index.h"
@@ -247,19 +246,23 @@ static bool include_logic_internal_node(void *min_key, void *max_key, ConditionN
            return include_internal_node(min_key, max_key, condition_node->left, meta_table) && include_internal_node(max_key, max_key, condition_node->right, meta_table);
         case C_OR:
            return include_internal_node(min_key, max_key, condition_node->left, meta_table) || include_internal_node(max_key, max_key, condition_node->right, meta_table);
+        case C_NONE:
+            db_log(PANIC, "System logic error.");
     } 
 }
 
 /* Check if include the internal node if condition is exec condition. */
 static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
 
+    assert_true(condition_node->conn_type == C_NONE, "System logic error.");
+    
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node, meta_table);
-    void *target_key = get_value_from_value_item_node(condition_node->value, cond_meta_column);
+    void *target_key = get_value_from_value_item_node(condition_node->comparison->value, cond_meta_column);
 
     /* Skipped the internal node must satisfy tow factors: 
      * key column and not satisfied internal node condition. */
     return !cond_meta_column->is_primary 
-        || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->compare_type, cond_meta_column->column_type);
+        || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->comparison->type, cond_meta_column->column_type);
 }
 
 /* Check if include the internal node. */
@@ -270,10 +273,11 @@ static bool include_internal_node(void *min_key, void *max_key, ConditionNode *c
         return true;
 
     /* According to condition node type, has different way. */
-    switch(condition_node->type) {
-        case LOGIC_CONDITION:
+    switch(condition_node->conn_type) {
+        case C_OR:
+        case C_AND:
             return include_logic_internal_node(min_key, max_key, condition_node, meta_table);
-        case EXEC_CONDITION:
+        case C_NONE:
             return include_exec_internal_node(min_key, max_key, condition_node, meta_table);
     }
 }
@@ -284,7 +288,7 @@ static bool include_logic_leaf_node(void *destinct, ConditionNode *condition_nod
         case C_AND:
             return include_leaf_node(destinct, condition_node->left, meta_table) && include_leaf_node(destinct, condition_node->right, meta_table);
         case C_OR:
-            return include_leaf_node(destinct, condition_node->right, meta_table) || include_leaf_node(destinct, condition_node->right, meta_table);
+            return include_leaf_node(destinct, condition_node->left, meta_table) || include_leaf_node(destinct, condition_node->right, meta_table);
     } 
 }
 
@@ -298,11 +302,12 @@ static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node
     int i; uint32_t off_set = 0;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
+        ComparisonNode *comparison = condition_node->comparison;
         /* Define the column. */
-        if (strcmp(meta_column->column_name, condition_node->column->column_name) == 0) {
+        if (strcmp(meta_column->column_name, comparison->column->column_name) == 0) {
             void *value = destinct + off_set;
-            void *target = get_value_from_value_item_node(condition_node->value, meta_column);
-            return eval(condition_node->compare_type, value, target, meta_column->column_type);
+            void *target = get_value_from_value_item_node(comparison->value, meta_column);
+            return eval(comparison->type, value, target, meta_column->column_type);
         }
         off_set += meta_column->column_length;
     }
@@ -316,10 +321,11 @@ static bool include_leaf_node(void *destinct, ConditionNode *condition_node, Met
     if (condition_node == NULL) 
           return true;
 
-    switch(condition_node->type) {
-        case LOGIC_CONDITION:
+    switch(condition_node->conn_type) {
+        case C_OR:
+        case C_AND:
             return include_logic_leaf_node(destinct, condition_node, meta_table);
-        case EXEC_CONDITION:
+        case C_NONE:
             return include_exec_leaf_node(destinct, condition_node, meta_table);
     }
 }
@@ -328,7 +334,7 @@ static bool include_leaf_node(void *destinct, ConditionNode *condition_node, Met
 static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable *meta_table) {
     if (condition_node == NULL)
         return NULL;
-    return get_meta_column_by_name(meta_table, condition_node->column->column_name);
+    return get_meta_column_by_name(meta_table, condition_node->comparison->column->column_name);
 }
 
 /* Assign function count() value to row data. */
@@ -787,9 +793,7 @@ QueryParam *convert_query_param(SelectNode *select_node) {
     QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = db_strdup(select_node->table_name);
     query_param->select_items = copy_select_items_node(select_node->select_items_node);
-    ConditionNode *condition_node_copy = copy_condition_node(select_node->condition_node);
-    query_param->condition_node = tree(condition_node_copy); // generate condition tree.
-    clean_next(query_param->condition_node);
+    query_param->condition_node = copy_condition_node(select_node->condition_node);
     query_param->limit_node = copy_limit_node(select_node->limit_node);
     return query_param;
 }
@@ -1188,7 +1192,6 @@ static void exec_plain_select_statement(QueryParam *query_param, DBResult *resul
     /* success result. */
     db_log(SUCCESS, "Query data successfully.");
 }
-
 
 /* Execute select statement. */
 void exec_select_statement(SelectNode *select_node, DBResult *result) {

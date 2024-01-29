@@ -287,25 +287,28 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     if (condition_node == NULL)
         return NULL;
     ConditionNode *condition_node_copy = db_malloc(sizeof(ConditionNode), SDT_CONDITION_NODE);
-    condition_node_copy->type = condition_node->type;
-    if (condition_node->left)
-        condition_node_copy->left = copy_condition_node(condition_node->left);
-    if (condition_node->right)
-        condition_node_copy->right = copy_condition_node(condition_node->right);
-    if (condition_node->next)
-        condition_node_copy->next = copy_condition_node(condition_node->next);
-    switch(condition_node->type) {
-        case LOGIC_CONDITION:
+    condition_node_copy->conn_type = condition_node->conn_type;
+    switch(condition_node->conn_type) {
+        case C_OR:
+        case C_AND:
+            condition_node_copy->left = copy_condition_node(condition_node->left);
+            condition_node_copy->right = copy_condition_node(condition_node->right);
             condition_node_copy->conn_type = condition_node->conn_type;
             break;
-        case EXEC_CONDITION:
-            condition_node_copy->column = copy_column_node(condition_node->column);
-            condition_node_copy->compare_type = condition_node->compare_type;
-            condition_node_copy->value = copy_value_item_node(condition_node->value);
-            condition_node_copy->conn_type = condition_node->conn_type;
+        case C_NONE:
+            condition_node_copy->comparison = copy_comparison_node(condition_node->comparison);
             break;
     }
     return condition_node_copy;
+}
+
+/* Copy a ComparisonNode. */
+ComparisonNode *copy_comparison_node(ComparisonNode *comparison_node) {
+    ComparisonNode *comparison_node_copy = db_malloc(sizeof(ComparisonNode), SDT_COMPARISON_NODE);
+    comparison_node_copy->type = comparison_node->type;
+    comparison_node_copy->column = copy_column_node(comparison_node->column);
+    comparison_node_copy->value = copy_value_item_node(comparison_node->value);
+    return comparison_node_copy;
 }
 
 /* Copy LimitNode. */

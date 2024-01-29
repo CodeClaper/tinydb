@@ -72,9 +72,15 @@ void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node) {
 
 
 /* make a condition node. */
-ConditionNode *make_cond_node() {
+ConditionNode *make_condition_node() {
     ConditionNode *cond_node = db_malloc(sizeof(ConditionNode), SDT_CONDITION_NODE);
     return cond_node;
+}
+
+/* Make a ComparisonNode. */
+ComparisonNode *make_comparison_node() {
+    ComparisonNode *comparison_node = db_malloc(sizeof(ComparisonNode), SDT_COMPARISON_NODE);
+    return comparison_node;
 }
 
 /* Make a LimitNode. */
