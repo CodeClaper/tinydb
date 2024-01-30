@@ -1,4 +1,6 @@
 #include <ctype.h>
+#include <stdbool.h>
+#include <string.h>
 #include <sys/socket.h>
 #include "utils.h"
 #include "mmu.h"
@@ -20,6 +22,14 @@ char *rtrim(char *s) {
 /* trim */
 char *trim(char *s) {
     return rtrim(ltrim(s)); 
+}
+
+/* Check if a string contains substring.*/
+bool contains(char* str, char *substr) {
+    if (!str || !substr)
+        return false;
+    char *s = strstr(str, substr);
+    return s != NULL;
 }
 
 /* Check if a file has prefix. */

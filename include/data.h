@@ -44,7 +44,10 @@ typedef enum SysDataType{
     SDT_ASSIGNMENT_NODE,
     SDT_ASSIGNMENT_SET_NODE,
     SDT_CONDITION_NODE,
+    SDT_PREDICATE_NODE,
     SDT_COMPARISON_NODE,
+    SDT_LIKE_NODE,
+    SDT_IN_NODE,
     SDT_LIMIT_NODE,
     SDT_CREATE_TABLE_NODE,
     SDT_DROP_TABLE_NODE,
@@ -110,7 +113,10 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "ASSIGNMENT_NODE",\
    "ASSIGNMENT_SET_NODE",\
    "CONDITION_NODE",\
+   "PREDICATE_NODE",\
    "COMPARISON_NODE",\
+   "LIKE_NODE",\
+   "IN_NODE",\
    "LIMIT_NODE",\
    "CREATE_TABLE_NODE",\
    "DROP_TABLE_NODE",\
@@ -352,14 +358,44 @@ typedef struct ConditionNode {
     ConnType conn_type;
     struct ConditionNode *left;
     struct ConditionNode *right;
-    struct ComparisonNode *comparison;
+    struct PredicateNode *predicate;
 } ConditionNode;
 
+/* PredicateType */
+typedef enum PredicateType {
+    PRE_COMPARISON,
+    PRE_LIKE,
+    PRE_IN
+} PredicateType;
+
+/* PredicateNode */
+typedef struct PredicateNode {
+    PredicateType type;
+    union {
+        struct ComparisonNode *comparison;
+        struct LikeNode *like;
+        struct InNode *in;
+    };
+} PredicateNode;
+
+/* ComparisonNode */
 typedef struct ComparisonNode {
     CompareType type;
     ColumnNode *column;
     ValueItemNode *value;
 } ComparisonNode;
+
+/* LikeNode */
+typedef struct LikeNode {
+    ColumnNode *column;
+    ValueItemNode *value;
+} LikeNode;
+
+/* InNode */
+typedef struct InNode {
+    ColumnNode *column;
+    ValueItemSetNode *value_set;
+} InNode;
 
 /* LimitNode */
 typedef struct LimitNode {

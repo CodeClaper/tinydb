@@ -282,6 +282,27 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
     return function_node_copy;
 }
 
+PredicateNode *copy_predicate_node(PredicateNode *predicate_node) {
+    if (predicate_node == NULL)
+        return NULL;
+    PredicateNode *copy = db_malloc(sizeof(PredicateNode), SDT_PREDICATE_NODE);
+    copy->type = predicate_node->type;
+    switch (copy->type) {
+        case PRE_COMPARISON:
+            copy->comparison = copy_comparison_node(predicate_node->comparison);
+            break;
+        case PRE_LIKE:
+            copy->like = copy_like_node(predicate_node->like);
+            break;
+        case PRE_IN:
+            copy->in = copy_in_node(predicate_node->in);
+            break;
+        default:
+            db_log(PANIC, "Unknown predicate type");
+    }
+    return copy;
+}
+
 /* Copy condition node. */
 ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     if (condition_node == NULL)
@@ -296,7 +317,7 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
             condition_node_copy->conn_type = condition_node->conn_type;
             break;
         case C_NONE:
-            condition_node_copy->comparison = copy_comparison_node(condition_node->comparison);
+            condition_node_copy->predicate = copy_predicate_node(condition_node->predicate);
             break;
     }
     return condition_node_copy;
@@ -304,11 +325,33 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
 
 /* Copy a ComparisonNode. */
 ComparisonNode *copy_comparison_node(ComparisonNode *comparison_node) {
+    if (comparison_node == NULL)
+        return NULL;
     ComparisonNode *comparison_node_copy = db_malloc(sizeof(ComparisonNode), SDT_COMPARISON_NODE);
     comparison_node_copy->type = comparison_node->type;
     comparison_node_copy->column = copy_column_node(comparison_node->column);
     comparison_node_copy->value = copy_value_item_node(comparison_node->value);
     return comparison_node_copy;
+}
+
+/* Copy a LikeNode. */
+LikeNode *copy_like_node(LikeNode *like_node) {
+    if (like_node == NULL)
+        return NULL;
+    LikeNode *copy = db_malloc(sizeof(LikeNode), SDT_LIKE_NODE);
+    copy->column = copy_column_node(like_node->column);
+    copy->value = copy_value_item_node(like_node->value);
+    return copy;
+}
+
+/* Copy an InNode. */
+InNode *copy_in_node(InNode *in_node) {
+    if (in_node == NULL)
+        return NULL;
+    InNode *copy = db_malloc(sizeof(InNode), SDT_IN_NODE);
+    copy->column = copy_column_node(in_node->column);
+    copy->value_set = copy_value_item_set_node(in_node->value_set);
+    return copy;
 }
 
 /* Copy LimitNode. */

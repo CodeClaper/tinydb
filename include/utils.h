@@ -1,7 +1,5 @@
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/types.h>
 
 /* left trim*/
@@ -12,6 +10,9 @@ char *rtrim(char *s);
 
 /* trim */
 char *trim(char *s);
+
+/* Check if a string contains substring.*/
+bool contains(char* str, char *substr);
 
 /* Check if a file has prefix. */
 bool startwith(char *str, char *prefix);

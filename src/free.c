@@ -274,11 +274,24 @@ void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
     }
 }
 
-void free_comnparison_node(ComparisonNode *comparison_node) {
+void free_comparison_node(ComparisonNode *comparison_node) {
     if (comparison_node) {
         free_column_node(comparison_node->column);
         free_value_item_node(comparison_node->value);
         db_free(comparison_node);
+    }
+}
+
+void free_predicate_node(PredicateNode *predicate_node) {
+    if (predicate_node) {
+        switch (predicate_node->type) {
+            case PRE_COMPARISON:
+                free_comparison_node(predicate_node->comparison);
+                break;
+            case PRE_IN:
+            case PRE_LIKE:
+                break;
+        }
     }
 }
 
@@ -290,7 +303,7 @@ void free_condition_node(ConditionNode *condition_node) {
             case C_AND:
                 break;
             case C_NONE:
-                free_comnparison_node(condition_node->comparison);
+                free_predicate_node(condition_node->predicate);
                 break;
         }
         free_condition_node(condition_node->left);

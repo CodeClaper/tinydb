@@ -22,7 +22,6 @@ int yylex();
    ReferValue               *r_value;
    DataType                 data_type;
    CompareType              compare_type;
-   ConnType                 conn_type;
    ColumnDefNode            *column_def_node;
    ColumnDefSetNode         *column_def_set_node;
    SelectItemsNode          *select_items_node;
@@ -36,7 +35,10 @@ int yylex();
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
    ConditionNode            *condition_node;
+   PredicateNode            *predicate_node;
    ComparisonNode           *comparison_node;
+   LikeNode                 *like_node;
+   InNode                   *in_node;
    LimitNode                *limit_node;
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
@@ -93,11 +95,13 @@ int yylex();
 %type <column_def_set_node> column_defs
 %type <primary_key_node> primary_key_statement
 %type <condition_node> condition
-%type <comparison_node> predicate
+%type <predicate_node> predicate
+%type <comparison_node> comparison_predicate
+%type <like_node> like_predicate
+%type <in_node> in_predicate
 %type <limit_node> opt_limit
 %type <assignment_node> assignment
 %type <assignment_set_node> assignments
-%type <conn_type> conn
 %type <data_type> data_type
 %type <compare_type> compare
 %type <function_value_node> function_value
@@ -361,7 +365,7 @@ column_def:
             column_def_node->is_define_len = false;
             $$ = column_def_node;
         }
-    column STRING LEFTPAREN INTVALUE RIGHTPAREN
+    | column STRING LEFTPAREN INTVALUE RIGHTPAREN
         {
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = $1;
@@ -563,11 +567,34 @@ condition:
         {
             ConditionNode *condition = make_condition_node();
             condition->conn_type = C_NONE;
-            condition->comparison = $1;
+            condition->predicate = $1;
             $$ = condition;
         }
     ;
 predicate:
+    comparison_predicate
+        {
+            PredicateNode *predicate = make_predicate_node();
+            predicate->type = PRE_COMPARISON;
+            predicate->comparison = $1;
+            $$ = predicate;
+        }
+    | like_predicate
+        {
+            PredicateNode *predicate = make_predicate_node();
+            predicate->type = PRE_LIKE;
+            predicate->like = $1;
+            $$ = predicate;
+        }
+    | in_predicate
+        {
+            PredicateNode *predicate = make_predicate_node();
+            predicate->type = PRE_IN;
+            predicate->in = $1;
+            $$ = predicate;
+        }
+    ;
+comparison_predicate:
     column compare value_item
         {
             ComparisonNode *comparison_node = make_comparison_node();
@@ -575,6 +602,24 @@ predicate:
             comparison_node->type = $2;
             comparison_node->value = $3;
             $$ = comparison_node;
+        }
+    ;
+like_predicate:
+    column LIKE value_item
+        {
+            LikeNode *like_node = make_like_node();
+            like_node->column = $1;
+            like_node->value = $3;
+            $$ = like_node;
+        }
+    ;
+in_predicate: 
+    column IN LEFTPAREN value_items RIGHTPAREN
+        {
+            InNode *in_node = make_in_node();
+            in_node->column = $1;
+            in_node->value_set = $4;
+            $$ = in_node;
         }
     ;
 opt_limit:  
@@ -604,10 +649,6 @@ compare:
     | GE    { $$ = O_GE; }
     | LT    { $$ = O_LT; }
     | LE    { $$ = O_LE; }
-    ;
-conn: 
-    AND     { $$ = C_AND; }
-    | OR    { $$ = C_OR; }
     ;
 function:       
     MAX LEFTPAREN non_all_function_value RIGHTPAREN

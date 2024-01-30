@@ -16,6 +16,9 @@
 #include "select.h"
 #include "refer.h"
 
+/* Check ValueItemSetNode. */
+static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node);
+
 /* Check ident node. */
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
     int i;
@@ -134,15 +137,29 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
 
 }
 
-/* Check ident node. */
-static bool check_value_item_node(MetaTable *meta_table, char *column_name ,ValueItemNode *value_item_node) {
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+/* Check ValueItemNode. */
+static bool check_value_item_node(MetaTable *meta_table, char *column_name, ValueItemNode *value_item_node) {
+    int i;
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_name) == 0 && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name)) 
+        if (strcmp(meta_column->column_name, column_name) == 0 
+            && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name)
+            && check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column))) 
             return true;
     }
     db_log(ERROR, "Column '%s' data type error.", column_name);
     return false;
+}
+
+/* Check ValueItemSetNode. */
+static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node) {
+    int i;
+    for (i = 0; i < value_item_set_node->num; i++) {
+        ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
+        if (!check_value_item_node(meta_table, column_name, value_item_node))
+            return false;
+    }
+    return true;
 }
 
 /* Check function node */
@@ -203,6 +220,51 @@ static bool check_opr(CompareType compare_type, DataType data_type) {
     }
 }
 
+/* Check ComparisonNode.*/
+static bool check_comparison_node(ComparisonNode *comparison, MetaTable *meta_table) {
+    MetaColumn *meta_column = get_meta_column_by_name(meta_table, comparison->column->column_name);
+    return check_column_node(meta_table, comparison->column) // check select column
+           && if_convert_type(meta_column->column_type, comparison->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
+           && check_value_valid(meta_column, get_value_from_value_item_node(comparison->value, meta_column)) // check if value valid
+           && check_opr(comparison->type, meta_column->column_type);
+}
+
+/* Check InNode. */
+static bool check_in_node(InNode *in_node, MetaTable *meta_table) {
+    MetaColumn *meta_column = get_meta_column_by_name(meta_table, in_node->column->column_name);
+    return check_column_node(meta_table, in_node->column) // check select column
+           && check_value_item_set_node(meta_table, in_node->column->column_name, in_node->value_set);
+}
+
+/* Check like data. */
+static bool check_like_data(MetaColumn *meta_column) {
+    if (meta_column->column_type != T_STRING) {
+        db_log(ERROR, "For like predicate, only support string data type.");
+        return false;
+    }
+    return true;
+}
+
+/* Check LikeNode. */
+static bool check_like_node(LikeNode *like_node, MetaTable *meta_table) {
+    MetaColumn *meta_column = get_meta_column_by_name(meta_table, like_node->column->column_name);
+    return check_column_node(meta_table, like_node->column) // check select column
+           && check_like_data(meta_column)
+           && check_value_item_node(meta_table, like_node->column->column_name, like_node->value);
+}
+
+/* Check PredicateNode. */
+static bool check_predicate_node(PredicateNode *predicate_node, MetaTable *meta_table) {
+    switch (predicate_node->type) {
+        case PRE_COMPARISON:
+            return check_comparison_node(predicate_node->comparison, meta_table);
+        case PRE_IN:
+            return check_in_node(predicate_node->in, meta_table);
+        case PRE_LIKE:
+            return check_like_node(predicate_node->like, meta_table);
+    }
+}
+
 /* Check condition node. */
 static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_table) {
     if (condition_node == NULL)
@@ -212,14 +274,8 @@ static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_
         case C_OR:
             return check_condition_node(condition_node->left, meta_table) 
                 && check_condition_node(condition_node->right, meta_table);
-        case C_NONE: {
-            ComparisonNode *comparison = condition_node->comparison;
-            MetaColumn *meta_column = get_meta_column_by_name(meta_table, comparison->column->column_name);
-            return check_column_node(meta_table, comparison->column) // check select column
-                   && if_convert_type(meta_column->column_type, comparison->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
-                   && check_value_valid(meta_column, get_value_from_value_item_node(comparison->value, meta_column)) // check if value valid
-                   && check_opr(comparison->type, meta_column->column_type);
-        }
+        case C_NONE: 
+            return check_predicate_node(condition_node->predicate, meta_table);
     }
 }
 

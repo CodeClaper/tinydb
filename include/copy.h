@@ -40,6 +40,12 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node);
 /* Copy a ComparisonNode. */
 ComparisonNode *copy_comparison_node(ComparisonNode *comparison_node);
 
+/* Copy a LikeNode. */
+LikeNode *copy_like_node(LikeNode *like_node);
+
+/* Copy an InNode. */
+InNode *copy_in_node(InNode *in_node);
+
 /* Copy LimitNode. */
 LimitNode *copy_limit_node(LimitNode *limit_node);
 

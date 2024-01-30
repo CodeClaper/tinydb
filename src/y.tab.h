@@ -207,7 +207,6 @@ union YYSTYPE
    ReferValue               *r_value;
    DataType                 data_type;
    CompareType              compare_type;
-   ConnType                 conn_type;
    ColumnDefNode            *column_def_node;
    ColumnDefSetNode         *column_def_set_node;
    SelectItemsNode          *select_items_node;
@@ -221,7 +220,10 @@ union YYSTYPE
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
    ConditionNode            *condition_node;
+   PredicateNode            *predicate_node;
    ComparisonNode           *comparison_node;
+   LikeNode                 *like_node;
+   InNode                   *in_node;
    LimitNode                *limit_node;
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
@@ -233,7 +235,7 @@ union YYSTYPE
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 
-#line 237 "y.tab.h"
+#line 239 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

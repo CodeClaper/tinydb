@@ -26,6 +26,8 @@ describe                return DESCRIBE;
 from                    return FROM;
 table                   return TABLE;
 where                   return WHERE;
+like                    return LIKE;
+in                      return IN;
 limit                   return LIMIT;
 show                    return SHOW;
 tables                  return TABLES;

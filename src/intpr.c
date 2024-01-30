@@ -70,17 +70,34 @@ void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node) {
     node->num++;
 }
 
-
-/* make a condition node. */
+/* Make a condition node. */
 ConditionNode *make_condition_node() {
     ConditionNode *cond_node = db_malloc(sizeof(ConditionNode), SDT_CONDITION_NODE);
     return cond_node;
+}
+
+/* Make a PredicateNode */
+PredicateNode *make_predicate_node() {
+    PredicateNode *predicate = db_malloc(sizeof(PredicateNode), SDT_PREDICATE_NODE);
+    return predicate;
 }
 
 /* Make a ComparisonNode. */
 ComparisonNode *make_comparison_node() {
     ComparisonNode *comparison_node = db_malloc(sizeof(ComparisonNode), SDT_COMPARISON_NODE);
     return comparison_node;
+}
+
+/* Make a LikeNode. */
+LikeNode *make_like_node() {
+    LikeNode *like_node = db_malloc(sizeof(LikeNode), SDT_LIKE_NODE);
+    return like_node;
+}
+
+/* Make an InNode. */
+InNode *make_in_node() {
+    InNode *in_node = db_malloc(sizeof(InNode), SDT_IN_NODE);
+    return in_node;
 }
 
 /* Make a LimitNode. */

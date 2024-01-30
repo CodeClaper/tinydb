@@ -32,6 +32,7 @@
 #include "lock.h"
 #include "trans.h"
 #include "refer.h"
+#include "utils.h"
 #include "ret.h"
 
 /* Maximum number of rows fetched at once.*/
@@ -51,7 +52,7 @@ static bool include_internal_node(void *min_key, void *max_key, ConditionNode *c
 static bool include_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table);
 
 /* Get meta column by condition name. */
-static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable *meta_table);
+static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *meta_table);
 
 /* Find meta column index.
  * Return NULL if not exist */
@@ -210,31 +211,40 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
     return NULL;
 }
 
-/* Check the tagert key if include the internal node.
- * @param min_key the min key of node (exclude the min key, acutally the min key is max key of previous node)
- * @param max_key the max key of node (include the max key)
- * @param target_key the target key to compare
- * @param opr_type operation type
- * @param key_data_type data type of key
- * */
-static bool satisfy_internal_condition_node(void *min_key, void *max_key, void *target_key, CompareType compare_type, DataType key_data_type) {
-    switch (compare_type) {
+/* Check if include internal comparison predicate. */
+static bool include_internal_comparison_predicate(void *min_key, void *max_key, ComparisonNode *comparison, MetaTable *meta_table) {
+    MetaColumn *meta_column = get_meta_column_by_name(meta_table, comparison->column->column_name);
+    void *target_key = get_value_from_value_item_node(comparison->value, meta_column);
+    DataType data_type = meta_column->column_type;
+    switch (comparison->type) {
         case O_EQ:
-            return less(min_key, target_key, key_data_type) && less_equal(target_key, max_key, key_data_type);
+            return less(min_key, target_key, data_type) && less_equal(target_key, max_key, data_type);
         case O_NE:
-            return !(less(min_key, target_key, key_data_type) && less_equal(target_key, max_key, key_data_type));
+            return !(less(min_key, target_key, data_type) && less_equal(target_key, max_key, data_type));
         case O_GT:
-            return greater(max_key, target_key, key_data_type);
+            return greater(max_key, target_key, data_type);
         case O_GE:
-            return greater_equal(max_key, target_key, key_data_type);
+            return greater_equal(max_key, target_key, data_type);
         case O_LT:
-            return greater(target_key, min_key, key_data_type);
+            return greater(target_key, min_key, data_type);
         case O_LE:
-            return greater(target_key, min_key, key_data_type);
+            return greater(target_key, min_key, data_type);
         default:
             db_log(PANIC, "Unknown compare type.");
     }
-    return true;
+}
+
+
+/* Check if include the internal predicate. */
+static bool include_internal_predicate(void *min_key, void *max_key, PredicateNode *predicate, MetaTable *meta_table) {
+    switch (predicate->type) {
+        case PRE_COMPARISON:
+            return include_internal_comparison_predicate(min_key, max_key, predicate->comparison, meta_table);
+        /* For in or like predicate, no skip include. */
+        case PRE_IN:
+        case PRE_LIKE:
+            return true;
+    }
 }
 
 
@@ -256,13 +266,12 @@ static bool include_exec_internal_node(void *min_key, void *max_key, ConditionNo
 
     assert_true(condition_node->conn_type == C_NONE, "System logic error.");
     
-    MetaColumn *cond_meta_column = get_cond_meta_column(condition_node, meta_table);
-    void *target_key = get_value_from_value_item_node(condition_node->comparison->value, cond_meta_column);
+    MetaColumn *cond_meta_column = get_cond_meta_column(condition_node->predicate, meta_table);
 
     /* Skipped the internal node must satisfy tow factors: 
      * key column and not satisfied internal node condition. */
     return !cond_meta_column->is_primary 
-        || satisfy_internal_condition_node(min_key, max_key, target_key, condition_node->comparison->type, cond_meta_column->column_type);
+        || include_internal_predicate(min_key, max_key, condition_node->predicate, meta_table);
 }
 
 /* Check if include the internal node. */
@@ -289,20 +298,17 @@ static bool include_logic_leaf_node(void *destinct, ConditionNode *condition_nod
             return include_leaf_node(destinct, condition_node->left, meta_table) && include_leaf_node(destinct, condition_node->right, meta_table);
         case C_OR:
             return include_leaf_node(destinct, condition_node->left, meta_table) || include_leaf_node(destinct, condition_node->right, meta_table);
+        case C_NONE:
+            db_log(PANIC, "System Logic Error");
     } 
 }
 
 
-/* Check if include leaf node if the condition is exec condition. */
-static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
-    /* If without condition, of course the key include, so just return true. */
-    if (condition_node == NULL)
-        return true;
-
+/* Check if include leaf node satisfy comparison predicate. */
+static bool include_leaf_comparison_predicate(void *destinct, ComparisonNode *comparison, MetaTable *meta_table) {
     int i; uint32_t off_set = 0;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        ComparisonNode *comparison = condition_node->comparison;
         /* Define the column. */
         if (strcmp(meta_column->column_name, comparison->column->column_name) == 0) {
             void *value = destinct + off_set;
@@ -312,6 +318,97 @@ static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node
         off_set += meta_column->column_length;
     }
     return false;
+}
+
+/* Check if include in value item set. */
+static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void *value, MetaColumn *meta_column) {
+    int i;
+    for (i = 0; i < value_item_set_node->num; i++) {
+        void *target = get_value_from_value_item_node(value_item_set_node->value_item_node[i], meta_column);
+        if (equal(value, target, meta_column->column_type))
+            return true;
+    }
+    return false;
+}
+
+/* Check if include leaf node satisfy in predicate. */
+static bool include_leaf_in_predicate(void *destinct, InNode *in_node, MetaTable *meta_table) {
+    int i; uint32_t off_set = 0;
+    for (i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        /* Define the column. */
+        if (strcmp(meta_column->column_name, in_node->column->column_name) == 0) {
+            void *value = destinct + off_set;
+            return check_in_value_item_set(in_node->value_set, value, meta_column);
+        }
+        off_set += meta_column->column_length;
+    }
+    return false;
+}
+
+/* Check if satisfy like string value. */
+static bool check_like_string_value(char *value, char *target) {
+    int value_len = strlen(value);
+    int target_len = strlen(target);
+    if (value_len == 0 || target_len == 0)
+        return false;
+
+    if (target[0] == '%' && target[target_len - 1] == '%') {
+        char str_dup[target_len];
+        memset(str_dup, 0, target_len);
+        memcpy(str_dup, target + 1, target_len -2);
+        contains(value, str_dup);
+    }
+    else if (target[0] == '%')
+        return endwith(value, target + 1);
+    else if (target[target_len - 1] == '%') {
+        char str_dup[target_len];
+        memset(str_dup, 0, target_len);
+        memcpy(str_dup, target, target_len - 1);
+        return startwith(value, str_dup);
+    } 
+    else 
+        return strcmp(value, target) == 0;
+}
+
+
+/* Check if include leaf node satisfy like predicate. */
+static bool include_leaf_like_predicate(void *destinct, LikeNode *like_node, MetaTable *meta_table) {
+    int i; uint32_t off_set = 0;
+    for (i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+
+        /* Define the column. */
+        if (strcmp(meta_column->column_name, like_node->column->column_name) == 0) {
+            void *value = destinct + off_set;
+            void *target = get_value_from_value_item_node(like_node->value, meta_column);
+            return check_like_string_value(value, target);
+        }
+        off_set += meta_column->column_length;
+    }
+    return false;
+}
+
+/* Check if include leaf node if the condition is exec condition. */
+static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+
+    /* If without condition, of course the key include, so just return true. */
+    if (condition_node == NULL)
+        return true;
+
+    assert_true(condition_node->conn_type == C_NONE, "System logic error.");
+
+    PredicateNode *predicate = condition_node->predicate;
+
+    switch (predicate->type) {
+        case PRE_COMPARISON:
+            return include_leaf_comparison_predicate(destinct, predicate->comparison, meta_table);
+        case PRE_IN:
+            return include_leaf_in_predicate(destinct, predicate->in, meta_table);
+        case PRE_LIKE:
+            return include_leaf_like_predicate(destinct, predicate->like, meta_table);
+    }
+
 }
 
 /* Check if the key include the leaf node. */
@@ -331,10 +428,19 @@ static bool include_leaf_node(void *destinct, ConditionNode *condition_node, Met
 }
 
 /* Get meta column by condition name. */
-static MetaColumn *get_cond_meta_column(ConditionNode *condition_node, MetaTable *meta_table) {
-    if (condition_node == NULL)
+static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *meta_table) {
+    if (predicate == NULL)
         return NULL;
-    return get_meta_column_by_name(meta_table, condition_node->comparison->column->column_name);
+    switch (predicate->type)  {
+        case PRE_COMPARISON:
+            return get_meta_column_by_name(meta_table, predicate->comparison->column->column_name);
+        case PRE_LIKE:
+            return get_meta_column_by_name(meta_table, predicate->like->column->column_name);
+        case PRE_IN:
+            return get_meta_column_by_name(meta_table, predicate->in->column->column_name);
+        default:
+            db_log(ERROR, "Unknown predicate type.");
+    }
 }
 
 /* Assign function count() value to row data. */
