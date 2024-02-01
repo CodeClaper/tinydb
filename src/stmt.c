@@ -60,7 +60,14 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
 static void statement_insert(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == INSERT_STMT, "System error, insert statement type error.\n");
     auto_begin_transaction();
-    exec_insert_statement(stmt->ast_node->insert_node, result);
+    Refer *refer = exec_insert_statement(stmt->ast_node->insert_node, result);
+    if (refer != NULL) {
+        result->success = true;
+        result->rows = 1;
+        db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->ast_node->insert_node->table_name);
+    } else {
+        result->success = false;
+    }
 }
 
 /*Select Statement*/

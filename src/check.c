@@ -75,7 +75,6 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
  * Because, CHAR, DATE, TIMESTAMP use '%s' format to pass value, thus check it. */
 static bool check_value_valid(MetaColumn *meta_column, void* value) {
     if (value == NULL) {
-        db_log(ERROR, "Attempt to convert NULL to data type '%s' of column '%s' in table '%s' fail.", DATA_TYPE_NAMES[meta_column->column_type], meta_column->column_name, meta_column->table_name);
         return false;
     }
     switch(meta_column->column_type) {

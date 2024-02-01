@@ -94,7 +94,9 @@ Refer *define_refer(Row *row) {
     return convert_refer(cursor);
 }
 
-/* Fetch Refer. */
+/* Fetch Refer. 
+ * If found no one or many one, return NULL.
+ * */
 Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     /* Make a fake QueryParam. */
     Table *table = open_table(meta_column->table_name);
@@ -109,6 +111,8 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     Refer *refer = NULL;
     if (select_result->row_size == 0) 
         db_log(ERROR, "Not found any satisfied condition row in table '%s'", meta_column->table_name);
+    else if (select_result->row_size > 1) 
+        db_log(ERROR, "Expect to one reference, but found %d", select_result->row_size);
     else {
         /* Take the first row as refered. Maybe row size should be one, but now there is no check. */
         Row *row = select_result->rows[0];
