@@ -12,6 +12,18 @@ FunctionNode *make_function_node();
 /* Make a select items node. */
 SelectItemsNode *make_select_items_node();
 
+/* Make a SelectionNode. */
+SelectionNode *make_selection_node();
+
+/* Make a ScalarExpNode. */
+ScalarExpNode *make_scalar_exp_node();
+
+/* Mkae a ScalarExprSetNode. */
+ScalarExpSetNode *make_scalar_exp_set_node();
+
+/* Add a ScalarExpNode to ScalarExpSetNode. */
+void add_scalar_exp_node(ScalarExpSetNode *scalar_exp_set_node, ScalarExpNode *scalar_exp_node);
+
 /* Make a select node. */
 SelectNode *make_select_node();
 

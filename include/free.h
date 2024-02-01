@@ -63,6 +63,9 @@ void free_select_items_node(SelectItemsNode *select_items_node);
 /* Free condition node. */
 void free_condition_node(ConditionNode *condition_node);
 
+/* Free SelectionNode. */
+void free_selection_node(SelectionNode *selection_node);
+
 /* Free select node. */
 void free_select_node(SelectNode *select_node);
 

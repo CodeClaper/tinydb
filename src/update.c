@@ -48,15 +48,6 @@ static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *
     return select_items_node;
 }
 
-/* Adapt to query param data type.*/
-static QueryParam *adapt_query_param(UpdateNode *update_node, Table *table) {
-    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = db_strdup(update_node->table_name);
-    query_param->select_items = adapt_select_items_node(update_node, table);
-    query_param->condition_node = copy_condition_node(update_node->condition_node);
-    return query_param;
-}
-
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node) {
     int i;
@@ -156,21 +147,18 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
         return;
     }
 
-    /* Adapt to query param. */
-    QueryParam *query_param = adapt_query_param(update_node, table);
-
     /* Query with conditon, and update satisfied condition row. */
     SelectResult *select_result = new_select_result(update_node->table_name);
 
     /* Before update row, count satisfied row num which help to check. */
-    query_with_condition(query_param, select_result, count_row, NULL);
+    query_with_condition(update_node->condition_node, select_result, count_row, NULL);
 
     /* Check out update node. */
     if (!check_update_node(update_node, select_result)) 
         return;
 
     /* Query with update row operation. */
-    query_with_condition(query_param, select_result, update_row, update_node->assignment_set_node);
+    query_with_condition(update_node->condition_node, select_result, update_row, update_node->assignment_set_node);
 
     result->success = true;
     result->rows = select_result->row_size;

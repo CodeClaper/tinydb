@@ -55,6 +55,9 @@ ReferValue *copy_refer_value(ReferValue *refer_value);
 /* Copy select items node. */
 SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node);
 
+/* Copy SelectionNode. */
+SelectionNode *copy_selection_node(SelectionNode *selection_node);
+
 /* Copy query param. */
 QueryParam *copy_query_param(QueryParam *query_param);
 

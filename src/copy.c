@@ -15,6 +15,8 @@
 
 /* Copy value. */
 void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
+    if (value == NULL)
+        return NULL;
     switch(data_type) {
         case T_BOOL: {
             bool *new_val = db_malloc(sizeof(bool), SDT_BOOL);
@@ -277,7 +279,7 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
     if (function_node == NULL)
         return NULL;
     FunctionNode *function_node_copy = db_malloc(sizeof(FunctionNode), SDT_FUNCTION_NODE);
-    function_node_copy->function_type = function_node->function_type;
+    function_node_copy->type = function_node->type;
     function_node_copy->value = copy_function_value_node(function_node->value);
     return function_node_copy;
 }
@@ -400,6 +402,49 @@ SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
     return select_items_node_copy;
 }
 
+/* Copy a ScalarExpNode. */
+ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
+    if (scalar_exp_node == NULL)
+        return NULL;
+
+    ScalarExpNode *copy = db_malloc(sizeof(ScalarExpNode), SDT_SCALAR_EXP_NODE);
+    copy->type = scalar_exp_node->type;
+    switch (scalar_exp_node->type) {
+        case SCALAR_COLUMN:
+            copy->column = copy_column_node(scalar_exp_node->column);
+            break;
+        case SCALAR_FUNCTION:
+            copy->function = copy_function_node(scalar_exp_node->function);
+            break;
+    }
+    return copy;
+}
+
+/* Copy ScalarExpSetNode. */
+ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node) {
+    if (scalar_exp_set_node == NULL)
+         return NULL;
+    ScalarExpSetNode *copy = db_malloc(sizeof(ScalarExpSetNode), SDT_SCALAR_EXP_SET_NODE);
+    copy->size = scalar_exp_set_node->size;
+    copy->data = db_malloc(sizeof(ScalarExpNode *) * scalar_exp_set_node->size, SDT_POINTER);
+    int i;
+    for (i = 0; i < scalar_exp_set_node->size; i++) {
+        copy->data[i] = copy_scalar_exp_node(scalar_exp_set_node->data[i]);
+    }
+    return copy;
+}
+
+/* Copy SelectionNode. */
+SelectionNode *copy_selection_node(SelectionNode *selection_node) {
+    if (selection_node == NULL)
+        return NULL;
+    SelectionNode *copy = db_malloc(sizeof(SelectionNode), SDT_SELECTION_NODE);
+    copy->all_column = selection_node->all_column;
+    if (!copy->all_column)
+        copy->scalar_exp_set = copy_scalar_exp_set_node(selection_node->scalar_exp_set);
+    return copy;
+}
+
 /* Copy query param. */
 QueryParam *copy_query_param(QueryParam *query_param) {
     if (query_param == NULL)
@@ -407,7 +452,7 @@ QueryParam *copy_query_param(QueryParam *query_param) {
     QueryParam *query_param_copy = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param_copy->table_name = db_strdup(query_param->table_name);
     query_param_copy->condition_node = copy_condition_node(query_param->condition_node); 
-    query_param_copy->select_items = copy_select_items_node(query_param->select_items);
+    query_param_copy->selection = copy_selection_node(query_param->selection);
     return query_param_copy;
 }
 

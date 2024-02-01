@@ -163,8 +163,8 @@ static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, 
 }
 
 /* Check function node */
-static bool check_function_node(FunctionNode *function_node, MetaTable *meta_table) {
-    FunctionValueNode *value_node = function_node->value;
+static bool check_function_node(MetaTable *meta_table, FunctionNode *function) {
+    FunctionValueNode *value_node = function->value;
     switch(value_node->value_type) {
         case V_INT:
         case V_ALL:
@@ -187,16 +187,33 @@ static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *met
     return true;
 }
 
-/* Check select items if exist int meta column */
-static bool check_select_items(SelectItemsNode *select_items_node, MetaTable *meta_table) {
-    switch(select_items_node->type) {
-        case SELECT_ALL:
-            return true;
-        case SELECT_COLUMNS:
-            return check_column_set_node(select_items_node->column_set_node, meta_table);
-        case SELECT_FUNCTION:
-            return check_function_node(select_items_node->function_node, meta_table);
+/* Check ScalarExpNode. */
+static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
+    switch (scalar_exp->type) {
+        case SCALAR_COLUMN:
+            return check_column_node(meta_table, scalar_exp->column);
+        case SCALAR_FUNCTION:
+            return check_function_node(meta_table, scalar_exp->function);
     }
+}
+
+/* Check ScalarExpSetNode. */
+static bool check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, MetaTable *meta_table) {
+    int i;
+    for (i = 0; i < scalar_exp_set->size; i++) {
+        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+        if (!check_scalar_exp(scalar_exp, meta_table))
+            return false;
+    }
+    return true;
+}
+
+/* Check select items if exist int meta column */
+static bool check_selection(SelectionNode *selection_node, MetaTable *meta_table) {
+    if (selection_node->all_column)
+        return true;
+    else
+        return check_scalar_exp_set(selection_node->scalar_exp_set, meta_table);
 }
 
 /* Check opr if allowd. */
@@ -296,7 +313,7 @@ bool check_query_param(QueryParam *query_param) {
         db_log(ERROR, "Table '%s' not exists.", query_param->table_name);
         return false;
     }
-    return check_select_items(query_param->select_items, table->meta_table) 
+    return check_selection(query_param->selection, table->meta_table) 
              && check_condition_node(query_param->condition_node, table->meta_table);
 }
 

@@ -26,9 +26,6 @@
 #include "asserts.h"
 #include "log.h"
 
-/* Fake QueryParam. */
-static QueryParam *fake_query_param(Table *table);
-
 /* Generate new Refer. 
  * Note: if page_num is -1 and cell_num is -1 which means refer null. */
 static Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num) {
@@ -101,15 +98,13 @@ Refer *define_refer(Row *row) {
 Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     /* Make a fake QueryParam. */
     Table *table = open_table(meta_column->table_name);
-    QueryParam *query_param = fake_query_param(table);
-    query_param->condition_node = copy_condition_node(condition_node);
 
     /* Make a new SelectResult. */
     SelectResult *select_result = new_select_result(meta_column->table_name);
-    query_with_condition(query_param, select_result, count_row, NULL);
+    query_with_condition(condition_node, select_result, count_row, NULL);
     /* Prepare enough memory space. */
     select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
-    query_with_condition(query_param, select_result, select_row, NULL);
+    query_with_condition(condition_node, select_result, select_row, NULL);
 
     Refer *refer = NULL;
     if (select_result->row_size == 0) 
@@ -119,7 +114,6 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
         Row *row = select_result->rows[0];
         refer = define_refer(row);
     }
-    free_query_param(query_param);
     free_select_result(select_result);
 
     return refer;
@@ -185,23 +179,6 @@ static bool if_table_refer_to(char *table_name, char *refer_table_name) {
     return false;
 }
 
-
-/* Fake QueryParam. */
-static QueryParam *fake_query_param(Table *table) {
-    /* query_param */
-    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = db_strdup(table->meta_table->table_name);
-
-    /* select_items_node */
-    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
-    select_items_node->type = SELECT_ALL;
-    
-    query_param->select_items = select_items_node;
-    query_param->condition_node = NULL;
-
-    return query_param;
-}
-
 /* Check if refer equals. */
 bool refer_equals(Refer *refer1, Refer *refer2) {
     return strcmp(refer1->table_name, refer2->table_name) == 0
@@ -255,17 +232,12 @@ static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update
 
     Table *table = open_table(table_name);
 
-    /* fake query param. */
-    QueryParam *query_param = fake_query_param(table);
-
     /* Query with condition, and delete satisfied condition row. */
     SelectResult *select_result = new_select_result(table_name);
 
     /* Traverse rows to update refer. */
-    query_with_condition(query_param, select_result, update_row_refer, refer_update_entity);
+    query_with_condition(NULL, select_result, update_row_refer, refer_update_entity);
     
-    /* Free memory. */
-    free_query_param(query_param);
     free_select_result(select_result);
 }
 

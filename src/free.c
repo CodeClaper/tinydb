@@ -336,7 +336,7 @@ void free_refer_value(ReferValue *refer_value) {
 /* Free QueryParam. */
 void free_query_param(QueryParam *query_param) {
     if(query_param) {
-        free_select_items_node(query_param->select_items);
+        free_selection_node(query_param->selection);
         free_condition_node(query_param->condition_node);
         if (query_param->table_name)
             db_free(query_param->table_name);
@@ -345,11 +345,45 @@ void free_query_param(QueryParam *query_param) {
     }
 }
 
+/* Free ScalarExpNode. */
+void free_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
+    if (scalar_exp_node) {
+        switch (scalar_exp_node->type) {
+            case SCALAR_COLUMN:
+                free_column_node(scalar_exp_node->column);
+                break;
+            case SCALAR_FUNCTION:
+                free_function_node(scalar_exp_node->function);
+                break;
+        }
+    }
+}
+
+/* Free ScalarExpSetNode. */
+void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node) {
+    if (scalar_exp_set_node) {
+        int i;
+        for (i = 0; i < scalar_exp_set_node->size; i++) {
+            free_scalar_exp_node(scalar_exp_set_node->data[i]);
+        }
+        db_free(scalar_exp_set_node->data);
+        db_free(scalar_exp_set_node);
+    }
+}
+
+/* Free SelectionNode. */
+void free_selection_node(SelectionNode *selection_node) {
+    if (selection_node) {
+        if (!selection_node->all_column)
+            free_scalar_exp_set_node(selection_node->scalar_exp_set);
+        db_free(selection_node);
+    }
+}
 
 /* Free SelectNode. */
 void free_select_node(SelectNode *select_node) {
     if (select_node) {
-        free_select_items_node(select_node->select_items_node);
+        free_selection_node(select_node->selection);
         if (select_node->table_name) 
             db_free(select_node->table_name);
         free_condition_node(select_node->condition_node);

@@ -15,22 +15,6 @@
 #include "ret.h"
 #include "log.h"
 
-/* Adapt to select items node data type. */
-static SelectItemsNode *adapt_select_items_node() {
-    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
-    select_items_node->type = SELECT_ALL;
-    return select_items_node;
-}
-
-/* Adapt to query param data type. */
-static QueryParam *adapt_query_param(DeleteNode *delete_node, Table *table) {
-    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = db_strdup(delete_node->table_name);
-    query_param->select_items = adapt_select_items_node();
-    query_param->condition_node = copy_condition_node(delete_node->condition_node);
-    return query_param;
-}
-
 /* Delete row */
 static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
@@ -57,14 +41,11 @@ void exec_delete_statement(DeleteNode *delete_node, DBResult *result) {
     if (!check_delete_node(delete_node)) 
         return;
 
-    /* Adapt to query param. */
-    QueryParam *query_param = adapt_query_param(delete_node, table);
-
     /* Query with condition, and delete satisfied condition row. */
     SelectResult *select_result = new_select_result(delete_node->table_name);
 
     /* Query with condition and delete satisfied row. */
-    query_with_condition(query_param, select_result, delete_row, NULL);
+    query_with_condition(delete_node->condition_node, select_result, delete_row, NULL);
 
     /* Root fall back. */
     root_fall_back_root_node(table);

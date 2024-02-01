@@ -63,22 +63,6 @@ static bool allow_gc() {
     return true;
 }
 
-/* Fake QueryParam. */
-static QueryParam *fake_query_param(Table *table) {
-    /* query_param */
-    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = db_strdup(table->meta_table->table_name);
-
-    /* select_items_node */
-    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
-    select_items_node->type = SELECT_ALL;
-    
-    query_param->select_items = select_items_node;
-    query_param->condition_node = NULL;
-
-    return query_param;
-}
-
 /* Gc row*/
 void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only for deleted row. */
@@ -103,16 +87,11 @@ void gc_table(char *table_name) {
     Table *table = open_table(table_name);
     assert_not_null(table, "System error, table '%s' not exist.", table_name);
 
-    /* fake query param. */
-    QueryParam *query_param = fake_query_param(table);
-
     /* Query with condition, and delete satisfied condition row. */
     SelectResult *select_result = new_select_result(table_name);
 
-    query_with_condition(query_param, select_result, gc_row, NULL);
+    query_with_condition(NULL, select_result, gc_row, NULL);
     
-    /* Free memory. */
-    free_query_param(query_param);
     free_select_result(select_result);
 }
 

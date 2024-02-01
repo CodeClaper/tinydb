@@ -35,6 +35,9 @@ typedef enum SysDataType{
     SDT_FUNCTION_VALUE_NODE,
     SDT_FUNCTION_NODE,
     SDT_SELECT_ITEMS_NODE,
+    SDT_SELECTION_NODE,
+    SDT_SCALAR_EXP_SET_NODE,
+    SDT_SCALAR_EXP_NODE,
     SDT_COLUMN_DEF_NODE,
     SDT_COLUMN_DEF_SET_NODE,
     SDT_PRIMARY_KEY_NODE,
@@ -104,6 +107,9 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "FUNCTION_VALUE_NODE",\
    "FUNCTION_NODE",\
    "SELECT_ITEMS_NODE",\
+   "SELECTION_NODE",\
+   "SCALAR_EXP_SET_NODE",\
+   "SCALAR_EXP_NODE",\
    "COLUMN_DEF_NODE",\
    "COLUMN_DEF_SET_NODE",\
    "PRIMARY_KEY_NODE",\
@@ -264,7 +270,7 @@ typedef struct {
 
 /* FunctionNode */
 typedef struct {
-    FunctionType function_type;
+    FunctionType type;
     FunctionValueNode *value;
 } FunctionNode;
 
@@ -274,6 +280,33 @@ typedef struct {
     FunctionNode *function_node;
     SelectItemType type;
 } SelectItemsNode;
+
+/* SelectionNode */
+typedef struct SelectionNode {
+    bool all_column;
+    struct ScalarExpSetNode *scalar_exp_set;
+} SelectionNode;
+
+/* ScalarExprSetNode */
+typedef struct ScalarExpSetNode {
+    uint32_t size;
+    struct ScalarExpNode **data;
+} ScalarExpSetNode;
+
+/* ScalarExpType */
+typedef enum ScalarExpType {
+    SCALAR_COLUMN,
+    SCALAR_FUNCTION
+} ScalarExpType;
+
+/* ScalarExpNode */
+typedef struct ScalarExpNode {
+    ScalarExpType type;
+    union {
+        ColumnNode *column;
+        FunctionNode *function;
+    };
+} ScalarExpNode;
 
 /* ColumnDefNode */
 typedef struct {
@@ -417,7 +450,8 @@ typedef struct {
 
 /* SelectNode */
 typedef struct {
-    SelectItemsNode *select_items_node;
+    // SelectItemsNode *select_items_node;
+    SelectionNode *selection;
     char *table_name;
     ConditionNode *condition_node;
     LimitNode *limit_node;
@@ -556,7 +590,7 @@ typedef struct Row {
 /* QueryParam */
 typedef struct QueryParam {
     char *table_name;
-    SelectItemsNode *select_items;
+    SelectionNode *selection;
     ConditionNode *condition_node;
     LimitNode *limit_node;
 } QueryParam;

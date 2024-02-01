@@ -214,6 +214,9 @@ union YYSTYPE
    ColumnSetNode            *column_set_node;
    ValueItemNode            *value_item_node;
    ValueItemSetNode         *value_item_set_node;
+   SelectionNode            *selection_node;
+   ScalarExpNode            *scalar_exp_node;
+   ScalarExpSetNode         *scalar_exp_set_node;
    FunctionValueNode        *function_value_node;
    FunctionNode             *function_node;
    PrimaryKeyNode           *primary_key_node;
@@ -235,7 +238,7 @@ union YYSTYPE
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 
-#line 239 "y.tab.h"
+#line 242 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

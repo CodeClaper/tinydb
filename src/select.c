@@ -54,38 +54,10 @@ static bool include_leaf_node(void *destinct, ConditionNode *condition_node, Met
 /* Get meta column by condition name. */
 static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *meta_table);
 
-/* Find meta column index.
- * Return NULL if not exist */
-static MetaColumn *find_select_item_meta_column(QueryParam *query_param, uint32_t index) {
-    SelectItemsNode *select_items_node = query_param->select_items;
-    Table *table = open_table(query_param->table_name);
-    MetaTable *meta_table = table->meta_table;
-    switch (select_items_node->type) {
-        case SELECT_ALL:
-            return meta_table->meta_column[index];
-        case SELECT_COLUMNS: {
-            /* Because there are system reserved column, so when index greater than column size, 
-             * it is system reserved column. */
-            int column_size = select_items_node->column_set_node->size;
-            if (index < column_size) {
-                ColumnNode *column_node = *(select_items_node->column_set_node->columns + index);
-                return get_meta_column_by_name(table->meta_table, column_node->column_name);
-            } else {
-                index =  meta_table->column_size + index - column_size;
-                return meta_table->meta_column[index];
-            }
-        }
-        case SELECT_FUNCTION:
-            return NULL;
-    }
-}
-
 /* Calulate offset of every column in cell. */
-static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
-    SelectItemsNode *select_items_node = query_param->select_items;
-    Table *table = open_table(query_param->table_name);
-    MetaTable *meta_table = table->meta_table;
-    int i; uint32_t off_set = 0;
+static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
+    uint32_t off_set = 0;
+    int i;
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_name) == 0)
@@ -93,22 +65,6 @@ static uint32_t calc_offset(QueryParam *query_param, char *column_name) {
         off_set += meta_column->column_length;
     }
     return off_set;
-}
-
-/* Get query param column size. */
-static uint32_t get_query_columns_num(QueryParam *query_param) {
-    SelectItemsNode *select_items_node = query_param->select_items;
-    Table *table = open_table(query_param->table_name);
-    switch (select_items_node->type) {
-        case SELECT_ALL: {
-            return table->meta_table->all_column_size;
-        }
-        case SELECT_COLUMNS:
-            /* Get column size including system reserved columns. */
-            return select_items_node->column_set_node->size + (table->meta_table->all_column_size - table->meta_table->column_size);
-        case SELECT_FUNCTION:
-            return 1 + (table->meta_table->all_column_size - table->meta_table->column_size);
-  }
 }
 
 /* Get value from value item node. */
@@ -443,322 +399,33 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
     }
 }
 
-/* Assign function count() value to row data. */
-static void assign_function_count_row_data(Row *row, void *destine, QueryParam *query_param) {
-    /* Check if table exist. */
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL) return; /* Return if not exist the table. */
-    MetaTable *meta_table = table->meta_table;
+/* Generate select row. */
+static Row *generate_row(void *destinct, MetaTable *meta_table) {
 
-    int32_t val = 1;
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value->key = db_strdup(COUNT_NAME);
-    key_value->value = copy_value(&val, T_INT, NULL);
-    key_value->data_type = T_INT;
-    row->data[0] = key_value;
+    /* Define row data. */
+    Row *row = db_malloc(sizeof(Row), SDT_ROW);
+    row->column_len = meta_table->all_column_size;
+    row->table_name = db_strdup(meta_table->table_name);
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
 
-    /* Assign system reserved column. */
-    int i, j;
-    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
-        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
-        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
-        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value->key = db_strdup(sys_reserved_meta_column->column_name);
-        key_value->value = copy_value(destine + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
-        key_value->data_type = sys_reserved_meta_column->column_type;
-        /* Assign system reserved value to row. */
-        row->data[j] = key_value;
-    }
-}
-
-/* Assign function sum() value to row data. */
-static void assign_funtion_sum_row_data(Row *row, void *destine, QueryParam *query_param) {
-
-    /* Check if table exist. */
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL) return; /* Return if not exist the table. */
-    MetaTable *meta_table = table->meta_table;
-
-    /* Get function value. */
-    FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
-
-    /* Instance key value */
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value->key = db_strdup(SUM_NAME);
-
-    /* According function value type, these are diffrent ways to deal with the row data: 
-     * For V_ALL, there is no pointer to sum the value, just regard as zero;
-     * For V_INT, absolutely a numerical type, just return the integer value.
-     * For V_COLUMN, if the column data type is numerical, return the numerical value, otherwise, return zero;
-     * */
-    switch (function_value_node->value_type) {
-        case V_ALL: {
-            uint32_t val = 0;
-            key_value->value = &val;
-            key_value->data_type = T_INT;
-            break;
-        }
-        case V_INT: {
-            key_value->value = &function_value_node->i_value;
-            key_value->data_type = T_INT;
-            break;
-        }
-        case V_COLUMN: {
-            /* IF numerical data type column, return the numerical value, otherwise return zero */
-            ColumnNode *column_node = function_value_node->column;
-            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-            uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            switch (meta_column->column_type) {
-                case T_STRING:
-                case T_REFERENCE:
-                case T_DATE:
-                case T_TIMESTAMP: {
-                    int32_t val = 0;
-                    key_value->value = &val;
-                    key_value->data_type = T_INT;
-                    break;
-                }
-                case T_BOOL: {
-                    bool b_value = *(bool *)copy_value(destine + off_set, meta_column->column_type, meta_column);
-                    int32_t val = b_value ? 1 : 0;
-                    key_value->value = &val;
-                    key_value->data_type = T_INT;
-                    break;
-                }
-                case T_CHAR: {
-                    char c_val = *(char *)copy_value(destine + off_set, meta_column->column_type, meta_column);
-                    int32_t val = c_val;
-                    key_value->value = &val;
-                    key_value->data_type = T_INT;
-                    break;
-                }
-                case T_INT:
-                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
-                    key_value->data_type = T_INT;
-                    break;
-                case T_LONG:
-                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
-                    key_value->data_type = T_LONG;
-                    break;
-                case T_FLOAT:
-                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
-                    key_value->data_type = T_FLOAT;
-                    break;
-                case T_DOUBLE:
-                    key_value->value = copy_value(destine + off_set, meta_column->column_type, meta_column);
-                    key_value->data_type = T_DOUBLE;
-                    break;
-            }
-            break;
-        }
-    }
-
-    /* Assgin to row frist data. */
-    row->data[0] = key_value;
-    
-    /* Assign system reserved column. */
-    int i, j;
-    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
-        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
-        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
-        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value->key = db_strdup(sys_reserved_meta_column->column_name);
-        key_value->value = copy_value(destine + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
-        key_value->data_type = sys_reserved_meta_column->column_type;
-        /* Assign system reserved value to row. */
-        row->data[j] = key_value;
-    }
-}
-
-/* Assign function max() value to row data. */
-static void assign_function_max_row_data(Row *row, void *destinct, QueryParam *query_param) {
-    
-    /* Check if table exist. */
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL) return; /* Return if not exist the table. */
-    MetaTable *meta_table = table->meta_table;
-
-    /* Get function value. */
-    FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
-
-    /* Instance key value */
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value->key = db_strdup(MAX_NAME);
-
-    /* According function input value type, these are diffrent ways to deal with the row data: 
-     * For V_ALL, there is a error, not allow use '*' as max function input value. ;
-     * For V_INT, absolutely a numerical type, just return the integer value.
-     * For V_COLUMN, return the column value.
-     * */
-    switch (function_value_node->value_type) {
-        case V_ALL: 
-            db_log(ERROR, "Not allow use all as max function input value.");
-            break;
-        case V_INT: {
-            key_value->value = &function_value_node->i_value;
-            key_value->data_type = T_INT;
-            break;
-        }
-        case V_COLUMN: {
-            /* IF numerical data type column, return the numerical value, otherwise return zero */
-            ColumnNode *column_node = function_value_node->column;
-            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-            uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
-            key_value->data_type = meta_column->column_type;
-        }
-        break;
-    }
-
-    /* Assgin to row data. */
-    row->data[0] = key_value;
-
-    /* Assign system reserved column. */
-    int i, j;
-    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
-        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
-        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
-        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value->key = db_strdup(sys_reserved_meta_column->column_name);
-        key_value->value = copy_value(destinct + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
-        key_value->data_type = sys_reserved_meta_column->column_type;
-        /* Assign system reserved value to row. */
-        row->data[j] = key_value;
-    }
-}
-
-
-/* Assign function min() value to row data. */
-static void assign_function_min_row_data(Row *row, void *destinct, QueryParam *query_param) {
-    
-    /* Check if table exist. */
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL) return; /* Return if not exist the table. */
-    MetaTable *meta_table = table->meta_table;
-
-    /* Get function value. */
-    FunctionValueNode *function_value_node = query_param->select_items->function_node->value;
-
-    /* Instance key value */
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value->key = db_strdup(MIN_NAME);
-
-    /* According function input value type, these are diffrent ways to deal with the row data: 
-     * For V_ALL, there is a error, not allow use '*' as max function input value. ;
-     * For V_INT, absolutely a numerical type, just return the integer value.
-     * For V_COLUMN, return the column value.
-     * */
-    switch (function_value_node->value_type) {
-        case V_ALL: 
-            db_log(ERROR, "Not allow use all as min function input value.");
-            break;
-        case V_INT: {
-            key_value->value = &function_value_node->i_value;
-            key_value->data_type = T_INT;
-            break;
-        }
-        case V_COLUMN: {
-            /* IF numerical data type column, return the numerical value, otherwise return zero */
-            ColumnNode *column_node = function_value_node->column;
-            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-            uint32_t off_set = calc_offset(query_param, meta_column->column_name);
-            key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
-            key_value->data_type = meta_column->column_type;
-        }
-        break;
-    }
-
-    /* Assgin to row data. */
-    row->data[0] = key_value;
-
-    /* Assign system reserved column. */
-    int i, j;
-    for(i = meta_table->column_size, j = 1; i < meta_table->all_column_size; i++, j++) {
-        MetaColumn *sys_reserved_meta_column = meta_table->meta_column[i];
-        assert_true(sys_reserved_meta_column->sys_reserved, "Ststem Logic error. \n");
-        uint32_t off_set = calc_offset(query_param, sys_reserved_meta_column->column_name);
-        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value->key = db_strdup(sys_reserved_meta_column->column_name);
-        key_value->value = copy_value(destinct + off_set, sys_reserved_meta_column->column_type, sys_reserved_meta_column);
-        key_value->data_type = sys_reserved_meta_column->column_type;
-        /* Assign system reserved value to row. */
-        row->data[j] = key_value;
-    }
-}
-
-/* Assign function value to row data. */
-static void assign_function_row_data(Row *row, void *destinct, QueryParam *query_param) {
-
-    FunctionNode *function_node = query_param->select_items->function_node;
-    switch (function_node->function_type) {
-        case F_COUNT:
-            assign_function_count_row_data(row, destinct, query_param);
-            break;
-        case F_SUM:
-            assign_funtion_sum_row_data(row, destinct, query_param);
-            break;
-        case F_AVG:
-            /* For avg, also first sum and then divied by total row size. */
-            assign_funtion_sum_row_data(row, destinct, query_param);
-            break;
-        case F_MAX:
-            assign_function_max_row_data(row, destinct, query_param);
-            break;
-        case F_MIN:
-            assign_function_min_row_data(row, destinct, query_param);
-            break;
-    }
-}
-
-/* Assign value to row data. */
-static void assign_plain_row_data(Row *row, void *destinct, QueryParam *query_param) {
+    /* Assignment row data. */
     int i;
-    for (i = 0; i < row->column_len; i++) {
-        MetaColumn *meta_column = find_select_item_meta_column(query_param, i);
+    for (i = 0; i < meta_table->all_column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
 
-        uint32_t off_set = calc_offset(query_param, meta_column->column_name);
+        uint32_t off_set = calc_offset(meta_table, meta_column->column_name);
         
         /* Generate a key value pair. */
         KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = db_strdup(meta_column->column_name);
         key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
         key_value->data_type = meta_column->column_type;
-        *(row->data + i) = key_value;
+
+        row->data[i] = key_value;
+
+        if (meta_column->is_primary)
+            row->key = copy_value(destinct + off_set, meta_column->column_type, meta_column);
     }
-}
-
-/* Generate select row. */
-static Row *generate_row(void *destinct, QueryParam *query_param, MetaTable *meta_table) {
-
-    /* Check if table exist.*/
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL)
-      return NULL;
-
-    /* Define row data. */
-    Row *row = db_malloc(sizeof(Row), SDT_ROW);
-    row->column_len = get_query_columns_num(query_param);
-    row->table_name = db_strdup(query_param->table_name);
-
-    /* Assignment values to row data. */
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
-    switch (query_param->select_items->type) {
-        case SELECT_ALL:
-        case SELECT_COLUMNS:
-            assign_plain_row_data(row, destinct, query_param);
-            break;
-        case SELECT_FUNCTION:
-            assign_function_row_data(row, destinct, query_param);
-            break;
-    }
-
-    /* Define row key. */
-    MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
-    uint32_t priamry_key_set_off = calc_offset(query_param, primary_key_meta_column->column_name);
-    row->key = copy_value(destinct + priamry_key_set_off, primary_key_meta_column->column_type, primary_key_meta_column);
 
     return row;
 }
@@ -780,22 +447,12 @@ Row *define_row(Refer *refer) {
     key_len = calc_primary_key_length(table);
     void *leaf_node = get_page(table->pager, refer->page_num);
     void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
-    
-    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = db_strdup(refer->table_name);
-    query_param->select_items = db_malloc(sizeof(SelectItemsNode), SDT_QUERY_PARAM);
-    query_param->select_items->type = SELECT_ALL;
 
-    Row *row = generate_row(destinct, query_param, table->meta_table);
-    
-    /* Free memory. */
-    free_query_param(query_param);
-
-    return row;
+    return generate_row(destinct, table->meta_table);
 }
 
 /* Select through leaf node. */
-static void select_from_leaf_node(SelectResult *select_result, QueryParam *query_param, uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
+static void select_from_leaf_node(SelectResult *select_result, ConditionNode *condition, uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
 
     void *leaf_node = get_page(table->pager, page_num);
 
@@ -817,14 +474,14 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
         void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
 
         /* Check if the row data include, in another word, check if the row data satisfy the condition. */
-        if (!include_leaf_node(destinct, query_param->condition_node, table->meta_table))
+        if (!include_leaf_node(destinct, condition, table->meta_table))
             continue;
 
         /* If satisfied, exeucte row handler function. */
-        Row *row = generate_row(destinct, query_param, table->meta_table);
+        Row *row = generate_row(destinct, table->meta_table);
 
         /* Execute row handler. */
-        row_handler(row, select_result, table, query_param);
+        row_handler(row, select_result, table, NULL);
 
         /* Free useless row. */
         free_row(row);
@@ -835,7 +492,7 @@ static void select_from_leaf_node(SelectResult *select_result, QueryParam *query
 }
 
 /* Select through internal node. */
-static void select_from_internal_node(SelectResult *select_result, QueryParam *query_param, void *internal_node, Table *table, ROW_HANDLER row_handler, void *arg) {
+static void select_from_internal_node(SelectResult *select_result, ConditionNode *condition, void *internal_node, Table *table, ROW_HANDLER row_handler, void *arg) {
 
     /* Get keys number, key length. */
     uint32_t keys_num, key_len;
@@ -856,8 +513,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
             void *max_key = get_internal_node_key(internal_node_snapshot, i, key_len); 
             void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node_snapshot, i - 1, key_len);
 
-            ConditionNode *condition_node = query_param->condition_node;
-            if (!include_internal_node(min_key, max_key, condition_node, table->meta_table))
+            if (!include_internal_node(min_key, max_key, condition, table->meta_table))
                 continue;
         }
 
@@ -866,10 +522,10 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
         void *node = get_page(table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
-                select_from_leaf_node(select_result, query_param, page_num, table, row_handler, arg);
+                select_from_leaf_node(select_result, condition, page_num, table, row_handler, arg);
                 break;
             case INTERNAL_NODE:
-                select_from_internal_node(select_result, query_param, node, table, row_handler, arg);
+                select_from_internal_node(select_result, condition, node, table, row_handler, arg);
                 break;
         }
     }
@@ -883,10 +539,10 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
     void *right_child = get_page(table->pager, right_child_page_num);
     switch (get_node_type(right_child)) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, query_param, right_child_page_num, table, row_handler, arg);
+            select_from_leaf_node(select_result, condition, right_child_page_num, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, query_param, right_child, table, row_handler, arg);
+            select_from_internal_node(select_result, condition, right_child, table, row_handler, arg);
             break;
     }
 
@@ -898,7 +554,7 @@ static void select_from_internal_node(SelectResult *select_result, QueryParam *q
 QueryParam *convert_query_param(SelectNode *select_node) {
     QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
     query_param->table_name = db_strdup(select_node->table_name);
-    query_param->select_items = copy_select_items_node(select_node->select_items_node);
+    query_param->selection = copy_selection_node(select_node->selection);
     query_param->condition_node = copy_condition_node(select_node->condition_node);
     query_param->limit_node = copy_limit_node(select_node->limit_node);
     return query_param;
@@ -917,17 +573,17 @@ SelectResult *new_select_result(char *table_name) {
 }
 
 /* Query with condition. */
-void query_with_condition(QueryParam *query_param, SelectResult *select_result, ROW_HANDLER row_handler, void *arg) {
-    Table *table = open_table(query_param->table_name);
+void query_with_condition(ConditionNode *condition, SelectResult *select_result, ROW_HANDLER row_handler, void *arg) {
+    Table *table = open_table(select_result->table_name);
     if (table == NULL)
         return;
     void *root = get_page(table->pager, table->root_page_num);
     switch (get_node_type(root)) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, query_param, table->root_page_num, table, row_handler, arg);
+            select_from_leaf_node(select_result, condition, table->root_page_num, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, query_param, root, table, row_handler, arg);
+            select_from_internal_node(select_result, condition, root, table, row_handler, arg);
             break;
     }
 }
@@ -937,16 +593,6 @@ void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
-
-    QueryParam *query_param = (QueryParam *) arg;
-    LimitNode *limit_node = query_param->limit_node;
-
-    if (limit_node)
-        select_result->limit_index++;
-
-    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
-        return;
-
     select_result->row_size++;
 }
 
@@ -955,363 +601,459 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
-
-    /* Limit */
-    QueryParam *query_param = (QueryParam *) arg;
-    LimitNode *limit_node = query_param->limit_node;
-
-    if (limit_node)
-        select_result->limit_index++;
-
-    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
-        return;
-
     select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
 }
 
-/* Execute sum funciton */
-static void sum_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    /* Only sum visible row. */
-    if (!row_is_visible(row)) 
-        return;
 
-    /* Limit */
-    QueryParam *query_param = (QueryParam *) arg;
-    LimitNode *limit_node = query_param->limit_node;
-
-    if (limit_node)
-        select_result->limit_index++;
-
-    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
-        return;
-
-    KeyValue *key_value = row->data[0];
-    switch(key_value->data_type) {
-        case T_INT:
-        case T_BOOL:
-        case T_CHAR:
-            select_result->sum += *(int32_t *) key_value->value;
-            break;
-        case T_FLOAT:
-            select_result->sum += *(float *) key_value->value;
-            break;
-        case T_DOUBLE:
-            select_result->sum += *(double *) key_value->value;
-            break;
-        default:
-            select_result->sum += 0;
-            break;
+/* Check if exists function type scalar exp. */
+static bool exists_function_scalar_exp(ScalarExpSetNode *scalar_exp_set) {
+    int i;
+    for (i = 0; i < scalar_exp_set->size; i++) {
+        if (scalar_exp_set->data[i]->type == SCALAR_FUNCTION)
+            return true;
     }
-
-    select_result->row_size++;
+    return false;
 }
 
-/* Execute max function. */
-static void max_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
-    /* Only visible row. */
-    if (!row_is_visible(row))
-        return;
+/* Get KeyValue from a Row.
+ * return NULL if not found. */
+static KeyValue *get_key_value_from_row(Row *row, char *column_name) {
+    int i;
+    for (i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
+        if (strcmp(column_name, key_value->key) == 0)
+            return key_value;
+    }
+    return NULL;
+}
 
-    /* Limit */
-    QueryParam *query_param = (QueryParam *) arg;
-    LimitNode *limit_node = query_param->limit_node;
+/* Calulate column sum value. */
+static void calc_column_sum_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
+    Table *table = open_table(select_result->table_name);
+    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
 
-    if (limit_node)
-        select_result->limit_index++;
-
-    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
-        return;
-    
-    /* Only look for first content of row data. */;
-    KeyValue *key_value = row->data[0];
-
-    /* At first, the max row is null. */
-    if (select_result->max_row == NULL) 
-        select_result->max_row = copy_row_without_reserved(row);
-    else {
-        Row *max_row = select_result->max_row;
-        KeyValue *max_row_key_value = max_row->data[0];
-        /* If current row value greater than max row, assign current row as the max row. */
-        if (greater(key_value->value, max_row_key_value->value, key_value->data_type)) {
-            free_row(select_result->max_row);
-            select_result->max_row = copy_row_without_reserved(row);
+    double sum = 0;
+    switch (meta_column->column_type) {
+        case T_INT: {
+            int i ;
+            for (i = 0; i < select_result->row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(int32_t *)key_value->value;
+            }
+            break;
         }
-    }
-
-    select_result->row_size++;
-}
-
-/* Execute min function. */
-static void min_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
-    
-    /* Only for visible row. */
-    if (!row_is_visible(row))
-        return;
-
-    /* Limit */
-    QueryParam *query_param = (QueryParam *) arg;
-    LimitNode *limit_node = query_param->limit_node;
-
-    if (limit_node)
-        select_result->limit_index++;
-
-    if (limit_node && (limit_node->start > select_result->limit_index - 1 || limit_node->end <= select_result->limit_index - 1))
-        return;
-
-    /* Only look for first content of row data. */;
-    KeyValue *key_value = row->data[0];
-
-    /* At first, the min row is null, initilise it. */
-    if (select_result->min_row == NULL) 
-        select_result->min_row = copy_row_without_reserved(row);
-    else {
-        /* If current row value less than min row, assign current row as the mix row. */
-        Row *min_row = select_result->min_row;
-        KeyValue *min_row_key_value = min_row->data[0];
-        if (less(key_value->value, min_row_key_value->value, key_value->data_type)) {
-            free_row(select_result->min_row);
-            select_result->min_row = copy_row_without_reserved(row);
+        case T_LONG: {
+            int i ;
+            for (i = 0; i < select_result->row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(int64_t *)key_value->value;
+            }
+            break;
         }
+        case T_FLOAT: {
+            int i ;
+            for (i = 0; i < select_result->row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(float *)key_value->value;
+            }
+            break;
+        }
+        case T_DOUBLE: {
+            int i ;
+            for (i = 0; i < select_result->row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(double *)key_value->value;
+            }
+            break;
+        }
+        default: {
+            sum = 0;
+            break;
+        }
+
     }
 
-    select_result->row_size++;
-}
-
-
-/* Execute aggregate function count(). */
-static void exec_function_count(QueryParam *query_param, DBResult *result) {
-
-    /* Generate select result. */
-    SelectResult *select_result = new_select_result(query_param->table_name);
-
-    /* Count row number. */
-    query_with_condition(query_param, select_result, count_row, NULL);
-
-    int32_t row_size = select_result->row_size;
-    /* Prepare enough memory space. */
-    select_result->row_size = 1;
-    select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
-
-    /* For the count row. */
-    Row *row = db_malloc(sizeof(Row), SDT_ROW);
-    row->table_name = db_strdup(query_param->table_name);
-    row->data = db_malloc(sizeof(KeyValue *) * 1, SDT_POINTER);
-    row->column_len = 1;
-
-    /* For key value. */
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value->key = db_strdup(COUNT_NAME);
-    key_value->value = copy_value(&row_size, T_INT, NULL);
-    key_value->data_type = T_INT;
-
-    /* Assignment. */
-    row->data[0] = key_value;
-    select_result->rows[0] = row;
-    result->data = select_result;
-    result->rows = row_size;
-    result->success = true;
-
-    db_log(SUCCESS, "Count function exeucted successfully.");
-}
-
-/* Execute aggregate function sum(). */
-static void exec_function_sum(QueryParam *query_param, DBResult *result) {
-     
-    /* Genrate select result. */
-    SelectResult *select_result = new_select_result(query_param->table_name);
-
-    /* Plus row data. */
-    query_with_condition(query_param, select_result, sum_row, NULL);
-
-
-    int row_size = select_result->row_size;
-    /* Prepare enough memory space. */
-    select_result->row_size = 1;
-    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
-
-    /* For the SUM row. */
-    Row *row = db_malloc(sizeof(Row), SDT_ROW);
-    row->table_name = db_strdup(query_param->table_name);
-    row->data = db_malloc(sizeof(KeyValue *) * 1, SDT_POINTER);
-    row->column_len = 1;
-
-    /* For key value. */
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value->key = db_strdup(SUM_NAME);
-    key_value->value = copy_value(&select_result->sum, T_DOUBLE, NULL);
+    key_value->value = copy_value(&sum, T_DOUBLE, NULL);
     key_value->data_type = T_DOUBLE;
+}
 
-    /* Assignment. */
-    row->data[0] = key_value;
-    select_result->rows[0] = row;
-    result->data = select_result;
-    result->rows = row_size;
-    result->success = true;
 
-    db_log(SUCCESS, "Sum function exeucted successfully.");
+/* Calulate column avg value. */
+static void calc_column_avg_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
+    Table *table = open_table(select_result->table_name);
+    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
+    int row_size = select_result->row_size;
+
+    double avg = 0;
+    switch (meta_column->column_type) {
+        case T_INT: {
+            double sum = 0;
+            int i ;
+            for (i = 0; i < row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(int32_t *)key_value->value;
+            }
+            avg = sum / row_size;
+            break;
+        }
+        case T_LONG: {
+            double sum = 0;
+            int i ;
+            for (i = 0; i < row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(int64_t *)key_value->value;
+            }
+            avg = sum / row_size;
+            break;
+        }
+        case T_FLOAT: {
+            double sum = 0;
+            int i ;
+            for (i = 0; i < select_result->row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(float *)key_value->value;
+            }
+            avg = sum / row_size;
+            break;
+        }
+        case T_DOUBLE: {
+            double sum = 0;
+            int i ;
+            for (i = 0; i < select_result->row_size; i++) {
+                Row *row = select_result->rows[i];
+                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
+                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+                sum += *(double *)key_value->value;
+            }
+            avg = sum / row_size;
+            break;
+        }
+        default: {
+            avg = 0;
+            break;
+        }
+    }
+
+    key_value->data_type = T_DOUBLE;
+    key_value->value = copy_value(&avg, T_DOUBLE, NULL);
+}
+
+
+/* Calulate column max value.*/
+static void calc_column_max_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
+    Table *table = open_table(select_result->table_name);
+    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
+
+    void *max_value = NULL;
+    int i;
+    for (i = 0; i < select_result->row_size; i++) {
+        Row *row = select_result->rows[i];
+        KeyValue *current = get_key_value_from_row(row, column->column_name);
+        void *current_value = current->value;
+        if (max_value == NULL || greater(current_value, max_value, meta_column->column_type)) {
+            max_value = current_value;
+        }
+    }
+
+    key_value->value = copy_value(max_value, meta_column->column_type, NULL);
+    key_value->data_type = meta_column->column_type;
+
+}
+
+/* Calulate column max value.*/
+static void calc_column_min_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
+    Table *table = open_table(select_result->table_name);
+    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
+
+    void *min_value = NULL;
+    int i;
+    for (i = 0; i < select_result->row_size; i++) {
+        Row *row = select_result->rows[i];
+        KeyValue *current = get_key_value_from_row(row, column->column_name);
+        void *current_value = current->value;
+        if (min_value == NULL || less(current_value, min_value, meta_column->column_type)) {
+            min_value = current_value;
+        }
+    }
+
+    key_value->value = copy_value(min_value, meta_column->column_type, NULL);
+    key_value->data_type = meta_column->column_type;
+
+}
+
+
+/* Query count function. */
+static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *selct_result) {
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("count");
+    key_value->data_type = T_INT;
+    key_value->value = copy_value(&selct_result->row_size, T_INT, NULL);
+    return key_value;
+}
+
+/* Query sum function. */
+static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *select_result) {
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("sum");
+
+    switch (value->value_type) {
+        case V_COLUMN: {
+            calc_column_sum_value(key_value, value->column, select_result);
+            break;
+        }
+        case V_INT: {
+            double sum = value->i_value * select_result->row_size;
+            key_value->value = copy_value(&sum, T_DOUBLE, NULL);
+            key_value->data_type = T_DOUBLE;
+            break;
+        }
+        case V_ALL: {
+            db_log(PANIC, "Sum function not support '*'");
+            break;
+        }
+    }
+
+    return key_value;
+}
+
+/* Query avg function. */
+KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_result) {
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("avg");
+
+    switch (value->value_type) {
+        case V_COLUMN: {
+            calc_column_avg_value(key_value, value->column, select_result);
+            break;
+        }
+        case V_INT: {
+            double sum = value->i_value;
+            key_value->value = copy_value(&sum, T_DOUBLE, NULL);
+            key_value->data_type = T_DOUBLE;
+            break;
+        }
+        case V_ALL: {
+            db_log(PANIC, "Avg function not support '*'");
+            break;
+        }
+    }
+
+    return key_value;
+}
+
+/* Query max function. */
+KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_result) {
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("max");
+
+    switch (value->value_type) {
+        case V_COLUMN: {
+            calc_column_max_value(key_value, value->column, select_result);
+            break;
+        }
+        case V_INT: {
+            key_value->value = copy_value(&value->i_value, T_INT, NULL);
+            key_value->data_type = T_INT;
+            break;
+        }
+        case V_ALL: {
+            db_log(PANIC, "Max function not support '*'");
+            break;
+        }
+    }
+    return key_value;
 } 
 
-/* Execute aggregate function avg(). */
-static void exec_function_avg(QueryParam *query_param, DBResult *result) {
 
-    /* Genrate select result. */
-    SelectResult *select_result = new_select_result(query_param->table_name);
-
-    /* Plus row data. */
-    query_with_condition(query_param, select_result, sum_row, NULL);
-
-    int row_size = select_result->row_size;
-    /* Prepare enough memory space. */
-    select_result->row_size = 1;
-    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
-
-    /* For the SUM row. */
-    Row *row = db_malloc(sizeof(Row), SDT_ROW);
-    row->table_name = db_strdup(query_param->table_name);
-    row->data = db_malloc(sizeof(KeyValue *) * 1, SDT_ROW);
-    row->column_len = 1;
-
-    /* For key value. */
+/* Query min function. */
+KeyValue *query_min_function(FunctionValueNode *value, SelectResult *select_result) {
     KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value->key = db_strdup(AVG_NAME);
-    double value = select_result->sum / row_size;
-    key_value->value = copy_value(&value, T_DOUBLE, NULL);
-    key_value->data_type = T_DOUBLE;
+    key_value->key = db_strdup("min");
 
-    /* Assignment. */
-    row->data[0] = key_value;
-    select_result->rows[0] = row;
-    result->data = select_result;
-    result->rows = row_size;
-    result->success = true;
+    switch (value->value_type) {
+        case V_COLUMN: {
+            calc_column_min_value(key_value, value->column, select_result);
+            break;
+        }
+        case V_INT: {
+            key_value->value = copy_value(&value->i_value, T_INT, NULL);
+            key_value->data_type = T_INT;
+            break;
+        }
+        case V_ALL: {
+            db_log(PANIC, "Min function not support '*'");
+            break;
+        }
+    }
+    return key_value;
+} 
 
-    db_log(SUCCESS, "Avg function exeucted successfully.");
-}
-
-/* Execute aggregate function max(). */
-static void exec_function_max(QueryParam *query_param, DBResult *result) {
-    
-    /* Genrate select result. */
-    SelectResult *select_result = new_select_result(query_param->table_name);
-
-    /* Max row. */
-    query_with_condition(query_param, select_result, max_row, NULL);
-
-    int row_size = select_result->row_size;
-    /* Prepare enough memory space. */
-    select_result->row_size = 1;
-    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
-
-    /* For the SUM row. */
-    Row *row = copy_row(select_result->max_row);
-    /* Assignment. */
-    select_result->rows[0] = row;
-    result->data = select_result;
-    result->rows = row_size;
-    result->success = true;
-
-    db_log(SUCCESS, "Max function executed successfully.");
-}
-
-/* Execute aggregate function min(). */
-static void exec_function_min(QueryParam *query_param, DBResult *result) {
-
-    /* Genrate select result. */
-    SelectResult *select_result = new_select_result(query_param->table_name);
-
-    /* Min row. */
-    query_with_condition(query_param, select_result, min_row, NULL);
-
-
-    int row_size = select_result->row_size;
-    /* Prepare enough memory space. */
-    select_result->row_size = 1;
-    select_result->rows = db_malloc(sizeof(Row *) * 1, SDT_POINTER);
-
-    /* For the SUM row. */
-    Row *row = copy_row(select_result->min_row);
-    /* Assignment. */
-    select_result->rows[0] = row;
-    result->data = select_result;
-    result->rows = row_size;
-    result->success = true;
-
-    /* success result. */
-    db_log(SUCCESS, "Min function executed successfully.");
-}
-
-
-/* Execute function select statement. 
- * Now supported aggregate function:
- *     COUNT
- *     SUM
- *     AVG
- *     MAX
- *     MIN
- * */
-static void exec_function_select_statement(QueryParam *query_param, DBResult *result) {
-    FunctionNode *function_node = query_param->select_items->function_node;
-    switch(function_node->function_type) {
+static KeyValue *query_scalar_function(FunctionNode *function, SelectResult *select_result) {
+    switch (function->type) { 
         case F_COUNT:
-            exec_function_count(query_param, result);
-            break;
+            return query_count_function(function->value, select_result);
         case F_SUM:
-            exec_function_sum(query_param, result);
-            break;
+            return query_sum_function(function->value, select_result);
         case F_AVG:
-            exec_function_avg(query_param, result);
-            break;   
+            return query_avg_function(function->value, select_result);
         case F_MAX:
-            exec_function_max(query_param, result);
-            break;
+            return query_max_function(function->value, select_result);
         case F_MIN:
-            exec_function_min(query_param, result);
-            break;
+            return query_min_function(function->value, select_result);
+        default:
+            db_log(ERROR, "Not implement function yet.");
     }
 }
 
+static KeyValue *query_scalar_column(ColumnNode *column, SelectResult *select_result) {
+    Table *table = open_table(select_result->table_name);
+    if (select_result->row_size == 0) {
+        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+        key_value->key = strdup(column->column_name);
+        key_value->value = NULL;
+        return key_value;
+    } else {
+        Row *first_row = select_result->rows[0];
+        int i;
+        for (i = 0;  i < first_row->column_len; i++) {
+            KeyValue *key_value = first_row->data[i];
+            if (strcmp(column->column_name, key_value->key) == 0)
+                return copy_key_value(key_value, table->meta_table);
+        }
+        db_log(PANIC, "Not found column '%s' in table '%s'", column->column_name, table->meta_table->table_name);
+    }
+}
 
-/* Execute plain select statement. */
-static void exec_plain_select_statement(QueryParam *query_param, DBResult *result) {
+/* Query column value. */
+static KeyValue *query_column_value(ScalarExpNode *scalar_exp, SelectResult *select_result) {
+    switch (scalar_exp->type) {
+        case SCALAR_COLUMN:
+            return query_scalar_column(scalar_exp->column, select_result);
+        case SCALAR_FUNCTION:
+            return query_scalar_function(scalar_exp->function, select_result);
+    } 
+}
 
-    /* Genrate select result. */
-    SelectResult *select_result = new_select_result(query_param->table_name);
+/* Query function data. */
+static void query_function_data(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
+    Row *row = db_malloc(sizeof(Row), SDT_ROW);
+    row->table_name = db_strdup(select_result->table_name);
+    row->column_len = scalar_exp_set->size;
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
 
-    /* Count row number. */
-    query_with_condition(query_param, select_result, count_row, NULL);
+    int i;
+    for (i = 0; i < scalar_exp_set->size; i++) {
+        ScalarExpNode *sclar_exp = scalar_exp_set->data[i];
+        row->data[i] = query_column_value(sclar_exp, select_result);        
+    }
 
-    /* Prepare enough memory space. */
-    select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
+    select_result->row_size = 1;
+    select_result->rows[0] = row;
+}
 
-    select_result->limit_index = 0;
+/* Check column if exists in ScalarExpSetNode */
+static bool exists_in_scalr_exp_set(char *column_name, ScalarExpSetNode *scalar_exp_set) {
+    int i;
+    for (i = 0; i < scalar_exp_set->size; i++) {
+        ScalarExpNode *scalar_exp_node = scalar_exp_set->data[i];
+        if (scalar_exp_node->type == SCALAR_COLUMN && strcmp(column_name, scalar_exp_node->column->column_name) == 0)
+            return true;
+    }
+    return false;
+}
 
-    /* Send row data in json format. */
-    query_with_condition(query_param, select_result, select_row, NULL);
+/* Copy a Row with Selection,
+ * Actually, the Selection is all-column. */
+static Row *copy_row_by_selection(ScalarExpSetNode *scalar_exp_set, Row *row) {
+    
+    Table *table = open_table(row->table_name);
+    MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
 
+    Row *copy = db_malloc(sizeof(Row), SDT_ROW);
+    copy->key = copy_value(row->key, key_meta_column->column_type, key_meta_column);
+    copy->table_name = db_strdup(row->table_name);
+    copy->column_len = scalar_exp_set->size;
+    copy->data = db_malloc(sizeof(KeyValue *) * copy->column_len, SDT_POINTER);
 
-    /* Assign exeuction result. */
-    result->rows = select_result->row_size;
-    result->data = select_result;
-    result->success = true;
+    int i, j;
+    for (i = 0, j = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
+        if (exists_in_scalr_exp_set(key_value->key, scalar_exp_set)) {
+            copy->data[j++] = copy_key_value(key_value, table->meta_table);
+        }
+    }
 
-    /* success result. */
-    db_log(SUCCESS, "Query data successfully.");
+    assert_true(copy->column_len == j, "System Logic Error");
+
+    return copy;
+}
+
+/* Query all columns data. */
+static void query_all_column_data(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
+    int i;
+    for (i = 0; i < select_result->row_size; i++) {
+        Row *row = select_result->rows[i];
+        select_result->rows[i] = copy_row_by_selection(scalar_exp_set, row);
+        db_free(row);
+    }
+}
+
+/* Query selection. */
+static void query_with_selection(SelectionNode *selection, SelectResult *select_result) {
+    if (selection->all_column)
+        return;
+
+    if (exists_function_scalar_exp(selection->scalar_exp_set)) {
+        query_function_data(selection->scalar_exp_set, select_result);
+    } else {
+        query_all_column_data(selection->scalar_exp_set, select_result);
+    }
 }
 
 /* Execute select statement. */
 void exec_select_statement(SelectNode *select_node, DBResult *result) {
     QueryParam *query_param = convert_query_param(select_node);
     if (check_query_param(query_param)) {
-        switch(query_param->select_items->type) {
-            case SELECT_ALL:
-            case SELECT_COLUMNS:
-                exec_plain_select_statement(query_param, result);
-                break;
-            case SELECT_FUNCTION:
-                exec_function_select_statement(query_param, result);
-                break;
-        }
+        /* Genrate select result. */
+        SelectResult *select_result = new_select_result(query_param->table_name);
+
+        /* Count row number. */
+        query_with_condition(query_param->condition_node, select_result, count_row, NULL);
+
+        /* Prepare enough memory space. */
+        select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
+
+        select_result->limit_index = 0;
+
+        /* Put rows to buffer. */
+        query_with_condition(query_param->condition_node, select_result, select_row, NULL);
+
+        /* Query Selection. */
+        query_with_selection(query_param->selection, select_result);
+
+        /* If select all, return all row data. */
+        result->rows = select_result->row_size;
+        result->data = select_result;
+        result->success = true;
+
+        /* success result. */
+        db_log(SUCCESS, "Query data successfully.");
     }
+
     free_query_param(query_param);
 }

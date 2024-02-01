@@ -29,6 +29,9 @@ int yylex();
    ColumnSetNode            *column_set_node;
    ValueItemNode            *value_item_node;
    ValueItemSetNode         *value_item_set_node;
+   SelectionNode            *selection_node;
+   ScalarExpNode            *scalar_exp_node;
+   ScalarExpSetNode         *scalar_exp_set_node;
    FunctionValueNode        *function_value_node;
    FunctionNode             *function_node;
    PrimaryKeyNode           *primary_key_node;
@@ -87,6 +90,9 @@ int yylex();
 %type <r_value> REFERVALUE
 %type <s_value> table
 %type <select_items_node> select_items 
+%type <scalar_exp_node> scalar_exp
+%type <scalar_exp_set_node> scalar_exp_commalist
+%type <selection_node> selection
 %type <column_node> column
 %type <column_set_node> columns 
 %type <value_item_node> value_item
@@ -213,19 +219,19 @@ drop_table_statement:
         }
     ;
 select_statement:
-    SELECT select_items FROM table WHERE condition opt_limit end
+    SELECT selection FROM table WHERE condition opt_limit end
         {
             SelectNode *select_node = make_select_node();
-            select_node->select_items_node = $2;
+            select_node->selection = $2;
             select_node->table_name = $4;
             select_node->condition_node = $6;
             select_node->limit_node = $7;
             $$ = select_node;
         }
-    | SELECT select_items FROM table opt_limit end
+    | SELECT selection FROM table opt_limit end
         {
             SelectNode *select_node = make_select_node();
-            select_node->select_items_node = $2;
+            select_node->selection = $2;
             select_node->table_name = $4;
             select_node->limit_node = $5;
             $$ = select_node;
@@ -322,8 +328,56 @@ select_items:
             $$ = select_items_node;
         }
     ;
+selection:
+    scalar_exp_commalist
+        {
+            SelectionNode *selection_node = make_selection_node();
+            selection_node->all_column = false;
+            selection_node->scalar_exp_set = $1;
+            $$ = selection_node;
+        }
+    | ALL
+        {
+            SelectionNode *selection_node = make_selection_node();
+            selection_node->all_column = true;
+            $$ = selection_node;
+        }
+    ;
 table:       
     IDENTIFIER     
+        {
+            $$ = $1;
+        }
+    ;
+scalar_exp_commalist:
+    scalar_exp
+        {
+            ScalarExpSetNode *scalar_exp_set_node = make_scalar_exp_set_node();
+            add_scalar_exp_node(scalar_exp_set_node, $1);
+            $$ = scalar_exp_set_node;
+        }
+    | scalar_exp_commalist COMMA scalar_exp
+        {
+            add_scalar_exp_node($1, $3);
+            $$ = $1;
+        }
+    ;
+scalar_exp:
+    column
+        {
+            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            scalar_exp_node->type = SCALAR_COLUMN;
+            scalar_exp_node->column = $1;
+            $$ = scalar_exp_node;
+        }
+    | function
+        {
+            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            scalar_exp_node->type = SCALAR_FUNCTION;
+            scalar_exp_node->function = $1;
+            $$ = scalar_exp_node;
+        }
+    | LEFTPAREN scalar_exp RIGHTPAREN
         {
             $$ = $1;
         }
@@ -654,35 +708,35 @@ function:
     MAX LEFTPAREN non_all_function_value RIGHTPAREN
         {
             FunctionNode *function_node = make_function_node();        
-            function_node->function_type = F_MAX;
+            function_node->type = F_MAX;
             function_node->value = $3;
             $$ = function_node;
         }
     | MIN LEFTPAREN non_all_function_value RIGHTPAREN
         {
             FunctionNode *function_node = make_function_node();        
-            function_node->function_type = F_MIN;
+            function_node->type = F_MIN;
             function_node->value = $3;
             $$ = function_node;
         }
     | COUNT LEFTPAREN function_value RIGHTPAREN
         {
             FunctionNode *function_node = make_function_node();        
-            function_node->function_type = F_COUNT;
+            function_node->type = F_COUNT;
             function_node->value = $3;
             $$ = function_node;
         }
     | SUM LEFTPAREN function_value RIGHTPAREN
         {
             FunctionNode *function_node = make_function_node();        
-            function_node->function_type = F_SUM;
+            function_node->type = F_SUM;
             function_node->value = $3;
             $$ = function_node;
         }
     | AVG LEFTPAREN function_value RIGHTPAREN
         {
             FunctionNode *function_node = make_function_node();        
-            function_node->function_type = F_AVG;
+            function_node->type = F_AVG;
             function_node->value = $3;
             $$ = function_node;
         }
