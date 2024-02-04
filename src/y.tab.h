@@ -105,20 +105,23 @@ extern int yydebug;
     AND = 306,                     /* AND  */
     OR = 307,                      /* OR  */
     NOT = 308,                     /* NOT  */
-    ALL = 309,                     /* ALL  */
-    COMMA = 310,                   /* COMMA  */
-    SEMICOLON = 311,               /* SEMICOLON  */
-    QUOTE = 312,                   /* QUOTE  */
-    POINT = 313,                   /* POINT  */
-    LEFTPAREN = 314,               /* LEFTPAREN  */
-    RIGHTPAREN = 315,              /* RIGHTPAREN  */
-    SYSTEM = 316,                  /* SYSTEM  */
-    CONFIG = 317,                  /* CONFIG  */
-    MEMORY = 318,                  /* MEMORY  */
-    IDENTIFIER = 319,              /* IDENTIFIER  */
-    INTVALUE = 320,                /* INTVALUE  */
-    FLOATVALUE = 321,              /* FLOATVALUE  */
-    STRINGVALUE = 322              /* STRINGVALUE  */
+    ASTERISK = 309,                /* ASTERISK  */
+    SOLIDUS = 310,                 /* SOLIDUS  */
+    PLUS = 311,                    /* PLUS  */
+    MINUS = 312,                   /* MINUS  */
+    COMMA = 313,                   /* COMMA  */
+    SEMICOLON = 314,               /* SEMICOLON  */
+    QUOTE = 315,                   /* QUOTE  */
+    POINT = 316,                   /* POINT  */
+    LEFTPAREN = 317,               /* LEFTPAREN  */
+    RIGHTPAREN = 318,              /* RIGHTPAREN  */
+    SYSTEM = 319,                  /* SYSTEM  */
+    CONFIG = 320,                  /* CONFIG  */
+    MEMORY = 321,                  /* MEMORY  */
+    IDENTIFIER = 322,              /* IDENTIFIER  */
+    INTVALUE = 323,                /* INTVALUE  */
+    FLOATVALUE = 324,              /* FLOATVALUE  */
+    STRINGVALUE = 325              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -178,20 +181,23 @@ extern int yydebug;
 #define AND 306
 #define OR 307
 #define NOT 308
-#define ALL 309
-#define COMMA 310
-#define SEMICOLON 311
-#define QUOTE 312
-#define POINT 313
-#define LEFTPAREN 314
-#define RIGHTPAREN 315
-#define SYSTEM 316
-#define CONFIG 317
-#define MEMORY 318
-#define IDENTIFIER 319
-#define INTVALUE 320
-#define FLOATVALUE 321
-#define STRINGVALUE 322
+#define ASTERISK 309
+#define SOLIDUS 310
+#define PLUS 311
+#define MINUS 312
+#define COMMA 313
+#define SEMICOLON 314
+#define QUOTE 315
+#define POINT 316
+#define LEFTPAREN 317
+#define RIGHTPAREN 318
+#define SYSTEM 319
+#define CONFIG 320
+#define MEMORY 321
+#define IDENTIFIER 322
+#define INTVALUE 323
+#define FLOATVALUE 324
+#define STRINGVALUE 325
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -219,6 +225,7 @@ union YYSTYPE
    ScalarExpSetNode         *scalar_exp_set_node;
    FunctionValueNode        *function_value_node;
    FunctionNode             *function_node;
+   CalculateNode            *calculate_node;
    PrimaryKeyNode           *primary_key_node;
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
@@ -238,7 +245,7 @@ union YYSTYPE
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 
-#line 242 "y.tab.h"
+#line 249 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

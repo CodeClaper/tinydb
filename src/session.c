@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include "data.h"
 #include "mmu.h"
+#include "asserts.h"
 
 static pthread_key_t key;
 
@@ -54,6 +55,9 @@ void destroy_session() {
 bool db_send(const char *format, ...) {
     if (format == NULL)
         return false;
+
+    assert_true(strlen(format) < BUFF_SIZE, "Overflow");
+
     va_list ap;
     size_t size ;
     ssize_t r = -1, s = 0;

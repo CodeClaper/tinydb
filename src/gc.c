@@ -22,7 +22,7 @@
 #include "select.h"
 #include "asserts.h"
 
-#define DEFAULT_GC_INTERVAL 60
+#define DEFAULT_GC_INTERVAL 10
 
 /* Check if allow to GC for now. */
 static bool allow_gc();

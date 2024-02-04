@@ -14,7 +14,7 @@
 #include "mmu.h"
 
 /* Copy value. */
-void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
+void *copy_value(void *value, DataType data_type) {
     if (value == NULL)
         return NULL;
     switch(data_type) {
@@ -51,16 +51,8 @@ void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
         }
         case T_CHAR:
         case T_STRING: {
-            if (meta_column) {
-                char *new_value = db_malloc(meta_column->column_length, SDT_STRING);
-                memcpy(new_value, value, meta_column->column_length);
-                return new_value;
-            } else {
-                char *new_value = db_malloc(strlen(value) + 1, SDT_STRING);
-                memset(new_value, 0, strlen(value) + 1);
-                strcpy(new_value, value);
-                return new_value;
-            }
+            char *new_val = db_strdup((char *)value);
+            return new_val;
         }
         case T_REFERENCE: {
             Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
@@ -73,7 +65,7 @@ void *copy_value(void *value, DataType data_type, MetaColumn *meta_column) {
 }
 
 /* Copy Key value pair. */
-KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table) {
+KeyValue *copy_key_value(KeyValue *key_value) {
     
     /* check */
     if (key_value == NULL)
@@ -81,12 +73,9 @@ KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table) {
 
     /* copy key value */
     KeyValue *key_value_copy = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-    key_value_copy->key = db_malloc(strlen(key_value->key) + 1, SDT_STRING);
-    strcpy(key_value_copy->key, key_value->key);
-    MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key); 
-
+    key_value_copy->key = db_strdup(key_value->key);
     /*Meta column may be null, in fact, key aggregate function, key is min, max, sum, avg ect. there is no meta column. */
-    key_value_copy->value = copy_value(key_value->value, key_value->data_type, meta_column);
+    key_value_copy->value = copy_value(key_value->value, key_value->data_type);
     key_value_copy->data_type = key_value->data_type;
 
     return key_value_copy;
@@ -104,15 +93,14 @@ Row *copy_row(Row *row) {
     /* copy row */
     Row *row_copy = db_malloc(sizeof(Row), SDT_ROW);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    row_copy->key = copy_value(row->key, primary_meta_column->column_type, primary_meta_column);
+    row_copy->key = copy_value(row->key, primary_meta_column->column_type);
     row_copy->column_len = row->column_len;
-    row_copy->table_name = db_malloc(strlen(row->table_name) + 1, SDT_STRING);
-    strcpy(row_copy->table_name, row->table_name);
+    row_copy->table_name = db_strdup(row->table_name);
     row_copy->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
 
     int i;
     for(i = 0; i < row->column_len; i++) {
-        row_copy->data[i] = copy_key_value(row->data[i], table->meta_table);
+        row_copy->data[i] = copy_key_value(row->data[i]);
     }
 
     return row_copy;
@@ -127,27 +115,27 @@ Row *copy_row_without_reserved(Row *row) {
     if (table == NULL)
         return NULL;
 
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+
     /* copy row. */
     Row *row_copy = db_malloc(sizeof(Row), SDT_ROW);
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    row_copy->key = copy_value(row->key, primary_meta_column->column_type, primary_meta_column);
-    row_copy->table_name = db_malloc(strlen(row->table_name) + 1, SDT_STRING);
-    strcpy(row_copy->table_name, row->table_name);
-    row_copy->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_STRING);
+    row_copy->key = copy_value(row->key, primary_meta_column->column_type);
+    row_copy->table_name = db_strdup(row->table_name);
+    row_copy->column_len = 0;
+    row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, SDT_STRING);
 
-    int i, j;
-    for(i = 0, j = 0; i < row->column_len; i++) {
-        /* copy key value. */
-        KeyValue *key_value_copy = copy_key_value(*(row->data + i), table->meta_table);
-        
+    int i;
+    for(i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
+
         /* Skip system reserved columns. */
-        MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value_copy->key);
-        if (meta_column && meta_column->sys_reserved) {
-            free_key_value(key_value_copy); /* Not need any more. */
+        MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value->key);
+        if (meta_column && meta_column->sys_reserved) 
             continue;
-        }
 
-        row_copy->data[j++] = key_value_copy;
+        row_copy->data = db_realloc(row_copy->data, sizeof(KeyValue *) * (row_copy->column_len + 1));
+        /* copy key value. */
+        row_copy->data[row_copy->column_len] = copy_key_value(key_value);
         row_copy->column_len++;
     }
 
@@ -284,6 +272,18 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
     return function_node_copy;
 }
 
+CalculateNode *copy_calculate_node(CalculateNode *calculate_node) {
+    if (calculate_node == NULL)
+        return NULL;
+    CalculateNode *copy = db_malloc(sizeof(CalculateNode), SDT_CALCULATE_NODE);
+    copy->type = calculate_node->type;
+    copy->left = copy_scalar_exp_node(calculate_node->left);
+    copy->right = copy_scalar_exp_node(calculate_node->right);
+
+    return copy;
+}
+
+
 PredicateNode *copy_predicate_node(PredicateNode *predicate_node) {
     if (predicate_node == NULL)
         return NULL;
@@ -416,6 +416,8 @@ ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
         case SCALAR_FUNCTION:
             copy->function = copy_function_node(scalar_exp_node->function);
             break;
+        case SCALAR_CALCULATE:
+            copy->calculate = copy_calculate_node(scalar_exp_node->calculate);
     }
     return copy;
 }
@@ -458,7 +460,7 @@ QueryParam *copy_query_param(QueryParam *query_param) {
 
 /* Copy a dymamic memory block */
 void *copy_block(void *value, size_t size) {
-    void * copy_value = db_malloc(size, SDT_VOID);
-    memcpy(copy_value, value, size);
-    return copy_value;
+    void * value_copy = db_malloc(size, SDT_VOID);
+    memcpy(value_copy, value, size);
+    return value_copy;
 }

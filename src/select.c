@@ -54,6 +54,12 @@ static bool include_leaf_node(void *destinct, ConditionNode *condition_node, Met
 /* Get meta column by condition name. */
 static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *meta_table);
 
+/* Query column value. */
+static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *select_result);
+
+/* Query row value. */
+static KeyValue *query_row_value(ScalarExpNode *scalar_exp, Row *row);
+
 /* Calulate offset of every column in cell. */
 static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     uint32_t off_set = 0;
@@ -171,6 +177,8 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
 static bool include_internal_comparison_predicate(void *min_key, void *max_key, ComparisonNode *comparison, MetaTable *meta_table) {
     MetaColumn *meta_column = get_meta_column_by_name(meta_table, comparison->column->column_name);
     void *target_key = get_value_from_value_item_node(comparison->value, meta_column);
+    if (target_key == NULL)
+        return false;
     DataType data_type = meta_column->column_type;
     switch (comparison->type) {
         case O_EQ:
@@ -418,13 +426,13 @@ static Row *generate_row(void *destinct, MetaTable *meta_table) {
         /* Generate a key value pair. */
         KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = db_strdup(meta_column->column_name);
-        key_value->value = copy_value(destinct + off_set, meta_column->column_type, meta_column);
+        key_value->value = copy_value(destinct + off_set, meta_column->column_type);
         key_value->data_type = meta_column->column_type;
 
         row->data[i] = key_value;
 
         if (meta_column->is_primary)
-            row->key = copy_value(destinct + off_set, meta_column->column_type, meta_column);
+            row->key = copy_value(destinct + off_set, meta_column->column_type);
     }
 
     return row;
@@ -567,7 +575,6 @@ SelectResult *new_select_result(char *table_name) {
     select_result->row_index = 0;
     select_result->limit_index = 0;
     select_result->table_name = db_strdup(table_name);
-    select_result->sum = 0;
     select_result->rows = NULL;
     return select_result;
 }
@@ -605,16 +612,6 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
 }
 
 
-/* Check if exists function type scalar exp. */
-static bool exists_function_scalar_exp(ScalarExpSetNode *scalar_exp_set) {
-    int i;
-    for (i = 0; i < scalar_exp_set->size; i++) {
-        if (scalar_exp_set->data[i]->type == SCALAR_FUNCTION)
-            return true;
-    }
-    return false;
-}
-
 
 /* Get KeyValue from a Row.
  * return NULL if not found. */
@@ -632,6 +629,8 @@ static KeyValue *get_key_value_from_row(Row *row, char *column_name) {
 static void calc_column_sum_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
     Table *table = open_table(select_result->table_name);
     MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
+    
+    assert_not_null(meta_column, "Sysmte Logic Error, in <calc_coluymn_sum_value>");
 
     double sum = 0;
     switch (meta_column->column_type) {
@@ -682,7 +681,7 @@ static void calc_column_sum_value(KeyValue *key_value, ColumnNode *column, Selec
 
     }
 
-    key_value->value = copy_value(&sum, T_DOUBLE, NULL);
+    key_value->value = copy_value(&sum, T_DOUBLE);
     key_value->data_type = T_DOUBLE;
 }
 
@@ -750,7 +749,7 @@ static void calc_column_avg_value(KeyValue *key_value, ColumnNode *column, Selec
     }
 
     key_value->data_type = T_DOUBLE;
-    key_value->value = copy_value(&avg, T_DOUBLE, NULL);
+    key_value->value = copy_value(&avg, T_DOUBLE);
 }
 
 
@@ -770,7 +769,7 @@ static void calc_column_max_value(KeyValue *key_value, ColumnNode *column, Selec
         }
     }
 
-    key_value->value = copy_value(max_value, meta_column->column_type, NULL);
+    key_value->value = copy_value(max_value, meta_column->column_type);
     key_value->data_type = meta_column->column_type;
 
 }
@@ -791,7 +790,7 @@ static void calc_column_min_value(KeyValue *key_value, ColumnNode *column, Selec
         }
     }
 
-    key_value->value = copy_value(min_value, meta_column->column_type, NULL);
+    key_value->value = copy_value(min_value, meta_column->column_type);
     key_value->data_type = meta_column->column_type;
 
 }
@@ -802,7 +801,7 @@ static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *se
     KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     key_value->key = db_strdup("count");
     key_value->data_type = T_INT;
-    key_value->value = copy_value(&selct_result->row_size, T_INT, NULL);
+    key_value->value = copy_value(&selct_result->row_size, T_INT);
     return key_value;
 }
 
@@ -818,7 +817,7 @@ static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *sele
         }
         case V_INT: {
             double sum = value->i_value * select_result->row_size;
-            key_value->value = copy_value(&sum, T_DOUBLE, NULL);
+            key_value->value = copy_value(&sum, T_DOUBLE);
             key_value->data_type = T_DOUBLE;
             break;
         }
@@ -843,7 +842,7 @@ KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_resu
         }
         case V_INT: {
             double sum = value->i_value;
-            key_value->value = copy_value(&sum, T_DOUBLE, NULL);
+            key_value->value = copy_value(&sum, T_DOUBLE);
             key_value->data_type = T_DOUBLE;
             break;
         }
@@ -867,7 +866,7 @@ KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_resu
             break;
         }
         case V_INT: {
-            key_value->value = copy_value(&value->i_value, T_INT, NULL);
+            key_value->value = copy_value(&value->i_value, T_INT);
             key_value->data_type = T_INT;
             break;
         }
@@ -891,7 +890,7 @@ KeyValue *query_min_function(FunctionValueNode *value, SelectResult *select_resu
             break;
         }
         case V_INT: {
-            key_value->value = copy_value(&value->i_value, T_INT, NULL);
+            key_value->value = copy_value(&value->i_value, T_INT);
             key_value->data_type = T_INT;
             break;
         }
@@ -903,7 +902,8 @@ KeyValue *query_min_function(FunctionValueNode *value, SelectResult *select_resu
     return key_value;
 } 
 
-static KeyValue *query_scalar_function(FunctionNode *function, SelectResult *select_result) {
+/* Query scalar function */
+static KeyValue *query_function_column_value(FunctionNode *function, SelectResult *select_result) {
     switch (function->type) { 
         case F_COUNT:
             return query_count_function(function->value, select_result);
@@ -920,37 +920,696 @@ static KeyValue *query_scalar_function(FunctionNode *function, SelectResult *sel
     }
 }
 
-static KeyValue *query_scalar_column(ColumnNode *column, SelectResult *select_result) {
-    Table *table = open_table(select_result->table_name);
-    if (select_result->row_size == 0) {
-        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
-        key_value->key = strdup(column->column_name);
-        key_value->value = NULL;
-        return key_value;
-    } else {
-        Row *first_row = select_result->rows[0];
-        int i;
-        for (i = 0;  i < first_row->column_len; i++) {
-            KeyValue *key_value = first_row->data[i];
-            if (strcmp(column->column_name, key_value->key) == 0)
-                return copy_key_value(key_value, table->meta_table);
-        }
-        db_log(PANIC, "Not found column '%s' in table '%s'", column->column_name, table->meta_table->table_name);
+/* Query column value*/
+static KeyValue *query_plain_column_value(ColumnNode *column, Row *row) {
+    Table *table = open_table(row->table_name);
+    int i;
+    for (i = 0;  i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
+        if (strcmp(column->column_name, key_value->key) == 0)
+            return copy_key_value(key_value);
     }
+    db_log(PANIC, "Not found column '%s' in table '%s'", column->column_name, table->meta_table->table_name);
+}
+
+/* Calulate addition .*/
+static KeyValue *calulate_addition(KeyValue *left, KeyValue *right) {
+    
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("add");
+    
+    switch (left->data_type) {
+        case T_INT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    int32_t sum = *(int32_t *)left->value + *(int32_t *)right->value;
+                    key_value->value = copy_value(&sum, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+                case T_LONG: {
+                    int64_t sum = *(int32_t *)left->value + *(int64_t *)right->value;
+                    key_value->value = copy_value(&sum, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_FLOAT: {
+                    float sum = *(int32_t *)left->value + *(float *)right->value;
+                    key_value->value = copy_value(&sum, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sum = *(int32_t *)left->value + *(double *)right->value;
+                    key_value->value = copy_value(&sum, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_LONG: {
+            switch (right->data_type) {
+                case T_INT: {
+                    int64_t sum = *(int64_t *)left->value + *(int32_t *)right->value;
+                    key_value->value = copy_value(&sum, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_LONG: {
+                    int64_t sum = *(int64_t *)left->value + *(int64_t *)right->value;
+                    key_value->value = copy_value(&sum, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_FLOAT: {
+                    float sum = *(int64_t *)left->value + *(float *)right->value;
+                    key_value->value = copy_value(&sum, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sum = *(int64_t *)left->value + *(double *)right->value;
+                    key_value->value = copy_value(&sum, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_FLOAT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    float sum = *(float *)left->value + *(int32_t *)right->value;
+                    key_value->value = copy_value(&sum, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_LONG: {
+                    float sum = *(float *)left->value + *(int64_t *)right->value;
+                    key_value->value = copy_value(&sum, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_FLOAT: {
+                    float sum = *(float *)left->value + *(float *)right->value;
+                    key_value->value = copy_value(&sum, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sum = *(float *)left->value + *(double *)right->value;
+                    key_value->value = copy_value(&sum, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_DOUBLE: {
+            switch (right->data_type) {
+                case T_INT: {
+                    double sum = *(double *)left->value + *(int32_t *)right->value;
+                    key_value->value = copy_value(&sum, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_LONG: {
+                    double sum = *(double *)left->value + *(int64_t *)right->value;
+                    key_value->value = copy_value(&sum, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_FLOAT: {
+                    double sum = *(double *)left->value + *(float *)right->value;
+                    key_value->value = copy_value(&sum, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sum = *(double *)left->value + *(double *)right->value;
+                    key_value->value = copy_value(&sum, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        default: {
+            int zero = 0;
+            key_value->value = copy_value(&zero, T_INT);
+            key_value->data_type = T_INT;
+            break;
+        }
+    }
+
+    return key_value;
+}
+
+/* Calulate substraction .*/
+static KeyValue *calulate_substraction(KeyValue *left, KeyValue *right) {
+    
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("sub");
+    
+    switch (left->data_type) {
+        case T_INT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    int32_t sub = *(int32_t *)left->value - *(int32_t *)right->value;
+                    key_value->value = copy_value(&sub, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+                case T_LONG: {
+                    int64_t sub = *(int32_t *)left->value - *(int64_t *)right->value;
+                    key_value->value = copy_value(&sub, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_FLOAT: {
+                    float sub = *(int32_t *)left->value - *(float *)right->value;
+                    key_value->value = copy_value(&sub, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sub = *(int32_t *)left->value - *(double *)right->value;
+                    key_value->value = copy_value(&sub, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_LONG: {
+            switch (right->data_type) {
+                case T_INT: {
+                    int64_t sub = *(int64_t *)left->value - *(int32_t *)right->value;
+                    key_value->value = copy_value(&sub, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_LONG: {
+                    int64_t sub = *(int64_t *)left->value - *(int64_t *)right->value;
+                    key_value->value = copy_value(&sub, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_FLOAT: {
+                    float sub = *(int64_t *)left->value - *(float *)right->value;
+                    key_value->value = copy_value(&sub, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sub = *(int64_t *)left->value - *(double *)right->value;
+                    key_value->value = copy_value(&sub, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_FLOAT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    float sub = *(float *)left->value - *(int32_t *)right->value;
+                    key_value->value = copy_value(&sub, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_LONG: {
+                    float sub = *(float *)left->value - *(int64_t *)right->value;
+                    key_value->value = copy_value(&sub, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_FLOAT: {
+                    float sub = *(float *)left->value - *(float *)right->value;
+                    key_value->value = copy_value(&sub, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sub = *(float *)left->value - *(double *)right->value;
+                    key_value->value = copy_value(&sub, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_DOUBLE: {
+            switch (right->data_type) {
+                case T_INT: {
+                    double sub = *(double *)left->value - *(int32_t *)right->value;
+                    key_value->value = copy_value(&sub, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_LONG: {
+                    double sub = *(double *)left->value - *(int64_t *)right->value;
+                    key_value->value = copy_value(&sub, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_FLOAT: {
+                    double sub = *(double *)left->value - *(float *)right->value;
+                    key_value->value = copy_value(&sub, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double sub = *(double *)left->value - *(double *)right->value;
+                    key_value->value = copy_value(&sub, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        default: {
+            int zero = 0;
+            key_value->value = copy_value(&zero, T_INT);
+            key_value->data_type = T_INT;
+            break;
+        }
+    }
+
+    return key_value;
+}
+
+
+/* Calulate multiplication .*/
+static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
+    
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("mul");
+    
+    switch (left->data_type) {
+        case T_INT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    int64_t mul = (*(int32_t *)left->value) * (*(int32_t *)right->value);
+                    key_value->value = copy_value(&mul, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_LONG: {
+                    int64_t mul = *(int64_t *)left->value * *(int64_t *)right->value;
+                    key_value->value = copy_value(&mul, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_FLOAT: {
+                    float mul = *(int32_t *)left->value * *(float *)right->value;
+                    key_value->value = copy_value(&mul, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double mul = *(int32_t *)left->value * *(double *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_LONG: {
+            switch (right->data_type) {
+                case T_INT: {
+                    int64_t mul = *(int64_t *)left->value * *(int32_t *)right->value;
+                    key_value->value = copy_value(&mul, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_LONG: {
+                    int64_t mul = *(int64_t *)left->value * *(int64_t *)right->value;
+                    key_value->value = copy_value(&mul, T_LONG);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_FLOAT: {
+                    float mul = *(int64_t *)left->value * *(float *)right->value;
+                    key_value->value = copy_value(&mul, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double mul = *(int64_t *)left->value * *(double *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_FLOAT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    float mul = *(float *)left->value * *(int32_t *)right->value;
+                    key_value->value = copy_value(&mul, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_LONG: {
+                    float mul = *(float *)left->value * *(int64_t *)right->value;
+                    key_value->value = copy_value(&mul, T_FLOAT);
+                    key_value->data_type = T_LONG;
+                    break;
+                }
+                case T_FLOAT: {
+                    float mul = *(float *)left->value * *(float *)right->value;
+                    key_value->value = copy_value(&mul, T_FLOAT);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double mul = *(float *)left->value * *(double *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_DOUBLE: {
+            switch (right->data_type) {
+                case T_INT: {
+                    double mul = *(double *)left->value * *(int32_t *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_LONG: {
+                    double mul = *(double *)left->value * *(int64_t *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_FLOAT: {
+                    double mul = *(double *)left->value * *(float *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double mul = *(double *)left->value * *(double *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        default: {
+            int zero = 0;
+            key_value->value = copy_value(&zero, T_INT);
+            key_value->data_type = T_INT;
+            break;
+        }
+    }
+
+    return key_value;
+}
+
+/* Calulate division .*/
+static KeyValue *calulate_division(KeyValue *left, KeyValue *right) {
+    
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = db_strdup("div");
+    
+    switch (left->data_type) {
+        case T_INT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    double div = (double)(*(int32_t *)left->value) / (*(int32_t *)right->value);
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_LONG: {
+                    double div = (double)(*(int64_t *)left->value) / (*(int64_t *)right->value);
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_FLOAT: {
+                    double div = (double)(*(int32_t *)left->value) / (*(float *)right->value);
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double mul = (double)(*(int32_t *)left->value) / *(double *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_LONG: {
+            switch (right->data_type) {
+                case T_INT: {
+                    double div = (double)*(int64_t *)left->value / *(int32_t *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_LONG: {
+                    double div = (double)*(int64_t *)left->value / *(int64_t *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_FLOAT: {
+                    double div = (double)*(int64_t *)left->value / *(float *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double div = (double)*(int64_t *)left->value / *(double *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_FLOAT: {
+            switch (right->data_type) {
+                case T_INT: {
+                    double div = (double)*(float *)left->value / *(int32_t *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_LONG: {
+                    double div = (double)*(float *)left->value / *(int64_t *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_FLOAT: {
+                    double div = (double)*(float *)left->value / *(float *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double mul = (double)*(float *)left->value / *(double *)right->value;
+                    key_value->value = copy_value(&mul, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        case T_DOUBLE: {
+            switch (right->data_type) {
+                case T_INT: {
+                    double div = *(double *)left->value / *(int32_t *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_LONG: {
+                    double div = *(double *)left->value / *(int64_t *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                case T_FLOAT: {
+                    double div = *(double *)left->value / *(float *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_FLOAT;
+                    break;
+                }
+                case T_DOUBLE: {
+                    double div = *(double *)left->value / *(double *)right->value;
+                    key_value->value = copy_value(&div, T_DOUBLE);
+                    key_value->data_type = T_DOUBLE;
+                    break;
+                }
+                default: {
+                    int zero = 0;
+                    key_value->value = copy_value(&zero, T_INT);
+                    key_value->data_type = T_INT;
+                    break;
+                }
+            }
+            break;
+        }
+        default: {
+            int zero = 0;
+            key_value->value = copy_value(&zero, T_INT);
+            key_value->data_type = T_INT;
+            break;
+        }
+    }
+
+    return key_value;
+}
+
+/* Query function calculate. */
+static KeyValue *query_function_calculate_column_value(CalculateNode *calculate, SelectResult *select_result) {
+    KeyValue *result = NULL;
+
+    KeyValue *left = query_function_value(calculate->left, select_result);
+    KeyValue *right = query_function_value(calculate->right, select_result);
+    
+    switch (calculate->type) {
+        case CAL_ADD:
+            result = calulate_addition(left, right);
+            break;
+        case CAL_SUB:
+            result = calulate_substraction(left, right);
+            break;
+        case CAL_MUL:
+            result = calulate_multiplication(left, right);
+            break;
+        case CAL_DIV:
+            result = calulate_division(left, right);
+            break;
+    }
+
+    free_key_value(left);
+    free_key_value(right);
+
+    return result;
 }
 
 /* Query column value. */
-static KeyValue *query_column_value(ScalarExpNode *scalar_exp, SelectResult *select_result) {
+static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *select_result) {
     switch (scalar_exp->type) {
-        case SCALAR_COLUMN:
-            return query_scalar_column(scalar_exp->column, select_result);
+        case SCALAR_COLUMN: {
+            if (select_result->row_size == 0)
+                return NULL;
+            return query_plain_column_value(scalar_exp->column, select_result->rows[0]);
+        }
         case SCALAR_FUNCTION:
-            return query_scalar_function(scalar_exp->function, select_result);
+            return query_function_column_value(scalar_exp->function, select_result);
+        case SCALAR_CALCULATE:
+            return query_function_calculate_column_value(scalar_exp->calculate, select_result);
     } 
 }
 
 /* Query function data. */
-static void query_function_data(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
+static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
     Row *row = db_malloc(sizeof(Row), SDT_ROW);
     row->table_name = db_strdup(select_result->table_name);
     row->column_len = scalar_exp_set->size;
@@ -959,69 +1618,126 @@ static void query_function_data(ScalarExpSetNode *scalar_exp_set, SelectResult *
     int i;
     for (i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *sclar_exp = scalar_exp_set->data[i];
-        row->data[i] = query_column_value(sclar_exp, select_result);        
+        row->data[i] = query_function_value(sclar_exp, select_result);        
     }
 
+    /* Free old rows memory. */
+    int j;
+    for (j = 0; j <select_result->row_size; j++) {
+        free_row(select_result->rows[j]);
+    }
+
+    select_result->rows = db_realloc(select_result->rows, sizeof(Row *) * 1);
     select_result->row_size = 1;
     select_result->rows[0] = row;
 }
 
-/* Check column if exists in ScalarExpSetNode */
-static bool exists_in_scalr_exp_set(char *column_name, ScalarExpSetNode *scalar_exp_set) {
+/* Query all-columns calcuate column value. */
+static KeyValue *query_all_columns_calculate_column_value(CalculateNode *calculate, Row *row) {
+    KeyValue *result = NULL;
+
+    KeyValue *left = query_row_value(calculate->left, row);
+    KeyValue *right = query_row_value(calculate->right, row);
+
+    switch (calculate->type) {
+        case CAL_ADD:
+            result = calulate_addition(left, right);
+            break;
+        case CAL_SUB:
+            result = calulate_substraction(left, right);
+            break;
+        case CAL_MUL:
+            result = calulate_multiplication(left, right);
+            break;
+        case CAL_DIV:
+            result = calulate_division(left, right);
+            break;
+    }
+    
+    /* Free memory.*/
+    free_key_value(left);
+    free_key_value(right);
+
+    return result;
+}
+
+/* Query row value. */
+static KeyValue *query_row_value(ScalarExpNode *scalar_exp, Row *row) {
+    switch (scalar_exp->type) {
+        case SCALAR_COLUMN:
+            return query_plain_column_value(scalar_exp->column, row);
+        case SCALAR_CALCULATE:
+            return query_all_columns_calculate_column_value(scalar_exp->calculate, row);            
+        case SCALAR_FUNCTION:
+            db_log(PANIC, "System Logic Error occurs in <query_row_value>");
+    }
+}
+
+/* Query a Row of Selection,
+ * Actually, the Selection is all-column. */
+static Row *query_plain_row_selection(ScalarExpSetNode *scalar_exp_set, Row *row) {
+    
+    Table *table = open_table(row->table_name);
+    MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
+
+    Row *new_row = db_malloc(sizeof(Row), SDT_ROW);
+    new_row->key = copy_value(row->key, key_meta_column->column_type);
+    new_row->table_name = db_strdup(row->table_name);
+    new_row->column_len = scalar_exp_set->size;
+    new_row->data = db_malloc(sizeof(KeyValue *) * new_row->column_len, SDT_POINTER);
+
     int i;
     for (i = 0; i < scalar_exp_set->size; i++) {
-        ScalarExpNode *scalar_exp_node = scalar_exp_set->data[i];
-        if (scalar_exp_node->type == SCALAR_COLUMN && strcmp(column_name, scalar_exp_node->column->column_name) == 0)
+        new_row->data[i] = query_row_value(scalar_exp_set->data[i], row);
+    }
+    return new_row;
+}
+
+/* Query all columns data. */
+static void query_all_columns_selection(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
+    int i;
+    for (i = 0; i < select_result->row_size; i++) {
+        Row *row = select_result->rows[i];
+        select_result->rows[i] = query_plain_row_selection(scalar_exp_set, row);
+        db_free(row);
+    }
+}
+
+/* Check if ScalarExpNode is Function. 
+ * If CALCULATE, will check its children. */
+static bool is_function_scalar_exp(ScalarExpNode *scalar_exp) {
+    switch (scalar_exp->type) {
+        case SCALAR_FUNCTION:
+            return true;
+        case SCALAR_COLUMN:
+            return false;
+        case SCALAR_CALCULATE:
+            return is_function_scalar_exp(scalar_exp->calculate->left) 
+                || is_function_scalar_exp(scalar_exp->calculate->right);
+    }
+}
+
+/* Check if exists function type scalar exp. */
+static bool exists_function_scalar_exp(ScalarExpSetNode *scalar_exp_set) {
+    int i;
+    for (i = 0; i < scalar_exp_set->size; i++) {
+        /* Check self if SCALAR_FUNCTION. */
+        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+        if (is_function_scalar_exp(scalar_exp))
             return true;
     }
     return false;
 }
 
-/* Copy a Row with Selection,
- * Actually, the Selection is all-column. */
-static Row *copy_row_by_selection(ScalarExpSetNode *scalar_exp_set, Row *row) {
-    
-    Table *table = open_table(row->table_name);
-    MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
-
-    Row *copy = db_malloc(sizeof(Row), SDT_ROW);
-    copy->key = copy_value(row->key, key_meta_column->column_type, key_meta_column);
-    copy->table_name = db_strdup(row->table_name);
-    copy->column_len = scalar_exp_set->size;
-    copy->data = db_malloc(sizeof(KeyValue *) * copy->column_len, SDT_POINTER);
-
-    int i, j;
-    for (i = 0, j = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
-        if (exists_in_scalr_exp_set(key_value->key, scalar_exp_set)) {
-            copy->data[j++] = copy_key_value(key_value, table->meta_table);
-        }
-    }
-
-    assert_true(copy->column_len == j, "System Logic Error");
-
-    return copy;
-}
-
-/* Query all columns data. */
-static void query_all_column_data(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
-    int i;
-    for (i = 0; i < select_result->row_size; i++) {
-        Row *row = select_result->rows[i];
-        select_result->rows[i] = copy_row_by_selection(scalar_exp_set, row);
-        db_free(row);
-    }
-}
 
 /* Query selection. */
 static void query_with_selection(SelectionNode *selection, SelectResult *select_result) {
-    if (selection->all_column)
+    if (selection->all_column || select_result->row_size == 0)
         return;
-
     if (exists_function_scalar_exp(selection->scalar_exp_set)) {
-        query_function_data(selection->scalar_exp_set, select_result);
+        query_fuction_selecton(selection->scalar_exp_set, select_result);
     } else {
-        query_all_column_data(selection->scalar_exp_set, select_result);
+        query_all_columns_selection(selection->scalar_exp_set, select_result);
     }
 }
 

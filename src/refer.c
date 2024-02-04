@@ -109,11 +109,10 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     query_with_condition(condition_node, select_result, select_row, NULL);
 
     Refer *refer = NULL;
-    if (select_result->row_size == 0) 
-        db_log(ERROR, "Not found any satisfied condition row in table '%s'", meta_column->table_name);
-    else if (select_result->row_size > 1) 
+
+    if (select_result->row_size > 1) 
         db_log(ERROR, "Expect to one reference, but found %d", select_result->row_size);
-    else {
+    else if (select_result->row_size == 1) {
         /* Take the first row as refered. Maybe row size should be one, but now there is no check. */
         Row *row = select_result->rows[0];
         refer = define_refer(row);

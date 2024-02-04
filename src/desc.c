@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,15 @@ static char *get_table_name(DescribeNode *describe_node) {
     return describe_node->table_name;
 }
 
+/* Calculate meta column length. Notice, T_STRING data has added on extra char. */
+static uint32_t calc_meta_column_len(MetaColumn *meta_column) {
+    if (meta_column->column_type == T_STRING)
+        return meta_column->column_length - 1;
+    else 
+        return meta_column->column_length;
+}
+
+/* Generate DescribeResult. */
 static MapList *gen_describe_result(MetaTable *meta_table) {
 
     MapList *map_list = db_malloc(sizeof(MapList), SDT_MAP_LIST);
@@ -48,14 +58,15 @@ static MapList *gen_describe_result(MetaTable *meta_table) {
         /* primary key */
         KeyValue *key_value_key = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value_key->key = db_strdup("primary_key");
-        key_value_key->value = copy_value(&meta_column->is_primary, T_BOOL, NULL);
+        key_value_key->value = copy_value(&meta_column->is_primary, T_BOOL);
         key_value_key->data_type = T_BOOL;
         map->body[2] = key_value_key;
 
         /* primary key */
         KeyValue *key_value_size = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value_size->key = db_strdup("size");
-        key_value_size->value = copy_value(&meta_column->column_length, T_INT, NULL);
+        uint32_t column_length = calc_meta_column_len(meta_column);
+        key_value_size->value = copy_value(&column_length, T_INT);
         key_value_size->data_type = T_INT;
         map->body[3] = key_value_size;
 

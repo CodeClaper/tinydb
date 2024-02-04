@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include "table.h"
 #include "mmu.h"
+#include "free.h"
 #include "cache.h"
 #include "common.h"
 #include "asserts.h"
@@ -31,11 +32,13 @@ TableList *get_table_list() {
 
     DIR *dir;
     struct dirent *entry;
-    if ((dir = opendir(conf->data_dir)) ==NULL) 
+    if ((dir = opendir(conf->data_dir)) == NULL) {
         db_log(PANIC, "System error, not found directory: ", conf->data_dir); 
+    }
     else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
+                table_list->table_name_list = db_realloc(table_list->table_name_list, sizeof(char *) * (table_list->count + 1));
                 table_list->table_name_list[table_list->count] = replace(entry->d_name, ".dbt", "");
                 table_list->count++;
             }
@@ -94,11 +97,11 @@ bool create_table(MetaTable *meta_table, DBResult *result) {
     initial_leaf_node(root_node, true);
 
     /* set meta column */
-    set_column_size(root_node, meta_table->column_size);
+    set_column_size(root_node, meta_table->all_column_size);
     
     /* assignment */
     int i;
-    for (i = 0; i < meta_table->column_size; i++) {
+    for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = (MetaColumn *)(meta_table->meta_column[i]);
         void *destination = serialize_meta_column(meta_column);
         set_meta_column(root_node, destination, i);

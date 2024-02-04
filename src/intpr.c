@@ -29,6 +29,12 @@ ColumnNode *make_column_node() {
     return column_node;
 }
 
+/* Make a CalculateNode. */
+CalculateNode *make_calculate_node() {
+    CalculateNode *calculate_node = db_malloc(sizeof(CalculateNode), SDT_CALCULATE_NODE);
+    return calculate_node;
+}
+
 /* make a column set node. */
 ColumnSetNode *make_column_set_node() {
     ColumnSetNode *column_set_node = db_malloc(sizeof(ColumnSetNode), SDT_COLUMN_SET_NODE);

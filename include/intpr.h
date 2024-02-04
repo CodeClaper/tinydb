@@ -30,6 +30,9 @@ SelectNode *make_select_node();
 /* Make a column node.  */
 ColumnNode *make_column_node();
 
+/* Make a CalculateNode. */
+CalculateNode *make_calculate_node();
+
 /* make a column set node. */
 ColumnSetNode *make_column_set_node();
 

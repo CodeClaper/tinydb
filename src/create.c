@@ -16,6 +16,7 @@
 #include "session.h"
 #include "check.h"
 #include "copy.h"
+#include "free.h"
 #include "log.h"
 #include "ret.h"
 
@@ -28,17 +29,16 @@ MetaColumn SYS_RESERVED_COLUMNS[] = {
 /* System reserved columns length. */
 #define SYS_RESERVED_COLUMNS_LENGHT sizeof(SYS_RESERVED_COLUMNS) / sizeof(SYS_RESERVED_COLUMNS[0])
 
-/* Get column size. */
-static uint32_t get_column_size(CreateTableNode *create_table_node) {
-    return create_table_node->column_def_set_node->size;
-}
-
 /* Calculate meta column length. 
- * If define data len, use defined data length.
+ * If define data len, use defined data length, note that, T_STRING data length will add 1 for '0' as end.
  * Otherwise, use system default data length.
  * */
 static uint32_t calc_column_len(ColumnDefNode *column_def_node) {
-    return column_def_node->is_define_len ? column_def_node->data_len : default_data_len(column_def_node->data_type);
+    uint32_t column_length = column_def_node->is_define_len ?
+            column_def_node->data_len : default_data_len(column_def_node->data_type);
+    if (column_def_node->data_type == T_STRING)
+        column_length++;
+    return column_length;
 }
 
 /* Check if priamry key column. */
@@ -64,10 +64,11 @@ static bool if_primary_key_column(CreateTableNode *create_table_node, char *colu
 
 /* Get meta column. */
 static MetaColumn *gen_meta_column(CreateTableNode *create_table_node, int index, DBResult *result) {
-
     MetaColumn *meta_column = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
+
     ColumnDefNode *column_def_node = *(create_table_node->column_def_set_node->column_defs + index);
     strcpy(meta_column->column_name, column_def_node->column->column_name); 
+
     meta_column->column_type = column_def_node->data_type;
     meta_column->is_primary = if_primary_key_column(create_table_node, meta_column->column_name);
     meta_column->column_length = calc_column_len(column_def_node);
@@ -104,28 +105,36 @@ MetaColumn *copy_sys_meta_column(char *table_name, int index) {
 
 
 /* Generate meta table by create table node. */
-static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *result) {
-    MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
-    meta_table->table_name = db_strdup(crete_table_node->table_name);
-    meta_table->column_size = get_column_size(crete_table_node);
-    if (meta_table->column_size > MAX_COLUMN_SIZE) {
-        db_log(ERROR,"Column number exceed maxinum number: %d ", MAX_COLUMN_SIZE);
+static MetaTable *gen_meta_table(CreateTableNode *create_table_node, DBResult *result) {
+
+    int column_size = create_table_node->column_def_set_node->size;
+
+    if (column_size > MAX_COLUMN_SIZE) {
+        db_log(ERROR,"Column number exceed maxinum number: %d > %d ", column_size, MAX_COLUMN_SIZE);
         return NULL;
     }
+
+    MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
+
+    meta_table->table_name = db_strdup(create_table_node->table_name);
+    meta_table->column_size = column_size; 
+    meta_table->all_column_size = meta_table->column_size + SYS_RESERVED_COLUMNS_LENGHT;
+    meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * meta_table->all_column_size, SDT_POINTER);
 
     /* User define. */
     int i, j; 
     for (i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = gen_meta_column(crete_table_node, i, result);
-        if (meta_column == NULL) 
+        MetaColumn *meta_column = gen_meta_column(create_table_node, i, result);
+        if (meta_column == NULL) {
+            free_meta_table(meta_table);
             return NULL;
+        }
         meta_table->meta_column[i] = meta_column;
     }
 
     /* System define. */
     for (j = i; j < SYS_RESERVED_COLUMNS_LENGHT + i; j++) {
         meta_table->meta_column[j] = copy_sys_meta_column(meta_table->table_name, (j - i));
-        meta_table->column_size++;
     }
     return meta_table;
 }
@@ -134,10 +143,12 @@ static MetaTable *gen_meta_table(CreateTableNode *crete_table_node, DBResult *re
 void exec_create_table_statement(CreateTableNode *create_table_node, DBResult *result) {
 
     /* Check valid. */
-    if (!check_create_table_node(create_table_node)) return;
+    if (!check_create_table_node(create_table_node)) 
+        return;
 
     MetaTable *meta_table = gen_meta_table(create_table_node, result);
-    if (meta_table == NULL) return;
+    if (meta_table == NULL) 
+        return;
 
     if (create_table(meta_table, result)) {
         result->success = true;
@@ -145,5 +156,5 @@ void exec_create_table_statement(CreateTableNode *create_table_node, DBResult *r
         db_log(SUCCESS, "Table '%s' created successfully.", create_table_node->table_name);
     }
 
-    db_free(meta_table);
+    free_meta_table(meta_table);
 }

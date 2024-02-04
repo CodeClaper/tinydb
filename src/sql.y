@@ -34,6 +34,7 @@ int yylex();
    ScalarExpSetNode         *scalar_exp_set_node;
    FunctionValueNode        *function_value_node;
    FunctionNode             *function_node;
+   CalculateNode            *calculate_node;
    PrimaryKeyNode           *primary_key_node;
    AssignmentNode           *assignment_node;
    AssignmentSetNode        *assignment_set_node;
@@ -56,8 +57,8 @@ int yylex();
 
 %left OR
 %left AND
-%left '+' '-'
-%left '*' '/'  
+%left PLUS MINUS
+%left ASTERISK SOLIDUS  
 
 %token NL
 %token <keyword> BEGINN COMMIT ROLLBACK
@@ -79,7 +80,7 @@ int yylex();
 %token <keyword> PRIMARY KEY
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> AND OR NOT
-%token <keyword> ALL
+%token <keyword> ASTERISK SOLIDUS PLUS MINUS
 %token <keyword> COMMA SEMICOLON QUOTE POINT LEFTPAREN RIGHTPAREN
 %token <keyword> SYSTEM CONFIG MEMORY
 %token <s_value> IDENTIFIER
@@ -113,6 +114,7 @@ int yylex();
 %type <function_value_node> function_value
 %type <function_value_node> non_all_function_value
 %type <function_node> function
+%type <calculate_node> calculate
 %type <select_node> select_statement
 %type <insert_node> insert_statement
 %type <update_node> update_statement
@@ -321,7 +323,7 @@ select_items:
             select_items_node->function_node = $1;
             $$ = select_items_node;
         }
-    | ALL 
+    | ASTERISK 
         {
             SelectItemsNode *select_items_node = make_select_items_node();
             select_items_node->type = SELECT_ALL;
@@ -336,7 +338,7 @@ selection:
             selection_node->scalar_exp_set = $1;
             $$ = selection_node;
         }
-    | ALL
+    | ASTERISK
         {
             SelectionNode *selection_node = make_selection_node();
             selection_node->all_column = true;
@@ -363,7 +365,14 @@ scalar_exp_commalist:
         }
     ;
 scalar_exp:
-    column
+    calculate
+        {
+            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            scalar_exp_node->type = SCALAR_CALCULATE;
+            scalar_exp_node->calculate = $1;
+            $$ = scalar_exp_node;
+        }
+    | column
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_COLUMN;
@@ -380,6 +389,40 @@ scalar_exp:
     | LEFTPAREN scalar_exp RIGHTPAREN
         {
             $$ = $1;
+        }
+    ;
+calculate:
+    scalar_exp PLUS scalar_exp
+        {
+            CalculateNode *calculate_node = make_calculate_node();
+            calculate_node->type = CAL_ADD;
+            calculate_node->left = $1;
+            calculate_node->right = $3;
+            $$ = calculate_node;
+        }
+    | scalar_exp MINUS scalar_exp
+        {
+            CalculateNode *calculate_node = make_calculate_node();
+            calculate_node->type = CAL_SUB;
+            calculate_node->left = $1;
+            calculate_node->right = $3;
+            $$ = calculate_node;
+        }
+    | scalar_exp ASTERISK scalar_exp
+        {
+            CalculateNode *calculate_node = make_calculate_node();
+            calculate_node->type = CAL_MUL;
+            calculate_node->left = $1;
+            calculate_node->right = $3;
+            $$ = calculate_node;
+        }
+    | scalar_exp SOLIDUS scalar_exp
+        {
+            CalculateNode *calculate_node = make_calculate_node();
+            calculate_node->type = CAL_DIV;
+            calculate_node->left = $1;
+            calculate_node->right = $3;
+            $$ = calculate_node;
         }
     ;
 columns:
@@ -756,7 +799,7 @@ function_value:
             node->value_type = V_COLUMN;
             $$ = node;
         }
-    | ALL
+    | ASTERISK
         {
             FunctionValueNode *node = make_function_value_node();
             node->value_type = V_ALL;

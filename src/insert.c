@@ -60,7 +60,7 @@ static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable 
 /* Get the index of column in the insert node. */
 static int get_column_index(InsertNode *insert_node, char *column_name) {
     int i;
-    for (i = 0;  i <insert_node->columns_set_node->size; i++) {
+    for (i = 0; i <insert_node->columns_set_node->size; i++) {
         ColumnNode *column_node = insert_node->columns_set_node->columns[i];
         if (strcmp(column_node->column_name, column_name) == 0)
             return i;
@@ -72,7 +72,7 @@ static int get_column_index(InsertNode *insert_node, char *column_name) {
 static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column, DBResult *result) {
 
     /* Get value item node at index. */
-    ValueItemNode* value_item_node = *(insert_node->value_item_set_node->value_item_node + index);
+    ValueItemNode* value_item_node = insert_node->value_item_set_node->value_item_node[index];
 
     /* Different data type column, has diffrenet way to get value.
      * Data type CHAR, STRING, DATE, TIMESTAMP both use '%s' format to pass value.
@@ -80,21 +80,21 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     switch(meta_column->column_type) {
         case T_CHAR:
         case T_STRING:
-            return db_strdup((char *)value_item_node->s_value);
+            return copy_value(value_item_node->s_value, meta_column->column_type);
         case T_INT:
         case T_LONG:
-            return &(value_item_node->i_value);
+            return copy_value(&value_item_node->i_value, meta_column->column_type);
         case T_BOOL:
-            return &(value_item_node->b_value);
+            return copy_value(&value_item_node->b_value, meta_column->column_type);
         case T_DOUBLE: {
             switch(value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->d_value = value_item_node->i_value;
+                    value_item_node->d_value = (double)value_item_node->i_value;
                 case T_FLOAT:
-                    value_item_node->d_value = value_item_node->f_value;
+                    value_item_node->d_value = (double)value_item_node->f_value;
                 case T_DOUBLE:
                     value_item_node->data_type = T_DOUBLE;
-                    return &value_item_node->d_value;
+                    return copy_value(&value_item_node->d_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -103,10 +103,10 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_FLOAT: {
             switch(value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->f_value = value_item_node->i_value;
+                    value_item_node->f_value = (float) value_item_node->i_value;
                 case T_FLOAT:
                     value_item_node->data_type = T_FLOAT;
-                    return &value_item_node->f_value;
+                    return copy_value(&value_item_node->f_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -125,7 +125,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                     db_free(tmp_time);
                 }
                 case T_DATE:
-                    return &value_item_node->t_value;
+                    return copy_value(&value_item_node->t_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -141,7 +141,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
                     db_free(tmp_time);
                 }
                 case T_TIMESTAMP:
-                    return &value_item_node->t_value;
+                    return copy_value(&value_item_node->t_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -198,7 +198,8 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         MetaColumn *meta_column = meta_table->meta_column[i];
 
         /* Ship system reserved. */
-        if (meta_column->sys_reserved) continue;
+        if (meta_column->sys_reserved) 
+            continue;
 
         KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = db_strdup(meta_column->column_name);

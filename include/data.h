@@ -9,11 +9,10 @@
 
 #define PAGE_SIZE 4096
 #define MAX_TABLE_PAGE 10000
-#define MAX_COLUMN_SIZE 25     // max column size
+#define MAX_COLUMN_SIZE 256    // max column size
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define BUFF_SIZE 1024
 
-#define MAX_COLUMN_SIZE 25
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define MAX_TABLE_NAME_LEN 30
 
@@ -34,6 +33,7 @@ typedef enum SysDataType{
     SDT_COLUMN_SET_NODE,
     SDT_FUNCTION_VALUE_NODE,
     SDT_FUNCTION_NODE,
+    SDT_CALCULATE_NODE,
     SDT_SELECT_ITEMS_NODE,
     SDT_SELECTION_NODE,
     SDT_SCALAR_EXP_SET_NODE,
@@ -106,6 +106,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "COLUMN_SET_NODE",\
    "FUNCTION_VALUE_NODE",\
    "FUNCTION_NODE",\
+   "CALCULATE_NODE",\
    "SELECT_ITEMS_NODE",\
    "SELECTION_NODE",\
    "SCALAR_EXP_SET_NODE",\
@@ -247,20 +248,20 @@ typedef enum { READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE }
 typedef enum DDLType { DDL_INSERT,  DDL_UPDATE, DDL_DELETE } DDLType;
 
 /* ColumnNode */
-typedef struct {
+typedef struct ColumnNode {
     char *column_name;
     char *sub_column_name;
     bool *has_sub_column;
 } ColumnNode;
 
 /* ColumnSetNode */
-typedef struct {
+typedef struct ColumnSetNode {
   ColumnNode **columns;
   uint32_t size;
 } ColumnSetNode;
 
 /* FunctionValueType */
-typedef struct {
+typedef struct FunctionValueNode {
   FunctionValueType value_type;
   union {
     int32_t i_value;
@@ -269,10 +270,25 @@ typedef struct {
 } FunctionValueNode;
 
 /* FunctionNode */
-typedef struct {
+typedef struct FunctionNode {
     FunctionType type;
     FunctionValueNode *value;
 } FunctionNode;
+
+/* CalculateType */
+typedef enum CalculateType {
+    CAL_ADD,
+    CAL_SUB,
+    CAL_MUL,
+    CAL_DIV
+} CalculateType;
+
+/* CalculateNode */
+typedef struct CalculateNode {
+    CalculateType type;
+    struct ScalarExpNode *left;
+    struct ScalarExpNode *right;
+} CalculateNode;
 
 /* SelectItemsNode */
 typedef struct {
@@ -295,6 +311,7 @@ typedef struct ScalarExpSetNode {
 
 /* ScalarExpType */
 typedef enum ScalarExpType {
+    SCALAR_CALCULATE,
     SCALAR_COLUMN,
     SCALAR_FUNCTION
 } ScalarExpType;
@@ -303,6 +320,7 @@ typedef enum ScalarExpType {
 typedef struct ScalarExpNode {
     ScalarExpType type;
     union {
+        CalculateNode *calculate;
         ColumnNode *column;
         FunctionNode *function;
     };
@@ -530,7 +548,7 @@ typedef struct {
 /* MetaTable */
 typedef struct MetaTable {
     char *table_name;
-    MetaColumn *meta_column[MAX_COLUMN_SIZE];
+    MetaColumn **meta_column;
     uint32_t column_size;       /* size of column, excluding system reserved columns. */
     uint32_t all_column_size;   /* sizo of column, including system reserved columns. */
 } MetaTable;
@@ -602,9 +620,6 @@ typedef struct SelectResult {
     int32_t row_index;  /* current row index. */
     int32_t limit_index;/* Current limit index. */
     Row **rows;         /* Selected rows. */
-    Row *max_row;       /* The max row, used in funciton max. */
-    Row *min_row;       /* The min row, used in funciton min. */
-    double sum;         /* The sum value, used in function sum. */
 } SelectResult;
 
 

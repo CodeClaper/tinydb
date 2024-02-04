@@ -72,11 +72,6 @@ void free_select_result(SelectResult *select_result) {
             free_row(select_result->rows[i]);
         }
         db_free(select_result->rows);
-    
-        /* max row or min row. */
-        free_row(select_result->max_row);
-        free_row(select_result->min_row);
-
         db_free(select_result);
     }
 }
@@ -94,6 +89,12 @@ void free_meta_table(MetaTable *meta_table) {
         if (meta_table->table_name) {
             db_free(meta_table->table_name);
         }
+        int i;
+        for (i = 0; i < meta_table->all_column_size; i++) {
+            free_meta_column(meta_table->meta_column[i]);
+        }
+        db_free(meta_table->meta_column);
+        db_free(meta_table);
     }
 }
 
@@ -355,7 +356,12 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
             case SCALAR_FUNCTION:
                 free_function_node(scalar_exp_node->function);
                 break;
+            case SCALAR_CALCULATE:
+                free_scalar_exp_node(scalar_exp_node->calculate->left);
+                free_scalar_exp_node(scalar_exp_node->calculate->right);
+                break;
         }
+        db_free(scalar_exp_node);
     }
 }
 
@@ -457,8 +463,10 @@ void free_ast_node(ASTNode *node) {
             free_update_node(node->update_node);
             break;
         case DELETE_STMT:
+            free_delete_node(node->delete_node);
             break;
         case CREATE_TABLE_STMT:
+            free_create_table_node(node->create_table_node);
             break;
         case DROP_TABLE_STMT:
             break;
@@ -483,8 +491,9 @@ void free_statment(Statement *stmt) {
 /* Free table list */
 void free_table_list(TableList *table_list) {
     if (table_list) {
-        for (uint32_t i = 0; i < table_list->count; i++) {
-            db_free(*(table_list->table_name_list + i));
+        int i;
+        for (i = 0; i < table_list->count; i++) {
+            db_free(table_list->table_name_list[i]);
         }
         db_free(table_list->table_name_list);
         db_free(table_list);

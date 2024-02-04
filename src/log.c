@@ -176,7 +176,7 @@ void db_log(LogLevel lev, char *format, ...) {
     /* Only print higher level log. */
     if (lev >= conf->log_level) {
         char *sys_time = get_sys_time("%Y-%m-%d %H:%M:%S");
-        char buff[BUFF_SIZE];
+        char buff[BUFF_SIZE * 2];
         sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[lev], message);
 #ifdef DEBUG
         fprintf(stdout, "%s", buff);

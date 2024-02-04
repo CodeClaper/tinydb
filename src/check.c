@@ -19,6 +19,9 @@
 /* Check ValueItemSetNode. */
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node);
 
+/* Check ScalarExpNode. */
+static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
+
 /* Check ident node. */
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
     int i;
@@ -74,9 +77,6 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
 /* Check value if valid. 
  * Because, CHAR, DATE, TIMESTAMP use '%s' format to pass value, thus check it. */
 static bool check_value_valid(MetaColumn *meta_column, void* value) {
-    if (value == NULL) {
-        return false;
-    }
     switch(meta_column->column_type) {
         case T_BOOL:
         case T_INT:
@@ -86,6 +86,8 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
         case T_REFERENCE:
             return true;
         case T_CHAR: {
+            if (value == NULL)
+                return false;
             /* For CHAR type, only allow one character. */
             size_t len = strlen((char *) value);
             if (len != 1)
@@ -93,12 +95,16 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             return len == 1;
         }
         case T_STRING: {
+            if (value == NULL)
+                return false;
             size_t size = strlen(value);
             if (size > meta_column->column_length)
                 db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'\n", size, meta_column->column_length, meta_column->column_name);
             return size <= meta_column->column_length;
         }
         case T_TIMESTAMP: {   
+            if (value == NULL)
+                return false;
             /* when data type is TIMESTAMP, user`s input is a STIRNG type. */
             regex_t reegex;
             int comp_result, exe_result;
@@ -115,6 +121,8 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             return exe_result == REG_NOERROR;
         }
         case T_DATE: {
+            if (value == NULL)
+                return false;
             /* When data type is DATE, user`s input is a STRING type. */
             regex_t reegex;
             int comp_result, exe_result;
@@ -186,6 +194,12 @@ static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *met
     return true;
 }
 
+/* Check CalculateNode. */
+static bool check_calculate_node(MetaTable *meta_table, CalculateNode *calculate_node) {
+    return check_scalar_exp(calculate_node->left, meta_table) 
+            && check_scalar_exp(calculate_node->right, meta_table);
+}
+
 /* Check ScalarExpNode. */
 static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
     switch (scalar_exp->type) {
@@ -193,6 +207,8 @@ static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
             return check_column_node(meta_table, scalar_exp->column);
         case SCALAR_FUNCTION:
             return check_function_node(meta_table, scalar_exp->function);
+        case SCALAR_CALCULATE:
+            return check_calculate_node(meta_table, scalar_exp->calculate);
     }
 }
 

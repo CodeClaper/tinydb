@@ -65,8 +65,6 @@ static void statement_insert(Statement *stmt, DBResult *result) {
         result->success = true;
         result->rows = 1;
         db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->ast_node->insert_node->table_name);
-    } else {
-        result->success = false;
     }
 }
 

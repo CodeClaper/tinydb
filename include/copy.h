@@ -2,10 +2,10 @@
 #include "data.h"
 
 /* Copy value. */
-void *copy_value(void *value, DataType data_type, MetaColumn *meta_column); 
+void *copy_value(void *value, DataType data_type); 
 
 /* Copy Key value pair. */
-KeyValue *copy_key_value(KeyValue *key_value, MetaTable *meta_table);
+KeyValue *copy_key_value(KeyValue *key_value);
 
 /* Copy refer. */
 Refer *copy_refer(Refer *refer);
@@ -57,6 +57,9 @@ SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node);
 
 /* Copy SelectionNode. */
 SelectionNode *copy_selection_node(SelectionNode *selection_node);
+
+/* Copy a ScalarExpNode. */
+ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node);
 
 /* Copy query param. */
 QueryParam *copy_query_param(QueryParam *query_param);

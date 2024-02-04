@@ -9,7 +9,6 @@
  * =============================================================================================================================
  * */
 
-#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include "data.h"
@@ -43,10 +42,9 @@ DBResult *new_db_result() {
 /* Send out row. */
 static void db_send_row(Row *row) {
     db_send("{ ");
-    int i = 0;
-    for(i =0; i <row->column_len; i++) {
-
-        KeyValue *key_value = *(row->data + i);
+    int i;
+    for(i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
         switch (key_value->data_type) {
             /* Specially deal with T_REFERENCE data. */
             case T_REFERENCE: {
@@ -59,9 +57,9 @@ static void db_send_row(Row *row) {
                 if (sub_row == NULL || row_is_deleted(sub_row)) 
                     db_send("null");
                 else {
-                    Row *sim_row = copy_row_without_reserved(sub_row);
-                    db_send_row(sim_row);
-                    free_row(sim_row);
+                    Row *slim_row = copy_row_without_reserved(sub_row);
+                    db_send_row(slim_row);
+                    free_row(slim_row);
                 }
 
                 free_row(sub_row);
@@ -112,7 +110,6 @@ static void db_send_select_result(DBResult *result) {
             /* Send out row. */
             Row *row = select_result->rows[i];
             db_send_row(row);
-
             if (i < select_result->row_size - 1)
                 db_send(", ");
         }
@@ -138,10 +135,10 @@ static void db_send_nondata_result(DBResult *result) {
 /* Send out db show tables result. */
 static void db_send_map_list(DBResult *result) {
     MapList *map_list = (MapList *)result->data;
-
     db_send("{ \"success\": %s, \"message\": \"%s\", \"data\": ", result->success ? "true" : "false", get_log_msg());
     map_list->size == 1 ? db_send("") : db_send("[");
-    uint32_t i = 0;
+
+    int i;
     for(i = 0; i < map_list->size; i++) {
         Map *map = map_list->data[i];
         db_send_map(map);
