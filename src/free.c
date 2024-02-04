@@ -441,6 +441,24 @@ void free_create_table_node(CreateTableNode *create_table_node) {
     }
 }
 
+/* Free DropTableNode. */
+void free_drop_table_node(DropTableNode *drop_table_node) {
+    if (drop_table_node) {
+        if (drop_table_node->table_name)
+            db_free(drop_table_node->table_name);
+        db_free(drop_table_node);
+    }
+}
+
+/* Free DescribeNode. */
+void free_describe_node(DescribeNode *describe_node) {
+    if (describe_node) {
+        if (describe_node->table_name)
+            db_free(describe_node->table_name);
+        db_free(describe_node);
+    }
+}
+
 /* Free show tables node. */
 void free_show_tables_node(ShowNode *show_node) {
     if (show_node)
@@ -469,8 +487,10 @@ void free_ast_node(ASTNode *node) {
             free_create_table_node(node->create_table_node);
             break;
         case DROP_TABLE_STMT:
+            free_drop_table_node(node->drop_table_node);
             break;
         case DESCRIBE_STMT:
+            free_describe_node(node->describe_node);
             break;
         case SHOW_STMT:
             free_show_tables_node(node->show_node);
