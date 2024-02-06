@@ -28,7 +28,7 @@
 
 /* Generate new Refer. 
  * Note: if page_num is -1 and cell_num is -1 which means refer null. */
-static Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num) {
+Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num) {
     Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
     strcpy(refer->table_name, table_name);
     refer->page_num = page_num;
@@ -77,12 +77,15 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 
 /* Define Cursor. */
 Cursor *define_cursor(Table *table, void *key) {
+    assert_not_null(key, "Input key can`t be NULL");
     void *root_node = get_page(table->pager, table->root_page_num);
     switch(get_node_type(root_node)) {
         case LEAF_NODE:
             return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
         case INTERNAL_NODE:
             return define_cursor_internal_node(table, root_node, key);
+        default:
+            db_log(PANIC, "Unknown node type.");
     }
 }
 
@@ -90,26 +93,27 @@ Cursor *define_cursor(Table *table, void *key) {
 Refer *define_refer(Row *row) {
     Table *table = open_table(row->table_name);
     Cursor *cursor = define_cursor(table, row->key);
-
-    return convert_refer(cursor);
+    Refer *refer = convert_refer(cursor);
+    free_cursor(cursor);
+    return refer;
 }
 
 /* Fetch Refer. 
- * If found no one or many one, return NULL.
- * */
+ * If found no one or many one, return NULL.  */
 Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     /* Make a fake QueryParam. */
     Table *table = open_table(meta_column->table_name);
 
     /* Make a new SelectResult. */
     SelectResult *select_result = new_select_result(meta_column->table_name);
+
     query_with_condition(condition_node, select_result, count_row, NULL);
+
     /* Prepare enough memory space. */
     select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
     query_with_condition(condition_node, select_result, select_row, NULL);
 
     Refer *refer = NULL;
-
     if (select_result->row_size > 1) 
         db_log(ERROR, "Expect to one reference, but found %d", select_result->row_size);
     else if (select_result->row_size == 1) {
@@ -121,7 +125,6 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
 
     return refer;
 }
-
 
 /* Check if refer null. 
  * If page number is -1 and cell number is -1, it means refer null. */

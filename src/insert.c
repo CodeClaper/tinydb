@@ -224,16 +224,12 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         *(row->data + i) = key_value;
     }
 
-    /* Update row transaction state for insert. */
-    update_transaction_state(row, TR_INSERT);
-
     return row;
 }
 
 /* Execute insert statement. 
  * If successfully, return the Refer which maybe used by other table.
- * If fail, return NULL. 
- * */
+ * If fail, return NULL. */
 Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     
     /* Check if table exists. */
@@ -256,8 +252,16 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
         db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
                get_key_str(row->key, primary_key_meta_column->column_type), insert_node->table_name);
+
+        /* Free unuesed memeory */
+        free_cursor(cursor);
+        free_row(row);
+
         return NULL;
     }
+
+    /* Update row transaction state for insert. */
+    update_transaction_state(row, TR_INSERT);
 
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
@@ -268,7 +272,7 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     /* Free unuesed memeory */
     free_cursor(cursor);
     free_row(row);
-    
+
     return refer;    
 }
 

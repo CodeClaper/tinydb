@@ -241,25 +241,36 @@ static void remove_entry(void *ptr, bool alread_free_ptr) {
 
 /* search entry. */
 static MEntry *search_entry(void *ptr) {
+    int count = 0;
+    MEntry *target = NULL;
     uint32_t index = get_index(ptr, mtable->capacity);
     MEntry *current = mtable->entry_list[index];
     if (current != NULL) {
         do {
-            if (current->ptr == ptr) 
-                return current;
+            if (current->ptr == ptr) {
+                target = current;
+                count++;
+            } 
         } while ((current = current->next));
     }
-    return NULL;
+    if (count > 1) {
+        db_log(PANIC, "Duplicate pointer in mmu for %s", SYS_DATA_TYPE_NAMES[target->stype]);
+    }
+    return target;
 }
 
 /* Register a MEntry */
 static void register_entry(void *ptr, size_t size, SysDataType stype) {
-    assert_null(search_entry(ptr), "System error, pointer [%p] data type [%d] already registered.\n", ptr, stype); 
+    /* Check repeated register. */
+    assert_null(search_entry(ptr), 
+        "System error, pointer [%p] data type [%s] already registered.\n", ptr, SYS_DATA_TYPE_NAMES[stype]); 
+
     MEntry *entry = sys_malloc(sizeof(MEntry));
     entry->ptr = ptr;
     entry->size = size;
     entry->stype = stype;
     entry->next = NULL;
+
     insert_entry(ptr, entry);
 }
 
@@ -271,15 +282,10 @@ static void change_entry(void *old_ptr, void* new_ptr, size_t resize, SysDataTyp
         entry->ptr = new_ptr;
         entry->size = resize;
     } else {
+        /* New ptr already be freed. */
         remove_entry(old_ptr, true);
         register_entry(new_ptr, resize, stype);
     }
-}
-
-/* Free MEntry
- * First check if exist, only exists then free, avoid to double free. */
-static void unregister_entry(void *ptr) {
-     remove_entry(ptr, false);
 }
 
 /* System level mallocate. */
@@ -321,7 +327,7 @@ void *db_realloc(void *ptr, size_t size) {
     assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
 
     MEntry *entry = search_entry(ptr);
-    assert_not_null(entry, "System error, searhc entry [%p] fail", ptr);
+    assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
 
     /* When size is zero, realloc return null, which is not we need. */
     if (size == 0) {
@@ -349,7 +355,7 @@ char *db_strdup(char *str) {
 /* Database level mememory free. */
 void db_free(void *ptr) {
     if (ptr)
-        unregister_entry(ptr);
+        remove_entry(ptr, false);
 }
 
 /* Databese level mememory size. */

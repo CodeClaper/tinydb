@@ -55,63 +55,78 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
         case T_BOOL: {
             uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": %s", key, (*(bool *)value ? "true" : "false"));
+            sprintf(s, "\"%s\": %s", key, value && (*(bool *)value ? "true" : "false"));
             return s;
         }
         case T_INT: {
             uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": %d", key, *(int32_t *)value);
+            sprintf(s, "\"%s\": %d", key, value ? *(int32_t *)value : 0);
             return s;
         }
         case T_LONG: {
             uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": %" PRIu64, key, *(int64_t *)value);
+            sprintf(s, "\"%s\": %" PRIu64, key, value ? *(int64_t *)value : 0);
             return s;
         }
         case T_CHAR: {
             uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/ 
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": \"%c\"", key, *(char *)value);
+            sprintf(s, "\"%s\": \"%c\"", key, value ? *(char *)value: "null");
             return s;
         }
         case T_STRING: {
-            uint32_t len = strlen(key) + 6 + strlen(value); /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": \"%s\"", key, (char *)value);
-            return s;
+            if (value) {
+                uint32_t len = strlen(key) + 6 + strlen(value); /*len = key len + symbol len + value len.*/
+                char *s = db_malloc(len, SDT_STRING);
+                sprintf(s, "\"%s\": \"%s\"", key, value ? (char *)value : "null");
+                return s;
+            } else {
+                uint32_t len = strlen(key) + 10 ; /*len = key len + symbol len + value len.*/
+                char *s = db_malloc(len, SDT_STRING);
+                sprintf(s, "\"%s\": \"%s\"", key, "null");
+                return s;
+            }
         }
         case T_FLOAT: {
             uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": %f", key, *(float *)value);
+            sprintf(s, "\"%s\": %f", key, value ? *(float *)value : 0);
             return s;
         }
         case T_DOUBLE: {
             uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": %lf", key, *(double *)value);
+            sprintf(s, "\"%s\": %lf", key, value ? *(double *)value : 0);
             return s;
         }
         case T_TIMESTAMP: {
             char temp[90];
             uint32_t len = strlen(key) + 30; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
-            time_t t = *(time_t *)value;
-            struct tm *tmp_time = localtime(&t);
-            strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
-            sprintf(s, "\"%s\": \"%s\"", key, temp);
+            if (value) {
+                time_t t = *(time_t *)value;
+                struct tm *tmp_time = localtime(&t);
+                strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
+                sprintf(s, "\"%s\": \"%s\"", key, temp);
+            } else {
+                sprintf(s, "\"%s\": \"%s\"", key, "null");
+            }
             return s;
         }
         case T_DATE: {
             char temp[90];
             uint32_t len = strlen(key) + 4 + 100; /*len =key len + symbol len + value len*/
             char *s = db_malloc(len, SDT_STRING);
-            time_t t = *(time_t *)value;
-            struct tm *tmp_time = localtime(&t);
-            strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
-            sprintf(s, "\"%s\": \"%s\"", key, temp);
+            if (value) {
+                time_t t = *(time_t *)value;
+                struct tm *tmp_time = localtime(&t);
+                strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
+                sprintf(s, "\"%s\": \"%s\"", key, temp);
+            } else {
+                sprintf(s, "\"%s\": \"%s\"", key, "null");
+            }
             return s;
         }
         default:

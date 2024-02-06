@@ -460,7 +460,7 @@ QueryParam *copy_query_param(QueryParam *query_param) {
 
 /* Copy a dymamic memory block */
 void *copy_block(void *value, size_t size) {
-    void * value_copy = db_malloc(size, SDT_VOID);
-    memcpy(value_copy, value, size);
-    return value_copy;
+    void * block = db_malloc(size, SDT_VOID);
+    memcpy(block, value, size);
+    return block;
 }

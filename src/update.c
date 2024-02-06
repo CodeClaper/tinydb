@@ -20,33 +20,6 @@
 #include "ret.h"
 #include "log.h"
 
-/* Adapt to column set node data type. */
-static ColumnSetNode *adapt_column_set_node(Table *table) {
-
-    ColumnSetNode *column_set_node = db_malloc(sizeof(ColumnSetNode), SDT_COLUMN_SET_NODE);
-    MetaTable *meta_table = table->meta_table;
-    column_set_node->size = meta_table->column_size;
-    column_set_node->columns = db_malloc(sizeof(ConditionNode *) * column_set_node->size, SDT_POINTER);
-
-    int i;
-    for (i = 0; i < column_set_node->size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-        ColumnNode *column_node = db_malloc(sizeof(ColumnNode), SDT_COLUMN_NODE);
-        column_node->has_sub_column = false;
-        column_node->column_name = db_strdup(meta_column->column_name);
-        column_set_node->columns[i] = column_node;
-    }
-
-    return column_set_node;
-}
-
-/* Adapt to select items node data type.*/
-static SelectItemsNode *adapt_select_items_node(UpdateNode *update_node, Table *table) {
-    SelectItemsNode *select_items_node = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
-    select_items_node->type = SELECT_COLUMNS;
-    select_items_node->column_set_node = adapt_column_set_node(table);
-    return select_items_node;
-}
 
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node) {
@@ -119,11 +92,14 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
                 Cursor *old_cursor = define_cursor(table, old_key);
                 delete_leaf_node_cell(old_cursor, old_key); 
                 free_value(old_key, meta_column->column_type);
+                free_cursor(old_cursor);
 
                 /* Re-insert the updated one. */
                 Cursor *new_cursor = define_cursor(table, new_key);
                 row->key = new_key;
                 insert_leaf_node_cell(new_cursor, row); 
+                free_cursor(new_cursor);
+
             }
         } else { 
             /* When it is non-key column, just update the cell value. */
@@ -133,6 +109,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
             void *destination = serialize_row_data(row, table);
             memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
             flush_page(table->pager, cursor->page_num);
+            free_cursor(cursor);
         }
     }
 }

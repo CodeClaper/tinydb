@@ -1,5 +1,9 @@
 #include "data.h"
 
+/* Generate new Refer. 
+ * Note: if page_num is -1 and cell_num is -1 which means refer null. */
+Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num);
+
 /* Generate new cursor. */
 Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num);
 

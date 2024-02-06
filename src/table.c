@@ -126,8 +126,7 @@ bool create_table(MetaTable *meta_table, DBResult *result) {
 }
 
 /* Open a table file. 
- * Return Table or NULL if not exists.
- * */
+ * Return Table or NULL if not exists. */
 Table *open_table(char *table_name) {
 
     /* Check valid. */

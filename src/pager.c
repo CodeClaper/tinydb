@@ -34,7 +34,7 @@ Pager *open_pager(char *table_file_path){
     if (file_length % PAGE_SIZE != 0) {
         db_log(PANIC, "Db file is not a whole number pages");
     }
-    for(uint32_t i = 0; i < MAX_TABLE_PAGE ; i++) {
+    for(int i = 0; i < MAX_TABLE_PAGE; i++) {
         pager->pages[i] = NULL;
     }
     return pager;

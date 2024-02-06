@@ -9,6 +9,7 @@
 #include "data.h"
 #include "table.h"
 #include "log.h"
+#include "free.h"
 #include "ltree.h"
 #include "pager.h"
 #include "meta.h"
@@ -83,8 +84,11 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
         case T_LONG:
         case T_FLOAT:
         case T_DOUBLE:
-        case T_REFERENCE:
             return true;
+        case T_REFERENCE: {
+            free_refer(value);
+            return true;
+        }
         case T_CHAR: {
             if (value == NULL)
                 return false;
@@ -445,7 +449,12 @@ bool check_insert_node(InsertNode *insert_node) {
             if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
                 return false;
             /* Checke value valid. */
-            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column)))
+            void *value = get_value_from_value_item_node(value_item_node, meta_column);
+            if (value == NULL) {
+                db_log(ERROR, "Not allowed null for column %s in table %s", meta_column->column_name, meta_column->table_name);
+                return false;
+            }
+            if (!check_value_valid(meta_column, value))
                 return false;
         }
     } else {

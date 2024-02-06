@@ -245,7 +245,7 @@ typedef enum LockMode { RD_MODE, WR_MODE } LockMode;
 typedef enum { READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE } TransIsolationLevel;
 
 /* DDL Type. */
-typedef enum DDLType { DDL_INSERT,  DDL_UPDATE, DDL_DELETE } DDLType;
+typedef enum DDLType { DDL_INSERT, DDL_UPDATE, DDL_DELETE } DDLType;
 
 /* ColumnNode */
 typedef struct ColumnNode {
@@ -564,6 +564,7 @@ typedef struct Table {
 typedef struct TableCache {
     Table **table_list;
     uint32_t size;
+    int64_t tid;
 }TableCache;
 
 /* TableList */

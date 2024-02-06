@@ -180,22 +180,34 @@ static bool include_internal_comparison_predicate(void *min_key, void *max_key, 
     if (target_key == NULL)
         return false;
     DataType data_type = meta_column->column_type;
+
+    bool result = false;
     switch (comparison->type) {
         case O_EQ:
-            return less(min_key, target_key, data_type) && less_equal(target_key, max_key, data_type);
+            result = less(min_key, target_key, data_type) && less_equal(target_key, max_key, data_type);
+            break;
         case O_NE:
-            return !(less(min_key, target_key, data_type) && less_equal(target_key, max_key, data_type));
+            result = !(less(min_key, target_key, data_type) && less_equal(target_key, max_key, data_type));
+            break;
         case O_GT:
-            return greater(max_key, target_key, data_type);
+            result = greater(max_key, target_key, data_type);
+            break;
         case O_GE:
-            return greater_equal(max_key, target_key, data_type);
+            result = greater_equal(max_key, target_key, data_type);
+            break;
         case O_LT:
-            return greater(target_key, min_key, data_type);
+            result = greater(target_key, min_key, data_type);
+            break;
         case O_LE:
-            return greater(target_key, min_key, data_type);
+            result = greater(target_key, min_key, data_type);
+            break;
         default:
             db_log(PANIC, "Unknown compare type.");
     }
+
+    if (meta_column->column_type == T_REFERENCE)
+        free_refer((Refer *) target_key);
+    return result;
 }
 
 
@@ -270,29 +282,43 @@ static bool include_logic_leaf_node(void *destinct, ConditionNode *condition_nod
 
 /* Check if include leaf node satisfy comparison predicate. */
 static bool include_leaf_comparison_predicate(void *destinct, ComparisonNode *comparison, MetaTable *meta_table) {
-    int i; uint32_t off_set = 0;
+    bool ret = false;
+    uint32_t off_set = 0;
+    int i; 
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         /* Define the column. */
         if (strcmp(meta_column->column_name, comparison->column->column_name) == 0) {
             void *value = destinct + off_set;
             void *target = get_value_from_value_item_node(comparison->value, meta_column);
-            return eval(comparison->type, value, target, meta_column->column_type);
+            ret = eval(comparison->type, value, target, meta_column->column_type);
+
+            /* Reference data is allocated, so free it. */
+            if (meta_column->column_type == T_REFERENCE)
+                free_refer(target);
+            break;
         }
         off_set += meta_column->column_length;
     }
-    return false;
+    return ret;
 }
 
 /* Check if include in value item set. */
 static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void *value, MetaColumn *meta_column) {
+    bool ret = false;
     int i;
     for (i = 0; i < value_item_set_node->num; i++) {
         void *target = get_value_from_value_item_node(value_item_set_node->value_item_node[i], meta_column);
-        if (equal(value, target, meta_column->column_type))
-            return true;
+        ret = equal(value, target, meta_column->column_type);
+
+        /* Reference data is allocated, so free it. */
+        if (meta_column->column_type == T_REFERENCE)
+            free_refer(target);
+
+        if (ret)
+            break;
     }
-    return false;
+    return ret;
 }
 
 /* Check if include leaf node satisfy in predicate. */
@@ -338,7 +364,10 @@ static bool check_like_string_value(char *value, char *target) {
 
 /* Check if include leaf node satisfy like predicate. */
 static bool include_leaf_like_predicate(void *destinct, LikeNode *like_node, MetaTable *meta_table) {
-    int i; uint32_t off_set = 0;
+    bool ret = false;
+    uint32_t off_set = 0;
+
+    int i; 
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
 
@@ -346,11 +375,17 @@ static bool include_leaf_like_predicate(void *destinct, LikeNode *like_node, Met
         if (strcmp(meta_column->column_name, like_node->column->column_name) == 0) {
             void *value = destinct + off_set;
             void *target = get_value_from_value_item_node(like_node->value, meta_column);
-            return check_like_string_value(value, target);
+            ret = check_like_string_value(value, target);
+
+            /* Reference data is allocated, so free it. */
+            if (meta_column->column_type == T_REFERENCE)
+                free_refer(target);
+
+            break;
         }
         off_set += meta_column->column_length;
     }
-    return false;
+    return ret;
 }
 
 /* Check if include leaf node if the condition is exec condition. */
@@ -421,18 +456,19 @@ static Row *generate_row(void *destinct, MetaTable *meta_table) {
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
 
-        uint32_t off_set = calc_offset(meta_table, meta_column->column_name);
+        /* Get the column offset. */
+        uint32_t offset = calc_offset(meta_table, meta_column->column_name);
         
         /* Generate a key value pair. */
         KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value->key = db_strdup(meta_column->column_name);
-        key_value->value = copy_value(destinct + off_set, meta_column->column_type);
+        key_value->value = copy_value(destinct + offset, meta_column->column_type);
         key_value->data_type = meta_column->column_type;
 
         row->data[i] = key_value;
 
         if (meta_column->is_primary)
-            row->key = copy_value(destinct + off_set, meta_column->column_type);
+            row->key = copy_value(destinct + offset, meta_column->column_type);
     }
 
     return row;
@@ -477,13 +513,14 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
 
     int i;
     for (i = 0; i < cell_num; i++) {
-    
+
         /* Get leaf node cell value. */
         void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
 
         /* Check if the row data include, in another word, check if the row data satisfy the condition. */
-        if (!include_leaf_node(destinct, condition, table->meta_table))
+        if (!include_leaf_node(destinct, condition, table->meta_table)) {
             continue;
+        }
 
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, table->meta_table);
@@ -495,12 +532,14 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         free_row(row);
     }
     
-    /* Free useless pointer. */
-    db_free(leaf_node_snapshot);
+    /* Free useless memory. */
+    free_block(leaf_node_snapshot);
 }
 
 /* Select through internal node. */
-static void select_from_internal_node(SelectResult *select_result, ConditionNode *condition, void *internal_node, Table *table, ROW_HANDLER row_handler, void *arg) {
+static void select_from_internal_node(SelectResult *select_result, ConditionNode *condition, uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
+
+    void *internal_node = get_page(table->pager, page_num);
 
     /* Get keys number, key length. */
     uint32_t keys_num, key_len;
@@ -509,15 +548,19 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 
     /* It`s necessary to use internal node snapshot, beacuse when traversing cells, 
      * update or delete operation will change the data structure of internal node,
-     * which may causes bug.*/
+     * which may causes bug. */
     void *internal_node_snapshot = copy_block(internal_node, PAGE_SIZE);
 
-    /* Loop for each interanl node cell to check if satisfy condition. */
+    /* Loop each interanl node cell to check if satisfy condition. */
     int i;
     for (i = 0; i < keys_num; i++) {
+    
+        uint32_t now_keys_num = get_internal_node_keys_num(internal_node);
+        assert_true(keys_num == now_keys_num, "Keys number changed, %d != %d", keys_num, now_keys_num);
+
         /* Check if index column, use index to avoid full text scanning. */
         {
-            /* Current internal node cell key as max key, previous cell key as min key */
+            /* Current internal node cell key as max key, previous cell key as min key. */
             void *max_key = get_internal_node_key(internal_node_snapshot, i, key_len); 
             void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node_snapshot, i - 1, key_len);
 
@@ -533,7 +576,10 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                 select_from_leaf_node(select_result, condition, page_num, table, row_handler, arg);
                 break;
             case INTERNAL_NODE:
-                select_from_internal_node(select_result, condition, node, table, row_handler, arg);
+                select_from_internal_node(select_result, condition, page_num, table, row_handler, arg);
+                break;
+            default:
+                db_log(PANIC, "Unknown node type.");
                 break;
         }
     }
@@ -542,20 +588,24 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     uint32_t right_child_page_num = get_internal_node_right_child(internal_node_snapshot);
 
     /* Zero means there is no page. */
-    if (right_child_page_num == 0) 
+    if (right_child_page_num == 0) {
+        free_block(internal_node_snapshot);
         return;
+    } 
+    
+    /* Fetch right child. */
     void *right_child = get_page(table->pager, right_child_page_num);
     switch (get_node_type(right_child)) {
         case LEAF_NODE:
             select_from_leaf_node(select_result, condition, right_child_page_num, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, condition, right_child, table, row_handler, arg);
+            select_from_internal_node(select_result, condition, right_child_page_num, table, row_handler, arg);
             break;
     }
 
-    /* free memory. */
-    db_free(internal_node_snapshot);
+    /* Free memory. */
+    free_block(internal_node_snapshot);
 }
 
 /* Convert from select node to query param */
@@ -590,8 +640,10 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
             select_from_leaf_node(select_result, condition, table->root_page_num, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, condition, root, table, row_handler, arg);
+            select_from_internal_node(select_result, condition, table->root_page_num, table, row_handler, arg);
             break;
+        default:
+            db_log(PANIC, "Unknown data type.");
     }
 }
 
@@ -1593,13 +1645,22 @@ static KeyValue *query_function_calculate_column_value(CalculateNode *calculate,
     return result;
 }
 
+
 /* Query column value. */
 static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *select_result) {
     switch (scalar_exp->type) {
         case SCALAR_COLUMN: {
-            if (select_result->row_size == 0)
-                return NULL;
-            return query_plain_column_value(scalar_exp->column, select_result->rows[0]);
+            ColumnNode *column = scalar_exp->column;
+            if (select_result->row_size == 0) {
+                Table *table = open_table(select_result->table_name);
+                KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+                key_value->key = db_strdup(column->column_name);
+                MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
+                key_value->value = NULL;
+                key_value->data_type = meta_column->column_type;
+                return key_value;
+            }
+            return query_plain_column_value(column, select_result->rows[0]);
         }
         case SCALAR_FUNCTION:
             return query_function_column_value(scalar_exp->function, select_result);
@@ -1732,7 +1793,7 @@ static bool exists_function_scalar_exp(ScalarExpSetNode *scalar_exp_set) {
 
 /* Query selection. */
 static void query_with_selection(SelectionNode *selection, SelectResult *select_result) {
-    if (selection->all_column || select_result->row_size == 0)
+    if (selection->all_column)
         return;
     if (exists_function_scalar_exp(selection->scalar_exp_set)) {
         query_fuction_selecton(selection->scalar_exp_set, select_result);

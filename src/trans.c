@@ -182,6 +182,7 @@ void auto_begin_transaction() {
 
     trans_handle = find_transaction();
     if (trans_handle) {
+        db_log(ERROR, "Not found transaction.");
         return;
     }
 
@@ -256,9 +257,6 @@ void auto_commit_transaction(DBResult *result) {
     if (trans_handle && trans_handle->auto_commit) {
         int64_t xid = trans_handle->xid; 
 
-        /* Commit Xlog. */
-        commit_xlog();
-
         /* Destroy transaction. */
         assert_true(destroy_transaction(trans_handle), "Destroy transaction handle error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
 
@@ -320,7 +318,12 @@ static void transaction_insert_row(Row *row) {
     /* Get current transaction. */
     TransactionHandle *current_trans = find_transaction();
 
-    /* Fro created_xid */
+    if (current_trans == NULL) {
+        db_log(ERROR, "Not found transaction.");
+        return;
+    }
+
+    /* For created_xid */
     KeyValue *created_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     created_xid_col->key = db_strdup("created_xid");
     created_xid_col->value = copy_value(&current_trans->xid, T_LONG);
@@ -335,9 +338,15 @@ static void transaction_insert_row(Row *row) {
     expired_xid_col->data_type = T_LONG;
     row->data[row->column_len - 1] = expired_xid_col;
 
+    /* For auto commit transaction, not record xlog. */
+    if (current_trans->auto_commit)
+        return; 
+
     /* Record insert xlog. */
     Refer *refer = define_refer(row);
     insert_xlog_entry(refer, DDL_INSERT);
+
+    free_refer(refer);
 }
 
 /* Tranasction operation for delete row. */
@@ -349,10 +358,15 @@ static void transaction_delete_row(Row *row) {
     /* Asssign current transaction id to expired_xid. */
     *(int64_t *)row->data[row->column_len - 1]->value = current_trans->xid;
 
+    /* For auto commit transaction, not record xlog. */
+    if (current_trans->auto_commit)
+        return; 
 
     /* Record delete xlog. */
     Refer *refer = define_refer(row);
     insert_xlog_entry(refer, DDL_DELETE);
+
+    free_refer(refer);
 }
 
 /* Update transaction state. */

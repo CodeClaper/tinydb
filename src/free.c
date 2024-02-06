@@ -9,8 +9,16 @@
 
 /* Free value */
 void free_value(void *value, DataType data_type) {
-    if (value)
-        db_free(value);
+    if (value) {
+        switch (data_type) {
+            case T_REFERENCE:
+                free_refer(value);
+                break;
+            default:
+                db_free(value);
+                break;
+        }
+    }
 }
 
 /* Free KeyValue */
@@ -21,6 +29,12 @@ void free_key_value(KeyValue *key_value) {
         free_value(key_value->value, key_value->data_type);
         db_free(key_value);
     } 
+}
+
+/* Free Block. */
+void free_block(void *value) {
+    if (value)
+        db_free(value);
 }
 
 /* Free Refer. */
@@ -48,13 +62,16 @@ void free_row(Row *row) {
         free_value(row->key, primary_meta_column->column_type);
 
         /* free row data. */
-        for(uint32_t i = 0; i < row->column_len; i++) {
+        int i;
+        for(i = 0; i < row->column_len; i++) {
             free_key_value(row->data[i]);
         }
         db_free(row->data);
+
         /* table name. */
         if (row->table_name)
             db_free(row->table_name);
+
         db_free(row);
     }
 }
@@ -283,6 +300,20 @@ void free_comparison_node(ComparisonNode *comparison_node) {
     }
 }
 
+void free_in_node(InNode *in_node) {
+    if (in_node) {
+        free_column_node(in_node->column);
+        free_value_item_set_node(in_node->value_set);
+    }
+}
+
+void free_like_node(LikeNode *like_node) {
+    if (like_node) {
+        free_column_node(like_node->column);
+        free_value_item_node(like_node->value);
+    }
+}
+
 void free_predicate_node(PredicateNode *predicate_node) {
     if (predicate_node) {
         switch (predicate_node->type) {
@@ -290,9 +321,13 @@ void free_predicate_node(PredicateNode *predicate_node) {
                 free_comparison_node(predicate_node->comparison);
                 break;
             case PRE_IN:
+                free_in_node(predicate_node->in);
+                break;
             case PRE_LIKE:
+                free_like_node(predicate_node->like);
                 break;
         }
+        db_free(predicate_node);
     }
 }
 
@@ -302,13 +337,13 @@ void free_condition_node(ConditionNode *condition_node) {
         switch(condition_node->conn_type) {
             case C_OR:
             case C_AND:
+                free_condition_node(condition_node->left);
+                free_condition_node(condition_node->right);
                 break;
             case C_NONE:
                 free_predicate_node(condition_node->predicate);
                 break;
         }
-        free_condition_node(condition_node->left);
-        free_condition_node(condition_node->right);
         db_free(condition_node);
     }
 }

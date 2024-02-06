@@ -6,6 +6,9 @@ void free_value(void *value, DataType data_type);
 /* Free KeyValue */
 void free_key_value(KeyValue *key_value);
 
+/* Free Block. */
+void free_block(void *value);
+
 /* Free row. */
 void free_row(Row *row);
 

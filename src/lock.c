@@ -25,6 +25,8 @@
 #include "ltree.h"
 #include "copy.h"
 #include "free.h"
+#include "refer.h"
+#include "log.h"
 
 
 volatile static LockTable *ltable; /* Store lock handle list. */
@@ -119,7 +121,7 @@ static LockHandle *new_lock_handle(Refer *refer) {
     lock_handle->refer = copy_refer(refer);
     lock_handle->next = NULL;
     lock_handle->shared = 1;
-    /* register new lock handle. */
+    /* Register new lock handle. */
     register_lock_handle(lock_handle);
     return lock_handle;
 }
@@ -156,11 +158,24 @@ LockHandle *db_row_lock(Refer *refer, LockMode lock_mode) {
         case WR_MODE:
             ret = pthread_rwlock_wrlock(&lock_handle->lock);
             break;
+        default:
+            db_log(ERROR, "Unknown Lock Mode.");
+            break;
     }
 
-    /* Check lock result. */
-    assert_true(ret == 0, "Row lock error, errno is %d and error message: %s", errno, strerror(errno));
 
+    /* Check lock result. */
+    assert_true(ret == 0, "Row lock error return %d, errno is %d and error message: %s", ret, errno, strerror(errno));
+
+    return lock_handle;
+}
+
+
+/* Db read row level read mode or write lock. */
+LockHandle *db_row_lock2(Cursor *cursor, LockMode lock_mode) { 
+    Refer *refer = convert_refer(cursor);
+    LockHandle *lock_handle = db_row_lock(refer, lock_mode);
+    free_refer(refer);
     return lock_handle;
 }
 

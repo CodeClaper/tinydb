@@ -757,8 +757,6 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     uint32_t RIGHT_SPLIT_COUNT = (cell_num + 1) / 2;
     uint32_t LEFT_SPLIT_COUNT = (cell_num + 1) - RIGHT_SPLIT_COUNT;
 
-    /* Notice that, when i can be 0, can`t use uintXX_t as index data types
-     * because uintXX_t can be 0, but can`t be negative number, always >= 0, and can`t stop the loop. */
     int i; 
     for (i = cell_num; i >= 0; i--) {
         /* If index greater than LEAF_SPLIT_COUNT, destination is new old, othersize, stay in the old node. */
@@ -1210,7 +1208,7 @@ void *serialize_row_data(Row *row, Table *table) {
     void *destination = db_malloc(row_length, SDT_VOID);
     MetaTable *meta_table = table->meta_table;
     uint32_t offset = 0;
-    for(uint32_t i = 0; i < meta_table->all_column_size; i++) {
+    for(int32_t i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
         void *value = get_row_value(row, meta_column);
         memcpy(destination + offset, value, meta_column->column_length);
