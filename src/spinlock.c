@@ -8,7 +8,7 @@
  * */
 
 #include <unistd.h>
-#include "spin.h"
+#include "spinlock.h"
 
 #define DEFAULT_SPIN_INTERVAL 10
 #define SPIN_LOCKED_STATUS 1

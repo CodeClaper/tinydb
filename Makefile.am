@@ -1,4 +1,7 @@
-SUBDIRS = src
+# For using custom m4 macros.
+ACLOCAL_AMFLAGS = -I m4
+
+SUBDIRS = src test/gtest
 dist_doc_DATA = README.md
 
 check-local:
@@ -9,4 +12,4 @@ clean-local:
 	@rm Makefile
 	@rm -r autom4te.cache/
 	@rm aclocal.m4
-	@rm compile install-sh missing Makefile.in ylwrap depcomp
+	@rm compile install-sh missing Makefile.in depcomp

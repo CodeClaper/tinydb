@@ -1,9 +1,18 @@
 AC_INIT([tinydb, tinydb_cli], [0.1], [jerryzhou.zc@gmail.com])
 AM_INIT_AUTOMAKE([-Wall])
+LT_INIT
+
+AC_CONFIG_MACRO_DIR([m4])
+
 ## CC
 AC_PROG_CC
+## C++
+AC_PROG_CXX
+AC_LANG([C],[C++])
+
 ## python
 AM_PATH_PYTHON
+
 ## LEX
 AC_PROG_LEX(yywrap)
 if test "x$LEX" != xflex; then
@@ -11,9 +20,11 @@ if test "x$LEX" != xflex; then
   AC_SUBST([LEX_OUTPUT_ROOT], [sql.y])
   AC_SUBST([LEXLIB], [''])
 fi
+
 ## YACC
 AC_PROG_YACC
 AS_MKDIR_P
+
 ## GNU Readline library
 AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline],
@@ -37,6 +48,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
  Makefile
  src/Makefile
+ test/gtest/Makefile
 ])
 
 AC_ARG_ENABLE(debug,
