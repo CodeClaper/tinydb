@@ -23,7 +23,6 @@
 #include "cache.h"
 #include "copy.h"
 #include "free.h"
-#include "lock.h"
 #include "refer.h"
 #include "trans.h"
 #include "log.h"

@@ -29,7 +29,6 @@
 #include "table.h"
 #include "asserts.h"
 #include "session.h"
-#include "lock.h"
 #include "trans.h"
 #include "refer.h"
 #include "utils.h"

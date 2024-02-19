@@ -10,7 +10,7 @@
 #include "data.h"
 #include "defs.h"
 #include "mmu.h"
-#include "lock.h"
+#include "rwlock.h"
 #include "trans.h"
 #include "xlog.h"
 #include "parser.h"

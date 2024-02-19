@@ -1,7 +1,7 @@
 /* 
- *====================================Lock Manager ==============================================================
+ *====================================RWLock Manager ==============================================================
  *
- * Lock manager provides a synchronization mechanism for concurrency scenes. 
+ * RWLock manager provides a synchronization mechanism for concurrency scenes. 
  * TinyDb supports two level lock, table level lock and row level lock.
  * Besides, TinyDb supports two mode lock, read (shared) mode and write (exclusive) mode.
  * An exclusive or write lock gives a thread exclusive access for writing to the specified part of the file. 
@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <rwlock.h>
 #include "data.h"
 #include "asserts.h"
 #include "mmu.h"

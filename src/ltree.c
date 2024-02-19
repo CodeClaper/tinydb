@@ -26,7 +26,6 @@
 #include "mmu.h"
 #include "free.h"
 #include "refer.h"
-#include "lock.h"
 #include "common.h"
 #include "asserts.h"
 #include "const.h"
