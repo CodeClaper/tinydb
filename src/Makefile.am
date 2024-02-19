@@ -8,7 +8,7 @@ endif
 LDADD = -lpthread -lm
 bin_PROGRAMS = tinydb \
 			   tinydb_cli
-tinydb_SOURCES = db.c asserts.c asserts.h cache.c cache.h check.c check.h common.h conf.c conf.h const.h \
+tinydb_SOURCES = db.c asserts.c asserts.h buffer.c buffer.h cache.c cache.h check.c check.h common.h conf.c conf.h const.h \
 				 copy.c copy.h create.c create.h data.h defs.h delete.c delete.h desc.c desc.h free.c free.h gc.c gc.h index.c index.h \
 				 insert.c insert.h intpr.c intpr.h lex.yy.c lock.c lock.h log.c log.h mmu.c mmu.h meta.c meta.h \
 				 ltree.c ltree.h compare.c compare.h pager.c pager.h refer.c refer.h ret.c ret.h select.c select.h \
