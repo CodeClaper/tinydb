@@ -10,12 +10,15 @@
 #include "free.h"
 #include "trans.h"
 #include "asserts.h"
+#include "spinlock.h"
 
 /* Save or update table buffer. */
 static bool save_or_update_table_buffer(Table *table);
 
 /* Table Buffer. */
 static TableBuffer *buffer = NULL;
+
+static volatile s_lock lock = SPIN_UN_LOCKED_STATUS;
 
 /* Initialise table buffer. */
 void init_table_buffer() {
@@ -28,6 +31,8 @@ void init_table_buffer() {
 
 /* Find table in table buffer. */
 Table *find_table_buffer(char *table_name) {
+
+    spin_lock_acquire(&lock);
     
     /* Try to get current transaction. */
     TransactionHandle *trans = find_transaction();
@@ -39,6 +44,7 @@ Table *find_table_buffer(char *table_name) {
             TableBufferEntry *entry = buffer->buffer[i];
             if (strcmp(table_name, entry->table->meta_table->table_name) == 0 
                 && entry->xid == trans->xid && entry->tid == trans->tid) {
+                spin_lock_release(&lock);
                 return entry->table;
             }  
         }
@@ -51,6 +57,7 @@ Table *find_table_buffer(char *table_name) {
         save_or_update_table_buffer(cache_table);
     } 
 
+    spin_lock_release(&lock);
     return cache_table;
 }
 
@@ -87,6 +94,8 @@ bool remove_table_buffer() {
         return false;
     }
 
+    spin_lock_acquire(&lock);
+
     int32_t i, j;
     for (i = 0; i < buffer->size; i++) {
         TableBufferEntry *entry = buffer->buffer[i];
@@ -106,5 +115,6 @@ bool remove_table_buffer() {
         }  
     }
     
+    spin_lock_release(&lock);
     return true;
 }

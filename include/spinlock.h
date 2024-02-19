@@ -7,7 +7,7 @@
 typedef int s_lock;
 
 /* Acquire spin lock, if fail, it will block. */
-void spinLockAcquire(s_lock *lock);
+void spin_lock_acquire(s_lock *lock);
 
 /* Release spin lock. */
-void spinLockRelease(s_lock *lock);
+void spin_lock_release(s_lock *lock);

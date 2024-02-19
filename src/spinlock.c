@@ -12,7 +12,7 @@
 
 
 /* Acquire spin lock, if fail, it will block. */
-void spinLockAcquire(s_lock *lock) {
+void spin_lock_acquire(s_lock *lock) {
 
     while (*lock) {
         usleep(DEFAULT_SPIN_INTERVAL);
@@ -22,6 +22,6 @@ void spinLockAcquire(s_lock *lock) {
 }
 
 /* Release spin lock. */
-void spinLockRelease(s_lock *lock) {
+void spin_lock_release(s_lock *lock) {
     *lock = SPIN_UN_LOCKED_STATUS;
 }
