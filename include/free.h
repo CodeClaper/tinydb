@@ -27,6 +27,9 @@ void free_pager(Pager *pager);
 /* Free table. */
 void free_table(Table *table);
 
+/* Free TableBufferEntry. */
+void free_table_buffer_entry(TableBufferEntry *entry);
+
 /* Free cursor. */
 void free_cursor(Cursor *cursor);
 

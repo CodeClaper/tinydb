@@ -72,7 +72,7 @@ void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Cursor */
     Cursor * cursor = define_cursor(table, row->key);
 
-    /* delete row. */
+    /* Delete row. */
     delete_leaf_node_cell(cursor, row->key);
 }
 
@@ -80,7 +80,7 @@ void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 void gc_table(char *table_name) {
 
 #ifdef DEBUG
-    db_log(TRACE, "GC table '%s'\n", table_name);
+    db_log(DEBUG, "GC table '%s'.", table_name);
 #endif
 
     /* Check table exist. */

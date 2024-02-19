@@ -14,14 +14,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "pager.h"
+#include "cache.h"
 #include "mmu.h"
 #include "log.h"
 
 /* Open the pager. */
 Pager *open_pager(char *table_file_path){
     Pager *pager = db_malloc(sizeof(Pager), SDT_PAGER);
-    /*int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);*/
-    int file_descriptor = open(table_file_path, O_RDWR);
+    int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);
+    /*int file_descriptor = open(table_file_path, O_RDWR);*/
     if (file_descriptor == -1) {
         fprintf(stderr, "Open table file fail.\n");
         exit(EXIT_FAILURE);
@@ -41,12 +42,15 @@ Pager *open_pager(char *table_file_path){
 }
 
 /* Get page of a pager by page number. */
-void *get_page(Pager *pager, int page_num) {
+void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
+
+    /* Exceeds limitation check. */
     if (page_num >= MAX_TABLE_PAGE) {
         db_log(PANIC, "Try to fetch page number out of bounds: %d >= %d", page_num, MAX_TABLE_PAGE);
     }
+
+    /* Cache dismiss, allocate memory and load file. */
     if (pager->pages[page_num] == NULL) {
-        /* Cache dismiss, allocate memory and load file. */
         void *page = db_malloc(PAGE_SIZE, SDT_VOID);
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
@@ -54,19 +58,34 @@ void *get_page(Pager *pager, int page_num) {
             db_log(PANIC, "Table file read error and errno", errno);
         }
         pager->pages[page_num] = page;
+
+        /* synchronous memory page data. */
+        sync_page(table_name, page_num, page);
     }
+
+    /* Page extends and synchronous page size. */
     if (page_num >= pager->size) {
         pager->size++;
+        sync_page_size(table_name, pager->size);
     }
+
     return pager->pages[page_num];
 }
 
 
 /* Flush page to disk. */
-void flush_page(Pager *pager, uint32_t page_num) {
+void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
     if (pager->pages[page_num] == NULL) {
-        db_log(ERROR, "Tried to flush null page to disk");
+        db_log(PANIC, "Tried to flush null page to disk");
+        return;
     } 
+
+    /* Before flushing disk, synchronous page memory data. 
+     * If synchronous page memory fail, not to flush disk. */
+    if(!sync_page(table_name, page_num, pager->pages[page_num]))
+        return;
+
+    /* Flush disk. */
     off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * page_num, SEEK_SET);
     if (offset == -1) {
         printf("Error seeking: %s\n", strerror(errno));
@@ -79,5 +98,4 @@ void flush_page(Pager *pager, uint32_t page_num) {
 }
 
 /* Flush all to disk. */
-void flush(Pager pager) { 
-}
+void flush(Pager pager) {}

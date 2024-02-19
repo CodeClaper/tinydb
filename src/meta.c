@@ -194,7 +194,7 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
     assert_not_null(table_name, "Input table name can`t be null.");
 
     MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
-    void *root_node = get_page(table->pager, table->root_page_num);
+    void *root_node = get_page(table_name, table->pager, table->root_page_num);
     uint32_t column_size = get_column_size(root_node);
 
     meta_table->table_name = db_strdup(table_name);

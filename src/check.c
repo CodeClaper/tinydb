@@ -103,7 +103,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
                 return false;
             size_t size = strlen(value);
             if (size > meta_column->column_length)
-                db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'\n", size, meta_column->column_length, meta_column->column_name);
+                db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'\n", size, meta_column->column_length - 1, meta_column->column_name);
             return size <= meta_column->column_length;
         }
         case T_TIMESTAMP: {   
@@ -368,7 +368,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
                 Cursor *cursor = define_cursor(table, new_key);
                 uint32_t value_len = calc_table_row_length(table);
                 uint32_t key_len = calc_primary_key_length(table);
-                void *leaf_node = get_page(cursor->table->pager, cursor->page_num);
+                void *leaf_node = get_page(table->meta_table->table_name, cursor->table->pager, cursor->page_num);
                 void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
                 if (equal(key, new_key, meta_column->column_type) && !cursor_is_deleted(cursor)) {
                     db_log(ERROR, "key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
@@ -451,7 +451,7 @@ bool check_insert_node(InsertNode *insert_node) {
             /* Checke value valid. */
             void *value = get_value_from_value_item_node(value_item_node, meta_column);
             if (value == NULL) {
-                db_log(ERROR, "Not allowed null for column %s in table %s", meta_column->column_name, meta_column->table_name);
+                db_log(ERROR, "Not allowed null for column '%s' in table '%s'.", meta_column->column_name, meta_column->table_name);
                 return false;
             }
             if (!check_value_valid(meta_column, value))

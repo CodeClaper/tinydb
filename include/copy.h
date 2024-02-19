@@ -19,6 +19,9 @@ Row *copy_row_without_reserved(Row *row);
 /* Copy meta column. */
 MetaColumn *copy_meta_column(MetaColumn *meta_column);
 
+/* Copy Table. */
+Table *copy_table(Table *table);
+
 /* Copy column node. */
 ColumnNode *copy_column_node(ColumnNode *column_node);
 

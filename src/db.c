@@ -22,13 +22,14 @@
 #include "conf.h"
 #include "gc.h"
 #include "cache.h"
+#include "buffer.h"
 #include "log.h"
 
 /* Conf */
 Conf *conf;
 
-/* init */
-static void init() {
+/* DB Start. */
+static void db_start() {
     /* Initialise memory manager unit. */
     init_mem();
     /* Initialise log. */
@@ -43,18 +44,14 @@ static void init() {
     init_xlog();
     /* Initialise table cache. */
     init_table_cache();
+    /* Initialise table buffer. */
+    init_table_buffer();
     /* Load configuration. */
     conf = load_conf();
 }
 
-/* end */
-static void end() {
-    end_session();
-}
-
-int main(void) {
-
-    init();
+/* DB Run. */
+static void db_run() {
     int server_socket = -1;
     int client_secket = -1;
     struct sockaddr_in *client_name = sys_malloc(sizeof(struct sockaddr_in));
@@ -64,8 +61,8 @@ int main(void) {
     db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
 
     /* start gc */
-    if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)
-        db_log(PANIC, "Create new thread fail.");
+    /*if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)*/
+        /*db_log(PANIC, "Create new thread fail.");*/
 
     /* listen */
     while(true) {
@@ -75,7 +72,17 @@ int main(void) {
         if (pthread_create(&new_thread, NULL, (void *)accept_request, (void *)(intptr_t)client_secket) != 0)
             db_log(PANIC, "Create new thread fail.");
     }
-    end();
+}
 
+/* DB End */
+static void db_end() {
+    end_session();
+}
+
+/* The main entry. */
+int main(void) {
+    db_start();
+    db_run();
+    db_end();
     return EXIT_SUCCESS;
 }

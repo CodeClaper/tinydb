@@ -14,7 +14,7 @@
 
 /* Check if key already exists  */
  bool check_duplicate_key(Cursor *cursor, void *key) {
-    void *node = get_page(cursor->table->pager, cursor->page_num);
+    void *node = get_page(cursor->table->meta_table->table_name, cursor->table->pager, cursor->page_num);
     uint32_t value_len = calc_table_row_length(cursor->table);
     uint32_t key_len = calc_primary_key_length(cursor->table);
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);

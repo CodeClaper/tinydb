@@ -158,10 +158,18 @@ void free_table(Table *table) {
     }
 }
 
+/* Free TableBufferEntry. */
+void free_table_buffer_entry(TableBufferEntry *entry) {
+    if (entry) {
+        free_table(entry->table);
+        db_free(entry);
+    }
+}
+
 /* Free cursor. */
 void free_cursor(Cursor *cursor) {
     if (cursor) {
-        /* Table is used for cache, not free here. */
+        /* Notice: Table is used for cache, not free here. */
         /*free_table(cursor->table);*/
         db_free(cursor);
     }

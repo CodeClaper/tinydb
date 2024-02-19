@@ -157,6 +157,7 @@ Refer *copy_refer(Refer *refer) {
 MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     if (meta_column == NULL)
         return NULL;
+
     MetaColumn *meta_column_copy = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
     meta_column_copy->is_primary = meta_column->is_primary;
     meta_column_copy->column_type = meta_column->column_type;
@@ -164,8 +165,59 @@ MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     meta_column_copy->sys_reserved = meta_column->sys_reserved;
     strcpy(meta_column_copy->column_name, meta_column->column_name);
     strcpy(meta_column_copy->table_name, meta_column->table_name);
+
     return meta_column_copy;
-} 
+}
+
+/* Copy MetaTable.*/
+MetaTable *copy_meta_table(MetaTable *meta_table) {
+    if (meta_table == NULL)
+        return NULL;
+
+    MetaTable *copy = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
+    copy->table_name = db_strdup(meta_table->table_name);
+    copy->column_size = meta_table->column_size;
+    copy->all_column_size = meta_table->all_column_size;
+    copy->meta_column = db_malloc(sizeof(MetaColumn *) * copy->all_column_size, SDT_POINTER);
+
+    int i;
+    for (i = 0; i < meta_table->all_column_size; i++) {
+        copy->meta_column[i] = copy_meta_column(meta_table->meta_column[i]);
+    }
+
+    return copy;
+}
+
+/* Copy Pager. */
+Pager *copy_pager(Pager *pager) {
+    if (pager == NULL)
+        return NULL;
+
+    Pager *pager_copy = db_malloc(sizeof(Pager), SDT_PAGER);
+    pager_copy->size = pager->size;
+    pager_copy->file_length = pager->file_length;
+    pager_copy->file_descriptor = pager->file_descriptor;
+
+    int32_t i;
+    for (i = 0; i < pager->size; i++) {
+        pager_copy->pages[i] = copy_block(pager->pages[i], PAGE_SIZE);
+    }
+
+    return pager_copy;
+}
+
+/* Copy Table. */
+Table *copy_table(Table *table) {
+    if (table == NULL)
+        return NULL;
+
+    Table *table_copy = db_malloc(sizeof(Table), SDT_TABLE);
+    table_copy->root_page_num = table->root_page_num;
+    table_copy->pager = copy_pager(table->pager);
+    table_copy->meta_table = copy_meta_table(table->meta_table);
+
+    return table_copy;
+}
 
 /* Copy column node. */
 ColumnNode *copy_column_node(ColumnNode *column_node) {
@@ -460,6 +512,8 @@ QueryParam *copy_query_param(QueryParam *query_param) {
 
 /* Copy a dymamic memory block */
 void *copy_block(void *value, size_t size) {
+    if (value == NULL)
+        return NULL;
     void * block = db_malloc(size, SDT_VOID);
     memcpy(block, value, size);
     return block;

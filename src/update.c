@@ -104,11 +104,11 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
         } else { 
             /* When it is non-key column, just update the cell value. */
             Cursor *cursor = define_cursor(table, row->key);
-            void *leaf_node = get_page(table->pager, cursor->page_num);
+            void *leaf_node = get_page(table->meta_table->table_name, table->pager, cursor->page_num);
             assert_true(get_node_type(leaf_node) == LEAF_NODE, "System error, the node must be leaf type when update row.");
             void *destination = serialize_row_data(row, table);
             memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
-            flush_page(table->pager, cursor->page_num);
+            flush_page(table->meta_table->table_name, table->pager, cursor->page_num);
             free_cursor(cursor);
         }
     }

@@ -489,7 +489,7 @@ Row *define_row(Refer *refer) {
     uint32_t key_len, value_len;
     value_len = calc_table_row_length(table);
     key_len = calc_primary_key_length(table);
-    void *leaf_node = get_page(table->pager, refer->page_num);
+    void *leaf_node = get_page(table->meta_table->table_name, table->pager, refer->page_num);
     void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
 
     return generate_row(destinct, table->meta_table);
@@ -498,7 +498,7 @@ Row *define_row(Refer *refer) {
 /* Select through leaf node. */
 static void select_from_leaf_node(SelectResult *select_result, ConditionNode *condition, uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
 
-    void *leaf_node = get_page(table->pager, page_num);
+    void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
 
     /* Get cell number, key length and value lenght. */
     uint32_t key_len, value_len, cell_num ;
@@ -539,7 +539,7 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
 /* Select through internal node. */
 static void select_from_internal_node(SelectResult *select_result, ConditionNode *condition, uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
 
-    void *internal_node = get_page(table->pager, page_num);
+    void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
 
     /* Get keys number, key length. */
     uint32_t keys_num, key_len;
@@ -555,9 +555,6 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     int i;
     for (i = 0; i < keys_num; i++) {
     
-        uint32_t now_keys_num = get_internal_node_keys_num(internal_node);
-        assert_true(keys_num == now_keys_num, "Keys number changed, %d != %d", keys_num, now_keys_num);
-
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key. */
@@ -570,7 +567,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 
         /* Check other non-key column */
         uint32_t page_num = get_internal_node_child(internal_node_snapshot, i, key_len);
-        void *node = get_page(table->pager, page_num);
+        void *node = get_page(table->meta_table->table_name, table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
                 select_from_leaf_node(select_result, condition, page_num, table, row_handler, arg);
@@ -594,7 +591,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     } 
     
     /* Fetch right child. */
-    void *right_child = get_page(table->pager, right_child_page_num);
+    void *right_child = get_page(table->meta_table->table_name, table->pager, right_child_page_num);
     switch (get_node_type(right_child)) {
         case LEAF_NODE:
             select_from_leaf_node(select_result, condition, right_child_page_num, table, row_handler, arg);
@@ -634,7 +631,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
     Table *table = open_table(select_result->table_name);
     if (table == NULL)
         return;
-    void *root = get_page(table->pager, table->root_page_num);
+    void *root = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
     switch (get_node_type(root)) {
         case LEAF_NODE:
             select_from_leaf_node(select_result, condition, table->root_page_num, table, row_handler, arg);
@@ -643,7 +640,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
             select_from_internal_node(select_result, condition, table->root_page_num, table, row_handler, arg);
             break;
         default:
-            db_log(PANIC, "Unknown data type.");
+            db_log(PANIC, "Unknown data type occurs in <query_with_condition>.");
     }
 }
 
@@ -662,8 +659,6 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
         return;
     select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
 }
-
-
 
 /* Get KeyValue from a Row.
  * return NULL if not found. */
@@ -874,7 +869,7 @@ static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *sele
             break;
         }
         case V_ALL: {
-            db_log(PANIC, "Sum function not support '*'");
+            db_log(ERROR, "Sum function not support '*'");
             break;
         }
     }
@@ -899,7 +894,7 @@ KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_resu
             break;
         }
         case V_ALL: {
-            db_log(PANIC, "Avg function not support '*'");
+            db_log(ERROR, "Avg function not support '*'");
             break;
         }
     }
@@ -923,7 +918,7 @@ KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_resu
             break;
         }
         case V_ALL: {
-            db_log(PANIC, "Max function not support '*'");
+            db_log(ERROR, "Max function not support '*'");
             break;
         }
     }
@@ -981,7 +976,7 @@ static KeyValue *query_plain_column_value(ColumnNode *column, Row *row) {
         if (strcmp(column->column_name, key_value->key) == 0)
             return copy_key_value(key_value);
     }
-    db_log(PANIC, "Not found column '%s' in table '%s'", column->column_name, table->meta_table->table_name);
+    db_log(PANIC, "Not found column '%s' in table '%s' at <query_plain_column_value>", column->column_name, table->meta_table->table_name);
 }
 
 /* Calulate addition .*/

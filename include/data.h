@@ -67,6 +67,8 @@ typedef enum SysDataType{
     SDT_META_TABLE,
     SDT_TABLE,
     SDT_TABLE_CACHE,
+    SDT_TABLE_BUFFER_ENTRY,
+    SDT_TABLE_BUFFER,
     SDT_CURSOR,
     SDT_KEY_VALUE,
     SDT_MAP,
@@ -139,7 +141,9 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "META_COLUMN",\
    "META_TABLE",\
    "TABLE",\
-   "TABLE_CACEH",\
+   "TABLE_CACHE",\
+   "TABLE_BUFFER_ENTRY",\
+   "TABLE_BUFFER",\
    "CURSOR",\
    "KEY_VALUE",\
    "MAP",\
@@ -170,7 +174,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE } CompareType;
 
 /* DataType */
-typedef enum DataType { T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
+typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
 
 /* DataTypeNames */
 static char *DATA_TYPE_NAMES[] = \
@@ -195,13 +199,26 @@ typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
 
 /* StatementType */
-typedef enum { BEGIN_TRANSACTION_STMT, COMMIT_TRANSACTION_STMT, ROLLBACK_TRANSACTION_STMT, CREATE_TABLE_STMT, SELECT_STMT, INSERT_STMT, UPDATE_STMT, DELETE_STMT, DESCRIBE_STMT, SHOW_STMT, DROP_TABLE_STMT } StatementType; // statement type
+typedef enum { 
+    UNKONWN_STMT,
+    BEGIN_TRANSACTION_STMT, 
+    COMMIT_TRANSACTION_STMT, 
+    ROLLBACK_TRANSACTION_STMT, 
+    CREATE_TABLE_STMT, 
+    SELECT_STMT, 
+    INSERT_STMT, 
+    UPDATE_STMT, 
+    DELETE_STMT, 
+    DESCRIBE_STMT, 
+    SHOW_STMT, 
+    DROP_TABLE_STMT 
+} StatementType; // statement type
 
 /* Tansaction operation type. */
 typedef enum { TR_SELECT, TR_INSERT, TR_DELETE, TR_UPDATE } TransOpType;
 
 /* NodeType */
-typedef enum { LEAF_NODE, INTERNAL_NODE } NodeType;
+typedef enum { UNKNOWN_NODE, LEAF_NODE, INTERNAL_NODE } NodeType;
 
 /* ExecuteResult */
 typedef enum { 
@@ -564,8 +581,21 @@ typedef struct Table {
 typedef struct TableCache {
     Table **table_list;
     uint32_t size;
-    int64_t tid;
 }TableCache;
+
+/* TableBufferEntry */
+typedef struct TableBufferEntry {
+    Table *table;
+    int64_t xid;
+    int64_t tid;
+} TableBufferEntry;
+
+/* TableBuffer */
+typedef struct TableBuffer {
+    TableBufferEntry **buffer;
+    uint32_t size;
+} TableBuffer;
+
 
 /* TableList */
 typedef struct TableList {
@@ -733,7 +763,6 @@ typedef struct LogTable {
     LogEntry *tail;
     uint32_t size;
 } LogTable;
-
 
 /* XLogEntry */
 typedef struct XLogEntry {

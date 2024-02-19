@@ -16,6 +16,7 @@
 #include "trans.h"
 #include "utils.h"
 #include "session.h"
+#include "buffer.h"
 #include "log.h"
 #include "free.h"
 #include "ret.h"
@@ -101,7 +102,7 @@ static void statement_show(Statement *statement, DBResult *result) {
     exec_show_statement(statement->ast_node->show_node, result);
 }
 
-/*Execute statement
+/* Execute statement
  * Now supported statments:
  * (1) SELECT
  * (2) UPDATE
@@ -116,7 +117,6 @@ static void statement_show(Statement *statement, DBResult *result) {
  * */
 void statement(char *sql) {
 
-
     /* Execute statment */
     clock_t start, end;
     start = clock();
@@ -127,6 +127,7 @@ void statement(char *sql) {
         /* Execute statement. */
         Statement *statement = parse(sql);
         if (statement) {
+
             result->stmt_type = statement->statement_type;
 
             switch(statement->statement_type) {
@@ -169,6 +170,8 @@ void statement(char *sql) {
             free_statment(statement);
         }
     } 
+    /* Free buffer. */
+    remove_table_buffer();
 
     /* Commit transction manually. */
     auto_commit_transaction(result);
@@ -181,5 +184,7 @@ void statement(char *sql) {
     /* send result. */
     db_send_result(result);
 
+    /* Free memory. */
     free_db_result(result);
+    
 }

@@ -20,6 +20,7 @@
 #include "session.h"
 #include "select.h"
 #include "check.h"
+#include "cache.h"
 #include "copy.h"
 #include "free.h"
 #include "lock.h"
@@ -269,7 +270,7 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     /* Convert to Refer. */
     Refer *refer = convert_refer(cursor);
 
-    /* Free unuesed memeory */
+    /* Free useless memeory */
     free_cursor(cursor);
     free_row(row);
 

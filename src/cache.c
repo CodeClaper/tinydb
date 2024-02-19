@@ -1,48 +1,53 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include "cache.h"
 #include "mmu.h"
+#include "copy.h"
 #include "free.h"
+#include "log.h"
 
 #define MAX_TABLE_CACHE_SIZE 100
 
-static TableCache *t_cache;
+static TableCache *cache = NULL;
 
 /* Initialise table cache. */
 void init_table_cache() {
-    if (t_cache == NULL) {
-        t_cache = db_malloc(sizeof(TableCache),SDT_TABLE_CACHE);
-        t_cache->table_list = db_malloc(0, SDT_POINTER);
-        t_cache->size = 0;
+    if (cache == NULL) {
+        cache = db_malloc(sizeof(TableCache),SDT_TABLE_CACHE);
+        cache->table_list = db_malloc(0, SDT_POINTER);
+        cache->size = 0;
     }
 }
 
-/* Add table cache. */
-void add_table_cache(Table *table) {
+/* Save or update table cache. */
+void save_or_update_table_cache(Table *table) {
     int i;
-    for(i = 0; i < t_cache->size; i++) {
-        Table *current = t_cache->table_list[i] ;
+    for(i = 0; i < cache->size; i++) {
+        Table *current = cache->table_list[i] ;
         if (strcmp(current->meta_table->table_name, table->meta_table->table_name) == 0) {
-            /* Replace free old table. */
-            t_cache->table_list[i]  = table; 
-            free_table(current);
+            /* Replace and free old table. */
+            cache->table_list[i] = table; 
+            /* Notice: maybe table not change, only changed, need to free old. */
+            if (current != table)
+                free_table(current);
             return;
         }
     }
     /* Insert new table cache. */
-    t_cache->size++;
-    t_cache->table_list = db_realloc(t_cache->table_list, sizeof(Table *) * t_cache->size);
-    t_cache->table_list[i] = table; 
+    cache->size++;
+    cache->table_list = db_realloc(cache->table_list, sizeof(Table *) * cache->size);
+    cache->table_list[i] = table; 
 }
 
-/* Find cache table by name, retrurn null if not exist. */
+/* Find cache table by name, return null if not exist. */
 Table *find_table_cache(char *table_name) {
     int i;
-    for(i = 0; i < t_cache->size; i++) {
-        Table *current = *(t_cache->table_list + i);
+    for(i = 0; i < cache->size; i++) {
+        Table *current = *(cache->table_list + i);
         if (strcmp(current->meta_table->table_name, table_name) == 0)
-            return current;
+            return copy_table(current);
     }
     return NULL;
 }
@@ -50,19 +55,49 @@ Table *find_table_cache(char *table_name) {
 /* Remove table cache. */
 void *remove_table_cache(char *table_name) {
     int i, j;
-    for(i = 0; i < t_cache->size; i++) {
-        Table *current = t_cache->table_list[i];
+    for(i = 0; i < cache->size; i++) {
+        Table *current = cache->table_list[i];
         if (strcmp(current->meta_table->table_name, table_name) == 0) {
             /* Right moves to cover. */
-            for (j = i; j < t_cache->size - 1; j++) {
-                memcpy(t_cache->table_list + j, t_cache->table_list + j + 1, sizeof(Table *));
+            for (j = i; j < cache->size - 1; j++) {
+                memcpy(cache->table_list + j, cache->table_list + j + 1, sizeof(Table *));
             }
-            memset(t_cache->table_list + t_cache->size - 1, 0, sizeof(Table *));
-            /* Free memory. */
+            memset(cache->table_list + cache->size - 1, 0, sizeof(Table *));
+            cache->size--;
+            cache->table_list = db_realloc(cache->table_list, sizeof(Table *) * cache->size);
             free_table(current);     
             break;
         }
     }
-    t_cache->size--;
-    t_cache->table_list = db_realloc(t_cache->table_list, sizeof(Table *) * t_cache->size);
+}
+
+/* Synchronous page data. */
+bool sync_page(char *table_name, uint32_t page_num, void *page) {
+    int i;
+    for (i = 0; i < cache->size; i++) {
+        Table *cur_table = *(cache->table_list + i);
+        if (strcmp(cur_table->meta_table->table_name, table_name) == 0) {
+            void *old_page = cur_table->pager->pages[page_num];
+            /* Notice: must copy the page, because the page will be freed at <remove_table_buffer>*/
+            cur_table->pager->pages[page_num] = copy_block(page, PAGE_SIZE);
+            if (old_page != page)
+                free_block(old_page);
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Synchronous page size. */
+bool sync_page_size(char *table_name, uint32_t page_size) {
+
+    int i;
+    for (i = 0; i < cache->size; i++) {
+        Table *cur_table = *(cache->table_list + i);
+        if (strcmp(cur_table->meta_table->table_name, table_name) == 0) {
+            cur_table->pager->size = page_size;
+            return true;
+        }
+    }
+    return false;
 }

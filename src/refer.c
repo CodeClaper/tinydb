@@ -65,7 +65,7 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
     uint32_t key_len = calc_primary_key_length(table);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
-    void *child_node = get_page(table->pager, child_page_num);
+    void *child_node = get_page(table->meta_table->table_name, table->pager, child_page_num);
     
     switch(get_node_type(child_node)) {
         case LEAF_NODE:
@@ -78,14 +78,14 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 /* Define Cursor. */
 Cursor *define_cursor(Table *table, void *key) {
     assert_not_null(key, "Input key can`t be NULL");
-    void *root_node = get_page(table->pager, table->root_page_num);
+    void *root_node = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
     switch(get_node_type(root_node)) {
         case LEAF_NODE:
             return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
         case INTERNAL_NODE:
             return define_cursor_internal_node(table, root_node, key);
         default:
-            db_log(PANIC, "Unknown node type.");
+            db_log(PANIC, "Unknown node type occured in <define_cursor>.");
     }
 }
 

@@ -260,7 +260,6 @@ void auto_commit_transaction(DBResult *result) {
         /* Destroy transaction. */
         assert_true(destroy_transaction(trans_handle), "Destroy transaction handle error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
 
-
         db_log(INFO, "Auto commit the transaction xid: %"PRId64" successfully.", xid);
     }
 }

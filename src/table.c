@@ -12,6 +12,7 @@
 #include "mmu.h"
 #include "free.h"
 #include "cache.h"
+#include "buffer.h"
 #include "common.h"
 #include "asserts.h"
 #include "utils.h"
@@ -132,12 +133,12 @@ Table *open_table(char *table_name) {
     /* Check valid. */
     assert_not_null(table_name, "Table name must be supported.\n");
 
-    /* Firstly try to get in cache. */
-    Table *cache_table = find_table_cache(table_name);
-    if (cache_table)
-        return cache_table;
+    /* Firstly, try to find in memory. */
+    Table *mtable = find_table_buffer(table_name);
+    if (mtable)
+        return mtable;
 
-    /* Cache missing, get from disk. */
+    /* Memory missing, get from disk. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
         db_free(file_path);
@@ -150,22 +151,25 @@ Table *open_table(char *table_name) {
     if (pager == NULL) 
         return NULL;
     table->pager = pager;
+
     /* Define root page is first page. */
     table->root_page_num = 0; 
     if (pager->size == 0) {
         /* New db file and initialize page 0 as leaf node. */
-        void *root_node = get_page(pager, 0);
+        void *root_node = get_page(table_name, pager, 0);
         initial_leaf_node(root_node, true);
     }
+
     table->meta_table = get_meta_table(table, table_name);
 
-    /* Add cache. */
-    add_table_cache(table);
+    /* Save table cache. */
+    save_or_update_table_cache(table);
     
     /* Free memory. */
     db_free(file_path);
 
-    return table;
+    /* Only return cache table. */
+    return find_table_cache(table_name);
 }
 
 
