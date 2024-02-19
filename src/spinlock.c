@@ -10,9 +10,6 @@
 #include <unistd.h>
 #include "spinlock.h"
 
-#define DEFAULT_SPIN_INTERVAL 10
-#define SPIN_LOCKED_STATUS 1
-#define SPIN_UN_LOCKED_STATUS 0
 
 /* Acquire spin lock, if fail, it will block. */
 void spinLockAcquire(s_lock *lock) {
