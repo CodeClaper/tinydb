@@ -139,8 +139,7 @@ void free_column_set_node(ColumnSetNode *column_set_node) {
 /* Free Pager. */
 void free_pager(Pager *pager) {
     if (pager) {
-        int i;
-        for (i = 0; i < pager->size; i++) {
+        for (uint32_t i = 0; i < pager->size; i++) {
             db_free(pager->pages[i]);
         }
         db_free(pager);

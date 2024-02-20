@@ -88,26 +88,31 @@ static MapList *gen_memory_map_list() {
     map->size = 3;
     map->body = db_malloc(sizeof(KeyValue *) * map->size, SDT_POINTER);
     
-    /* used_memory. */
+    /* Used memory. */
     KeyValue *key_value_mem = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     uint32_t mmsize = db_memesize();
     key_value_mem->key = db_strdup("used_memory");
-    key_value_mem->value = copy_value(&mmsize, T_INT);
-    key_value_mem->data_type = T_INT;
+    key_value_mem->value = copy_value(&mmsize, T_LONG);
+    *(int64_t *)key_value_mem->value = mmsize;
+    key_value_mem->data_type = T_LONG;
     map->body[0] = key_value_mem;
 
+    /* Mtable capacity. */
     KeyValue *key_value_cap = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     uint32_t cap = mtable_capacity();
     key_value_cap->key = db_strdup("mtable_capacity");
-    key_value_cap->value = copy_value(&cap, T_INT);
-    key_value_cap->data_type = T_INT;
+    key_value_cap->value = copy_value(&cap, T_LONG);
+    *(int64_t *)key_value_cap->value = cap;
+    key_value_cap->data_type = T_LONG;
     map->body[1] = key_value_cap;
 
+    /* MEntry number. */
     KeyValue *key_value_num = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
     uint32_t num = mentry_num();
     key_value_num->key = db_strdup("mentry_num");
-    key_value_num->value = copy_value(&num, T_INT);
-    key_value_num->data_type = T_INT;
+    key_value_num->value = copy_value(&num, T_LONG);
+    *(int64_t *)key_value_num->value = num;
+    key_value_num->data_type = T_LONG;
     map->body[2] = key_value_num;
 
     map_list->data[0] = map;
