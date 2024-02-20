@@ -11,6 +11,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "data.h"
 #include "mmu.h"
 #include "ret.h"

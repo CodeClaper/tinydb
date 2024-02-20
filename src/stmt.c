@@ -186,5 +186,4 @@ void statement(char *sql) {
 
     /* Free memory. */
     free_db_result(result);
-    
 }

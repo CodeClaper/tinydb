@@ -57,9 +57,8 @@ void free_refer_update_entity(ReferUpdateEntity *refer_update_entity) {
 void free_row(Row *row) {
     if (row) {
         /* free key. */
-        Table *table = open_table(row->table_name);
-        MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-        free_value(row->key, primary_meta_column->column_type);
+        if (row->key)
+            db_free(row->key);
 
         /* free row data. */
         int i;
@@ -84,8 +83,7 @@ void free_select_result(SelectResult *select_result) {
             db_free(select_result->table_name);
 
         /* free rows. */
-        int i;
-        for (i = 0; i < select_result->row_size; i++) {
+        for (uint32_t i = 0; i < select_result->row_size; i++) {
             free_row(select_result->rows[i]);
         }
         db_free(select_result->rows);

@@ -60,7 +60,7 @@ void *copy_value(void *value, DataType data_type) {
             return refer;
         }
         default:
-            db_log(PANIC, "Not supported data type.");
+            db_log(PANIC, "Not supported data type occurs at <copy_value>.");
     }    
 }
 
