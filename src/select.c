@@ -480,7 +480,7 @@ Row *define_row(Refer *refer) {
     if (table == NULL) 
         return NULL;
 
-    /* CHeck if refer null. */
+    /* Check if refer null. */
     if (refer_null(refer))
         return NULL;
 
@@ -969,8 +969,7 @@ static KeyValue *query_function_column_value(FunctionNode *function, SelectResul
 /* Query column value*/
 static KeyValue *query_plain_column_value(ColumnNode *column, Row *row) {
     Table *table = open_table(row->table_name);
-    int i;
-    for (i = 0;  i < row->column_len; i++) {
+    for (uint32_t i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         if (strcmp(column->column_name, key_value->key) == 0)
             return copy_key_value(key_value);
@@ -1754,7 +1753,7 @@ static void query_all_columns_selection(ScalarExpSetNode *scalar_exp_set, Select
     for (i = 0; i < select_result->row_size; i++) {
         Row *row = select_result->rows[i];
         select_result->rows[i] = query_plain_row_selection(scalar_exp_set, row);
-        db_free(row);
+        free_row(row);
     }
 }
 
@@ -1822,7 +1821,7 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
         result->data = select_result;
         result->success = true;
 
-        /* success result. */
+        /* Make up success result. */
         db_log(SUCCESS, "Query data successfully.");
     }
 

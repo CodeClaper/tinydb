@@ -170,11 +170,6 @@ void statement(char *sql) {
             free_statment(statement);
         }
     } 
-    /* Free buffer. */
-    remove_table_buffer();
-
-    /* Commit transction manually. */
-    auto_commit_transaction(result);
 
     /* Calulate duration. */
     end = clock();
@@ -186,4 +181,10 @@ void statement(char *sql) {
 
     /* Free memory. */
     free_db_result(result);
+    
+    /* Free buffer. */
+    remove_table_buffer();
+
+    /* Commit transction manually. */
+    auto_commit_transaction(result);
 }

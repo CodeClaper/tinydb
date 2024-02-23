@@ -125,7 +125,7 @@ Row *copy_row_without_reserved(Row *row) {
     row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, SDT_STRING);
 
     int i;
-    for(i = 0; i < row->column_len; i++) {
+    for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
 
         /* Skip system reserved columns. */
