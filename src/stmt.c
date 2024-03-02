@@ -186,5 +186,5 @@ void statement(char *sql) {
     remove_table_buffer();
 
     /* Commit transction manually. */
-    auto_commit_transaction(result);
+    auto_commit_transaction();
 }

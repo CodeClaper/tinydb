@@ -19,6 +19,7 @@
 #include "table.h"
 #include "ltree.h"
 #include "refer.h"
+#include "buffer.h"
 #include "select.h"
 #include "asserts.h"
 
@@ -38,16 +39,26 @@ void loop_gc() {
         if (!allow_gc())
             continue;
 
+
+        /* Each check loop opens a new transaction. */
+        auto_begin_transaction();
+
         /* loop each of tables to gc. */
         TableList *table_list = get_table_list();
 
         int i;
-        for(i = 0; i < table_list->count; i++) {
+        for (i = 0; i < table_list->count; i++) {
             gc_table(table_list->table_name_list[i]); 
         }
 
         /* Free memory. */
         free_table_list(table_list);
+
+        /* Remove Buffer. */
+        remove_table_buffer();
+
+        /* Commit transction manually. */
+        auto_commit_transaction();
     }
 }
 
@@ -93,5 +104,6 @@ void gc_table(char *table_name) {
     query_with_condition(NULL, select_result, gc_row, NULL);
     
     free_select_result(select_result);
+
 }
 

@@ -83,12 +83,10 @@ static void db_send_map(Map *map) {
     db_send("{ ");
     int i = 0;
     for(i =0; i <map->size; i++) {
-        KeyValue *key_value = *(map->body + i);
-
+        KeyValue *key_value = map->body[i];
         char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
         db_send(key_value_pair);
         db_free(key_value_pair);
-
         /* split with ',' */
         if (i < map->size - 1) 
             db_send(", ");
@@ -133,17 +131,19 @@ static void db_send_nondata_result(DBResult *result) {
 /* Send out db show tables result. */
 static void db_send_map_list(DBResult *result) {
     MapList *map_list = (MapList *)result->data;
-    db_send("{ \"success\": %s, \"message\": \"%s\", \"data\": ", result->success ? "true" : "false", get_log_msg());
-    map_list->size == 1 ? db_send("") : db_send("[");
-
-    int i;
-    for(i = 0; i < map_list->size; i++) {
-        Map *map = map_list->data[i];
-        db_send_map(map);
-        if (i < map_list->size - 1)
-            db_send(", ");
+    db_send("{ \"success\": %s, \"message\": \"%s\" ", result->success ? "true" : "false", get_log_msg());
+    if (result->success) {
+        db_send(", \"data\": ");
+        map_list->size == 1 ? db_send("") : db_send("[");
+        int i;
+        for(i = 0; i < map_list->size; i++) {
+            Map *map = map_list->data[i];
+            db_send_map(map);
+            if (i < map_list->size - 1)
+                db_send(", ");
+        }
+        map_list->size == 1 ? db_send("") : db_send("]");
     }
-    map_list->size == 1 ? db_send("") : db_send("]");
     db_send(", \"duration\": %lf }\n", result->duration);
 }
 

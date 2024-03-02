@@ -250,7 +250,7 @@ void commit_transaction(DBResult *result) {
 }
 
 /* Commit transaction automatically. */
-void auto_commit_transaction(DBResult *result) {
+void auto_commit_transaction() {
     TransactionHandle *trans_handle = find_transaction();
 
     /* Only deal with auto-commit transaction. */

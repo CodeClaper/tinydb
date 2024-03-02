@@ -55,7 +55,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
         case T_BOOL: {
             uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": %s", key, value && (*(bool *)value ? "true" : "false"));
+            sprintf(s, "\"%s\": %s", key, value && (*(bool *)value) ? "true" : "false");
             return s;
         }
         case T_INT: {
