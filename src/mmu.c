@@ -303,7 +303,7 @@ void *sys_malloc(size_t size) {
 void *sys_realloc(void *ptr, size_t size) {
     void *ret = realloc(ptr, size);
     if (ret == NULL) {
-        fprintf(stderr, "Not enough memory to rallocate.");
+        fprintf(stderr, "Not enough memory to rallocate at <sys_realloc>.");
         exit(EXIT_FAILURE);
     }
     return ret;
@@ -330,17 +330,22 @@ void *db_realloc(void *ptr, size_t size) {
 #ifdef DEBUG
     MEntry *entry = search_entry(ptr);
     assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
+#endif
 
 
     /* When size is zero, realloc return null, which is not we need. */
     if (size == 0) {
         db_free(ptr);
+#ifdef DEBUG
         return db_malloc(size, entry->stype);
-    }
+#else
+        return db_malloc(size, SDT_POINTER);
 #endif
+    }
 
     void *ret = realloc(ptr, size);
-    assert_not_null(ret, "Not enough memory to rallocate.");
+    if (ret == NULL)
+        assert_not_null(ret, "Not enough memory to rallocate at <db_realloc>.");
 
 #ifdef DEBUG
     change_entry(ptr, ret, size, entry->stype);
@@ -352,7 +357,7 @@ void *db_realloc(void *ptr, size_t size) {
 /* Database level db_strdup. */
 char *db_strdup(char *str) {
     char *ret = strdup(str);
-    assert_not_null(ret, "Not enough memory to strdup.\n");
+    assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.\n");
 
 #ifdef DEBUG
     register_entry(ret, strlen(str), SDT_STRING);

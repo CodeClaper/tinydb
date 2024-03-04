@@ -107,15 +107,13 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     /* Make a new SelectResult. */
     SelectResult *select_result = new_select_result(meta_column->table_name);
 
-    query_with_condition(condition_node, select_result, count_row, NULL);
-
-    /* Prepare enough memory space. */
-    select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
     query_with_condition(condition_node, select_result, select_row, NULL);
 
     Refer *refer = NULL;
-    if (select_result->row_size > 1) 
+    if (select_result->row_size > 1) {
         db_log(ERROR, "Expect to one reference, but found %d", select_result->row_size);
+        return NULL;
+    }
     else if (select_result->row_size == 1) {
         /* Take the first row as refered. Maybe row size should be one, but now there is no check. */
         Row *row = select_result->rows[0];

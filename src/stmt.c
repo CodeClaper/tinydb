@@ -1,6 +1,8 @@
+#include <setjmp.h>
 #include <stdbool.h>
 #include <time.h>
 #include "stmt.h"
+#include "defs.h"
 #include "mmu.h"
 #include "common.h"
 #include "asserts.h"
@@ -130,44 +132,49 @@ void statement(char *sql) {
 
             result->stmt_type = statement->statement_type;
 
-            switch(statement->statement_type) {
-                case BEGIN_TRANSACTION_STMT:
-                    statement_begin_transaction(statement, result);
-                    break;
-                case COMMIT_TRANSACTION_STMT:
-                    statement_commit_transaction(statement, result);
-                    break;
-                case ROLLBACK_TRANSACTION_STMT:
-                    statement_roolback_transaction(statement, result);
-                    break;
-                case CREATE_TABLE_STMT:
-                    statement_create_table(statement, result);
-                    break;
-                case INSERT_STMT:
-                    statement_insert(statement, result); 
-                    break; 
-                case SELECT_STMT:
-                    statement_select(statement, result); 
-                    break; 
-                case UPDATE_STMT:
-                    statement_update(statement, result); 
-                    break; 
-                case DELETE_STMT:
-                    statement_delete(statement, result); 
-                    break; 
-                case DESCRIBE_STMT:
-                    statement_describe(statement, result);
-                    break;
-                case SHOW_STMT:
-                    statement_show(statement, result);
-                    break;
-                case DROP_TABLE_STMT:
-                    statement_drop_table(statement, result);
-                    break;
-            }
+            /* Catch Error. */
+            if (setjmp(errEnv) == 0)  {
+                switch(statement->statement_type) {
+                    case BEGIN_TRANSACTION_STMT:
+                        statement_begin_transaction(statement, result);
+                        break;
+                    case COMMIT_TRANSACTION_STMT:
+                        statement_commit_transaction(statement, result);
+                        break;
+                    case ROLLBACK_TRANSACTION_STMT:
+                        statement_roolback_transaction(statement, result);
+                        break;
+                    case CREATE_TABLE_STMT:
+                        statement_create_table(statement, result);
+                        break;
+                    case INSERT_STMT:
+                        statement_insert(statement, result); 
+                        break; 
+                    case SELECT_STMT:
+                        statement_select(statement, result); 
+                        break; 
+                    case UPDATE_STMT:
+                        statement_update(statement, result); 
+                        break; 
+                    case DELETE_STMT:
+                        statement_delete(statement, result); 
+                        break; 
+                    case DESCRIBE_STMT:
+                        statement_describe(statement, result);
+                        break;
+                    case SHOW_STMT:
+                        statement_show(statement, result);
+                        break;
+                    case DROP_TABLE_STMT:
+                        statement_drop_table(statement, result);
+                        break;
+                }
 
-            /* Free memory. */
-            free_statment(statement);
+                /* Free memory. */
+                free_statment(statement);
+            } else {
+                result->success = false;
+            }
         }
     } 
 

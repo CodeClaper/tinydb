@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <pthread.h>
+#include <setjmp.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 #include <stdarg.h>
 #include "log.h"
 #include "mmu.h"
+#include "defs.h"
 #include "free.h"
 #include "data.h"
 #include "defs.h"
@@ -178,9 +180,7 @@ void db_log(LogLevel lev, char *format, ...) {
         char *sys_time = get_sys_time("%Y-%m-%d %H:%M:%S");
         char buff[BUFF_SIZE * 2];
         sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[lev], message);
-#ifdef DEBUG
         fprintf(stdout, "%s", buff);
-#endif
         flush_log(buff);
         db_free(sys_time);
     }
@@ -193,7 +193,8 @@ void db_log(LogLevel lev, char *format, ...) {
             break;
         case ERROR:
             store_log_msg(message);
-            /* Trigger transaction roll back. */
+            /* Stop the process, goto stmt. */
+            longjmp(errEnv, 1);
             break;
         case FATAL:
         case PANIC:

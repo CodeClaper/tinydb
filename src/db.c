@@ -25,8 +25,10 @@
 #include "buffer.h"
 #include "log.h"
 
-/* Conf */
-Conf *conf;
+
+Conf *conf; /* Conf */
+jmp_buf errEnv; /* jmp_buf for error. */
+
 
 /* DB Start. */
 static void db_start() {
@@ -61,8 +63,8 @@ static void db_run() {
     db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
 
     /* start gc */
-    if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)
-        db_log(PANIC, "Create new thread fail.");
+    /*if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)*/
+        /*db_log(PANIC, "Create new thread fail.");*/
 
     /* listen */
     while(true) {

@@ -656,7 +656,8 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
-    select_result->rows[select_result->row_index++] = copy_row_without_reserved(row);
+    select_result->rows = db_realloc(select_result->rows, sizeof(Row *) * (select_result->row_size + 1));
+    select_result->rows[select_result->row_size++] = copy_row_without_reserved(row);
 }
 
 /* Get KeyValue from a Row.
@@ -1802,18 +1803,10 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
         /* Genrate select result. */
         SelectResult *select_result = new_select_result(query_param->table_name);
 
-        /* Count row number. */
-        query_with_condition(query_param->condition_node, select_result, count_row, NULL);
-
-        /* Prepare enough memory space. */
-        select_result->rows = db_malloc(sizeof(Row *) * select_result->row_size, SDT_POINTER);
-
-        select_result->limit_index = 0;
-
-        /* Put rows to buffer. */
+        /* Select with condition to define rows. */
         query_with_condition(query_param->condition_node, select_result, select_row, NULL);
 
-        /* Query Selection. */
+        /* Query Selection to define row content. */
         query_with_selection(query_param->selection, select_result);
 
         /* If select all, return all row data. */
