@@ -20,7 +20,7 @@ TransactionHandle *find_transaction();
 void commit_transaction(DBResult *result);
 
 /* Commit transaction automatically. */
-void auto_commit_transaction(DBResult *result);
+void auto_commit_transaction();
 
 /* Rollback transaction. */
 void rollback_transaction(DBResult *result);

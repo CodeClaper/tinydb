@@ -1,6 +1,5 @@
 /**
 * =========================== Memeory Manager Unit ==============================
-*
 * Memory Manager Unit(MMU) is designed to achieve unnified memory management.
 * We use db_malloc,db_realloc, db_free to repalce native diynamic memory function 
 * malloc, realloc and free. In this way, we can record every diynamic meomry usage 
@@ -317,7 +316,9 @@ void *db_malloc(size_t size, SysDataType stype) {
     void *ret = malloc(size);
     assert_not_null(ret, "Not enough memory to allocate.");
     memset(ret, 0, size);
+#ifdef DEBUG
     register_entry(ret, size, stype);
+#endif
 
     return ret;
 }
@@ -326,18 +327,24 @@ void *db_malloc(size_t size, SysDataType stype) {
 void *db_realloc(void *ptr, size_t size) {
     assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
 
+#ifdef DEBUG
     MEntry *entry = search_entry(ptr);
     assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
+
 
     /* When size is zero, realloc return null, which is not we need. */
     if (size == 0) {
         db_free(ptr);
         return db_malloc(size, entry->stype);
     }
+#endif
 
     void *ret = realloc(ptr, size);
     assert_not_null(ret, "Not enough memory to rallocate.");
+
+#ifdef DEBUG
     change_entry(ptr, ret, size, entry->stype);
+#endif
 
     return ret;
 }
@@ -347,7 +354,9 @@ char *db_strdup(char *str) {
     char *ret = strdup(str);
     assert_not_null(ret, "Not enough memory to strdup.\n");
 
+#ifdef DEBUG
     register_entry(ret, strlen(str), SDT_STRING);
+#endif
 
     return ret;
 }
@@ -355,7 +364,11 @@ char *db_strdup(char *str) {
 /* Database level mememory free. */
 void db_free(void *ptr) {
     if (ptr)
+#ifdef DEBUG
         remove_entry(ptr, false);
+#else
+        free(ptr);
+#endif
 }
 
 /* Databese level mememory size. */
