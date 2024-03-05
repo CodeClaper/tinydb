@@ -220,7 +220,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
 
         /* Check if primary key column. */
         if (meta_column->is_primary) 
-            row->key = key_value->value;
+            row->key = db_strdup(key_value->value);
         *(row->data + i) = key_value;
     }
 
