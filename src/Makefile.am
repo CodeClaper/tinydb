@@ -6,13 +6,23 @@ else
 AM_CFLAGS = -O2 -w -I../include/
 endif
 LDADD = -lpthread -lm
+
+include_HEADERS= ../include/asserts.h ../include/buffer.h ../include/cache.h ../include/check.h ../include/common.h \
+				 ../include/conf.h ../include/const.h ../include/copy.h ../include/create.h ../include/data.h ../include/defs.h \
+				 ../include/delete.h ../include/desc.h ../include/free.h ../include/gc.h ../include/index.h ../include/insert.h \
+				 ../include/intpr.h ../include/rwlock.h ../include/log.h ../include/mmu.h ../include/meta.h ../include/ltree.h \
+				 ../include/compare.h ../include/pager.h ../include/refer.h ../include/ret.h ../include/select.h ../include/server.h \
+				 ../include/session.h ../include/show.h ../include/spinlock.h ../include/stmt.h ../include/table.h ../include/timer.h ../include/trans.h \
+				 ../include/parser.h ../include/update.h ../include/utils.h ../include/xlog.h  y.tab.h
+
 bin_PROGRAMS = tinydb \
 			   tinydb_cli
-tinydb_SOURCES = db.c asserts.c asserts.h buffer.c buffer.h cache.c cache.h check.c check.h common.h conf.c conf.h const.h \
-				 copy.c copy.h create.c create.h data.h defs.h delete.c delete.h desc.c desc.h free.c free.h gc.c gc.h index.c index.h \
-				 insert.c insert.h intpr.c intpr.h lex.yy.c rwlock.c rwlock.h log.c log.h mmu.c mmu.h meta.c meta.h \
-				 ltree.c ltree.h compare.c compare.h pager.c pager.h refer.c refer.h ret.c ret.h select.c select.h \
-				 server.c server.h session.c session.h show.c show.h spinlock.c spinlock.h stmt.c stmt.h table.c table.h timer.c timer.h trans.c trans.h \
-				 parser.c parser.h update.c update.h utils.c utils.h xlog.c xlog.h y.tab.c y.tab.h 
+
+tinydb_SOURCES = db.c asserts.c  buffer.c  cache.c  check.c conf.c \
+				 copy.c  create.c delete.c  desc.c free.c  gc.c index.c \
+				 insert.c  intpr.c lex.yy.c rwlock.c log.c mmu.c meta.c \
+				 ltree.c compare.c pager.c refer.c ret.c select.c \
+				 server.c  session.c show.c spinlock.c stmt.c  table.c timer.c trans.c \
+				 parser.c update.c utils.c xlog.c y.tab.c 
 tinydb_cli_SOURCES = db_cli.c 
 tinydb_cli_LDADD = -lreadline -ltinfo
