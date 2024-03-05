@@ -111,7 +111,7 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
 
     Refer *refer = NULL;
     if (select_result->row_size > 1) {
-        db_log(ERROR, "Expect to one reference, but found %d", select_result->row_size);
+        db_log(ERROR, "Expected to one reference, but found %d, maybe you can use 'in' as for array.", select_result->row_size);
         return NULL;
     }
     else if (select_result->row_size == 1) {

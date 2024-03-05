@@ -178,7 +178,7 @@ typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLO
 
 /* DataTypeNames */
 static char *DATA_TYPE_NAMES[] = \
-    {"bool",  "char",  "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
+    {"unknown", "bool",  "char",  "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
 
 /* FunctionType */
 typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;

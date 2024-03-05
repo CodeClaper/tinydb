@@ -2240,7 +2240,7 @@ void yyfree (void * ptr )
 
 
 int yyerror(const char *s) {
-	db_log(WARN, "Sql syntax error near [%s].", yytext);
+	db_log(ERROR, "Sql syntax error near [%s].", yytext);
     return 0;
 }
 

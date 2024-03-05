@@ -51,7 +51,7 @@ static MapList *gen_describe_result(MetaTable *meta_table) {
         /* type */
         KeyValue *key_value_type = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
         key_value_type->key = db_strdup("type");
-        key_value_type->value = DATA_TYPE_NAMES[meta_column->column_type];
+        key_value_type->value = db_strdup(DATA_TYPE_NAMES[meta_column->column_type]);
         key_value_type->data_type = T_STRING;
         map->body[1] = key_value_type;
 
