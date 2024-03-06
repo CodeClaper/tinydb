@@ -59,6 +59,10 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
 /* Query row value. */
 static KeyValue *query_row_value(ScalarExpNode *scalar_exp, Row *row);
 
+/* Query a Row of Selection,
+ * Actually, the Selection is all-column. */
+static Row *query_plain_row_selection(ScalarExpSetNode *scalar_exp_set, Row *row);
+
 /* Calulate offset of every column in cell. */
 static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     uint32_t off_set = 0;
@@ -967,6 +971,15 @@ static KeyValue *query_function_column_value(FunctionNode *function, SelectResul
     }
 }
 
+/* Generate new KeyValue instance. */
+static KeyValue *new_key_value(char *key, void *value, DataType data_type) {
+    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    key_value->key = key;
+    key_value->value = value;
+    key_value->data_type = data_type;
+    return key_value;
+}
+
 /* Query column value. */
 static KeyValue *query_plain_column_value(ColumnNode *column, Row *row) {
     Table *table = open_table(row->table_name);
@@ -974,16 +987,23 @@ static KeyValue *query_plain_column_value(ColumnNode *column, Row *row) {
         KeyValue *key_value = row->data[i];
         if (strcmp(column->column_name, key_value->key) == 0) {
             /* Reference type and query sub column. */
-            if (key_value->data_type == T_REFERENCE && column->has_sub_column) {
+            if (key_value->data_type == T_REFERENCE) {
                 Refer *refer = (Refer *)key_value->value;
                 Row *sub_row = define_row(refer);
-                return query_plain_column_value(column->sub_column, sub_row);
+                if (column->has_sub_column && column->sub_column)
+                    return query_plain_column_value(column->sub_column, sub_row);
+                else if (column->has_sub_column && column->scalar_exp_set) {
+                    Row *filter_sub_row = query_plain_row_selection(column->scalar_exp_set, sub_row);
+                    return new_key_value(db_strdup(column->column_name), filter_sub_row, T_ROW);
+                } else if (!column->has_sub_column) {
+                    return new_key_value(db_strdup(column->column_name), sub_row, T_ROW);
+                }
             }
             else
                 return copy_key_value(key_value);
         }
     }
-    db_log(PANIC, "Not found column '%s' in table '%s' at <query_plain_column_value>", column->column_name, table->meta_table->table_name);
+    db_log(ERROR, "Not found column '%s' in table '%s'", column->column_name, table->meta_table->table_name);
 }
 
 /* Calulate addition. */
@@ -1758,7 +1778,7 @@ static Row *query_plain_row_selection(ScalarExpSetNode *scalar_exp_set, Row *row
     uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
-        KeyValue *key_value = query_row_value(scalar_exp_set->data[i], row);
+        KeyValue *key_value = query_row_value(scalar_exp, row);
         if (scalar_exp->alias) {
             free_value(key_value->key, T_STRING);
             key_value->key = db_strdup(scalar_exp->alias);

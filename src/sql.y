@@ -531,6 +531,14 @@ column:
             column_node->has_sub_column = true;
             $$ = column_node;
         }
+    | IDENTIFIER LEFTPAREN scalar_exp_commalist RIGHTPAREN
+        {
+            ColumnNode *column_node = make_column_node();
+            column_node->column_name = db_strdup($1);
+            column_node->scalar_exp_set = $3;
+            column_node->has_sub_column = true;
+            $$ = column_node;
+        }
     ;
 value_items:
     value_item

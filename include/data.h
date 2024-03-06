@@ -174,7 +174,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE } CompareType;
 
 /* DataType */
-typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE } DataType;
+typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE, T_ROW } DataType;
 
 /* DataTypeNames */
 static char *DATA_TYPE_NAMES[] = \
@@ -267,8 +267,9 @@ typedef enum DDLType { DDL_INSERT, DDL_UPDATE, DDL_DELETE } DDLType;
 /* ColumnNode */
 typedef struct ColumnNode {
     char *column_name;
-    struct ColumnNode *sub_column;
     bool *has_sub_column;
+    struct ColumnNode *sub_column;
+    struct ScalarExpSetNode *scalar_exp_set;
 } ColumnNode;
 
 /* ColumnSetNode */

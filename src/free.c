@@ -26,7 +26,10 @@ void free_key_value(KeyValue *key_value) {
     if (key_value) {
         if (key_value->key)
             db_free(key_value->key);
-        free_value(key_value->value, key_value->data_type);
+        if (key_value->data_type == T_ROW) 
+            free_row(key_value->value);
+        else
+            free_value(key_value->value, key_value->data_type);
         db_free(key_value);
     } 
 }
@@ -118,6 +121,8 @@ void free_column_node(ColumnNode *column_node) {
     if (column_node) {
         if (column_node->has_sub_column && column_node->sub_column)
             free_column_node(column_node->sub_column);
+        if (column_node->has_sub_column && column_node->scalar_exp_set)
+            free_scalar_exp_set_node(column_node->scalar_exp_set);
         if (column_node->column_name)
             db_free(column_node->column_name);
         db_free(column_node);

@@ -63,6 +63,15 @@ static void db_send_row(Row *row) {
                 free_row(sub_row);
                 break;
             }
+            case T_ROW: {
+                db_send("\"%s\": ", key_value->key);
+                Row *sub_row = key_value->value;
+                if (sub_row == NULL) 
+                    db_send("null");
+                else 
+                    db_send_row(sub_row);
+                break;
+            }
             default: {
                 char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
                 db_send(key_value_pair);

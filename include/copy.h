@@ -25,6 +25,9 @@ Table *copy_table(Table *table);
 /* Copy column node. */
 ColumnNode *copy_column_node(ColumnNode *column_node);
 
+/* Copy column set node. */
+ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node);
+
 /* Copy value item node. */
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node);
 
