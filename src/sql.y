@@ -530,11 +530,11 @@ column:
             column_node->has_sub_column = false;
             $$ = column_node;
         }
-    | IDENTIFIER POINT IDENTIFIER
+    | IDENTIFIER POINT column
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = db_strdup($1);
-            column_node->sub_column_name = db_strdup($3);
+            column_node->sub_column = $3;
             column_node->has_sub_column = true;
             $$ = column_node;
         }

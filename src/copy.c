@@ -225,8 +225,8 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
         return NULL;
     ColumnNode *column_node_copy = db_malloc(sizeof(ColumnNode), SDT_COLUMN_NODE);
     column_node_copy->has_sub_column = column_node->has_sub_column;
-    if (column_node_copy->sub_column_name) {
-        column_node_copy->sub_column_name = db_strdup(column_node->sub_column_name);
+    if (column_node_copy->has_sub_column) {
+        column_node_copy->sub_column = copy_column_node(column_node->sub_column);
     }
     column_node_copy->column_name = db_strdup(column_node->column_name);
     return column_node_copy;

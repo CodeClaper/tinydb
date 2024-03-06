@@ -267,7 +267,7 @@ typedef enum DDLType { DDL_INSERT, DDL_UPDATE, DDL_DELETE } DDLType;
 /* ColumnNode */
 typedef struct ColumnNode {
     char *column_name;
-    char *sub_column_name;
+    struct ColumnNode *sub_column;
     bool *has_sub_column;
 } ColumnNode;
 

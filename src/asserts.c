@@ -1,10 +1,13 @@
+/* 
+ * The assert module support some common determination of whether the condition is established. 
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include "asserts.h"
 #include "data.h"
 #include "log.h"
 
-/* The assert module support some common determination of whether the condition is established. */
 
 /* Assert condition is true. */
 void assert_true(bool condition, char *format, ...) {
