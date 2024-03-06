@@ -217,7 +217,6 @@ union YYSTYPE
    CompareType              compare_type;
    ColumnDefNode            *column_def_node;
    ColumnDefSetNode         *column_def_set_node;
-   SelectItemsNode          *select_items_node;
    ColumnNode               *column_node;
    ColumnSetNode            *column_set_node;
    ValueItemNode            *value_item_node;
@@ -247,7 +246,7 @@ union YYSTYPE
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 
-#line 251 "y.tab.h"
+#line 250 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

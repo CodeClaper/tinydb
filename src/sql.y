@@ -24,7 +24,6 @@ int yylex();
    CompareType              compare_type;
    ColumnDefNode            *column_def_node;
    ColumnDefSetNode         *column_def_set_node;
-   SelectItemsNode          *select_items_node;
    ColumnNode               *column_node;
    ColumnSetNode            *column_set_node;
    ValueItemNode            *value_item_node;
@@ -91,7 +90,6 @@ int yylex();
 %type <b_value> BOOLVALUE
 %type <r_value> REFERVALUE
 %type <s_value> table
-%type <select_items_node> select_items 
 %type <scalar_exp_node> scalar_exp
 %type <scalar_exp_set_node> scalar_exp_commalist
 %type <selection_node> selection
@@ -309,28 +307,6 @@ show_statement:
             $$ = make_show_node(SHOW_MEMORY);
         }
     ;
-select_items: 
-    columns
-        {
-            SelectItemsNode *select_items_node = make_select_items_node();
-            select_items_node->type = SELECT_COLUMNS;
-            select_items_node->column_set_node= $1;
-            $$ = select_items_node;
-        }
-    | function
-        {
-            SelectItemsNode *select_items_node = make_select_items_node();
-            select_items_node->type = SELECT_FUNCTION;
-            select_items_node->function_node = $1;
-            $$ = select_items_node;
-        }
-    | ASTERISK 
-        {
-            SelectItemsNode *select_items_node = make_select_items_node();
-            select_items_node->type = SELECT_ALL;
-            $$ = select_items_node;
-        }
-    ;
 selection:
     scalar_exp_commalist
         {
@@ -394,6 +370,14 @@ scalar_exp:
             scalar_exp_node->type = SCALAR_FUNCTION;
             scalar_exp_node->function = $1;
             $$ = scalar_exp_node;
+        }
+    | function AS IDENTIFIER
+        {
+            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            scalar_exp_node->type = SCALAR_FUNCTION;
+            scalar_exp_node->function = $1;
+            $$ = scalar_exp_node;
+            $$->alias = db_strdup($3);
         }
     | LEFTPAREN scalar_exp RIGHTPAREN
         {

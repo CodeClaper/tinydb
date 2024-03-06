@@ -99,7 +99,7 @@ bool greater(void *source, void *target, DataType data_type) {
         case T_DATE:
             return *(time_t *)source > *(time_t *)target;
         case T_REFERENCE:
-            db_log(PANIC, "Refer data not allowed to be operated greater.");
+            db_log(ERROR, "Refer data not allowed to be operated greater.");
             break;
         default:
             db_log(ERROR, "Not implement data type when operate greater.");
@@ -134,7 +134,7 @@ bool greater_equal(void *source, void *target, DataType data_type) {
         case T_DATE:
             return *(time_t *)source >= *(time_t *)target;
         case T_REFERENCE:
-            db_log(PANIC, "Refer data not allowed to be operated greater equal.");
+            db_log(ERROR, "Refer data not allowed to be operated greater equal.");
             break;
         default:
             db_log(ERROR, "Not implement data type when operate greater equal.");
@@ -169,7 +169,7 @@ bool less(void *source, void *target, DataType data_type) {
         case T_DATE:
             return *(time_t *)source < *(time_t *)target;
         case T_REFERENCE:
-            db_log(PANIC, "Refer data not allowed to be operated less.");
+            db_log(ERROR, "Refer data not allowed to be operated less.");
             break;
         default:
             db_log(ERROR, "Not implement data type when operate less.");
@@ -204,7 +204,7 @@ bool less_equal(void *source, void *target, DataType data_type) {
         case T_DATE:
             return *(time_t *)source <= *(time_t *)target;
         case T_REFERENCE:
-            db_log(PANIC, "Refer data not allowed to be operated less equal.");
+            db_log(ERROR, "Refer data not allowed to be operated less equal.");
             break;
         default:
             db_log(ERROR, "Not implement data type when operate less equal.");
