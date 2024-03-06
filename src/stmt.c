@@ -126,14 +126,13 @@ void statement(char *sql) {
 
     /* Check empty sql. */
     if (!is_empty(sql)) {
-        /* Execute statement. */
-        Statement *statement = parse(sql);
-        if (statement) {
 
-            result->stmt_type = statement->statement_type;
-
-            /* Catch Error. */
-            if (setjmp(errEnv) == 0)  {
+        /* Catch Error. */
+        if (setjmp(errEnv) == 0) {
+            /* Execute statement. */
+            Statement *statement = parse(sql);
+            if (statement) {
+                result->stmt_type = statement->statement_type;
                 switch(statement->statement_type) {
                     case BEGIN_TRANSACTION_STMT:
                         statement_begin_transaction(statement, result);
@@ -172,9 +171,9 @@ void statement(char *sql) {
 
                 /* Free memory. */
                 free_statment(statement);
-            } else {
-                result->success = false;
-            }
+            } 
+        } else {
+            result->success = false;
         }
     } 
 
