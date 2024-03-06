@@ -341,6 +341,7 @@ typedef struct ScalarExpNode {
         ColumnNode *column;
         FunctionNode *function;
     };
+    char *alias;
 } ScalarExpNode;
 
 /* ColumnDefNode */

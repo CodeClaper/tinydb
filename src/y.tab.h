@@ -83,45 +83,46 @@ extern int yydebug;
     TRUE = 284,                    /* TRUE  */
     FALSE = 285,                   /* FALSE  */
     NULLX = 286,                   /* NULLX  */
-    CHAR = 287,                    /* CHAR  */
-    INT = 288,                     /* INT  */
-    LONG = 289,                    /* LONG  */
-    STRING = 290,                  /* STRING  */
-    BOOL = 291,                    /* BOOL  */
-    FLOAT = 292,                   /* FLOAT  */
-    DOUBLE = 293,                  /* DOUBLE  */
-    DATE = 294,                    /* DATE  */
-    TIMESTAMP = 295,               /* TIMESTAMP  */
-    PRIMARY = 296,                 /* PRIMARY  */
-    KEY = 297,                     /* KEY  */
-    EQ = 298,                      /* EQ  */
-    NE = 299,                      /* NE  */
-    GT = 300,                      /* GT  */
-    GE = 301,                      /* GE  */
-    LT = 302,                      /* LT  */
-    LE = 303,                      /* LE  */
-    IN = 304,                      /* IN  */
-    LIKE = 305,                    /* LIKE  */
-    AND = 306,                     /* AND  */
-    OR = 307,                      /* OR  */
-    NOT = 308,                     /* NOT  */
-    ASTERISK = 309,                /* ASTERISK  */
-    SOLIDUS = 310,                 /* SOLIDUS  */
-    PLUS = 311,                    /* PLUS  */
-    MINUS = 312,                   /* MINUS  */
-    COMMA = 313,                   /* COMMA  */
-    SEMICOLON = 314,               /* SEMICOLON  */
-    QUOTE = 315,                   /* QUOTE  */
-    POINT = 316,                   /* POINT  */
-    LEFTPAREN = 317,               /* LEFTPAREN  */
-    RIGHTPAREN = 318,              /* RIGHTPAREN  */
-    SYSTEM = 319,                  /* SYSTEM  */
-    CONFIG = 320,                  /* CONFIG  */
-    MEMORY = 321,                  /* MEMORY  */
-    IDENTIFIER = 322,              /* IDENTIFIER  */
-    INTVALUE = 323,                /* INTVALUE  */
-    FLOATVALUE = 324,              /* FLOATVALUE  */
-    STRINGVALUE = 325              /* STRINGVALUE  */
+    AS = 287,                      /* AS  */
+    CHAR = 288,                    /* CHAR  */
+    INT = 289,                     /* INT  */
+    LONG = 290,                    /* LONG  */
+    STRING = 291,                  /* STRING  */
+    BOOL = 292,                    /* BOOL  */
+    FLOAT = 293,                   /* FLOAT  */
+    DOUBLE = 294,                  /* DOUBLE  */
+    DATE = 295,                    /* DATE  */
+    TIMESTAMP = 296,               /* TIMESTAMP  */
+    PRIMARY = 297,                 /* PRIMARY  */
+    KEY = 298,                     /* KEY  */
+    EQ = 299,                      /* EQ  */
+    NE = 300,                      /* NE  */
+    GT = 301,                      /* GT  */
+    GE = 302,                      /* GE  */
+    LT = 303,                      /* LT  */
+    LE = 304,                      /* LE  */
+    IN = 305,                      /* IN  */
+    LIKE = 306,                    /* LIKE  */
+    AND = 307,                     /* AND  */
+    OR = 308,                      /* OR  */
+    NOT = 309,                     /* NOT  */
+    ASTERISK = 310,                /* ASTERISK  */
+    SOLIDUS = 311,                 /* SOLIDUS  */
+    PLUS = 312,                    /* PLUS  */
+    MINUS = 313,                   /* MINUS  */
+    COMMA = 314,                   /* COMMA  */
+    SEMICOLON = 315,               /* SEMICOLON  */
+    QUOTE = 316,                   /* QUOTE  */
+    POINT = 317,                   /* POINT  */
+    LEFTPAREN = 318,               /* LEFTPAREN  */
+    RIGHTPAREN = 319,              /* RIGHTPAREN  */
+    SYSTEM = 320,                  /* SYSTEM  */
+    CONFIG = 321,                  /* CONFIG  */
+    MEMORY = 322,                  /* MEMORY  */
+    IDENTIFIER = 323,              /* IDENTIFIER  */
+    INTVALUE = 324,                /* INTVALUE  */
+    FLOATVALUE = 325,              /* FLOATVALUE  */
+    STRINGVALUE = 326              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -159,45 +160,46 @@ extern int yydebug;
 #define TRUE 284
 #define FALSE 285
 #define NULLX 286
-#define CHAR 287
-#define INT 288
-#define LONG 289
-#define STRING 290
-#define BOOL 291
-#define FLOAT 292
-#define DOUBLE 293
-#define DATE 294
-#define TIMESTAMP 295
-#define PRIMARY 296
-#define KEY 297
-#define EQ 298
-#define NE 299
-#define GT 300
-#define GE 301
-#define LT 302
-#define LE 303
-#define IN 304
-#define LIKE 305
-#define AND 306
-#define OR 307
-#define NOT 308
-#define ASTERISK 309
-#define SOLIDUS 310
-#define PLUS 311
-#define MINUS 312
-#define COMMA 313
-#define SEMICOLON 314
-#define QUOTE 315
-#define POINT 316
-#define LEFTPAREN 317
-#define RIGHTPAREN 318
-#define SYSTEM 319
-#define CONFIG 320
-#define MEMORY 321
-#define IDENTIFIER 322
-#define INTVALUE 323
-#define FLOATVALUE 324
-#define STRINGVALUE 325
+#define AS 287
+#define CHAR 288
+#define INT 289
+#define LONG 290
+#define STRING 291
+#define BOOL 292
+#define FLOAT 293
+#define DOUBLE 294
+#define DATE 295
+#define TIMESTAMP 296
+#define PRIMARY 297
+#define KEY 298
+#define EQ 299
+#define NE 300
+#define GT 301
+#define GE 302
+#define LT 303
+#define LE 304
+#define IN 305
+#define LIKE 306
+#define AND 307
+#define OR 308
+#define NOT 309
+#define ASTERISK 310
+#define SOLIDUS 311
+#define PLUS 312
+#define MINUS 313
+#define COMMA 314
+#define SEMICOLON 315
+#define QUOTE 316
+#define POINT 317
+#define LEFTPAREN 318
+#define RIGHTPAREN 319
+#define SYSTEM 320
+#define CONFIG 321
+#define MEMORY 322
+#define IDENTIFIER 323
+#define INTVALUE 324
+#define FLOATVALUE 325
+#define STRINGVALUE 326
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -245,7 +247,7 @@ union YYSTYPE
    ShowNode                 *show_node;
    ASTNode                  *ast_node;
 
-#line 249 "y.tab.h"
+#line 251 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

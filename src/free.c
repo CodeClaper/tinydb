@@ -401,6 +401,7 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
                 free_scalar_exp_node(scalar_exp_node->calculate->right);
                 break;
         }
+        free_value(scalar_exp_node->alias, T_STRING);
         db_free(scalar_exp_node);
     }
 }

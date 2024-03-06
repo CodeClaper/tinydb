@@ -76,6 +76,7 @@ int yylex();
 %token <keyword> REF
 %token <keyword> TRUE FALSE
 %token <keyword> NULLX
+%token <keyword> AS
 %token <keyword> CHAR INT LONG STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> PRIMARY KEY
 %token <keyword> EQ NE GT GE LT LE IN LIKE
@@ -379,6 +380,14 @@ scalar_exp:
             scalar_exp_node->column = $1;
             $$ = scalar_exp_node;
         }
+    | column AS IDENTIFIER
+        {
+            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            scalar_exp_node->type = SCALAR_COLUMN;
+            scalar_exp_node->column = $1;
+            $$ = scalar_exp_node;
+            $$->alias = db_strdup($3);
+        }
     | function
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
@@ -388,7 +397,7 @@ scalar_exp:
         }
     | LEFTPAREN scalar_exp RIGHTPAREN
         {
-            $$ = $1;
+            $$ = $2;
         }
     ;
 calculate:

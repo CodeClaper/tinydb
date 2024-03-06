@@ -31,6 +31,7 @@ in                      return IN;
 limit                   return LIMIT;
 show                    return SHOW;
 tables                  return TABLES;
+as                      return AS;
 and                     return AND;
 or                      return OR;
 not                     return NOT;

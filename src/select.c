@@ -1681,8 +1681,13 @@ static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResul
 
     int i;
     for (i = 0; i < scalar_exp_set->size; i++) {
-        ScalarExpNode *sclar_exp = scalar_exp_set->data[i];
-        row->data[i] = query_function_value(sclar_exp, select_result);        
+        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+        KeyValue *key_value = query_function_value(scalar_exp, select_result);        
+        if (scalar_exp->alias) {
+            free_value(key_value->key, T_STRING);
+            key_value->key = db_strdup(scalar_exp->alias);
+        }
+        row->data[i] = key_value;
     }
 
     /* Free old rows memory. */
@@ -1752,7 +1757,13 @@ static Row *query_plain_row_selection(ScalarExpSetNode *scalar_exp_set, Row *row
 
     uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
-        new_row->data[i] = query_row_value(scalar_exp_set->data[i], row);
+        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+        KeyValue *key_value = query_row_value(scalar_exp_set->data[i], row);
+        if (scalar_exp->alias) {
+            free_value(key_value->key, T_STRING);
+            key_value->key = db_strdup(scalar_exp->alias);
+        }
+        new_row->data[i] = key_value;
     }
     return new_row;
 }

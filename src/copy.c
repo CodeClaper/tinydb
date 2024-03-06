@@ -471,6 +471,7 @@ ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
         case SCALAR_CALCULATE:
             copy->calculate = copy_calculate_node(scalar_exp_node->calculate);
     }
+    copy->alias = copy_value(scalar_exp_node->alias, T_STRING);
     return copy;
 }
 
