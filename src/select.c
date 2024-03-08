@@ -63,6 +63,9 @@ static KeyValue *query_row_value(ScalarExpNode *scalar_exp, Row *row);
  * Actually, the Selection is all-column. */
 static Row *query_plain_row_selection(ScalarExpSetNode *scalar_exp_set, Row *row);
 
+/* Generate select row. */
+static Row *generate_row(void *destinct, MetaTable *meta_table);
+
 /* Calulate offset of every column in cell. */
 static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     uint32_t off_set = 0;
@@ -282,28 +285,41 @@ static bool include_logic_leaf_node(void *destinct, ConditionNode *condition_nod
     } 
 }
 
+/* Check the row predicate. */
+static bool check_row_predicate(Row *row, ColumnNode *column, ComparisonNode *comparison) {
+    Table *table = open_table(row->table_name);
+    uint32_t i;
+    for (i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
+        if (strcmp(key_value->key, column->column_name) == 0) {
+            bool ret;
+            MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
+            if (column->has_sub_column) {
+                /* If has sub column, must be Reference. */
+                if (meta_column->column_type != T_REFERENCE)
+                    db_log(ERROR, "Column '%s' is not Reference, no sub rows found", column->column_name);
+                /* Get subrow, and recursion. */
+                Refer *refer = key_value->value;
+                Row *sub_row = define_row(refer);
+                ret = check_row_predicate(sub_row, column->sub_column, comparison); 
+            } else {
+                void *target = get_value_from_value_item_node(comparison->value, meta_column);
+                ret = eval(comparison->type, key_value->value, target, meta_column->column_type);
+                /* Reference data is allocated, so free it. */
+                if (meta_column->column_type == T_REFERENCE)
+                    free_refer(target);
+            }
+            return ret;
+        }
+    }
+    db_log(ERROR, "System logic error, not found column '%s' in table '%s'.", column->column_name, table->meta_table->table_name);
+}
+
 
 /* Check if include leaf node satisfy comparison predicate. */
 static bool include_leaf_comparison_predicate(void *destinct, ComparisonNode *comparison, MetaTable *meta_table) {
-    bool ret = false;
-    uint32_t off_set = 0;
-    int i; 
-    for (i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-        /* Define the column. */
-        if (strcmp(meta_column->column_name, comparison->column->column_name) == 0) {
-            void *value = destinct + off_set;
-            void *target = get_value_from_value_item_node(comparison->value, meta_column);
-            ret = eval(comparison->type, value, target, meta_column->column_type);
-
-            /* Reference data is allocated, so free it. */
-            if (meta_column->column_type == T_REFERENCE)
-                free_refer(target);
-            break;
-        }
-        off_set += meta_column->column_length;
-    }
-    return ret;
+    Row *row = generate_row(destinct, meta_table);
+    return check_row_predicate(row, comparison->column, comparison);
 }
 
 /* Check if include in value item set. */
@@ -999,6 +1015,8 @@ static KeyValue *query_plain_column_value(ColumnNode *column, Row *row) {
                     return new_key_value(db_strdup(column->column_name), sub_row, T_ROW);
                 }
             }
+            else if (column->has_sub_column) 
+                db_log(ERROR, "Column '%s' is not Reference type, no sub column found.", column->column_name);
             else
                 return copy_key_value(key_value);
         }
@@ -1842,7 +1860,7 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
         /* Genrate select result. */
         SelectResult *select_result = new_select_result(query_param->table_name);
 
-        /* Select with condition to define rows. */
+        /* Select with condition to define which rows. */
         query_with_condition(query_param->condition_node, select_result, select_row, NULL);
 
         /* Query Selection to define row content. */

@@ -67,7 +67,9 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
             flag = target == T_DATE || target == T_STRING;
             break;
         case T_REFERENCE:
-            flag = target == T_REFERENCE;
+            /* For Reference, it`s complicate, user can pass a refer or subrow column, 
+             * to be simple, just make flag true. */
+            flag = true;
             break;
     }
     if (!flag)
