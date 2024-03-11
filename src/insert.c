@@ -192,7 +192,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
     row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
     
     /* Row data. */
-    int i;
+    uint32_t i;
     for(i = 0; i < row->column_len; i++) {
 
         MetaColumn *meta_column = meta_table->meta_column[i];

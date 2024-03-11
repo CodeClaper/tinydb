@@ -165,7 +165,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
         case T_REFERENCE: {
             switch (value_item_node->r_value->type) {
                 case DIRECTLY:
-                    db_log(ERROR, "Not support directly fetch refer when query.");
+                    db_log(WARN, "Not support directly fetch refer when query.");
                     return make_null_refer();
                 case INDIRECTLY: {
                     return fetch_refer(meta_column, value_item_node->r_value->condition);
@@ -545,7 +545,7 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         Row *row = generate_row(destinct, table->meta_table);
 
         /* Execute row handler. */
-        row_handler(row, select_result, table, NULL);
+        row_handler(row, select_result, table, arg);
 
         /* Free useless row. */
         free_row(row);

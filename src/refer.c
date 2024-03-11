@@ -213,6 +213,8 @@ static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cu
 /* Update row refer. */
 static void update_row_refer(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
+    assert_not_null(arg, "Illegal parameter input at <update_row_refer>");
+
     /* ReferUpdateEntity */
     ReferUpdateEntity *refer_update_entity = (ReferUpdateEntity *) arg;
 

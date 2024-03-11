@@ -109,7 +109,7 @@ static void db_send_select_result(DBResult *result) {
     if (result->success) {
         db_send(", \"data\": ");
         SelectResult *select_result = result->data;
-        select_result && select_result->row_size == 1 ? db_send("") : db_send("[");
+        db_send("[");
         int i;
         for(i = 0; i < select_result->row_size; i++) {
             /* Send out row. */
@@ -118,8 +118,7 @@ static void db_send_select_result(DBResult *result) {
             if (i < select_result->row_size - 1)
                 db_send(", ");
         }
-        select_result && select_result->row_size == 1 ? db_send("") : db_send("]");
-
+        db_send("]");
         db_send(", \"rows\": %d", result->rows);
     }
     db_send(", \"duration\": %lf }\n", result->duration);
