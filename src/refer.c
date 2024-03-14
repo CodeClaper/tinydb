@@ -194,15 +194,14 @@ bool refer_equals(Refer *refer1, Refer *refer2) {
 static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cursor, ReferUpdateEntity *refer_update_entity) {
     
     bool flag = false;
-    int i;
-    for (i = 0; i < row->column_len; i++) {
+    for (uint32_t i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
-        if (key_value->data_type == T_REFERENCE && strcmp(key_value->key, meta_column->column_name) == 0) {
-            /* Check if refer equals. */
-            if (refer_equals(key_value->value, refer_update_entity->old_refer)) {
+        if (key_value->data_type == T_REFERENCE 
+            && strcmp(key_value->key, meta_column->column_name) == 0
+            && refer_equals(key_value->value, refer_update_entity->old_refer)) {
+                /* Check if refer equals. */
                 key_value->value = copy_refer(refer_update_entity->new_refer);
                 flag = true;
-            }
         }
     }
     if (flag)
@@ -224,8 +223,7 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
     /* MetaTable */
     MetaTable *meta_table = table->meta_table;
 
-    int i;
-    for(i = 0; i < meta_table->column_size; i++) {
+    for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (meta_column->column_type == T_REFERENCE && strcmp(meta_column->table_name, refer_update_entity->old_refer->table_name) == 0) {
             update_key_value_refer(row, meta_column, cursor, refer_update_entity);

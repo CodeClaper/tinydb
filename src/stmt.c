@@ -1,5 +1,6 @@
 #include <setjmp.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <time.h>
 #include "stmt.h"
 #include "defs.h"
@@ -45,13 +46,13 @@ static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
 /* Create table Statement. */
 static void statement_create_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == CREATE_TABLE_STMT, "System error, create statement type error.\n");
-    exec_create_table_statement(stmt->ast_node->create_table_node, result);
+    exec_create_table_statement(stmt->create_table_node, result);
 }
 
 /* Drop table statement. */
 static void statement_drop_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == DROP_TABLE_STMT, "System error, drop statement type error.\n");
-    char *table_name = stmt->ast_node->drop_table_node->table_name;
+    char *table_name = stmt->drop_table_node->table_name;
     if (drop_table(table_name, result)) {
         result->success = true;
         result->rows = 0;
@@ -63,11 +64,11 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
 static void statement_insert(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == INSERT_STMT, "System error, insert statement type error.\n");
     auto_begin_transaction();
-    Refer *refer = exec_insert_statement(stmt->ast_node->insert_node, result);
+    Refer *refer = exec_insert_statement(stmt->insert_node, result);
     if (refer != NULL) {
         result->success = true;
         result->rows = 1;
-        db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->ast_node->insert_node->table_name);
+        db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
     }
 }
 
@@ -75,36 +76,89 @@ static void statement_insert(Statement *stmt, DBResult *result) {
 static void statement_select(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == SELECT_STMT, "System error, select statement type error.\n");
     auto_begin_transaction();
-    exec_select_statement(statement->ast_node->select_node, result); 
+    exec_select_statement(statement->select_node, result); 
 }
 
 /*Update statemetn*/
 static void statement_update(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == UPDATE_STMT, "System error, update statement type error.\n");
     auto_begin_transaction();
-    exec_update_statment(statement->ast_node->update_node, result);
+    exec_update_statment(statement->update_node, result);
 }
 
 /*Delete Statement*/
 static void statement_delete(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == DELETE_STMT, "System error, delete statement type error.\n");
     auto_begin_transaction();
-    exec_delete_statement(statement->ast_node->delete_node, result);
+    exec_delete_statement(statement->delete_node, result);
 }
 
 /*Describe Statement*/
 static void statement_describe(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == DESCRIBE_STMT, "System error, describe statement type error.\n"); 
-    exec_describe_statement(statement->ast_node->describe_node, result);
+    exec_describe_statement(statement->describe_node, result);
 }
 
 /*Show tables Statment*/
 static void statement_show(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == SHOW_STMT, "System error, show statmement type error.\n"); 
-    exec_show_statement(statement->ast_node->show_node, result);
+    exec_show_statement(statement->show_node, result);
 }
 
-/* Execute statement
+/* Execute statment. */
+static void exec_statement(Statement *statement, DBResult *result) {
+    /* Execute statment */
+    clock_t start, end;
+    start = clock();
+    if (statement) {
+        result->stmt_type = statement->statement_type;
+        switch(statement->statement_type) {
+            case BEGIN_TRANSACTION_STMT:
+                statement_begin_transaction(statement, result);
+                break;
+            case COMMIT_TRANSACTION_STMT:
+                statement_commit_transaction(statement, result);
+                break;
+            case ROLLBACK_TRANSACTION_STMT:
+                statement_roolback_transaction(statement, result);
+                break;
+            case CREATE_TABLE_STMT:
+                statement_create_table(statement, result);
+                break;
+            case INSERT_STMT:
+                statement_insert(statement, result); 
+                break; 
+            case SELECT_STMT:
+                statement_select(statement, result); 
+                break; 
+            case UPDATE_STMT:
+                statement_update(statement, result); 
+                break; 
+            case DELETE_STMT:
+                statement_delete(statement, result); 
+                break; 
+            case DESCRIBE_STMT:
+                statement_describe(statement, result);
+                break;
+            case SHOW_STMT:
+                statement_show(statement, result);
+                break;
+            case DROP_TABLE_STMT:
+                statement_drop_table(statement, result);
+                break;
+        }
+
+    } 
+
+    /* Calulate duration. */
+    end = clock();
+    result->duration = (double)(end - start) / CLOCKS_PER_SEC;
+    db_log(INFO, "Duration: %lfs", result->duration);
+
+}
+
+
+/* Execute SQL
  * Now supported statments:
  * (1) SELECT
  * (2) UPDATE
@@ -117,77 +171,44 @@ static void statement_show(Statement *statement, DBResult *result) {
  * (8) BEGIN TRANSACTION
  * (9) COMMIT TRANSACTION
  * */
-void statement(char *sql) {
+void execute(char *sql) {
 
-    /* Execute statment */
     clock_t start, end;
     start = clock();
-    DBResult *result = new_db_result();
-
+    DBResultSet *result_set = new_db_result_set();
     /* Check empty sql. */
     if (!is_empty(sql)) {
-
+        Statements *statements = NULL;
         /* Catch Error. */
         if (setjmp(errEnv) == 0) {
-            /* Execute statement. */
-            Statement *statement = parse(sql);
-            if (statement) {
-                result->stmt_type = statement->statement_type;
-                switch(statement->statement_type) {
-                    case BEGIN_TRANSACTION_STMT:
-                        statement_begin_transaction(statement, result);
-                        break;
-                    case COMMIT_TRANSACTION_STMT:
-                        statement_commit_transaction(statement, result);
-                        break;
-                    case ROLLBACK_TRANSACTION_STMT:
-                        statement_roolback_transaction(statement, result);
-                        break;
-                    case CREATE_TABLE_STMT:
-                        statement_create_table(statement, result);
-                        break;
-                    case INSERT_STMT:
-                        statement_insert(statement, result); 
-                        break; 
-                    case SELECT_STMT:
-                        statement_select(statement, result); 
-                        break; 
-                    case UPDATE_STMT:
-                        statement_update(statement, result); 
-                        break; 
-                    case DELETE_STMT:
-                        statement_delete(statement, result); 
-                        break; 
-                    case DESCRIBE_STMT:
-                        statement_describe(statement, result);
-                        break;
-                    case SHOW_STMT:
-                        statement_show(statement, result);
-                        break;
-                    case DROP_TABLE_STMT:
-                        statement_drop_table(statement, result);
-                        break;
-                }
-
-                /* Free memory. */
-                free_statment(statement);
-            } 
+            statements = parse(sql);
+            /* Execute each statement. */
+            for (uint32_t i = 0; i < statements->size; i++) {
+                DBResult *result = new_db_result();
+                add_db_result(result_set, result);
+                Statement *statement = statements->list[i];
+                exec_statement(statement, result);
+            }
         } else {
+            /* Catch routine. */
+            DBResult *result = new_db_result();
+            add_db_result(result_set, result);
+
+            /* For error catch, result is false. */
             result->success = false;
+
+            /* Calulate duration. */
+            end = clock();
+            result->duration = (double)(end - start) / CLOCKS_PER_SEC;
         }
+        /* Free memory. */
+        free_statements(statements);
     } 
 
-    /* Calulate duration. */
-    end = clock();
-    result->duration = (double)(end - start) / CLOCKS_PER_SEC;
-    db_log(INFO, "Duration: %lfs", result->duration);
+    db_send_result_set(result_set);
 
-    /* send result. */
-    db_send_result(result);
+    free_db_result_set(result_set);
 
-    /* Free memory. */
-    free_db_result(result);
-    
     /* Free buffer. */
     remove_table_buffer();
 

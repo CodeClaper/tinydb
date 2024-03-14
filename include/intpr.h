@@ -117,7 +117,13 @@ DescribeNode *make_describe_node();
 /* make a shwo table node. */
 ShowNode *make_show_node(ShowNodeType type);
 
-/* make an ast node. */
-ASTNode *make_ast_node();
+/* make a statement. */
+Statement *make_statement();
+
+/* make statements. */
+Statements *make_statements();
+
+/* add statement to statements*/
+void add_statement(Statements *statements, Statement *statement);
 
 #endif

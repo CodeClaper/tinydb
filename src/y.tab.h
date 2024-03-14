@@ -244,9 +244,10 @@ union YYSTYPE
    DeleteNode               *delete_node;
    DescribeNode             *describe_node;
    ShowNode                 *show_node;
-   ASTNode                  *ast_node;
+   Statement                *statement;
+   Statements               *statements;
 
-#line 250 "y.tab.h"
+#line 251 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -258,7 +259,7 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 
-int yyparse (ASTNode *ast_node);
+int yyparse (Statements *states);
 
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */

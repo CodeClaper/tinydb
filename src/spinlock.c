@@ -10,6 +10,10 @@
 #include <unistd.h>
 #include "spinlock.h"
 
+/* Init spin lock. */
+void spin_lock_init(s_lock *lock) {
+    *lock = SPIN_UN_LOCKED_STATUS;
+}
 
 /* Acquire spin lock, if fail, it will block. */
 void spin_lock_acquire(s_lock *lock) {

@@ -51,7 +51,8 @@ int yylex();
    DeleteNode               *delete_node;
    DescribeNode             *describe_node;
    ShowNode                 *show_node;
-   ASTNode                  *ast_node;
+   Statement                *statement;
+   Statements               *statements;
 };
 
 %left OR
@@ -122,67 +123,97 @@ int yylex();
 %type <drop_table_node> drop_table_statement
 %type <describe_node> describe_statement
 %type <show_node> show_statement
-%type <ast_node> statement;
-%parse-param {ASTNode *ast_node}
+%type <statement> statement;
+%type <statements> statements;
+%parse-param {Statements *states}
 
 %%
 statements: 
     statement 
+        {
+            add_statement(states, $1);
+            $$ = states;
+        }
     | statements statement
-    | statements
+        {
+            add_statement($1, $2);
+            $$ = $1;
+        }
     ;
 statement: 
     begin_transaction_statement
         {
-            ast_node->statement_type = BEGIN_TRANSACTION_STMT;
+            Statement *statement = make_statement();
+            statement->statement_type = BEGIN_TRANSACTION_STMT;
+            $$ = statement;
         }
     | commit_transaction_statement
         {
-            ast_node->statement_type = COMMIT_TRANSACTION_STMT;
+            Statement *statement = make_statement();
+            statement->statement_type = COMMIT_TRANSACTION_STMT;
+            $$ = statement;
         }
     | rollback_transaction_statement
         {
-            ast_node->statement_type = ROLLBACK_TRANSACTION_STMT;
+            Statement *statement = make_statement();
+            statement->statement_type = ROLLBACK_TRANSACTION_STMT;
+            $$ = statement;
         }
     | create_table_statement
         {
-            ast_node->statement_type = CREATE_TABLE_STMT;
-            ast_node->create_table_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = CREATE_TABLE_STMT;
+            statement->create_table_node = $1;
+            $$ = statement;
         }
     | drop_table_statement
         {
-            ast_node->statement_type = DROP_TABLE_STMT;
-            ast_node->drop_table_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = DROP_TABLE_STMT;
+            statement->drop_table_node = $1;
+            $$ = statement;
         }
     | select_statement 
         {
-            ast_node->statement_type = SELECT_STMT;
-            ast_node->select_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = SELECT_STMT;
+            statement->select_node = $1;
+            $$ = statement;
         }
     | insert_statement 
         {
-            ast_node->statement_type = INSERT_STMT;
-            ast_node->insert_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = INSERT_STMT;
+            statement->insert_node = $1;
+            $$ = statement;
         }
     | update_statement
         {
-            ast_node->statement_type = UPDATE_STMT;
-            ast_node->update_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = UPDATE_STMT;
+            statement->update_node = $1;
+            $$ = statement;
         }
     | delete_statement
         {
-            ast_node->statement_type = DELETE_STMT;
-            ast_node->delete_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = DELETE_STMT;
+            statement->delete_node = $1;
+            $$ = statement;
         }
     | describe_statement
         {
-            ast_node->statement_type = DESCRIBE_STMT;
-            ast_node->describe_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = DESCRIBE_STMT;
+            statement->describe_node = $1;
+            $$ = statement;
         }
     | show_statement 
         {
-            ast_node->statement_type = SHOW_STMT;
-            ast_node->show_node = $1;
+            Statement *statement = make_statement();
+            statement->statement_type = SHOW_STMT;
+            statement->show_node = $1;
+            $$ = statement;
         }
     ;
 begin_transaction_statement:

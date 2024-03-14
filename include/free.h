@@ -90,11 +90,11 @@ void free_insert_node(InsertNode *insert_node);
 /* Free create table node. */
 void free_create_table_node(CreateTableNode *create_table_node);
 
-/* Free ASTNode. */
-void free_ast_node(ASTNode *node);
-
 /* Free statment */
 void free_statment(Statement *stmt);
+
+/* Free statements. */
+void free_statements(Statements *statements);
 
 /* Free query param. */
 void free_query_param(QueryParam *query_param);
@@ -116,6 +116,9 @@ void free_map_list(MapList *map_list);
 
 /* Free DBResult. */
 void free_db_result(DBResult *result);
+
+/* Free DBResultSet. */ 
+void free_db_result_set(DBResultSet *result_set);
 
 /* Free LogEntry.*/
 void free_log_entry(LogEntry *log_entry);

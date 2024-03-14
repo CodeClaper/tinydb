@@ -181,10 +181,10 @@ void auto_begin_transaction() {
     TransactionHandle *trans_handle;
 
     trans_handle = find_transaction();
-    if (trans_handle) {
-        db_log(ERROR, "Not found transaction.");
+
+    /* Already exists transaction, no need to auto begin transaction. */
+    if (trans_handle) 
         return;
-    }
 
     /* Generate new transaction. */
     trans_handle = db_malloc(sizeof(TransactionHandle), SDT_TRANSACTION_HANDLE);

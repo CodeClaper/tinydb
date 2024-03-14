@@ -62,6 +62,7 @@ typedef enum SysDataType{
     SDT_SHOW_NODE,
     SDT_AST_NODE,
     SDT_STATEMENT,
+    SDT_STATEMENTS,
     SDT_PAGER,
     SDT_META_COLUMN,
     SDT_META_TABLE,
@@ -85,6 +86,7 @@ typedef enum SysDataType{
     SDT_REFER_UPDATE_ENTITY,
     SDT_INSERT_EXECUTE_RESULT,
     SDT_DB_RESULT,
+    SDT_DB_RESULT_SET,
     SDT_LOCK_HANDLE,
     SDT_LOCK_TABLE,
     SDT_TRANSACTION_HANDLE,
@@ -137,6 +139,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "SHOW_NODE",\
    "AST_NODE",\
    "STATEMENT",\
+   "STATEMENTS",\
    "PAGER",\
    "META_COLUMN",\
    "META_TABLE",\
@@ -160,6 +163,7 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "REFER_UPDATE_ENTITY",\
    "INSERT_EXECUTE_RESULT",\
    "DB_RESULT",\
+   "DB_RESULT_SET",\
    "LOCK_HANDLE",\
    "LOCK_TABLE",\
    "TRANSACTION_HANDLE",\
@@ -525,7 +529,7 @@ typedef struct {
     ShowNodeType type;
 } ShowNode;
 
-/* ASTNode */
+/* Statement */
 typedef struct {
   StatementType statement_type;
   union {
@@ -538,13 +542,13 @@ typedef struct {
         DescribeNode *describe_node;
         ShowNode *show_node;
   };
-} ASTNode;
-
-/* Statement */
-typedef struct {
-    StatementType statement_type;
-    ASTNode *ast_node;
 } Statement;
+
+/* Statements */
+typedef struct {
+    uint32_t size;
+    Statement **list;
+} Statements;
 
 /* Pager */
 typedef struct {
@@ -717,7 +721,13 @@ typedef struct {
     uint32_t rows;
     char *message;
     double duration;
-}DBResult;
+} DBResult;
+
+/* DB Result Set.*/
+typedef struct {
+    uint32_t size;
+    DBResult **set;
+} DBResultSet;
 
 /* Alias struct flock. */
 typedef struct flock FileLock;

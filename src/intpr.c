@@ -237,9 +237,22 @@ ShowNode *make_show_node(ShowNodeType type) {
     return show_node;
 }
 
-/* make an ast node. */
-ASTNode *make_ast_node() {
-    ASTNode *ast_node = db_malloc(sizeof(ASTNode), SDT_AST_NODE);
-    return ast_node;
+/* make statement. */
+Statement *make_statement() {
+    Statement *statement = db_malloc(sizeof(Statement), SDT_STATEMENT);
+    return statement;
 }
 
+/* make statements. */
+Statements *make_statements() {
+    Statements *statements = db_malloc(sizeof(Statements), SDT_STATEMENTS);
+    statements->size = 0;
+    statements->list = db_malloc(0, SDT_POINTER);
+    return statements;
+}
+
+/* add statement to statements*/
+void add_statement(Statements *statements, Statement *statement) {
+    statements->list = db_realloc(statements->list, sizeof(Statement *) * (statements->size + 1));
+    statements->list[statements->size++] = statement;
+}

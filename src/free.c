@@ -512,47 +512,50 @@ void free_show_tables_node(ShowNode *show_node) {
 }
 
 /* Free ASTNode. */
-void free_ast_node(ASTNode *node) {
-    switch(node->statement_type) {
+void free_statement(Statement *statement) {
+    switch(statement->statement_type) {
         case BEGIN_TRANSACTION_STMT:
         case COMMIT_TRANSACTION_STMT:
             break;
         case SELECT_STMT:
-            free_select_node(node->select_node);
+            free_select_node(statement->select_node);
             break;
         case INSERT_STMT:
-            free_insert_node(node->insert_node);
+            free_insert_node(statement->insert_node);
             break;
         case UPDATE_STMT:
-            free_update_node(node->update_node);
+            free_update_node(statement->update_node);
             break;
         case DELETE_STMT:
-            free_delete_node(node->delete_node);
+            free_delete_node(statement->delete_node);
             break;
         case CREATE_TABLE_STMT:
-            free_create_table_node(node->create_table_node);
+            free_create_table_node(statement->create_table_node);
             break;
         case DROP_TABLE_STMT:
-            free_drop_table_node(node->drop_table_node);
+            free_drop_table_node(statement->drop_table_node);
             break;
         case DESCRIBE_STMT:
-            free_describe_node(node->describe_node);
+            free_describe_node(statement->describe_node);
             break;
         case SHOW_STMT:
-            free_show_tables_node(node->show_node);
+            free_show_tables_node(statement->show_node);
             break;
     }
-    db_free(node);
+    db_free(statement);
 }
 
-
-/* Free statment */
-void free_statment(Statement *stmt) {
-    if (stmt) {
-        free_ast_node(stmt->ast_node);
-        db_free(stmt);
+/* Free statements. */
+void free_statements(Statements *statements) {
+    if (statements) {
+        for (uint32_t i = 0; i < statements->size; i++) {
+            free_statement(statements->list[i]);
+        }
+        db_free(statements->list);
+        db_free(statements);
     }
 }
+
 
 /* Free table list */
 void free_table_list(TableList *table_list) {
@@ -626,6 +629,17 @@ void free_db_result(DBResult *result) {
                 break;
         }
         db_free(result);
+    }
+}
+
+/* Free DBResultSet. */ 
+void free_db_result_set(DBResultSet *result_set) {
+    if (result_set) {
+        for (uint32_t i = 0; i < result_set->size; i++) {
+            free_db_result(result_set->set[i]);
+        }
+        db_free(result_set->set);
+        db_free(result_set);
     }
 }
 

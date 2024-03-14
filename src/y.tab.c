@@ -316,9 +316,10 @@ union YYSTYPE
    DeleteNode               *delete_node;
    DescribeNode             *describe_node;
    ShowNode                 *show_node;
-   ASTNode                  *ast_node;
+   Statement                *statement;
+   Statements               *statements;
 
-#line 322 "y.tab.c"
+#line 323 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -330,7 +331,7 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 
-int yyparse (ASTNode *ast_node);
+int yyparse (Statements *states);
 
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */
@@ -786,7 +787,7 @@ union yyalloc
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  42
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  114
+#define YYNRULES  113
 /* YYNSTATES -- Number of states.  */
 #define YYNSTATES  226
 
@@ -844,18 +845,18 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   130,   130,   131,   132,   135,   139,   143,   147,   152,
-     157,   162,   167,   172,   177,   182,   189,   192,   195,   198,
-     205,   215,   223,   232,   242,   250,   261,   268,   278,   284,
-     293,   301,   305,   311,   318,   326,   332,   338,   345,   352,
-     359,   367,   374,   382,   388,   396,   404,   412,   422,   428,
-     435,   441,   448,   458,   469,   480,   489,   500,   501,   502,
-     503,   504,   505,   506,   507,   508,   511,   519,   526,   534,
-     544,   550,   557,   564,   571,   578,   585,   595,   603,   612,
-     616,   622,   628,   635,   644,   652,   660,   664,   673,   680,
-     687,   696,   706,   715,   725,   728,   735,   744,   745,   746,
-     747,   748,   749,   752,   759,   766,   773,   780,   789,   796,
-     803,   811,   818,   827,   828
+       0,   132,   132,   137,   144,   150,   156,   162,   169,   176,
+     183,   190,   197,   204,   211,   220,   223,   226,   229,   236,
+     246,   254,   263,   273,   281,   292,   299,   309,   315,   324,
+     332,   336,   342,   349,   357,   363,   369,   376,   383,   390,
+     398,   405,   413,   419,   427,   435,   443,   453,   459,   466,
+     472,   479,   489,   500,   511,   520,   531,   532,   533,   534,
+     535,   536,   537,   538,   539,   542,   550,   557,   565,   575,
+     581,   588,   595,   602,   609,   616,   626,   634,   643,   647,
+     653,   659,   666,   675,   683,   691,   695,   704,   711,   718,
+     727,   737,   746,   756,   759,   766,   775,   776,   777,   778,
+     779,   780,   783,   790,   797,   804,   811,   820,   827,   834,
+     842,   849,   858,   859
 };
 #endif
 
@@ -946,28 +947,28 @@ static const yytype_int16 yypact[] =
 static const yytype_int8 yydefact[] =
 {
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     2,     5,     6,     7,     8,     9,    10,
-      11,    12,    13,    14,    15,   113,     0,    16,    17,    18,
-       0,     0,     0,     0,     0,     0,     0,    34,     0,    67,
-       0,    33,    36,    38,    39,    41,     0,    35,     0,     0,
-       0,     0,     0,     1,     3,   114,     0,     0,     0,     0,
+       0,     0,     0,     2,     4,     5,     6,     7,     8,     9,
+      10,    11,    12,    13,    14,   112,     0,    15,    16,    17,
+       0,     0,     0,     0,     0,     0,     0,    33,     0,    66,
+       0,    32,    35,    37,    38,    40,     0,    34,     0,     0,
+       0,     0,     0,     1,     3,   113,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    30,    31,    32,
-       0,    21,   111,   112,     0,     0,   110,   108,   109,     0,
-       0,     0,    43,    68,     0,    94,    37,    46,    47,    44,
-      45,    40,    42,     0,     0,     0,     0,    81,     0,    28,
-       0,    50,     0,   103,   104,   105,   106,   107,    69,     0,
-       0,     0,     0,     0,    48,     0,     0,     0,    26,     0,
-       0,     0,    87,    88,    89,    90,     0,     0,    59,    57,
-      58,    60,    61,    62,    63,    65,    64,    54,    52,    94,
-      95,    23,     0,    79,    80,     0,    72,    75,    74,     0,
-      70,    76,    73,     0,     0,    83,     0,    82,     0,    97,
-      98,    99,   100,   101,   102,     0,     0,     0,     0,     0,
-      29,     0,    51,     0,    19,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,    49,     0,    27,    86,     0,    92,
-      91,    85,    84,     0,     0,     0,    55,    56,    22,    96,
-       0,    77,    71,    24,     0,     0,     0,    20,    53,    78,
-       0,    93,     0,     0,    66,    25
+       0,     0,     0,     0,     0,     0,     0,    29,    30,    31,
+       0,    20,   110,   111,     0,     0,   109,   107,   108,     0,
+       0,     0,    42,    67,     0,    93,    36,    45,    46,    43,
+      44,    39,    41,     0,     0,     0,     0,    80,     0,    27,
+       0,    49,     0,   102,   103,   104,   105,   106,    68,     0,
+       0,     0,     0,     0,    47,     0,     0,     0,    25,     0,
+       0,     0,    86,    87,    88,    89,     0,     0,    58,    56,
+      57,    59,    60,    61,    62,    64,    63,    53,    51,    93,
+      94,    22,     0,    78,    79,     0,    71,    74,    73,     0,
+      69,    75,    72,     0,     0,    82,     0,    81,     0,    96,
+      97,    98,    99,   100,   101,     0,     0,     0,     0,     0,
+      28,     0,    50,     0,    18,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    48,     0,    26,    85,     0,    91,
+      90,    84,    83,     0,     0,     0,    54,    55,    21,    95,
+       0,    76,    70,    23,     0,     0,     0,    19,    52,    77,
+       0,    92,     0,     0,    65,    24
 };
 
 /* YYPGOTO[NTERM-NUM].  */
@@ -1083,35 +1084,35 @@ static const yytype_int8 yystos[] =
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    72,    73,    73,    73,    74,    74,    74,    74,    74,
-      74,    74,    74,    74,    74,    74,    75,    76,    77,    78,
-      78,    79,    80,    80,    81,    81,    82,    82,    83,    83,
-      84,    85,    85,    86,    86,    87,    88,    88,    89,    89,
-      89,    89,    89,    89,    90,    90,    90,    90,    91,    91,
-      92,    92,    93,    93,    93,    93,    93,    94,    94,    94,
-      94,    94,    94,    94,    94,    94,    95,    96,    96,    96,
-      97,    97,    98,    98,    98,    98,    98,    99,    99,   100,
-     100,   101,   101,   102,   103,   103,   103,   103,   104,   104,
-     104,   105,   106,   107,   108,   108,   108,   109,   109,   109,
-     109,   109,   109,   110,   110,   110,   110,   110,   111,   111,
-     111,   112,   112,   113,   113
+       0,    72,    73,    73,    74,    74,    74,    74,    74,    74,
+      74,    74,    74,    74,    74,    75,    76,    77,    78,    78,
+      79,    80,    80,    81,    81,    82,    82,    83,    83,    84,
+      85,    85,    86,    86,    87,    88,    88,    89,    89,    89,
+      89,    89,    89,    90,    90,    90,    90,    91,    91,    92,
+      92,    93,    93,    93,    93,    93,    94,    94,    94,    94,
+      94,    94,    94,    94,    94,    95,    96,    96,    96,    97,
+      97,    98,    98,    98,    98,    98,    99,    99,   100,   100,
+     101,   101,   102,   103,   103,   103,   103,   104,   104,   104,
+     105,   106,   107,   108,   108,   108,   109,   109,   109,   109,
+     109,   109,   110,   110,   110,   110,   110,   111,   111,   111,
+     112,   112,   113,   113
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     1,     2,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     2,     2,     2,     7,
-       9,     4,     8,     6,     8,    11,     5,     7,     4,     6,
-       3,     3,     3,     1,     1,     1,     1,     3,     1,     1,
-       3,     1,     3,     3,     3,     3,     3,     3,     1,     3,
-       1,     3,     2,     5,     2,     4,     4,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     5,     1,     3,     4,
-       1,     3,     1,     1,     1,     1,     1,     3,     4,     1,
-       1,     1,     3,     3,     3,     3,     3,     1,     1,     1,
-       1,     3,     3,     5,     0,     2,     4,     1,     1,     1,
-       1,     1,     1,     4,     4,     4,     4,     4,     1,     1,
-       1,     1,     1,     1,     2
+       1,     1,     1,     1,     1,     2,     2,     2,     7,     9,
+       4,     8,     6,     8,    11,     5,     7,     4,     6,     3,
+       3,     3,     1,     1,     1,     1,     3,     1,     1,     3,
+       1,     3,     3,     3,     3,     3,     3,     1,     3,     1,
+       3,     2,     5,     2,     4,     4,     1,     1,     1,     1,
+       1,     1,     1,     1,     1,     5,     1,     3,     4,     1,
+       3,     1,     1,     1,     1,     1,     3,     4,     1,     1,
+       1,     3,     3,     3,     3,     3,     1,     1,     1,     1,
+       3,     3,     5,     0,     2,     4,     1,     1,     1,     1,
+       1,     1,     4,     4,     4,     4,     4,     1,     1,     1,
+       1,     1,     1,     2
 };
 
 
@@ -1140,7 +1141,7 @@ enum { YYENOMEM = -2 };
       }                                                           \
     else                                                          \
       {                                                           \
-        yyerror (ast_node, YY_("syntax error: cannot back up")); \
+        yyerror (states, YY_("syntax error: cannot back up")); \
         YYERROR;                                                  \
       }                                                           \
   while (0)
@@ -1173,7 +1174,7 @@ do {                                                                      \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Kind, Value, ast_node); \
+                  Kind, Value, states); \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
@@ -1185,11 +1186,11 @@ do {                                                                      \
 
 static void
 yy_symbol_value_print (FILE *yyo,
-                       yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, ASTNode *ast_node)
+                       yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, Statements *states)
 {
   FILE *yyoutput = yyo;
   YY_USE (yyoutput);
-  YY_USE (ast_node);
+  YY_USE (states);
   if (!yyvaluep)
     return;
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
@@ -1204,12 +1205,12 @@ yy_symbol_value_print (FILE *yyo,
 
 static void
 yy_symbol_print (FILE *yyo,
-                 yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, ASTNode *ast_node)
+                 yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, Statements *states)
 {
   YYFPRINTF (yyo, "%s %s (",
              yykind < YYNTOKENS ? "token" : "nterm", yysymbol_name (yykind));
 
-  yy_symbol_value_print (yyo, yykind, yyvaluep, ast_node);
+  yy_symbol_value_print (yyo, yykind, yyvaluep, states);
   YYFPRINTF (yyo, ")");
 }
 
@@ -1243,7 +1244,7 @@ do {                                                            \
 
 static void
 yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp,
-                 int yyrule, ASTNode *ast_node)
+                 int yyrule, Statements *states)
 {
   int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
@@ -1256,7 +1257,7 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp,
       YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr,
                        YY_ACCESSING_SYMBOL (+yyssp[yyi + 1 - yynrhs]),
-                       &yyvsp[(yyi + 1) - (yynrhs)], ast_node);
+                       &yyvsp[(yyi + 1) - (yynrhs)], states);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -1264,7 +1265,7 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp,
 # define YY_REDUCE_PRINT(Rule)          \
 do {                                    \
   if (yydebug)                          \
-    yy_reduce_print (yyssp, yyvsp, Rule, ast_node); \
+    yy_reduce_print (yyssp, yyvsp, Rule, states); \
 } while (0)
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
@@ -1305,10 +1306,10 @@ int yydebug;
 
 static void
 yydestruct (const char *yymsg,
-            yysymbol_kind_t yykind, YYSTYPE *yyvaluep, ASTNode *ast_node)
+            yysymbol_kind_t yykind, YYSTYPE *yyvaluep, Statements *states)
 {
   YY_USE (yyvaluep);
-  YY_USE (ast_node);
+  YY_USE (states);
   if (!yymsg)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp);
@@ -1335,7 +1336,7 @@ int yynerrs;
 `----------*/
 
 int
-yyparse (ASTNode *ast_node)
+yyparse (Statements *states)
 {
     yy_state_fast_t yystate = 0;
     /* Number of tokens to shift before error messages enabled.  */
@@ -1576,115 +1577,155 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 5: /* statement: begin_transaction_statement  */
-#line 136 "sql.y"
+  case 2: /* statements: statement  */
+#line 133 "sql.y"
         {
-            ast_node->statement_type = BEGIN_TRANSACTION_STMT;
+            add_statement(states, (yyvsp[0].statement));
+            (yyval.statements) = states;
         }
-#line 1585 "y.tab.c"
+#line 1587 "y.tab.c"
     break;
 
-  case 6: /* statement: commit_transaction_statement  */
-#line 140 "sql.y"
+  case 3: /* statements: statements statement  */
+#line 138 "sql.y"
         {
-            ast_node->statement_type = COMMIT_TRANSACTION_STMT;
+            add_statement((yyvsp[-1].statements), (yyvsp[0].statement));
+            (yyval.statements) = (yyvsp[-1].statements);
         }
-#line 1593 "y.tab.c"
+#line 1596 "y.tab.c"
     break;
 
-  case 7: /* statement: rollback_transaction_statement  */
-#line 144 "sql.y"
+  case 4: /* statement: begin_transaction_statement  */
+#line 145 "sql.y"
         {
-            ast_node->statement_type = ROLLBACK_TRANSACTION_STMT;
+            Statement *statement = make_statement();
+            statement->statement_type = BEGIN_TRANSACTION_STMT;
+            (yyval.statement) = statement;
         }
-#line 1601 "y.tab.c"
+#line 1606 "y.tab.c"
     break;
 
-  case 8: /* statement: create_table_statement  */
-#line 148 "sql.y"
+  case 5: /* statement: commit_transaction_statement  */
+#line 151 "sql.y"
         {
-            ast_node->statement_type = CREATE_TABLE_STMT;
-            ast_node->create_table_node = (yyvsp[0].create_table_node);
+            Statement *statement = make_statement();
+            statement->statement_type = COMMIT_TRANSACTION_STMT;
+            (yyval.statement) = statement;
         }
-#line 1610 "y.tab.c"
+#line 1616 "y.tab.c"
     break;
 
-  case 9: /* statement: drop_table_statement  */
-#line 153 "sql.y"
+  case 6: /* statement: rollback_transaction_statement  */
+#line 157 "sql.y"
         {
-            ast_node->statement_type = DROP_TABLE_STMT;
-            ast_node->drop_table_node = (yyvsp[0].drop_table_node);
+            Statement *statement = make_statement();
+            statement->statement_type = ROLLBACK_TRANSACTION_STMT;
+            (yyval.statement) = statement;
         }
-#line 1619 "y.tab.c"
+#line 1626 "y.tab.c"
     break;
 
-  case 10: /* statement: select_statement  */
-#line 158 "sql.y"
-        {
-            ast_node->statement_type = SELECT_STMT;
-            ast_node->select_node = (yyvsp[0].select_node);
-        }
-#line 1628 "y.tab.c"
-    break;
-
-  case 11: /* statement: insert_statement  */
+  case 7: /* statement: create_table_statement  */
 #line 163 "sql.y"
         {
-            ast_node->statement_type = INSERT_STMT;
-            ast_node->insert_node = (yyvsp[0].insert_node);
+            Statement *statement = make_statement();
+            statement->statement_type = CREATE_TABLE_STMT;
+            statement->create_table_node = (yyvsp[0].create_table_node);
+            (yyval.statement) = statement;
         }
 #line 1637 "y.tab.c"
     break;
 
-  case 12: /* statement: update_statement  */
-#line 168 "sql.y"
+  case 8: /* statement: drop_table_statement  */
+#line 170 "sql.y"
         {
-            ast_node->statement_type = UPDATE_STMT;
-            ast_node->update_node = (yyvsp[0].update_node);
+            Statement *statement = make_statement();
+            statement->statement_type = DROP_TABLE_STMT;
+            statement->drop_table_node = (yyvsp[0].drop_table_node);
+            (yyval.statement) = statement;
         }
-#line 1646 "y.tab.c"
+#line 1648 "y.tab.c"
     break;
 
-  case 13: /* statement: delete_statement  */
-#line 173 "sql.y"
+  case 9: /* statement: select_statement  */
+#line 177 "sql.y"
         {
-            ast_node->statement_type = DELETE_STMT;
-            ast_node->delete_node = (yyvsp[0].delete_node);
+            Statement *statement = make_statement();
+            statement->statement_type = SELECT_STMT;
+            statement->select_node = (yyvsp[0].select_node);
+            (yyval.statement) = statement;
         }
-#line 1655 "y.tab.c"
+#line 1659 "y.tab.c"
     break;
 
-  case 14: /* statement: describe_statement  */
-#line 178 "sql.y"
+  case 10: /* statement: insert_statement  */
+#line 184 "sql.y"
         {
-            ast_node->statement_type = DESCRIBE_STMT;
-            ast_node->describe_node = (yyvsp[0].describe_node);
+            Statement *statement = make_statement();
+            statement->statement_type = INSERT_STMT;
+            statement->insert_node = (yyvsp[0].insert_node);
+            (yyval.statement) = statement;
         }
-#line 1664 "y.tab.c"
+#line 1670 "y.tab.c"
     break;
 
-  case 15: /* statement: show_statement  */
-#line 183 "sql.y"
+  case 11: /* statement: update_statement  */
+#line 191 "sql.y"
         {
-            ast_node->statement_type = SHOW_STMT;
-            ast_node->show_node = (yyvsp[0].show_node);
+            Statement *statement = make_statement();
+            statement->statement_type = UPDATE_STMT;
+            statement->update_node = (yyvsp[0].update_node);
+            (yyval.statement) = statement;
         }
-#line 1673 "y.tab.c"
+#line 1681 "y.tab.c"
     break;
 
-  case 19: /* create_table_statement: CREATE TABLE table LEFTPAREN column_defs RIGHTPAREN end  */
-#line 199 "sql.y"
+  case 12: /* statement: delete_statement  */
+#line 198 "sql.y"
+        {
+            Statement *statement = make_statement();
+            statement->statement_type = DELETE_STMT;
+            statement->delete_node = (yyvsp[0].delete_node);
+            (yyval.statement) = statement;
+        }
+#line 1692 "y.tab.c"
+    break;
+
+  case 13: /* statement: describe_statement  */
+#line 205 "sql.y"
+        {
+            Statement *statement = make_statement();
+            statement->statement_type = DESCRIBE_STMT;
+            statement->describe_node = (yyvsp[0].describe_node);
+            (yyval.statement) = statement;
+        }
+#line 1703 "y.tab.c"
+    break;
+
+  case 14: /* statement: show_statement  */
+#line 212 "sql.y"
+        {
+            Statement *statement = make_statement();
+            statement->statement_type = SHOW_STMT;
+            statement->show_node = (yyvsp[0].show_node);
+            (yyval.statement) = statement;
+        }
+#line 1714 "y.tab.c"
+    break;
+
+  case 18: /* create_table_statement: CREATE TABLE table LEFTPAREN column_defs RIGHTPAREN end  */
+#line 230 "sql.y"
         {
             CreateTableNode *create_table_node = make_create_table_node();
             create_table_node->table_name = (yyvsp[-4].s_value);
             create_table_node->column_def_set_node = (yyvsp[-2].column_def_set_node);
             (yyval.create_table_node) = create_table_node;
         }
-#line 1684 "y.tab.c"
+#line 1725 "y.tab.c"
     break;
 
-  case 20: /* create_table_statement: CREATE TABLE table LEFTPAREN column_defs COMMA primary_key_statement RIGHTPAREN end  */
-#line 206 "sql.y"
+  case 19: /* create_table_statement: CREATE TABLE table LEFTPAREN column_defs COMMA primary_key_statement RIGHTPAREN end  */
+#line 237 "sql.y"
         {
             CreateTableNode *create_table_node = make_create_table_node();
             create_table_node->table_name = (yyvsp[-6].s_value);
@@ -1692,21 +1733,21 @@ yyreduce:
             create_table_node->primary_key_node = (yyvsp[-2].primary_key_node);
             (yyval.create_table_node) = create_table_node;
         }
-#line 1696 "y.tab.c"
+#line 1737 "y.tab.c"
     break;
 
-  case 21: /* drop_table_statement: DROP TABLE table end  */
-#line 216 "sql.y"
+  case 20: /* drop_table_statement: DROP TABLE table end  */
+#line 247 "sql.y"
         {
             DropTableNode *drop_table_node = make_drop_table_node();
             drop_table_node->table_name = (yyvsp[-1].s_value);
             (yyval.drop_table_node) = drop_table_node;
         }
-#line 1706 "y.tab.c"
+#line 1747 "y.tab.c"
     break;
 
-  case 22: /* select_statement: SELECT selection FROM table WHERE condition opt_limit end  */
-#line 224 "sql.y"
+  case 21: /* select_statement: SELECT selection FROM table WHERE condition opt_limit end  */
+#line 255 "sql.y"
         {
             SelectNode *select_node = make_select_node();
             select_node->selection = (yyvsp[-6].selection_node);
@@ -1715,11 +1756,11 @@ yyreduce:
             select_node->limit_node = (yyvsp[-1].limit_node);
             (yyval.select_node) = select_node;
         }
-#line 1719 "y.tab.c"
+#line 1760 "y.tab.c"
     break;
 
-  case 23: /* select_statement: SELECT selection FROM table opt_limit end  */
-#line 233 "sql.y"
+  case 22: /* select_statement: SELECT selection FROM table opt_limit end  */
+#line 264 "sql.y"
         {
             SelectNode *select_node = make_select_node();
             select_node->selection = (yyvsp[-4].selection_node);
@@ -1727,11 +1768,11 @@ yyreduce:
             select_node->limit_node = (yyvsp[-1].limit_node);
             (yyval.select_node) = select_node;
         }
-#line 1731 "y.tab.c"
+#line 1772 "y.tab.c"
     break;
 
-  case 24: /* insert_statement: INSERT INTO table VALUES LEFTPAREN value_items RIGHTPAREN end  */
-#line 243 "sql.y"
+  case 23: /* insert_statement: INSERT INTO table VALUES LEFTPAREN value_items RIGHTPAREN end  */
+#line 274 "sql.y"
         {
             InsertNode *node = make_insert_node();
             node->all_column = true;
@@ -1739,11 +1780,11 @@ yyreduce:
             node->value_item_set_node = (yyvsp[-2].value_item_set_node);
             (yyval.insert_node) = node;
         }
-#line 1743 "y.tab.c"
+#line 1784 "y.tab.c"
     break;
 
-  case 25: /* insert_statement: INSERT INTO table LEFTPAREN columns RIGHTPAREN VALUES LEFTPAREN value_items RIGHTPAREN end  */
-#line 251 "sql.y"
+  case 24: /* insert_statement: INSERT INTO table LEFTPAREN columns RIGHTPAREN VALUES LEFTPAREN value_items RIGHTPAREN end  */
+#line 282 "sql.y"
         {
             InsertNode *node = make_insert_node();
             node->all_column = false;
@@ -1752,22 +1793,22 @@ yyreduce:
             node->value_item_set_node = (yyvsp[-2].value_item_set_node);
             (yyval.insert_node) = node;
         }
-#line 1756 "y.tab.c"
+#line 1797 "y.tab.c"
     break;
 
-  case 26: /* update_statement: UPDATE table SET assignments end  */
-#line 262 "sql.y"
+  case 25: /* update_statement: UPDATE table SET assignments end  */
+#line 293 "sql.y"
         {
             UpdateNode *node = make_update_node();
             node->table_name = (yyvsp[-3].s_value);
             node->assignment_set_node = (yyvsp[-1].assignment_set_node);
             (yyval.update_node) = node;
         }
-#line 1767 "y.tab.c"
+#line 1808 "y.tab.c"
     break;
 
-  case 27: /* update_statement: UPDATE table SET assignments WHERE condition end  */
-#line 269 "sql.y"
+  case 26: /* update_statement: UPDATE table SET assignments WHERE condition end  */
+#line 300 "sql.y"
         {
             UpdateNode *node = make_update_node();
             node->table_name = (yyvsp[-5].s_value);
@@ -1775,128 +1816,128 @@ yyreduce:
             node->condition_node = (yyvsp[-1].condition_node);
             (yyval.update_node) = node;
         }
-#line 1779 "y.tab.c"
+#line 1820 "y.tab.c"
     break;
 
-  case 28: /* delete_statement: DELETE FROM table end  */
-#line 279 "sql.y"
+  case 27: /* delete_statement: DELETE FROM table end  */
+#line 310 "sql.y"
         {
             DeleteNode *node = make_delete_node();
             node->table_name = (yyvsp[-1].s_value);
             (yyval.delete_node) = node;
         }
-#line 1789 "y.tab.c"
+#line 1830 "y.tab.c"
     break;
 
-  case 29: /* delete_statement: DELETE FROM table WHERE condition end  */
-#line 285 "sql.y"
+  case 28: /* delete_statement: DELETE FROM table WHERE condition end  */
+#line 316 "sql.y"
         {
             DeleteNode *node = make_delete_node();
             node->table_name = (yyvsp[-3].s_value);
             node->condition_node = (yyvsp[-1].condition_node);
             (yyval.delete_node) = node;
         }
-#line 1800 "y.tab.c"
+#line 1841 "y.tab.c"
     break;
 
-  case 30: /* describe_statement: DESCRIBE table end  */
-#line 294 "sql.y"
+  case 29: /* describe_statement: DESCRIBE table end  */
+#line 325 "sql.y"
         {
             DescribeNode *node = make_describe_node();
             node->table_name = db_strdup((yyvsp[-1].s_value));
             (yyval.describe_node) = node;
         }
-#line 1810 "y.tab.c"
+#line 1851 "y.tab.c"
     break;
 
-  case 31: /* show_statement: SHOW TABLES end  */
-#line 302 "sql.y"
+  case 30: /* show_statement: SHOW TABLES end  */
+#line 333 "sql.y"
         {
             (yyval.show_node) = make_show_node(SHOW_TABLES);
         }
-#line 1818 "y.tab.c"
+#line 1859 "y.tab.c"
     break;
 
-  case 32: /* show_statement: SHOW MEMORY end  */
-#line 306 "sql.y"
+  case 31: /* show_statement: SHOW MEMORY end  */
+#line 337 "sql.y"
         {
             (yyval.show_node) = make_show_node(SHOW_MEMORY);
         }
-#line 1826 "y.tab.c"
+#line 1867 "y.tab.c"
     break;
 
-  case 33: /* selection: scalar_exp_commalist  */
-#line 312 "sql.y"
+  case 32: /* selection: scalar_exp_commalist  */
+#line 343 "sql.y"
         {
             SelectionNode *selection_node = make_selection_node();
             selection_node->all_column = false;
             selection_node->scalar_exp_set = (yyvsp[0].scalar_exp_set_node);
             (yyval.selection_node) = selection_node;
         }
-#line 1837 "y.tab.c"
+#line 1878 "y.tab.c"
     break;
 
-  case 34: /* selection: ASTERISK  */
-#line 319 "sql.y"
+  case 33: /* selection: ASTERISK  */
+#line 350 "sql.y"
         {
             SelectionNode *selection_node = make_selection_node();
             selection_node->all_column = true;
             (yyval.selection_node) = selection_node;
         }
-#line 1847 "y.tab.c"
+#line 1888 "y.tab.c"
     break;
 
-  case 35: /* table: IDENTIFIER  */
-#line 327 "sql.y"
+  case 34: /* table: IDENTIFIER  */
+#line 358 "sql.y"
         {
             (yyval.s_value) = (yyvsp[0].s_value);
         }
-#line 1855 "y.tab.c"
+#line 1896 "y.tab.c"
     break;
 
-  case 36: /* scalar_exp_commalist: scalar_exp  */
-#line 333 "sql.y"
+  case 35: /* scalar_exp_commalist: scalar_exp  */
+#line 364 "sql.y"
         {
             ScalarExpSetNode *scalar_exp_set_node = make_scalar_exp_set_node();
             add_scalar_exp_node(scalar_exp_set_node, (yyvsp[0].scalar_exp_node));
             (yyval.scalar_exp_set_node) = scalar_exp_set_node;
         }
-#line 1865 "y.tab.c"
+#line 1906 "y.tab.c"
     break;
 
-  case 37: /* scalar_exp_commalist: scalar_exp_commalist COMMA scalar_exp  */
-#line 339 "sql.y"
+  case 36: /* scalar_exp_commalist: scalar_exp_commalist COMMA scalar_exp  */
+#line 370 "sql.y"
         {
             add_scalar_exp_node((yyvsp[-2].scalar_exp_set_node), (yyvsp[0].scalar_exp_node));
             (yyval.scalar_exp_set_node) = (yyvsp[-2].scalar_exp_set_node);
         }
-#line 1874 "y.tab.c"
+#line 1915 "y.tab.c"
     break;
 
-  case 38: /* scalar_exp: calculate  */
-#line 346 "sql.y"
+  case 37: /* scalar_exp: calculate  */
+#line 377 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_CALCULATE;
             scalar_exp_node->calculate = (yyvsp[0].calculate_node);
             (yyval.scalar_exp_node) = scalar_exp_node;
         }
-#line 1885 "y.tab.c"
+#line 1926 "y.tab.c"
     break;
 
-  case 39: /* scalar_exp: column  */
-#line 353 "sql.y"
+  case 38: /* scalar_exp: column  */
+#line 384 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_COLUMN;
             scalar_exp_node->column = (yyvsp[0].column_node);
             (yyval.scalar_exp_node) = scalar_exp_node;
         }
-#line 1896 "y.tab.c"
+#line 1937 "y.tab.c"
     break;
 
-  case 40: /* scalar_exp: column AS IDENTIFIER  */
-#line 360 "sql.y"
+  case 39: /* scalar_exp: column AS IDENTIFIER  */
+#line 391 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_COLUMN;
@@ -1904,22 +1945,22 @@ yyreduce:
             (yyval.scalar_exp_node) = scalar_exp_node;
             (yyval.scalar_exp_node)->alias = db_strdup((yyvsp[0].s_value));
         }
-#line 1908 "y.tab.c"
+#line 1949 "y.tab.c"
     break;
 
-  case 41: /* scalar_exp: function  */
-#line 368 "sql.y"
+  case 40: /* scalar_exp: function  */
+#line 399 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_FUNCTION;
             scalar_exp_node->function = (yyvsp[0].function_node);
             (yyval.scalar_exp_node) = scalar_exp_node;
         }
-#line 1919 "y.tab.c"
+#line 1960 "y.tab.c"
     break;
 
-  case 42: /* scalar_exp: function AS IDENTIFIER  */
-#line 375 "sql.y"
+  case 41: /* scalar_exp: function AS IDENTIFIER  */
+#line 406 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_FUNCTION;
@@ -1927,19 +1968,19 @@ yyreduce:
             (yyval.scalar_exp_node) = scalar_exp_node;
             (yyval.scalar_exp_node)->alias = db_strdup((yyvsp[0].s_value));
         }
-#line 1931 "y.tab.c"
+#line 1972 "y.tab.c"
     break;
 
-  case 43: /* scalar_exp: LEFTPAREN scalar_exp RIGHTPAREN  */
-#line 383 "sql.y"
+  case 42: /* scalar_exp: LEFTPAREN scalar_exp RIGHTPAREN  */
+#line 414 "sql.y"
         {
             (yyval.scalar_exp_node) = (yyvsp[-1].scalar_exp_node);
         }
-#line 1939 "y.tab.c"
+#line 1980 "y.tab.c"
     break;
 
-  case 44: /* calculate: scalar_exp PLUS scalar_exp  */
-#line 389 "sql.y"
+  case 43: /* calculate: scalar_exp PLUS scalar_exp  */
+#line 420 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_ADD;
@@ -1947,11 +1988,11 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 1951 "y.tab.c"
+#line 1992 "y.tab.c"
     break;
 
-  case 45: /* calculate: scalar_exp MINUS scalar_exp  */
-#line 397 "sql.y"
+  case 44: /* calculate: scalar_exp MINUS scalar_exp  */
+#line 428 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_SUB;
@@ -1959,11 +2000,11 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 1963 "y.tab.c"
+#line 2004 "y.tab.c"
     break;
 
-  case 46: /* calculate: scalar_exp ASTERISK scalar_exp  */
-#line 405 "sql.y"
+  case 45: /* calculate: scalar_exp ASTERISK scalar_exp  */
+#line 436 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_MUL;
@@ -1971,11 +2012,11 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 1975 "y.tab.c"
+#line 2016 "y.tab.c"
     break;
 
-  case 47: /* calculate: scalar_exp SOLIDUS scalar_exp  */
-#line 413 "sql.y"
+  case 46: /* calculate: scalar_exp SOLIDUS scalar_exp  */
+#line 444 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_DIV;
@@ -1983,49 +2024,49 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 1987 "y.tab.c"
+#line 2028 "y.tab.c"
     break;
 
-  case 48: /* columns: column  */
-#line 423 "sql.y"
+  case 47: /* columns: column  */
+#line 454 "sql.y"
         {
             ColumnSetNode *column_set_node = make_column_set_node();
             add_column_to_set(column_set_node, (yyvsp[0].column_node));
             (yyval.column_set_node) = column_set_node;
         }
-#line 1997 "y.tab.c"
+#line 2038 "y.tab.c"
     break;
 
-  case 49: /* columns: columns COMMA column  */
-#line 429 "sql.y"
+  case 48: /* columns: columns COMMA column  */
+#line 460 "sql.y"
         {
             (yyval.column_set_node) = (yyvsp[-2].column_set_node);
             add_column_to_set((yyval.column_set_node), (yyvsp[0].column_node));
         }
-#line 2006 "y.tab.c"
+#line 2047 "y.tab.c"
     break;
 
-  case 50: /* column_defs: column_def  */
-#line 436 "sql.y"
+  case 49: /* column_defs: column_def  */
+#line 467 "sql.y"
         {
             ColumnDefSetNode *column_def_set_node = make_column_def_set_node();
             add_column_def_to_set(column_def_set_node, (yyvsp[0].column_def_node));
             (yyval.column_def_set_node) = column_def_set_node;
         }
-#line 2016 "y.tab.c"
+#line 2057 "y.tab.c"
     break;
 
-  case 51: /* column_defs: column_defs COMMA column_def  */
-#line 442 "sql.y"
+  case 50: /* column_defs: column_defs COMMA column_def  */
+#line 473 "sql.y"
         {
             (yyval.column_def_set_node) = (yyvsp[-2].column_def_set_node);
             add_column_def_to_set((yyval.column_def_set_node), (yyvsp[0].column_def_node));
         }
-#line 2025 "y.tab.c"
+#line 2066 "y.tab.c"
     break;
 
-  case 52: /* column_def: column data_type  */
-#line 449 "sql.y"
+  case 51: /* column_def: column data_type  */
+#line 480 "sql.y"
         {
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = (yyvsp[-1].column_node);
@@ -2035,11 +2076,11 @@ yyreduce:
             column_def_node->is_define_len = false;
             (yyval.column_def_node) = column_def_node;
         }
-#line 2039 "y.tab.c"
+#line 2080 "y.tab.c"
     break;
 
-  case 53: /* column_def: column STRING LEFTPAREN INTVALUE RIGHTPAREN  */
-#line 459 "sql.y"
+  case 52: /* column_def: column STRING LEFTPAREN INTVALUE RIGHTPAREN  */
+#line 490 "sql.y"
         {
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = (yyvsp[-4].column_node);
@@ -2050,11 +2091,11 @@ yyreduce:
             column_def_node->allow_null = false;
             (yyval.column_def_node) = column_def_node;
         }
-#line 2054 "y.tab.c"
+#line 2095 "y.tab.c"
     break;
 
-  case 54: /* column_def: column table  */
-#line 470 "sql.y"
+  case 53: /* column_def: column table  */
+#line 501 "sql.y"
         {
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = (yyvsp[-1].column_node);
@@ -2065,11 +2106,11 @@ yyreduce:
             column_def_node->allow_null = false;
             (yyval.column_def_node) = column_def_node;
         }
-#line 2069 "y.tab.c"
+#line 2110 "y.tab.c"
     break;
 
-  case 55: /* column_def: column data_type PRIMARY KEY  */
-#line 481 "sql.y"
+  case 54: /* column_def: column data_type PRIMARY KEY  */
+#line 512 "sql.y"
         {
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = (yyvsp[-3].column_node);
@@ -2078,11 +2119,11 @@ yyreduce:
             column_def_node->allow_null = false;
             (yyval.column_def_node) = column_def_node;
         }
-#line 2082 "y.tab.c"
+#line 2123 "y.tab.c"
     break;
 
-  case 56: /* column_def: column data_type NOT NULLX  */
-#line 490 "sql.y"
+  case 55: /* column_def: column data_type NOT NULLX  */
+#line 521 "sql.y"
         {
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = (yyvsp[-3].column_node);
@@ -2091,86 +2132,86 @@ yyreduce:
             column_def_node->allow_null = true;
             (yyval.column_def_node) = column_def_node;
         }
-#line 2095 "y.tab.c"
+#line 2136 "y.tab.c"
     break;
 
-  case 57: /* data_type: INT  */
-#line 500 "sql.y"
+  case 56: /* data_type: INT  */
+#line 531 "sql.y"
                  { (yyval.data_type) = T_INT; }
-#line 2101 "y.tab.c"
+#line 2142 "y.tab.c"
     break;
 
-  case 58: /* data_type: LONG  */
-#line 501 "sql.y"
+  case 57: /* data_type: LONG  */
+#line 532 "sql.y"
                  { (yyval.data_type) = T_LONG;  }
-#line 2107 "y.tab.c"
+#line 2148 "y.tab.c"
     break;
 
-  case 59: /* data_type: CHAR  */
-#line 502 "sql.y"
+  case 58: /* data_type: CHAR  */
+#line 533 "sql.y"
                  { (yyval.data_type) = T_CHAR; }
-#line 2113 "y.tab.c"
+#line 2154 "y.tab.c"
     break;
 
-  case 60: /* data_type: STRING  */
-#line 503 "sql.y"
+  case 59: /* data_type: STRING  */
+#line 534 "sql.y"
                  { (yyval.data_type) = T_STRING; }
-#line 2119 "y.tab.c"
+#line 2160 "y.tab.c"
     break;
 
-  case 61: /* data_type: BOOL  */
-#line 504 "sql.y"
+  case 60: /* data_type: BOOL  */
+#line 535 "sql.y"
                  { (yyval.data_type) = T_BOOL; }
-#line 2125 "y.tab.c"
+#line 2166 "y.tab.c"
     break;
 
-  case 62: /* data_type: FLOAT  */
-#line 505 "sql.y"
+  case 61: /* data_type: FLOAT  */
+#line 536 "sql.y"
                  { (yyval.data_type) = T_FLOAT; }
-#line 2131 "y.tab.c"
+#line 2172 "y.tab.c"
     break;
 
-  case 63: /* data_type: DOUBLE  */
-#line 506 "sql.y"
+  case 62: /* data_type: DOUBLE  */
+#line 537 "sql.y"
                  { (yyval.data_type) = T_DOUBLE; }
-#line 2137 "y.tab.c"
+#line 2178 "y.tab.c"
     break;
 
-  case 64: /* data_type: TIMESTAMP  */
-#line 507 "sql.y"
+  case 63: /* data_type: TIMESTAMP  */
+#line 538 "sql.y"
                  { (yyval.data_type) = T_TIMESTAMP; }
-#line 2143 "y.tab.c"
+#line 2184 "y.tab.c"
     break;
 
-  case 65: /* data_type: DATE  */
-#line 508 "sql.y"
+  case 64: /* data_type: DATE  */
+#line 539 "sql.y"
                  { (yyval.data_type) = T_DATE; }
-#line 2149 "y.tab.c"
+#line 2190 "y.tab.c"
     break;
 
-  case 66: /* primary_key_statement: PRIMARY KEY LEFTPAREN column RIGHTPAREN  */
-#line 512 "sql.y"
+  case 65: /* primary_key_statement: PRIMARY KEY LEFTPAREN column RIGHTPAREN  */
+#line 543 "sql.y"
          {
              PrimaryKeyNode *primary_key_node = make_primary_key_node();
              primary_key_node->column = (yyvsp[-1].column_node);
              (yyval.primary_key_node) = primary_key_node;
          }
-#line 2159 "y.tab.c"
+#line 2200 "y.tab.c"
     break;
 
-  case 67: /* column: IDENTIFIER  */
-#line 520 "sql.y"
+  case 66: /* column: IDENTIFIER  */
+#line 551 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = db_strdup((yyvsp[0].s_value));
             column_node->has_sub_column = false;
             (yyval.column_node) = column_node;
         }
-#line 2170 "y.tab.c"
+#line 2211 "y.tab.c"
     break;
 
-  case 68: /* column: IDENTIFIER POINT column  */
-#line 527 "sql.y"
+  case 67: /* column: IDENTIFIER POINT column  */
+#line 558 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = db_strdup((yyvsp[-2].s_value));
@@ -2178,11 +2219,11 @@ yyreduce:
             column_node->has_sub_column = true;
             (yyval.column_node) = column_node;
         }
-#line 2182 "y.tab.c"
+#line 2223 "y.tab.c"
     break;
 
-  case 69: /* column: IDENTIFIER LEFTPAREN scalar_exp_commalist RIGHTPAREN  */
-#line 535 "sql.y"
+  case 68: /* column: IDENTIFIER LEFTPAREN scalar_exp_commalist RIGHTPAREN  */
+#line 566 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = db_strdup((yyvsp[-3].s_value));
@@ -2190,153 +2231,153 @@ yyreduce:
             column_node->has_sub_column = true;
             (yyval.column_node) = column_node;
         }
-#line 2194 "y.tab.c"
+#line 2235 "y.tab.c"
     break;
 
-  case 70: /* value_items: value_item  */
-#line 545 "sql.y"
+  case 69: /* value_items: value_item  */
+#line 576 "sql.y"
         {
             ValueItemSetNode *node = make_value_item_set_node();
             add_value_item(node, (yyvsp[0].value_item_node));
             (yyval.value_item_set_node) = node;
         }
-#line 2204 "y.tab.c"
+#line 2245 "y.tab.c"
     break;
 
-  case 71: /* value_items: value_items COMMA value_item  */
-#line 551 "sql.y"
+  case 70: /* value_items: value_items COMMA value_item  */
+#line 582 "sql.y"
         {
             (yyval.value_item_set_node) = (yyvsp[-2].value_item_set_node);
             add_value_item((yyval.value_item_set_node), (yyvsp[0].value_item_node));
         }
-#line 2213 "y.tab.c"
+#line 2254 "y.tab.c"
     break;
 
-  case 72: /* value_item: INTVALUE  */
-#line 558 "sql.y"
+  case 71: /* value_item: INTVALUE  */
+#line 589 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->i_value = (yyvsp[0].i_value);
             node->data_type = T_INT;
             (yyval.value_item_node) = node;
         }
-#line 2224 "y.tab.c"
+#line 2265 "y.tab.c"
     break;
 
-  case 73: /* value_item: BOOLVALUE  */
-#line 565 "sql.y"
+  case 72: /* value_item: BOOLVALUE  */
+#line 596 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->b_value = (yyvsp[0].b_value);
             node->data_type = T_BOOL;
             (yyval.value_item_node) = node;
         }
-#line 2235 "y.tab.c"
+#line 2276 "y.tab.c"
     break;
 
-  case 74: /* value_item: STRINGVALUE  */
-#line 572 "sql.y"
+  case 73: /* value_item: STRINGVALUE  */
+#line 603 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->s_value = (yyvsp[0].s_value);
             node->data_type = T_STRING;
             (yyval.value_item_node) = node;
         }
-#line 2246 "y.tab.c"
+#line 2287 "y.tab.c"
     break;
 
-  case 75: /* value_item: FLOATVALUE  */
-#line 579 "sql.y"
+  case 74: /* value_item: FLOATVALUE  */
+#line 610 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->f_value = (yyvsp[0].f_value);
             node->data_type = T_FLOAT;
             (yyval.value_item_node) = node;
         }
-#line 2257 "y.tab.c"
+#line 2298 "y.tab.c"
     break;
 
-  case 76: /* value_item: REFERVALUE  */
-#line 586 "sql.y"
+  case 75: /* value_item: REFERVALUE  */
+#line 617 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->r_value = (yyvsp[0].r_value);
             node->data_type = T_REFERENCE;
             (yyval.value_item_node) = node;
         }
-#line 2268 "y.tab.c"
+#line 2309 "y.tab.c"
     break;
 
-  case 77: /* REFERVALUE: LEFTPAREN value_items RIGHTPAREN  */
-#line 596 "sql.y"
+  case 76: /* REFERVALUE: LEFTPAREN value_items RIGHTPAREN  */
+#line 627 "sql.y"
         {
             ReferValue *refer = make_refer_value();
             refer->type = DIRECTLY;
             refer->nest_value_item_set = (yyvsp[-1].value_item_set_node);
             (yyval.r_value) = refer;
         }
-#line 2279 "y.tab.c"
+#line 2320 "y.tab.c"
     break;
 
-  case 78: /* REFERVALUE: REF LEFTPAREN condition RIGHTPAREN  */
-#line 604 "sql.y"
+  case 77: /* REFERVALUE: REF LEFTPAREN condition RIGHTPAREN  */
+#line 635 "sql.y"
         {
             ReferValue *refer = make_refer_value();
             refer->type = INDIRECTLY;
             refer->condition = (yyvsp[-1].condition_node);
             (yyval.r_value) = refer;
         }
-#line 2290 "y.tab.c"
+#line 2331 "y.tab.c"
     break;
 
-  case 79: /* BOOLVALUE: TRUE  */
-#line 613 "sql.y"
+  case 78: /* BOOLVALUE: TRUE  */
+#line 644 "sql.y"
         {
             (yyval.b_value) = true;
         }
-#line 2298 "y.tab.c"
+#line 2339 "y.tab.c"
     break;
 
-  case 80: /* BOOLVALUE: FALSE  */
-#line 617 "sql.y"
+  case 79: /* BOOLVALUE: FALSE  */
+#line 648 "sql.y"
         {
             (yyval.b_value) = false;
         }
-#line 2306 "y.tab.c"
+#line 2347 "y.tab.c"
     break;
 
-  case 81: /* assignments: assignment  */
-#line 623 "sql.y"
+  case 80: /* assignments: assignment  */
+#line 654 "sql.y"
         {
             AssignmentSetNode *node = make_assignment_set_node();
             add_assignment_to_set(node, (yyvsp[0].assignment_node));
             (yyval.assignment_set_node) = node;
         }
-#line 2316 "y.tab.c"
+#line 2357 "y.tab.c"
     break;
 
-  case 82: /* assignments: assignments COMMA assignment  */
-#line 629 "sql.y"
+  case 81: /* assignments: assignments COMMA assignment  */
+#line 660 "sql.y"
         {
             add_assignment_to_set((yyvsp[-2].assignment_set_node), (yyvsp[0].assignment_node));
             (yyval.assignment_set_node) = (yyvsp[-2].assignment_set_node);
         }
-#line 2325 "y.tab.c"
+#line 2366 "y.tab.c"
     break;
 
-  case 83: /* assignment: column EQ value_item  */
-#line 636 "sql.y"
+  case 82: /* assignment: column EQ value_item  */
+#line 667 "sql.y"
         {
             AssignmentNode *node = make_assignment_node();
             node->column = (yyvsp[-2].column_node);
             node->value = (yyvsp[0].value_item_node);
             (yyval.assignment_node) = node;
         }
-#line 2336 "y.tab.c"
+#line 2377 "y.tab.c"
     break;
 
-  case 84: /* condition: condition OR condition  */
-#line 645 "sql.y"
+  case 83: /* condition: condition OR condition  */
+#line 676 "sql.y"
         {
             ConditionNode *condition = make_condition_node();
             condition->conn_type = C_OR;
@@ -2344,11 +2385,11 @@ yyreduce:
             condition->right = (yyvsp[0].condition_node);
             (yyval.condition_node) = condition;
         }
-#line 2348 "y.tab.c"
+#line 2389 "y.tab.c"
     break;
 
-  case 85: /* condition: condition AND condition  */
-#line 653 "sql.y"
+  case 84: /* condition: condition AND condition  */
+#line 684 "sql.y"
         {
             ConditionNode *condition = make_condition_node();
             condition->conn_type = C_AND;
@@ -2356,63 +2397,63 @@ yyreduce:
             condition->right = (yyvsp[0].condition_node);
             (yyval.condition_node) = condition;
         }
-#line 2360 "y.tab.c"
+#line 2401 "y.tab.c"
     break;
 
-  case 86: /* condition: LEFTPAREN condition RIGHTPAREN  */
-#line 661 "sql.y"
+  case 85: /* condition: LEFTPAREN condition RIGHTPAREN  */
+#line 692 "sql.y"
         {
             (yyval.condition_node) = (yyvsp[-1].condition_node);
         }
-#line 2368 "y.tab.c"
+#line 2409 "y.tab.c"
     break;
 
-  case 87: /* condition: predicate  */
-#line 665 "sql.y"
+  case 86: /* condition: predicate  */
+#line 696 "sql.y"
         {
             ConditionNode *condition = make_condition_node();
             condition->conn_type = C_NONE;
             condition->predicate = (yyvsp[0].predicate_node);
             (yyval.condition_node) = condition;
         }
-#line 2379 "y.tab.c"
+#line 2420 "y.tab.c"
     break;
 
-  case 88: /* predicate: comparison_predicate  */
-#line 674 "sql.y"
+  case 87: /* predicate: comparison_predicate  */
+#line 705 "sql.y"
         {
             PredicateNode *predicate = make_predicate_node();
             predicate->type = PRE_COMPARISON;
             predicate->comparison = (yyvsp[0].comparison_node);
             (yyval.predicate_node) = predicate;
         }
-#line 2390 "y.tab.c"
+#line 2431 "y.tab.c"
     break;
 
-  case 89: /* predicate: like_predicate  */
-#line 681 "sql.y"
+  case 88: /* predicate: like_predicate  */
+#line 712 "sql.y"
         {
             PredicateNode *predicate = make_predicate_node();
             predicate->type = PRE_LIKE;
             predicate->like = (yyvsp[0].like_node);
             (yyval.predicate_node) = predicate;
         }
-#line 2401 "y.tab.c"
+#line 2442 "y.tab.c"
     break;
 
-  case 90: /* predicate: in_predicate  */
-#line 688 "sql.y"
+  case 89: /* predicate: in_predicate  */
+#line 719 "sql.y"
         {
             PredicateNode *predicate = make_predicate_node();
             predicate->type = PRE_IN;
             predicate->in = (yyvsp[0].in_node);
             (yyval.predicate_node) = predicate;
         }
-#line 2412 "y.tab.c"
+#line 2453 "y.tab.c"
     break;
 
-  case 91: /* comparison_predicate: column compare value_item  */
-#line 697 "sql.y"
+  case 90: /* comparison_predicate: column compare value_item  */
+#line 728 "sql.y"
         {
             ComparisonNode *comparison_node = make_comparison_node();
             comparison_node->column = (yyvsp[-2].column_node);
@@ -2420,208 +2461,208 @@ yyreduce:
             comparison_node->value = (yyvsp[0].value_item_node);
             (yyval.comparison_node) = comparison_node;
         }
-#line 2424 "y.tab.c"
+#line 2465 "y.tab.c"
     break;
 
-  case 92: /* like_predicate: column LIKE value_item  */
-#line 707 "sql.y"
+  case 91: /* like_predicate: column LIKE value_item  */
+#line 738 "sql.y"
         {
             LikeNode *like_node = make_like_node();
             like_node->column = (yyvsp[-2].column_node);
             like_node->value = (yyvsp[0].value_item_node);
             (yyval.like_node) = like_node;
         }
-#line 2435 "y.tab.c"
+#line 2476 "y.tab.c"
     break;
 
-  case 93: /* in_predicate: column IN LEFTPAREN value_items RIGHTPAREN  */
-#line 716 "sql.y"
+  case 92: /* in_predicate: column IN LEFTPAREN value_items RIGHTPAREN  */
+#line 747 "sql.y"
         {
             InNode *in_node = make_in_node();
             in_node->column = (yyvsp[-4].column_node);
             in_node->value_set = (yyvsp[-1].value_item_set_node);
             (yyval.in_node) = in_node;
         }
-#line 2446 "y.tab.c"
+#line 2487 "y.tab.c"
     break;
 
-  case 94: /* opt_limit: %empty  */
-#line 725 "sql.y"
+  case 93: /* opt_limit: %empty  */
+#line 756 "sql.y"
         {
             (yyval.limit_node) = NULL;
         }
-#line 2454 "y.tab.c"
+#line 2495 "y.tab.c"
     break;
 
-  case 95: /* opt_limit: LIMIT INTVALUE  */
-#line 729 "sql.y"
+  case 94: /* opt_limit: LIMIT INTVALUE  */
+#line 760 "sql.y"
         {
             LimitNode *limit_node = make_limit_node();
             limit_node->start = 0;
             limit_node->end = (yyvsp[0].i_value);
             (yyval.limit_node) = limit_node;
         }
-#line 2465 "y.tab.c"
+#line 2506 "y.tab.c"
     break;
 
-  case 96: /* opt_limit: LIMIT INTVALUE COMMA INTVALUE  */
-#line 736 "sql.y"
+  case 95: /* opt_limit: LIMIT INTVALUE COMMA INTVALUE  */
+#line 767 "sql.y"
         {
             LimitNode *limit_node = make_limit_node();
             limit_node->start = (yyvsp[-2].i_value);
             limit_node->end = (yyvsp[0].i_value);
             (yyval.limit_node) = limit_node;
         }
-#line 2476 "y.tab.c"
+#line 2517 "y.tab.c"
     break;
 
-  case 97: /* compare: EQ  */
-#line 744 "sql.y"
+  case 96: /* compare: EQ  */
+#line 775 "sql.y"
             { (yyval.compare_type) = O_EQ; }
-#line 2482 "y.tab.c"
+#line 2523 "y.tab.c"
     break;
 
-  case 98: /* compare: NE  */
-#line 745 "sql.y"
+  case 97: /* compare: NE  */
+#line 776 "sql.y"
             { (yyval.compare_type) = O_NE; }
-#line 2488 "y.tab.c"
+#line 2529 "y.tab.c"
     break;
 
-  case 99: /* compare: GT  */
-#line 746 "sql.y"
+  case 98: /* compare: GT  */
+#line 777 "sql.y"
             { (yyval.compare_type) = O_GT; }
-#line 2494 "y.tab.c"
+#line 2535 "y.tab.c"
     break;
 
-  case 100: /* compare: GE  */
-#line 747 "sql.y"
+  case 99: /* compare: GE  */
+#line 778 "sql.y"
             { (yyval.compare_type) = O_GE; }
-#line 2500 "y.tab.c"
+#line 2541 "y.tab.c"
     break;
 
-  case 101: /* compare: LT  */
-#line 748 "sql.y"
+  case 100: /* compare: LT  */
+#line 779 "sql.y"
             { (yyval.compare_type) = O_LT; }
-#line 2506 "y.tab.c"
+#line 2547 "y.tab.c"
     break;
 
-  case 102: /* compare: LE  */
-#line 749 "sql.y"
+  case 101: /* compare: LE  */
+#line 780 "sql.y"
             { (yyval.compare_type) = O_LE; }
-#line 2512 "y.tab.c"
+#line 2553 "y.tab.c"
     break;
 
-  case 103: /* function: MAX LEFTPAREN non_all_function_value RIGHTPAREN  */
-#line 753 "sql.y"
+  case 102: /* function: MAX LEFTPAREN non_all_function_value RIGHTPAREN  */
+#line 784 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_MAX;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2523 "y.tab.c"
+#line 2564 "y.tab.c"
     break;
 
-  case 104: /* function: MIN LEFTPAREN non_all_function_value RIGHTPAREN  */
-#line 760 "sql.y"
+  case 103: /* function: MIN LEFTPAREN non_all_function_value RIGHTPAREN  */
+#line 791 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_MIN;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2534 "y.tab.c"
+#line 2575 "y.tab.c"
     break;
 
-  case 105: /* function: COUNT LEFTPAREN function_value RIGHTPAREN  */
-#line 767 "sql.y"
+  case 104: /* function: COUNT LEFTPAREN function_value RIGHTPAREN  */
+#line 798 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_COUNT;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2545 "y.tab.c"
+#line 2586 "y.tab.c"
     break;
 
-  case 106: /* function: SUM LEFTPAREN function_value RIGHTPAREN  */
-#line 774 "sql.y"
+  case 105: /* function: SUM LEFTPAREN function_value RIGHTPAREN  */
+#line 805 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_SUM;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2556 "y.tab.c"
+#line 2597 "y.tab.c"
     break;
 
-  case 107: /* function: AVG LEFTPAREN function_value RIGHTPAREN  */
-#line 781 "sql.y"
+  case 106: /* function: AVG LEFTPAREN function_value RIGHTPAREN  */
+#line 812 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_AVG;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2567 "y.tab.c"
+#line 2608 "y.tab.c"
     break;
 
-  case 108: /* function_value: INTVALUE  */
-#line 790 "sql.y"
+  case 107: /* function_value: INTVALUE  */
+#line 821 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->i_value = (yyvsp[0].i_value);
             node->value_type = V_INT;
             (yyval.function_value_node) = node;
         }
-#line 2578 "y.tab.c"
+#line 2619 "y.tab.c"
     break;
 
-  case 109: /* function_value: column  */
-#line 797 "sql.y"
+  case 108: /* function_value: column  */
+#line 828 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->column = (yyvsp[0].column_node);
             node->value_type = V_COLUMN;
             (yyval.function_value_node) = node;
         }
-#line 2589 "y.tab.c"
+#line 2630 "y.tab.c"
     break;
 
-  case 110: /* function_value: ASTERISK  */
-#line 804 "sql.y"
+  case 109: /* function_value: ASTERISK  */
+#line 835 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->value_type = V_ALL;
             (yyval.function_value_node) = node;
         }
-#line 2599 "y.tab.c"
+#line 2640 "y.tab.c"
     break;
 
-  case 111: /* non_all_function_value: INTVALUE  */
-#line 812 "sql.y"
+  case 110: /* non_all_function_value: INTVALUE  */
+#line 843 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->i_value = (yyvsp[0].i_value);
             node->value_type = V_INT;
             (yyval.function_value_node) = node;
         }
-#line 2610 "y.tab.c"
+#line 2651 "y.tab.c"
     break;
 
-  case 112: /* non_all_function_value: column  */
-#line 819 "sql.y"
+  case 111: /* non_all_function_value: column  */
+#line 850 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->column = (yyvsp[0].column_node);
             node->value_type = V_COLUMN;
             (yyval.function_value_node) = node;
         }
-#line 2621 "y.tab.c"
+#line 2662 "y.tab.c"
     break;
 
 
-#line 2625 "y.tab.c"
+#line 2666 "y.tab.c"
 
       default: break;
     }
@@ -2668,7 +2709,7 @@ yyerrlab:
   if (!yyerrstatus)
     {
       ++yynerrs;
-      yyerror (ast_node, YY_("syntax error"));
+      yyerror (states, YY_("syntax error"));
     }
 
   if (yyerrstatus == 3)
@@ -2685,7 +2726,7 @@ yyerrlab:
       else
         {
           yydestruct ("Error: discarding",
-                      yytoken, &yylval, ast_node);
+                      yytoken, &yylval, states);
           yychar = YYEMPTY;
         }
     }
@@ -2741,7 +2782,7 @@ yyerrlab1:
 
 
       yydestruct ("Error: popping",
-                  YY_ACCESSING_SYMBOL (yystate), yyvsp, ast_node);
+                  YY_ACCESSING_SYMBOL (yystate), yyvsp, states);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -2779,7 +2820,7 @@ yyabortlab:
 | yyexhaustedlab -- YYNOMEM (memory exhaustion) comes here.  |
 `-----------------------------------------------------------*/
 yyexhaustedlab:
-  yyerror (ast_node, YY_("memory exhausted"));
+  yyerror (states, YY_("memory exhausted"));
   yyresult = 2;
   goto yyreturnlab;
 
@@ -2794,7 +2835,7 @@ yyreturnlab:
          user semantic actions for why this is necessary.  */
       yytoken = YYTRANSLATE (yychar);
       yydestruct ("Cleanup: discarding lookahead",
-                  yytoken, &yylval, ast_node);
+                  yytoken, &yylval, states);
     }
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYABORT or YYACCEPT.  */
@@ -2803,7 +2844,7 @@ yyreturnlab:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-                  YY_ACCESSING_SYMBOL (+*yyssp), yyvsp, ast_node);
+                  YY_ACCESSING_SYMBOL (+*yyssp), yyvsp, states);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
@@ -2814,5 +2855,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 830 "sql.y"
+#line 861 "sql.y"
 

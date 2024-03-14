@@ -46,7 +46,7 @@ void accept_request(void *arg) {
     db_log(INFO, "Client ID '%ld' connect successfully.", pthread_self());
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
-        statement(buf);   
+        execute(buf);   
         if (!db_send_over())
             break;
     }

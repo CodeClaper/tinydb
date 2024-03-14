@@ -9,6 +9,7 @@
  * =============================================================================================================================
  * */
 
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -26,19 +27,29 @@
 
 /* Generate new db result. */
 DBResult *new_db_result() {
-
     /* New DbResule and initialize it. */
     DBResult *result = db_malloc(sizeof(DBResult), SDT_DB_RESULT);
-
     result->success = false;
     result->message = NULL;
     result->data = NULL;
     result->rows = 0;
     result->duration = 0;
-
     return result;
 }
 
+/* Generate new db result set. */
+DBResultSet *new_db_result_set() {
+    DBResultSet *result_set = db_malloc(sizeof(DBResultSet), SDT_DB_RESULT_SET);
+    result_set->size = 0;
+    result_set->set = db_malloc(0, SDT_POINTER);
+    return result_set;
+}
+
+/* Add db result to set. */
+void add_db_result(DBResultSet *result_set, DBResult *result) {
+    result_set->set = db_realloc(result_set->set, sizeof(DBResult *) * (result_set->size + 1));
+    result_set->set[result_set->size++] = result;
+}
 
 /* Send out row. */
 static void db_send_row(Row *row) {
@@ -121,7 +132,7 @@ static void db_send_select_result(DBResult *result) {
         db_send("]");
         db_send(", \"rows\": %d", result->rows);
     }
-    db_send(", \"duration\": %lf }\n", result->duration);
+    db_send(", \"duration\": %lf }", result->duration);
 }
 
 /* Send out db none data result. */
@@ -132,7 +143,7 @@ static void db_send_nondata_rows_result(DBResult *result) {
 
 /* Send out db none data result. */
 static void db_send_nondata_result(DBResult *result) {
-    db_send("{ \"success\": %s, \"message\": \"%s\", \"duration\": %lf }\n", 
+    db_send("{ \"success\": %s, \"message\": \"%s\", \"duration\": %lf }", 
             result->success ? "true" : "false", get_log_msg(), result->duration);
 }
 
@@ -152,7 +163,7 @@ static void db_send_map_list(DBResult *result) {
         }
         map_list->size == 1 ? db_send("") : db_send("]");
     }
-    db_send(", \"duration\": %lf }\n", result->duration);
+    db_send(", \"duration\": %lf }", result->duration);
 }
 
 /* Send out db execution result. */
@@ -172,4 +183,15 @@ void db_send_result(DBResult *result) {
             db_send_nondata_result(result);
             break;
     }
+}
+
+/* Send out db execution result set. */
+void db_send_result_set(DBResultSet *result_set) {
+    db_send(result_set->size > 1 ? "[" : "");
+    for (uint32_t i = 0; i < result_set->size; i++) {
+        db_send_result(result_set->set[i]);
+        if (i < result_set->size - 1)
+            db_send(",");
+    }
+    db_send(result_set->size > 1 ? "]\n" : "\n");
 }

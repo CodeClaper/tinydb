@@ -15,21 +15,11 @@ typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(void);
 extern YY_BUFFER_STATE yy_scan_string(char *str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
-extern int yyparse(ASTNode *node);
+extern int yyparse(Statements *states);
 
-Statement *new_statement(ASTNode *node) {
-
-    assert_not_null(node, "ASTNode not allowed to be NULL. \n");
-
-    Statement *statement = db_malloc(sizeof(Statement), SDT_STATEMENT);
-    statement->ast_node = node;
-    statement->statement_type = node->statement_type;
-
-    return statement;
-}
 
 /* Parse sql. */
-Statement *parse(char *sql) {
+Statements *parse(char *sql) {
     if (sql == NULL)
         return NULL;
 
@@ -41,7 +31,7 @@ Statement *parse(char *sql) {
     sprintf(buff, "%s%c", sql, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(buff);
 
-    ASTNode *node = db_malloc(sizeof(ASTNode), SDT_AST_NODE);
+    Statements *states = db_malloc(sizeof(Statements), SDT_STATEMENTS);
 
-    return yyparse(node) == 0 ? new_statement(node) : NULL;
+    return yyparse(states) == 0 ? states : NULL;
 }

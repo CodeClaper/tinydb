@@ -6,6 +6,9 @@
 
 typedef int s_lock;
 
+/* Init spin lock. */
+void spin_lock_init(s_lock *lock);
+
 /* Acquire spin lock, if fail, it will block. */
 void spin_lock_acquire(s_lock *lock);
 

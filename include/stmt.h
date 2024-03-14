@@ -1,7 +1,5 @@
 #include "data.h"
 
-/*Get table from statement*/
-Table *get_statement_table(Statement *stmt);
 
 /* Execute statement
  * Now supported statments:
@@ -13,4 +11,4 @@ Table *get_statement_table(Statement *stmt);
  * (6) SHOW TABLES AND SHOW MEMORY
  * (7) DESCRIBE TABLE
  * */
-void statement(char *sql);
+void execute(char *sql);
