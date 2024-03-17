@@ -250,13 +250,10 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
-        db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
-               get_key_str(row->key, primary_key_meta_column->column_type), insert_node->table_name);
-
+        db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type), insert_node->table_name);
         /* Free unuesed memeory */
         free_cursor(cursor);
         free_row(row);
-
         return NULL;
     }
 

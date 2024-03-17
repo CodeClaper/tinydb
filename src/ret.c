@@ -116,7 +116,7 @@ static void db_send_map(Map *map) {
 
 /* Send out db select execution result. */
 static void db_send_select_result(DBResult *result) {
-    db_send("{ \"success\": %s, \"message\": \"%s\"", result->success ? "true" : "false", get_log_msg());
+    db_send("{ \"success\": %s, \"message\": \"%s\"", result->success ? "true" : "false", result->success ? result->message : get_log_msg());
     if (result->success) {
         db_send(", \"data\": ");
         SelectResult *select_result = result->data;
@@ -138,19 +138,19 @@ static void db_send_select_result(DBResult *result) {
 /* Send out db none data result. */
 static void db_send_nondata_rows_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf }\n", 
-             result->success ? "true" : "false", get_log_msg(), result->rows, result->duration);
+             result->success ? "true" : "false", result->success ? result->message : get_log_msg(), result->rows, result->duration);
 }
 
 /* Send out db none data result. */
 static void db_send_nondata_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"duration\": %lf }", 
-            result->success ? "true" : "false", get_log_msg(), result->duration);
+            result->success ? "true" : "false", result->success? result->message : get_log_msg(), result->duration);
 }
 
 /* Send out db show tables result. */
 static void db_send_map_list(DBResult *result) {
     MapList *map_list = (MapList *)result->data;
-    db_send("{ \"success\": %s, \"message\": \"%s\" ", result->success ? "true" : "false", get_log_msg());
+    db_send("{ \"success\": %s, \"message\": \"%s\" ", result->success ? "true" : "false", result->success ? result->message : get_log_msg());
     if (result->success) {
         db_send(", \"data\": ");
         map_list->size == 1 ? db_send("") : db_send("[");
@@ -191,7 +191,7 @@ void db_send_result_set(DBResultSet *result_set) {
     for (uint32_t i = 0; i < result_set->size; i++) {
         db_send_result(result_set->set[i]);
         if (i < result_set->size - 1)
-            db_send(",");
+            db_send(", ");
     }
     db_send(result_set->size > 1 ? "]\n" : "\n");
 }

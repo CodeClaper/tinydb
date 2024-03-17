@@ -68,6 +68,7 @@ static void statement_insert(Statement *stmt, DBResult *result) {
     if (refer != NULL) {
         result->success = true;
         result->rows = 1;
+        result->message = db_strdup("Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
         db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
     }
 }
@@ -191,15 +192,25 @@ void execute(char *sql) {
             }
         } else {
             /* Catch routine. */
-            DBResult *result = new_db_result();
-            add_db_result(result_set, result);
+            /* If the set is empty, which means sql syntax error, put an error result to the set. */
+            if (result_set->size == 0) {
 
-            /* For error catch, result is false. */
-            result->success = false;
+                DBResult *err_result = new_db_result();
 
-            /* Calulate duration. */
-            end = clock();
-            result->duration = (double)(end - start) / CLOCKS_PER_SEC;
+                /* For error catch, result is false. */
+                err_result->success = false;
+
+                add_db_result(result_set, err_result);
+            }
+
+            /* If last result is error, it lack duration, make up. */
+            DBResult *last_result = result_set->set[result_set->size - 1];
+            if (last_result->success == false) {
+                /* Calulate duration. */
+                end = clock();
+                last_result->duration = (double)(end - start) / CLOCKS_PER_SEC;
+                db_log(INFO, "Duration: %lfs", last_result->duration);
+            }
         }
         /* Free memory. */
         free_statements(statements);

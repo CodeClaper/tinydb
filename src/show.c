@@ -127,6 +127,7 @@ void exec_show_statement(ShowNode *show_node, DBResult *result) {
             MapList *map_list = gen_table_map_list();
             result->success = true;
             result->data = map_list;
+            result->message = db_strdup("Show tables executed successfully.");
             db_log(SUCCESS, "Show tables executed successfully."); 
             break;
         }
@@ -134,6 +135,7 @@ void exec_show_statement(ShowNode *show_node, DBResult *result) {
             MapList *map_list = gen_memory_map_list();
             result->success = true;
             result->data = map_list;
+            result->message = db_strdup("Show memory executed successfully.");
             db_log(SUCCESS, "Show memory executed successfully."); 
             break;
         }

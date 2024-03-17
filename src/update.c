@@ -139,6 +139,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
 
     result->success = true;
     result->rows = select_result->row_size;
+    result->message = db_strdup("Successfully updated %d row data.", select_result->row_size);
 
     db_log(SUCCESS, "Successfully updated %d row data.", select_result->row_size);
 

@@ -1870,6 +1870,7 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
         result->rows = select_result->row_size;
         result->data = select_result;
         result->success = true;
+        result->message = db_strdup("Query data successfully.");
 
         /* Make up success result. */
         db_log(SUCCESS, "Query data successfully.");
