@@ -1786,7 +1786,19 @@ static KeyValue *query_all_columns_calculate_column_value(CalculateNode *calcula
 
 /* Query value item in scalar_exp. */
 static KeyValue *query_value_item(ValueItemNode *value_item, Row *row) {
-    void *value = copy_value(&value_item->value, value_item->data_type);
+    void *value = NULL;
+    switch (value_item->data_type) {
+        case T_CHAR:
+        case T_STRING:
+            value = copy_value(value_item->value.s_value, value_item->data_type);
+            break;
+        case T_REFERENCE:
+            value = copy_value(value_item->value.r_value, value_item->data_type);
+            break;
+        default:
+            value = copy_value(&value_item->value, value_item->data_type);
+            break;
+    }
     assert_not_null(value, "System error occurs at <query_value_item>");
     return new_key_value(db_strdup("value"), value, value_item->data_type);
 }
