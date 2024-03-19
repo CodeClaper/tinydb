@@ -387,14 +387,6 @@ scalar_exp:
             scalar_exp_node->column = $1;
             $$ = scalar_exp_node;
         }
-    | column AS IDENTIFIER
-        {
-            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
-            scalar_exp_node->type = SCALAR_COLUMN;
-            scalar_exp_node->column = $1;
-            $$ = scalar_exp_node;
-            $$->alias = db_strdup($3);
-        }
     | function
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
@@ -402,17 +394,21 @@ scalar_exp:
             scalar_exp_node->function = $1;
             $$ = scalar_exp_node;
         }
-    | function AS IDENTIFIER
+    | value_item 
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
-            scalar_exp_node->type = SCALAR_FUNCTION;
-            scalar_exp_node->function = $1;
+            scalar_exp_node->type = SCALAR_VALUE;
+            scalar_exp_node->value = $1;
             $$ = scalar_exp_node;
-            $$->alias = db_strdup($3);
         }
     | LEFTPAREN scalar_exp RIGHTPAREN
         {
             $$ = $2;
+        }
+    | scalar_exp AS IDENTIFIER
+        {
+            $1->alias = $3;
+            $$ = $1;
         }
     ;
 calculate:
@@ -588,35 +584,35 @@ value_item:
     INTVALUE
         {
             ValueItemNode *node = make_value_item_node();
-            node->i_value = $1;
+            node->value.i_value = $1;
             node->data_type = T_INT;
             $$ = node;
         }
     | BOOLVALUE
         {
             ValueItemNode *node = make_value_item_node();
-            node->b_value = $1;
+            node->value.b_value = $1;
             node->data_type = T_BOOL;
             $$ = node;
         }
     | STRINGVALUE 
         {
             ValueItemNode *node = make_value_item_node();
-            node->s_value = $1;
+            node->value.s_value = $1;
             node->data_type = T_STRING;
             $$ = node;
         }
     | FLOATVALUE 
         {
             ValueItemNode *node = make_value_item_node();
-            node->f_value = $1;
+            node->value.f_value = $1;
             node->data_type = T_FLOAT;
             $$ = node;
         }
     | REFERVALUE
         {
             ValueItemNode *node = make_value_item_node();
-            node->r_value = $1;
+            node->value.r_value = $1;
             node->data_type = T_REFERENCE;
             $$ = node;
         }

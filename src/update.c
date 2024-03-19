@@ -36,38 +36,38 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
             switch(value_item->data_type) {
                 case T_BOOL: {
                     key_value->value = db_malloc(sizeof(bool), SDT_BOOL);
-                    memcpy(key_value->value, &value_item->b_value, sizeof(bool));
+                    memcpy(key_value->value, &value_item->value.b_value, sizeof(bool));
                     break;
                 }
                 case T_INT: {
                     key_value->value = db_malloc(sizeof(int32_t), SDT_INT);
-                    memcpy(key_value->value, &value_item->i_value, sizeof(int32_t));
+                    memcpy(key_value->value, &value_item->value.i_value, sizeof(int32_t));
                     break;
                 }
                 case T_LONG: {
                     key_value->value = db_malloc(sizeof(int64_t), SDT_INT);
-                    memcpy(key_value->value, &value_item->i_value, sizeof(int64_t));
+                    memcpy(key_value->value, &value_item->value.i_value, sizeof(int64_t));
                     break;
                 }
                 case T_FLOAT: {
                     key_value->value = db_malloc(sizeof(float), SDT_INT);
-                    memcpy(key_value->value, &value_item->f_value, sizeof(float));
+                    memcpy(key_value->value, &value_item->value.f_value, sizeof(float));
                     break;
                 }
                 case T_DOUBLE: {
                     key_value->value = db_malloc(sizeof(double), SDT_INT);
-                    memcpy(key_value->value, &value_item->d_value, sizeof(double));
+                    memcpy(key_value->value, &value_item->value.d_value, sizeof(double));
                     break;
                 }
                 case T_TIMESTAMP: 
                 case T_DATE: {
                     key_value->value = db_malloc(sizeof(time_t), SDT_TIME_T);
-                    memcpy(key_value->value, &value_item->t_value, sizeof(time_t));
+                    memcpy(key_value->value, &value_item->value.t_value, sizeof(time_t));
                     break;
                 }
                 case T_CHAR:
                 case T_STRING: {
-                    key_value->value = db_strdup(value_item->s_value);
+                    key_value->value = db_strdup(value_item->value.s_value);
                     break;
                 }
                 case T_REFERENCE:

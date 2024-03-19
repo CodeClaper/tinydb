@@ -335,7 +335,8 @@ typedef struct ScalarExpSetNode {
 typedef enum ScalarExpType {
     SCALAR_CALCULATE,
     SCALAR_COLUMN,
-    SCALAR_FUNCTION
+    SCALAR_FUNCTION,
+    SCALAR_VALUE
 } ScalarExpType;
 
 /* ScalarExpNode */
@@ -345,6 +346,7 @@ typedef struct ScalarExpNode {
         CalculateNode *calculate;
         ColumnNode *column;
         FunctionNode *function;
+        struct ValueItemNode *value;
     };
     char *alias;
 } ScalarExpNode;
@@ -389,7 +391,7 @@ typedef struct ReferValue {
 } ReferValue;
 
 /* ValueItemNode */
-typedef struct {
+typedef struct ValueItemNode {
     DataType data_type;
     union {
         /* T_INT, T_LONG */
@@ -406,7 +408,7 @@ typedef struct {
         time_t t_value;
         /* T_REFERENCE */
         ReferValue *r_value;
-    };
+    } value;
 } ValueItemNode;
 
 /* ValueItemSetNode */

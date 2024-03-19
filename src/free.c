@@ -193,12 +193,12 @@ void free_value_item_node(ValueItemNode *value_item_node) {
             case T_DATE:
                 break;
             case T_STRING:{
-                if (value_item_node->s_value)
-                    db_free(value_item_node->s_value);
+                if (value_item_node->value.s_value)
+                    db_free(value_item_node->value.s_value);
                 break;
             }
             case T_REFERENCE: {
-                free_refer_value(value_item_node->r_value);
+                free_refer_value(value_item_node->value.r_value);
                 break;
             }
         }

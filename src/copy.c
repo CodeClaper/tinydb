@@ -255,27 +255,27 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     switch(value_item_node->data_type) {
         case T_CHAR:
         case T_STRING:
-            value_item_node_copy->s_value = db_strdup(value_item_node->s_value);
+            value_item_node_copy->value.s_value = db_strdup(value_item_node->value.s_value);
             break;
         case T_INT:
         case T_LONG:
-            value_item_node_copy->i_value = value_item_node->i_value;
+            value_item_node_copy->value.i_value = value_item_node->value.i_value;
             break;
         case T_BOOL:
-            value_item_node_copy->b_value = value_item_node->b_value;
+            value_item_node_copy->value.b_value = value_item_node->value.b_value;
             break;
         case T_FLOAT:
-            value_item_node_copy->f_value = value_item_node->f_value;
+            value_item_node_copy->value.f_value = value_item_node->value.f_value;
             break;
         case T_DOUBLE:
-            value_item_node_copy->d_value = value_item_node->d_value;
+            value_item_node_copy->value.d_value = value_item_node->value.d_value;
             break;
         case T_TIMESTAMP:
         case T_DATE:
-            value_item_node_copy->t_value = value_item_node->t_value;
+            value_item_node_copy->value.t_value = value_item_node->value.t_value;
             break;
         case T_REFERENCE: 
-            value_item_node_copy->r_value = copy_refer_value(value_item_node->r_value);
+            value_item_node_copy->value.r_value = copy_refer_value(value_item_node->value.r_value);
             break;
     }
     return value_item_node_copy;
@@ -471,6 +471,12 @@ ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
             break;
         case SCALAR_CALCULATE:
             copy->calculate = copy_calculate_node(scalar_exp_node->calculate);
+            break;
+        case SCALAR_VALUE:
+            copy->value = copy_value_item_node(scalar_exp_node->value);
+            break;
+        default:
+            db_log(ERROR, "Not support scalar type.");
     }
     copy->alias = copy_value(scalar_exp_node->alias, T_STRING);
     return copy;

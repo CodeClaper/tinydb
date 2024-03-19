@@ -81,21 +81,21 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     switch(meta_column->column_type) {
         case T_CHAR:
         case T_STRING:
-            return copy_value(value_item_node->s_value, meta_column->column_type);
+            return copy_value(value_item_node->value.s_value, meta_column->column_type);
         case T_INT:
         case T_LONG:
-            return copy_value(&value_item_node->i_value, meta_column->column_type);
+            return copy_value(&value_item_node->value.i_value, meta_column->column_type);
         case T_BOOL:
-            return copy_value(&value_item_node->b_value, meta_column->column_type);
+            return copy_value(&value_item_node->value.b_value, meta_column->column_type);
         case T_DOUBLE: {
             switch(value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->d_value = (double)value_item_node->i_value;
+                    value_item_node->value.d_value = (double)value_item_node->value.i_value;
                 case T_FLOAT:
-                    value_item_node->d_value = (double)value_item_node->f_value;
+                    value_item_node->value.d_value = (double)value_item_node->value.f_value;
                 case T_DOUBLE:
                     value_item_node->data_type = T_DOUBLE;
-                    return copy_value(&value_item_node->d_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.d_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -104,10 +104,10 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_FLOAT: {
             switch(value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->f_value = (float) value_item_node->i_value;
+                    value_item_node->value.f_value = (float) value_item_node->value.i_value;
                 case T_FLOAT:
                     value_item_node->data_type = T_FLOAT;
-                    return copy_value(&value_item_node->f_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.f_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -117,16 +117,16 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             switch(value_item_node->data_type) {
                 case T_STRING: {
                     struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
-                    strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
+                    strptime(value_item_node->value.s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
                     tmp_time->tm_hour = 0;
                     value_item_node->data_type = T_DATE;
-                    value_item_node->t_value = mktime(tmp_time);
+                    value_item_node->value.t_value = mktime(tmp_time);
                     db_free(tmp_time);
                 }
                 case T_DATE:
-                    return copy_value(&value_item_node->t_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.t_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -136,28 +136,28 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             switch(value_item_node->data_type) {
                 case T_STRING: {
                     struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
-                    strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                    strptime(value_item_node->value.s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
-                    value_item_node->t_value = mktime(tmp_time);
+                    value_item_node->value.t_value = mktime(tmp_time);
                     db_free(tmp_time);
                 }
                 case T_TIMESTAMP:
-                    return copy_value(&value_item_node->t_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.t_value, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
             break;
         }
         case T_REFERENCE: {
-            switch (value_item_node->r_value->type) {
+            switch (value_item_node->value.r_value->type) {
                 case DIRECTLY: {
-                    InsertNode *insert_node = fake_insert_node(meta_column->table_name, value_item_node->r_value->nest_value_item_set);
+                    InsertNode *insert_node = fake_insert_node(meta_column->table_name, value_item_node->value.r_value->nest_value_item_set);
                     Refer *refer = exec_insert_statement(insert_node, result);
                     free_insert_node(insert_node);
                     return refer;
                 }
                 case INDIRECTLY: {
-                    return fetch_refer(meta_column, value_item_node->r_value->condition);
+                    return fetch_refer(meta_column, value_item_node->value.r_value->condition);
                 }
             }
             break;

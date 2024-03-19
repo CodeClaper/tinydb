@@ -12,6 +12,7 @@
  * - Internal node store keys.
  * - Root node also as leaf node, but does not store data.
  * - Usually, root node is page 0.
+ * - The prince: always keep visible row lie at the forefront of same key cells.
  * ====================================================================================
  */
 
@@ -58,7 +59,7 @@ static void make_obsolute_node(void *node) {
  * If page is obsolute, recycle to use it,
  * If there is no obsolute page, return new page. */
 static uint32_t next_avaliable_page_num(Pager *pager) {
-    int i;
+    uint32_t i;
     for (i = 0; i < pager->size; i++) {
         if (is_obsolute_node(pager->pages[i])) {
             set_obsolute_node(pager->pages[i], false);

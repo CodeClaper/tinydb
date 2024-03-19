@@ -56,6 +56,9 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
 /* Query column value. */
 static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *select_result);
 
+/* Query value item in scalar_exp. */
+static KeyValue *query_value_item(ValueItemNode *value_item, Row *row);
+
 /* Query row value. */
 static KeyValue *query_row_value(ScalarExpNode *scalar_exp, Row *row);
 
@@ -65,6 +68,7 @@ static Row *query_plain_row_selection(ScalarExpSetNode *scalar_exp_set, Row *row
 
 /* Generate select row. */
 static Row *generate_row(void *destinct, MetaTable *meta_table);
+
 
 /* Calulate offset of every column in cell. */
 static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
@@ -88,25 +92,26 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
             switch (value_item_node->data_type) {
                 case T_STRING:
                     value_item_node->data_type = T_CHAR;
-                    return value_item_node->s_value;
+                    return value_item_node->value.s_value;
                 default:
                     db_log(PANIC, "Data type error.");
             }
             break;
         }
         case T_STRING:
-            return value_item_node->s_value;
+            return value_item_node->value.s_value;
         case T_INT:
-            return &value_item_node->i_value;
+        case T_LONG:
+            return &value_item_node->value.i_value;
         case T_BOOL:
-            return &value_item_node->b_value;
+            return &value_item_node->value.b_value;
         case T_FLOAT: {
             switch (value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->f_value = value_item_node->i_value;
+                    value_item_node->value.f_value = value_item_node->value.i_value;
                     value_item_node->data_type = T_FLOAT;
                 case T_FLOAT:
-                    return &value_item_node->f_value;
+                    return &value_item_node->value.f_value;
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -115,13 +120,13 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
         case T_DOUBLE: {
             switch (value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->d_value = value_item_node->i_value;
+                    value_item_node->value.d_value = value_item_node->value.i_value;
                     value_item_node->data_type = T_DOUBLE;
                 case T_FLOAT:
-                    value_item_node->d_value = value_item_node->f_value;
+                    value_item_node->value.d_value = value_item_node->value.f_value;
                     value_item_node->data_type = T_DOUBLE;
                 case T_DOUBLE:
-                    return &value_item_node->d_value;
+                    return &value_item_node->value.d_value;
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -131,13 +136,13 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
             switch (value_item_node->data_type) {
                 case T_STRING: {
                     struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
-                    strptime(value_item_node->s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
-                    value_item_node->t_value = mktime(tmp_time);
+                    strptime(value_item_node->value.s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                    value_item_node->value.t_value = mktime(tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
                     db_free(tmp_time);
                 }
                 case T_TIMESTAMP:
-                    return &value_item_node->t_value;
+                    return &value_item_node->value.t_value;
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -147,28 +152,28 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
             switch (value_item_node->data_type) {
                 case T_STRING: {
                     struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
-                    strptime(value_item_node->s_value, "%Y-%m-%d", tmp_time);
+                    strptime(value_item_node->value.s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
                     tmp_time->tm_hour = 0;
-                    value_item_node->t_value = mktime(tmp_time);
+                    value_item_node->value.t_value = mktime(tmp_time);
                     value_item_node->data_type = T_DATE;
                     db_free(tmp_time);
                 }
                 case T_DATE:
-                    return &value_item_node->t_value;
+                    return &value_item_node->value.t_value;
                 default:
                     db_log(PANIC, "Data type error.");
              }
              break;
         }
         case T_REFERENCE: {
-            switch (value_item_node->r_value->type) {
+            switch (value_item_node->value.r_value->type) {
                 case DIRECTLY:
                     db_log(WARN, "Not support directly fetch refer when query.");
                     return make_null_refer();
                 case INDIRECTLY: {
-                    return fetch_refer(meta_column, value_item_node->r_value->condition);
+                    return fetch_refer(meta_column, value_item_node->value.r_value->condition);
                 }
             }
             break;
@@ -1707,6 +1712,19 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
             return query_function_column_value(scalar_exp->function, select_result);
         case SCALAR_CALCULATE:
             return query_function_calculate_column_value(scalar_exp->calculate, select_result);
+        case SCALAR_VALUE: {
+            ValueItemNode *value = scalar_exp->value;
+            if (select_result->row_size == 0) {
+                KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+                key_value->key = db_strdup("value");
+                key_value->value = NULL;
+                key_value->data_type = value->data_type;
+                return key_value;
+            }
+            return query_value_item(value, select_result->rows[0]);
+        }
+        default:
+            db_log(PANIC, "Unknown scalar type");
     } 
 }
 
@@ -1717,8 +1735,7 @@ static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResul
     row->column_len = scalar_exp_set->size;
     row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
 
-    int i;
-    for (i = 0; i < scalar_exp_set->size; i++) {
+    for (uint32_t i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
         KeyValue *key_value = query_function_value(scalar_exp, select_result);        
         if (scalar_exp->alias) {
@@ -1729,8 +1746,7 @@ static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResul
     }
 
     /* Free old rows memory. */
-    int j;
-    for (j = 0; j <select_result->row_size; j++) {
+    for (uint32_t j = 0; j <select_result->row_size; j++) {
         free_row(select_result->rows[j]);
     }
 
@@ -1768,6 +1784,13 @@ static KeyValue *query_all_columns_calculate_column_value(CalculateNode *calcula
     return result;
 }
 
+/* Query value item in scalar_exp. */
+static KeyValue *query_value_item(ValueItemNode *value_item, Row *row) {
+    void *value = copy_value(&value_item->value, value_item->data_type);
+    assert_not_null(value, "System error occurs at <query_value_item>");
+    return new_key_value(db_strdup("value"), value, value_item->data_type);
+}
+
 /* Query row value. */
 static KeyValue *query_row_value(ScalarExpNode *scalar_exp, Row *row) {
     switch (scalar_exp->type) {
@@ -1775,6 +1798,8 @@ static KeyValue *query_row_value(ScalarExpNode *scalar_exp, Row *row) {
             return query_plain_column_value(scalar_exp->column, row);
         case SCALAR_CALCULATE:
             return query_all_columns_calculate_column_value(scalar_exp->calculate, row);            
+        case SCALAR_VALUE:
+            return query_value_item(scalar_exp->value, row);
         case SCALAR_FUNCTION:
             db_log(PANIC, "System logic error at <query_row_value>");
     }
@@ -1823,6 +1848,8 @@ static bool is_function_scalar_exp(ScalarExpNode *scalar_exp) {
         case SCALAR_FUNCTION:
             return true;
         case SCALAR_COLUMN:
+            return false;
+        case SCALAR_VALUE:
             return false;
         case SCALAR_CALCULATE:
             return is_function_scalar_exp(scalar_exp->calculate->left) 

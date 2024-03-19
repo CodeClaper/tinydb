@@ -215,6 +215,8 @@ static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
             return check_function_node(meta_table, scalar_exp->function);
         case SCALAR_CALCULATE:
             return check_calculate_node(meta_table, scalar_exp->calculate);
+        case SCALAR_VALUE:
+            return true;
     }
 }
 
