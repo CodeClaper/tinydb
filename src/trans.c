@@ -222,6 +222,8 @@ void begin_transaction(DBResult *result) {
     register_transaction(trans_handle);
 
     result->success = true;
+    assgin_result_message(result, "Begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
+
     /* Send message. */
     db_log(SUCCESS, "Begin new transaction successfully.");
 }
@@ -231,10 +233,14 @@ void commit_transaction(DBResult *result) {
 
     TransactionHandle *trans_handle = find_transaction();
     if (trans_handle == NULL) {
-        db_log(WARN, "Not found any transaction to be committed.");
+        db_log(ERROR, "Not found any transaction to be committed.");
         return;
     }
-    assert_false(trans_handle->auto_commit, "System Logic error, transaction is auto committed but found in manual commit funciton.");
+
+    if (trans_handle->auto_commit) {
+        db_log(ERROR, "System Logic error, transaction is auto committed but found in manual commit funciton.");
+        return;
+    }
     
     /* Commit Xlog. */
     commit_xlog();
@@ -245,6 +251,7 @@ void commit_transaction(DBResult *result) {
     db_log(INFO, "Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
     
     result->success = true;
+    assgin_result_message(result, "Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
 
     db_log(SUCCESS, "Commit the transaction successfully");
 }
@@ -267,14 +274,15 @@ void auto_commit_transaction() {
 /* Tranasction rollback. */
 void rollback_transaction(DBResult *result) {
     TransactionHandle *trans_handle = find_transaction();
-    if (trans_handle) {
+    if (trans_handle && !trans_handle->auto_commit) {
         execute_roll_back();
-        result->success = true;
         commit_transaction(result);
+        result->success = true;
+        assgin_result_message(result, "Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
         db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
     } 
     else 
-        db_log(WARN, "Not found transaction to rollback.");
+        db_log(ERROR, "Not found transaction to rollback.");
 }
 
 /* 
@@ -336,16 +344,6 @@ static void transaction_insert_row(Row *row) {
     expired_xid_col->value = copy_value(&zero, T_LONG);
     expired_xid_col->data_type = T_LONG;
     row->data[row->column_len - 1] = expired_xid_col;
-
-    /* For auto commit transaction, not record xlog. */
-    if (current_trans->auto_commit)
-        return; 
-
-    /* Record insert xlog. */
-    Refer *refer = define_refer(row);
-    insert_xlog_entry(refer, DDL_INSERT);
-
-    free_refer(refer);
 }
 
 /* Tranasction operation for delete row. */
@@ -356,16 +354,6 @@ static void transaction_delete_row(Row *row) {
 
     /* Asssign current transaction id to expired_xid. */
     *(int64_t *)row->data[row->column_len - 1]->value = current_trans->xid;
-
-    /* For auto commit transaction, not record xlog. */
-    if (current_trans->auto_commit)
-        return; 
-
-    /* Record delete xlog. */
-    Refer *refer = define_refer(row);
-    insert_xlog_entry(refer, DDL_DELETE);
-
-    free_refer(refer);
 }
 
 /* Update transaction state. */

@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include "data.h"
 #include "mmu.h"
 #include "ret.h"
@@ -49,6 +50,22 @@ DBResultSet *new_db_result_set() {
 void add_db_result(DBResultSet *result_set, DBResult *result) {
     result_set->set = db_realloc(result_set->set, sizeof(DBResult *) * (result_set->size + 1));
     result_set->set[result_set->size++] = result;
+}
+
+/* Assign db result message. */
+void assgin_result_message(DBResult *result, char *format, ...) {
+    /* Combinate message. */
+    char message[BUFF_SIZE];
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(message, format, ap);
+
+    /* If message may be already older message, free it. */
+    if (result->message) {
+        db_free(result->message);
+    }
+    result->message = db_strdup(message);
+    va_end(ap);
 }
 
 /* Send out row. */

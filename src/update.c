@@ -6,6 +6,7 @@
 #include "data.h"
 #include "meta.h"
 #include "select.h"
+#include "delete.h"
 #include "copy.h"
 #include "compare.h"
 #include "table.h"
@@ -17,42 +18,58 @@
 #include "refer.h"
 #include "asserts.h"
 #include "session.h"
+#include "index.h"
+#include "xlog.h"
 #include "ret.h"
 #include "log.h"
 
 
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node) {
-    int i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = *(row->data + i);
+    for (uint32_t i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
         if (strcmp(key_value->key, assign_node->column->column_name) == 0) {
-            ValueItemNode *value = assign_node->value;
-            switch(value->data_type) {
-                case T_BOOL:
-                    key_value->value = &value->b_value;
+            ValueItemNode *value_item = assign_node->value;
+            /* Free old value. */
+            free_value(key_value->value, key_value->data_type);
+            /* Assign new value. */
+            switch(value_item->data_type) {
+                case T_BOOL: {
+                    key_value->value = db_malloc(sizeof(bool), SDT_BOOL);
+                    memcpy(key_value->value, &value_item->b_value, sizeof(bool));
                     break;
-                case T_INT:
-                case T_LONG:
-                    key_value->value = &value->i_value;
+                }
+                case T_INT: {
+                    key_value->value = db_malloc(sizeof(int32_t), SDT_INT);
+                    memcpy(key_value->value, &value_item->i_value, sizeof(int32_t));
                     break;
-                case T_FLOAT:
-                    key_value->value = &value->f_value;
+                }
+                case T_LONG: {
+                    key_value->value = db_malloc(sizeof(int64_t), SDT_INT);
+                    memcpy(key_value->value, &value_item->i_value, sizeof(int64_t));
                     break;
-                case T_DOUBLE:
-                    key_value->value = &value->d_value;
+                }
+                case T_FLOAT: {
+                    key_value->value = db_malloc(sizeof(float), SDT_INT);
+                    memcpy(key_value->value, &value_item->f_value, sizeof(float));
                     break;
-                case T_TIMESTAMP:
-                    key_value->value = &value->t_value;
+                }
+                case T_DOUBLE: {
+                    key_value->value = db_malloc(sizeof(double), SDT_INT);
+                    memcpy(key_value->value, &value_item->d_value, sizeof(double));
                     break;
-                case T_DATE:
-                    key_value->value = &value->t_value;
+                }
+                case T_TIMESTAMP: 
+                case T_DATE: {
+                    key_value->value = db_malloc(sizeof(time_t), SDT_TIME_T);
+                    memcpy(key_value->value, &value_item->t_value, sizeof(time_t));
                     break;
+                }
                 case T_CHAR:
-                case T_STRING:
-                    db_free(key_value->value); /* free old memory. */
-                    key_value->value = db_strdup(value->s_value);
+                case T_STRING: {
+                    key_value->value = db_strdup(value_item->s_value);
                     break;
+                }
                 case T_REFERENCE:
                     db_log(PANIC, "Not implement yet.");
                     break;
@@ -65,7 +82,12 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
 static void update_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
     /* Only update row that is visible for current transaction. */
-    if (!row_is_visible(row)) return;
+    if (!row_is_visible(row)) 
+        return;
+
+    /* Update operation can be regarded as delete + re-insert operation. 
+     * It makes transaction roll back simpler. */
+    delete_row(row, select_result, table, arg);
 
     /* For update row funciton, the arg is AssignmentSetNode data type arguement. */
     AssignmentSetNode *assignment_set_node = (AssignmentSetNode *) arg;
@@ -73,45 +95,34 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     uint32_t value_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
 
+    /* Use old primary key as default. */
+    void *new_key = row->key;
+
     /* Handle each of assignment. */
-    int i;
+    uint32_t i;
     for (i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assign_node = *(assignment_set_node->assignment_node + i);
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
         update_cell(row, assign_node);
         if (meta_column->is_primary) { 
-
-            /* Which means to change primary key, and may casuse space cell movement. */
-            void *old_key = row->key;
+            /* If primary key changed, reassign new value. */
             void *new_key = get_value_from_value_item_node(assign_node->value, meta_column);
-            if (equal(old_key, new_key, meta_column->column_type)) 
-                continue;  /* The Key value not change, nothing to do. */
-            else {
-                /* In the case, key value change, update = delete + re-insert. */
-                /* Delete the old one. */
-                Cursor *old_cursor = define_cursor(table, old_key);
-                delete_leaf_node_cell(old_cursor, old_key); 
-                free_value(old_key, meta_column->column_type);
-                free_cursor(old_cursor);
-
-                /* Re-insert the updated one. */
-                Cursor *new_cursor = define_cursor(table, new_key);
-                row->key = new_key;
-                insert_leaf_node_cell(new_cursor, row); 
-                free_cursor(new_cursor);
-
-            }
-        } else { 
-            /* When it is non-key column, just update the cell value. */
-            Cursor *cursor = define_cursor(table, row->key);
-            void *leaf_node = get_page(table->meta_table->table_name, table->pager, cursor->page_num);
-            assert_true(get_node_type(leaf_node) == LEAF_NODE, "System error, the node must be leaf type when update row.");
-            void *destination = serialize_row_data(row, table);
-            memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
-            flush_page(table->meta_table->table_name, table->pager, cursor->page_num);
-            free_cursor(cursor);
         }
     }
+   
+    /* Re-insert. */
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    row->key = copy_value(new_key, primary_meta_column->column_type);
+    Cursor *new_cursor = define_cursor(table, new_key);
+    update_transaction_state(row, TR_INSERT);
+    insert_leaf_node_cell(new_cursor, row);
+
+    /* Record xlog for insert. */
+    Refer *refer = convert_refer(new_cursor);
+    insert_xlog_entry(refer, DDL_INSERT);
+
+    /* Free memory. */
+    free_cursor(new_cursor);
 }
 
 /* Execute update statment. */
@@ -129,6 +140,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
 
     /* Before update row, count satisfied row num which help to check. */
     query_with_condition(update_node->condition_node, select_result, count_row, NULL);
+    uint32_t update_rows_size = select_result->row_size;
 
     /* Check out update node. */
     if (!check_update_node(update_node, select_result)) 
@@ -138,9 +150,11 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     query_with_condition(update_node->condition_node, select_result, update_row, update_node->assignment_set_node);
 
     result->success = true;
-    result->rows = select_result->row_size;
-    result->message = db_strdup("Successfully updated %d row data.", select_result->row_size);
+    result->rows = update_rows_size;
+    assgin_result_message(result, "Successfully updated %d row data.", update_rows_size);
 
-    db_log(SUCCESS, "Successfully updated %d row data.", select_result->row_size);
+    db_log(SUCCESS, "Successfully updated %d row data.", update_rows_size);
+
+    free_select_result(select_result);
 
 }

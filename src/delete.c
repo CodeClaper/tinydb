@@ -6,24 +6,39 @@
 #include "data.h"
 #include "table.h"
 #include "copy.h"
+#include "free.h"
 #include "select.h"
 #include "refer.h"
 #include "ltree.h"
 #include "check.h"
 #include "trans.h"
 #include "session.h"
+#include "xlog.h"
 #include "ret.h"
 #include "log.h"
 
 /* Delete row */
-static void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
     /* Only deal with row that is visible for current transaction. */
     if (row_is_visible(row)) {
         Cursor *cursor = define_cursor(table, row->key);
+
+        /* Update transaction state. */
         update_transaction_state(row, TR_DELETE);
+
+        /* Sync row data */
         update_row_data(row, cursor);
+
+        /* Get refer and record xlog. */
+        Refer *refer = convert_refer(cursor);
+        insert_xlog_entry(refer, DDL_DELETE);
+
         select_result->row_size++;
+
+        /* Free memeory. */
+        free_cursor(cursor);
+        free_refer(refer);
     }
 }
 
@@ -53,7 +68,7 @@ void exec_delete_statement(DeleteNode *delete_node, DBResult *result) {
     /* Success Result . */
     result->success = true;
     result->rows = select_result->row_size;
-    result->message = db_strdup("Successfully deleted %d row data.", select_result->row_size);
+    assgin_result_message(result, "Successfully deleted %d row data.", select_result->row_size);
 
     db_log(SUCCESS, "Successfully deleted %d row data.", select_result->row_size);
 }

@@ -314,7 +314,7 @@ uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, u
 }
 
 
-// get internal node child page num
+/* Get internal node child page num. */
 uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, DataType key_data_type) {
     // binary search
     uint32_t min_index = 0;
@@ -338,13 +338,13 @@ uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t k
     } 
 }
 
-// Get leaf node cell index, 
-// Maybe the key not exist in the node,then return the bigger one. 
+/* Get leaf node cell index, 
+* Maybe the key not exist in the node,then return the bigger one. */
 uint32_t get_leaf_node_cell_index(void *node, void *key, uint32_t cell_num, uint32_t key_len, uint32_t value_len, DataType key_data_type) {
     // binary search
     uint32_t min_index = 0;
     uint32_t max_index = cell_num;
-    while(min_index != max_index) {
+    while (min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
         void *key_at_index = get_leaf_node_cell_key(node, index, key_len, value_len);
         if (greater_equal(key_at_index, key, key_data_type)) {
@@ -356,16 +356,17 @@ uint32_t get_leaf_node_cell_index(void *node, void *key, uint32_t cell_num, uint
     return min_index;
 }
 
-// get index meta column pointer
+/* get index meta column pointer */
 void *get_meta_column_pointer(void *root_node, uint32_t index) {
     return root_node + ROOT_NODE_META_COLUMN_OFFSET + ROOT_NODE_META_COLUMN_SIZE * index;
 }
 
+/* Get meta column size. */
 uint32_t get_root_node_meta_column_size() {
     return ROOT_NODE_META_COLUMN_SIZE;
 }
 
-// set index meta column
+/* Set index meta column */
 void set_meta_column(void *root_node, void *destination, uint32_t index) {
    memcpy(root_node + ROOT_NODE_META_COLUMN_OFFSET + ROOT_NODE_META_COLUMN_SIZE * index, destination, ROOT_NODE_META_COLUMN_SIZE);
 }

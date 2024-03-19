@@ -356,11 +356,7 @@ void *db_realloc(void *ptr, size_t size) {
 }
 
 /* Database level db_strdup. */
-char *db_strdup(char *format, ...) {
-    char str[BUFF_SIZE];
-    va_list ap;
-    va_start(ap, format);
-    vsprintf(str, format, ap);
+char *db_strdup(char *str) {
     char *ret = strdup(str);
     assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.\n");
 
@@ -368,7 +364,6 @@ char *db_strdup(char *format, ...) {
     register_entry(ret, strlen(str), SDT_STRING);
 #endif
 
-    va_end(ap);
     return ret;
 }
 

@@ -185,10 +185,16 @@ void db_log(LogLevel lev, char *format, ...) {
         db_free(sys_time);
     }
 
-    /* According to LogLevel, diffent treatments. */
+    /* According to LogLevel, there are diffent treatments. 
+     * SUCCESS: statement exeucted successfully.
+     * WARN: for unexpected messages.
+     * ERROR: abort current transaction, return to known state.
+     * FATAL: abort session.
+     * PANIC: take down the server.
+     * */
     switch(lev) {
-        case WARN:
         case SUCCESS:
+        case WARN:
             store_log_msg(message);
             break;
         case ERROR:

@@ -14,12 +14,14 @@
 #include <stdint.h>
 #include <string.h>
 #include "xlog.h"
+#include "log.h"
 #include "mmu.h"
 #include "trans.h"
 #include "copy.h"
 #include "free.h"
 #include "ltree.h"
 #include "refer.h"
+#include "table.h"
 #include "select.h"
 #include "asserts.h"
 
@@ -52,15 +54,20 @@ static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
     return entry;
 }
 
-
 /* Insert into XLogEntry. */
 void insert_xlog_entry(Refer *refer, DDLType type) {
+
+    TransactionHandle *trans = find_transaction();
+
+    /* Not handle auto-commit transaction. */
+    if (trans->auto_commit) return;
+
     pthread_mutex_lock(&mutex);
 
     TransactionHandle *handle = find_transaction();
     XLogEntry *entry = new_xlog_entry(handle->xid, refer, type);
 
-    int i;
+    uint32_t i;
     for (i = 0; i < xtable->size; i++) {
         XLogEntry *head = xtable->list[i];
         if (head->xid == handle->xid) {
@@ -78,6 +85,29 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
     pthread_mutex_unlock(&mutex);
 }
 
+/* Update xlog entry refer. */
+void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
+    XLogEntry *current = NULL;
+
+    TransactionHandle *trans = find_transaction();
+    for (uint32_t i = 0; i < xtable->size; i++) {
+        XLogEntry *head = xtable->list[i];
+        if (head->xid == trans->xid) {
+            current = head;         
+        }
+    }
+
+    if (current) {
+        for (; current != NULL; current = current->next) {
+            Refer *current_refer = current->refer;
+            if (refer_equals(current_refer, refer_update_entity->old_refer)) {
+                current->refer = copy_refer(refer_update_entity->new_refer);
+                free_refer(current_refer);
+            }
+        }  
+    }
+}
+
 /* Commit XLog . */
 void commit_xlog() {
     
@@ -86,7 +116,7 @@ void commit_xlog() {
 
     TransactionHandle *handle = find_transaction();
 
-    int i, j;
+    uint32_t i, j;
     for (i = 0; i < xtable->size; i++) {
         XLogEntry *head = xtable->list[i];
         if (head->xid == handle->xid) {
@@ -111,6 +141,10 @@ void commit_xlog() {
 /* Execute rollback. */
 void execute_roll_back() {
     TransactionHandle *transaction = find_transaction();
+    if (transaction == NULL) {
+        db_log(WARN, "Not found current transaction.");
+        return;
+    }
 
     XLogEntry *current = NULL;
 
@@ -124,7 +158,10 @@ void execute_roll_back() {
         }
     }
 
-    assert_not_null(current, "Not found current transaction xlog.");
+    if (current == NULL) {
+        db_log(WARN, "Not found current transaction xlog.");
+        return;
+    }
     
     /* Loop to rollback. */
     for (; current != NULL; current = current->next) {
@@ -135,8 +172,6 @@ void execute_roll_back() {
             case DDL_DELETE:
                 reverse_delete(current->refer, transaction);
                 break;
-            case DDL_UPDATE:
-                break;
         }        
     }
 }
@@ -146,20 +181,33 @@ static void reverse_insert(Refer *refer, TransactionHandle *transaction) {
     Row *row = define_row(refer);
     int64_t row_created_xid = *(int64_t *)row->data[row->column_len - 2]->value;
     assert_true(row_created_xid == transaction->xid, "System error, row created xid not equals transaction xid");
+
     /* Delete the insered row. */
     *(int64_t *)row->data[row->column_len - 1]->value = transaction->xid;
 
     update_row_data(row, convert_cursor(refer));
 }
 
-/* Reverse delete operation. */
+/* Reverse delete operation. 
+ * Notice that: when reverse delete operation, it does`t "resurrect" the row, 
+ * rather than re-insert the row to keep the principle that visible row always 
+ * lies in the forefront of the same key cells.
+ * */
 static void reverse_delete(Refer *refer, TransactionHandle *transaction) {
     Row *row = define_row(refer);
+
     assert_true(row_is_deleted(row), "System error, row not been deleted.");
     int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
     assert_true(row_expired_xid == transaction->xid, "System error, row expired xid not equals transaction xid");
+
     /* Make the row visible. */
     *(int64_t *)row->data[row->column_len - 1]->value = 0;
 
-    update_row_data(row, convert_cursor(refer));
+    Table *table = open_table(refer->table_name);
+    
+    /* Repositioning. */
+    Cursor *new_cur = define_cursor(table, row->key);
+
+    /* Re-insert. */
+    insert_leaf_node_cell(new_cur, row);
 }

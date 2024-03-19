@@ -85,11 +85,13 @@ void free_select_result(SelectResult *select_result) {
         if (select_result->table_name != NULL)
             db_free(select_result->table_name);
 
-        /* free rows. */
-        for (uint32_t i = 0; i < select_result->row_size; i++) {
-            free_row(select_result->rows[i]);
+        if (select_result->rows) {
+            /* free rows. */
+            for (uint32_t i = 0; i < select_result->row_size; i++) {
+                free_row(select_result->rows[i]);
+            }
+            db_free(select_result->rows);
         }
-        db_free(select_result->rows);
         db_free(select_result);
     }
 }

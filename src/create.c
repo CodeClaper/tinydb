@@ -153,6 +153,7 @@ void exec_create_table_statement(CreateTableNode *create_table_node, DBResult *r
     if (create_table(meta_table, result)) {
         result->success = true;
         result->rows = 0;
+        assgin_result_message(result, "Table '%s' created successfully.", create_table_node->table_name);
         db_log(SUCCESS, "Table '%s' created successfully.", create_table_node->table_name);
     }
 

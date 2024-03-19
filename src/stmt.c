@@ -1,6 +1,6 @@
-#include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <setjmp.h>
 #include <time.h>
 #include "stmt.h"
 #include "defs.h"
@@ -23,6 +23,7 @@
 #include "log.h"
 #include "free.h"
 #include "ret.h"
+#include "xlog.h"
 
 
 /* Begin tranasction statement. */
@@ -56,6 +57,7 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
     if (drop_table(table_name, result)) {
         result->success = true;
         result->rows = 0;
+        assgin_result_message(result, "Table '%s' droped successfully.", table_name);
         db_log(SUCCESS, "Table '%s' droped successfully.", table_name);
     }
 }
@@ -68,7 +70,7 @@ static void statement_insert(Statement *stmt, DBResult *result) {
     if (refer != NULL) {
         result->success = true;
         result->rows = 1;
-        result->message = db_strdup("Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
+        assgin_result_message(result, "Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
         db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
     }
 }
@@ -210,6 +212,14 @@ void execute(char *sql) {
                 end = clock();
                 last_result->duration = (double)(end - start) / CLOCKS_PER_SEC;
                 db_log(INFO, "Duration: %lfs", last_result->duration);
+            }
+
+            TransactionHandle *trans = find_transaction();
+            if (trans && !trans->auto_commit) {
+                DBResult *roll_back_result = new_db_result();
+                add_db_result(result_set, roll_back_result);
+                /* Transaction roll back. */
+                rollback_transaction(roll_back_result);
             }
         }
         /* Free memory. */

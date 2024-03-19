@@ -6,6 +6,9 @@ DBResult *new_db_result();
 /* Generate new db result set. */
 DBResultSet *new_db_result_set();
 
+/* Assign db result message. */
+void assgin_result_message(DBResult *result, char *format, ...);
+
 /* Add db result to set. */
 void add_db_result(DBResultSet *result_set, DBResult *result);
 

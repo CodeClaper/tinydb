@@ -25,6 +25,7 @@
 #include "free.h"
 #include "refer.h"
 #include "trans.h"
+#include "xlog.h"
 #include "log.h"
 #include "ret.h"
 
@@ -265,6 +266,9 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
 
     /* Convert to Refer. */
     Refer *refer = convert_refer(cursor);
+
+    /* Record xlog for insert operation. */
+    insert_xlog_entry(refer, DDL_INSERT);
 
     /* Free useless memeory */
     free_cursor(cursor);
