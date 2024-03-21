@@ -12,24 +12,20 @@
 #include <pthread.h>
 #include "data.h"
 #include "mmu.h"
+#include "log.h"
 #include "asserts.h"
 
 #define OVER_FLAG "OVER"  /* Over flag of message. */
-#define SPOOL_SIZE 4096   /* Spool buffer size. */
-
 
 static pthread_key_t key; /* Pthread key to store session. */
 
-static char spool[SPOOL_SIZE]; /* Store messsage pool. */
-static int sindex;             /* Current spool index. */
 
 /* Init spool. */
-static void init_spool();
+static void clearn_up_spool();
 
 /* Initialize session. */
 void init_session() {
     pthread_key_create(&key, NULL);
-    init_spool();
 }
 
 /* Generate new session. */
@@ -58,25 +54,34 @@ void destroy_session() {
     set_session(NULL);
 }
 
+static bool spool_is_full(Session *session) {
+    return session->pindex >= SPOOL_SIZE;
+}
+
 /* Init spool. */
-static void init_spool() {
-    sindex = 0;
-    memset(spool, 0, SPOOL_SIZE);
+static void clearn_up_spool(Session *session) {
+    memset(session->spool, '\0', SPOOL_SIZE);
+    session->pindex = 0;
 }
 
 /* Store spool. */
-static char *store_spool(char *message) {
+static char *store_spool(Session *session, char *message) {
     size_t len = strlen(message);
-    int index = sindex + len;
-    if (index <= SPOOL_SIZE) {
-        memcpy(spool + sindex, message, len); 
-        sindex = index;
+    int index = session->pindex + len;
+    if (strcmp(OVER_FLAG, message) == 0) {
+        if (session->pindex == 0) {
+            memcpy(session->spool + session->pindex, message, len); 
+            return NULL;
+        } else {
+            return message;
+        }
+    } else if (index < SPOOL_SIZE) {
+        memcpy(session->spool + session->pindex, message, len); 
+        session->pindex = index;
         return NULL;
     } else {
-        size_t sub_len = SPOOL_SIZE - sindex;
-        memcpy(spool + sindex, message, sub_len); 
-        sindex = sindex + sub_len;
-        return message + sub_len;
+        session->pindex = SPOOL_SIZE;
+        return message;
     }
 }
 
@@ -86,16 +91,16 @@ bool db_send(const char *format, ...) {
     if (format == NULL)
         return false;
 
-    assert_true(strlen(format) < BUFF_SIZE, "Overflow");
+    assert_true(strlen(format) < SPOOL_SIZE, "Overflow");
 
     va_list ap;
     size_t size ;
     ssize_t r = -1, s = 0;
     Session *session;
-    char rbuff[3], sbuff[BUFF_SIZE];
+    char rbuff[3], sbuff[SPOOL_SIZE];
 
     /* Initialize send buffer. */
-    memset(sbuff, 0, BUFF_SIZE);
+    memset(sbuff, 0, SPOOL_SIZE);
 
     va_start(ap, format);
     
@@ -107,16 +112,39 @@ bool db_send(const char *format, ...) {
     /*Get session*/
     session = get_session(); 
 
-    /* Check if client close connection, if recv get zero which means client has closed conneciton. */
-    if (session != NULL && (r = recv(session->client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 && (s = send(session->client, sbuff, BUFF_SIZE, 0)) > 0) {
-        session->volumn += s;
-        session->frequency++;
+    if (session == NULL) {
+        db_log(ERROR, "Not found session");
+        return false;
+    }
+
+    /* Store message into spool. */
+    char *left_msg = store_spool(session, sbuff);
+
+    /* Only when spool is full or OVER FLAG, socket will send the whole spool data. */
+    if (!spool_is_full(session) && strcmp(OVER_FLAG, sbuff) != 0)
         return true;
+
+
+    /* Check if client close connection, if recv get zero which means client has closed conneciton. */
+    if ((r = recv(session->client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 
+        && (s = send(session->client, session->spool, SPOOL_SIZE, 0)) > 0) {
+            session->volumn += s;
+            session->frequency++;
+
+            clearn_up_spool(session);
+
+            /* If there are left message, continue db_send. */
+            if (left_msg) {
+                return db_send(left_msg);
+            }
+
+            return true;
     }
 
     /* If detect that client has closed conneciton, destroy the session. */
     if (r == 0 || s < 0) 
         destroy_session(); 
+
     return false;
 }
 

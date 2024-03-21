@@ -12,6 +12,7 @@
 #define MAX_COLUMN_SIZE 256    // max column size
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define BUFF_SIZE 1024
+#define SPOOL_SIZE 1024   /* Spool buffer size. */
 
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define MAX_TABLE_NAME_LEN 30
@@ -682,6 +683,8 @@ typedef struct {
     int client;
     uint32_t frequency;
     uint32_t volumn;
+    char spool[SPOOL_SIZE]; /* Store messsage pool. */
+    int pindex;             /* Current spool position index. */
 } Session;
 
 /* Abount configuration. */
