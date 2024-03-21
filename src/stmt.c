@@ -213,14 +213,6 @@ void execute(char *sql) {
                 last_result->duration = (double)(end - start) / CLOCKS_PER_SEC;
                 db_log(INFO, "Duration: %lfs", last_result->duration);
             }
-
-            TransactionHandle *trans = find_transaction();
-            if (trans && !trans->auto_commit) {
-                DBResult *roll_back_result = new_db_result();
-                add_db_result(result_set, roll_back_result);
-                /* Transaction roll back. */
-                rollback_transaction(roll_back_result);
-            }
         }
         /* Free memory. */
         free_statements(statements);

@@ -14,12 +14,22 @@
 #include "mmu.h"
 #include "asserts.h"
 
-static pthread_key_t key;
+#define OVER_FLAG "OVER"  /* Over flag of message. */
+#define SPOOL_SIZE 4096   /* Spool buffer size. */
 
+
+static pthread_key_t key; /* Pthread key to store session. */
+
+static char spool[SPOOL_SIZE]; /* Store messsage pool. */
+static int sindex;             /* Current spool index. */
+
+/* Init spool. */
+static void init_spool();
 
 /* Initialize session. */
 void init_session() {
     pthread_key_create(&key, NULL);
+    init_spool();
 }
 
 /* Generate new session. */
@@ -48,9 +58,29 @@ void destroy_session() {
     set_session(NULL);
 }
 
+/* Init spool. */
+static void init_spool() {
+    sindex = 0;
+    memset(spool, 0, SPOOL_SIZE);
+}
+
+/* Store spool. */
+static char *store_spool(char *message) {
+    size_t len = strlen(message);
+    int index = sindex + len;
+    if (index <= SPOOL_SIZE) {
+        memcpy(spool + sindex, message, len); 
+        sindex = index;
+        return NULL;
+    } else {
+        size_t sub_len = SPOOL_SIZE - sindex;
+        memcpy(spool + sindex, message, sub_len); 
+        sindex = sindex + sub_len;
+        return message + sub_len;
+    }
+}
+
 /* Socket send message.
- * First send message size before sending the message.
- * So that, client can prepare enough large buffer to store the message.
  * return true if send successfully, else return false. */
 bool db_send(const char *format, ...) {
     if (format == NULL)
@@ -71,6 +101,8 @@ bool db_send(const char *format, ...) {
     
     /* Assignment send buffer. */
     vsprintf(sbuff, format, ap);
+    
+    va_end(ap);
 
     /*Get session*/
     session = get_session(); 
@@ -79,14 +111,12 @@ bool db_send(const char *format, ...) {
     if (session != NULL && (r = recv(session->client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 && (s = send(session->client, sbuff, BUFF_SIZE, 0)) > 0) {
         session->volumn += s;
         session->frequency++;
-        va_end(ap);
         return true;
     }
 
     /* If detect that client has closed conneciton, destroy the session. */
     if (r == 0 || s < 0) 
         destroy_session(); 
-    va_end(ap);
     return false;
 }
 
@@ -94,7 +124,7 @@ bool db_send(const char *format, ...) {
  * which means the message is over.
  * */
 bool db_send_over() {
-    return db_send("OVER");
+    return db_send(OVER_FLAG);
 }
 
 /* Delete pthread_key_t. */
