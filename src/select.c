@@ -629,22 +629,11 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     free_block(internal_node_snapshot);
 }
 
-/* Convert from select node to query param */
-QueryParam *convert_query_param(SelectNode *select_node) {
-    QueryParam *query_param = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
-    query_param->table_name = db_strdup(select_node->table_name);
-    query_param->selection = copy_selection_node(select_node->selection);
-    query_param->condition_node = copy_condition_node(select_node->condition_node);
-    query_param->limit_node = copy_limit_node(select_node->limit_node);
-    return query_param;
-}
-
 /* Generate new select result structure. */
 SelectResult *new_select_result(char *table_name) {
     SelectResult *select_result = db_malloc(sizeof(SelectResult), SDT_SELECT_RESULT);
     select_result->row_size = 0;
     select_result->row_index = 0;
-    select_result->limit_index = 0;
     select_result->table_name = db_strdup(table_name);
     select_result->rows = NULL;
     return select_result;
@@ -1892,28 +1881,40 @@ static void query_with_selection(SelectionNode *selection, SelectResult *select_
         query_columns_selection(selection->scalar_exp_set, select_result);
 }
 
+/* Get TableExpNode condition. 
+ * If exists where clause, return its condition.
+ * Else, return NULL.
+ * */
+static ConditionNode *get_table_exp_condition(TableExpNode *table_exp) {
+    WhereClauseNode *where_clause = table_exp->where_clause;
+    if (where_clause)
+        return where_clause->condition;
+    else 
+        return NULL;
+}
+
 /* Execute select statement. */
 void exec_select_statement(SelectNode *select_node, DBResult *result) {
-    QueryParam *query_param = convert_query_param(select_node);
-    if (check_query_param(query_param)) {
-        /* Genrate select result. */
-        SelectResult *select_result = new_select_result(query_param->table_name);
 
-        /* Select with condition to define which rows. */
-        query_with_condition(query_param->condition_node, select_result, select_row, NULL);
+    /* Check SelectNode valid. */
+    check_select_node(select_node);
 
-        /* Query Selection to define row content. */
-        query_with_selection(query_param->selection, select_result);
+    /* Genrate select result. */
+    SelectResult *select_result = new_select_result(select_node->table_exp->from_clause->from->set[0]->table);
 
-        /* If select all, return all row data. */
-        result->rows = select_result->row_size;
-        result->data = select_result;
-        result->success = true;
-        assgin_result_message(result, "Query data successfully.");
+    /* Select with condition to define which rows. */
+    ConditionNode *condition = get_table_exp_condition(select_node->table_exp);
+    query_with_condition(condition, select_result, select_row, NULL);
 
-        /* Make up success result. */
-        db_log(SUCCESS, "Query data successfully.");
-    }
+    /* Query Selection to define row content. */
+    query_with_selection(select_node->selection, select_result);
 
-    free_query_param(query_param);
+    /* If select all, return all row data. */
+    result->rows = select_result->row_size;
+    result->data = select_result;
+    result->success = true;
+    assgin_result_message(result, "Query data successfully.");
+
+    /* Make up success result. */
+    db_log(SUCCESS, "Query data successfully.");
 }

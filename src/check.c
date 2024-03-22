@@ -21,10 +21,12 @@
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node);
 
 /* Check ScalarExpNode. */
-static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
+static void check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
 
 /* Check ident node. */
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
+    if (meta_table == NULL)
+        db_log(ERROR, "Unknown column '%s'.", column_node->column_name);
     int i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
@@ -201,42 +203,57 @@ static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *met
 }
 
 /* Check CalculateNode. */
-static bool check_calculate_node(MetaTable *meta_table, CalculateNode *calculate_node) {
-    return check_scalar_exp(calculate_node->left, meta_table) 
-            && check_scalar_exp(calculate_node->right, meta_table);
+static void check_calculate_node(MetaTable *meta_table, CalculateNode *calculate_node) {
+    check_scalar_exp(calculate_node->left, meta_table);
+    check_scalar_exp(calculate_node->right, meta_table);
+}
+
+/* Check ScalarExpNode if column. */
+static void  check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
+        switch (scalar_exp->type) {
+            case SCALAR_COLUMN:
+                check_column_node(meta_table, scalar_exp->column);
+                break;
+            case SCALAR_FUNCTION:
+                check_function_node(meta_table, scalar_exp->function);
+                break;
+            case SCALAR_CALCULATE:
+                check_calculate_node(meta_table, scalar_exp->calculate);
+                break;
+            case SCALAR_VALUE:
+                break;
+        }
 }
 
 /* Check ScalarExpNode. */
-static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
-    switch (scalar_exp->type) {
-        case SCALAR_COLUMN:
-            return check_column_node(meta_table, scalar_exp->column);
-        case SCALAR_FUNCTION:
-            return check_function_node(meta_table, scalar_exp->function);
-        case SCALAR_CALCULATE:
-            return check_calculate_node(meta_table, scalar_exp->calculate);
-        case SCALAR_VALUE:
-            return true;
+static void check_scalar_exp_with_table(ScalarExpNode *scalar_exp, TableExpNode *table_exp) {
+    /* Allow from clause NULL, but cant`t apear Column in ScalarExpNode. */
+    if (table_exp->from_clause == NULL) {
+        check_scalar_exp(scalar_exp, NULL);
+    } else {
+        TableRefSetNode *table_ref_set = table_exp->from_clause->from;
+        for (uint32_t i = 0; i < table_ref_set->size; i++) {
+            TableRefNode *table_ref = table_ref_set->set[i];
+            Table *table = open_table(table_ref->table);
+            MetaTable *meta_table = table->meta_table;
+            check_scalar_exp(scalar_exp, meta_table);
+        }
     }
 }
 
 /* Check ScalarExpSetNode. */
-static bool check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, MetaTable *meta_table) {
-    int i;
+static void check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, TableExpNode *table_exp) {
+    uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
-        if (!check_scalar_exp(scalar_exp, meta_table))
-            return false;
+        check_scalar_exp_with_table(scalar_exp, table_exp);
     }
-    return true;
 }
 
 /* Check select items if exist int meta column */
-static bool check_selection(SelectionNode *selection_node, MetaTable *meta_table) {
-    if (selection_node->all_column)
-        return true;
-    else
-        return check_scalar_exp_set(selection_node->scalar_exp_set, meta_table);
+static void check_selection(SelectionNode *selection_node, TableExpNode *table_exp) {
+    if (!selection_node->all_column)
+        check_scalar_exp_set(selection_node->scalar_exp_set, table_exp);
 }
 
 /* Check opr if allowd. */
@@ -329,15 +346,49 @@ static bool check_column_set(ColumnSetNode *column_set_node, MetaTable *meta_tab
     return true;
 }
 
-/* Check query param. */
-bool check_query_param(QueryParam *query_param) {
-    Table *table = open_table(query_param->table_name);
-    if (table == NULL) {
-        db_log(ERROR, "Table '%s' not exists.", query_param->table_name);
-        return false;
+static void check_table_ref(TableRefNode *table_ref) {
+    Table *table = open_table(table_ref->table);
+    if (table == NULL)
+        db_log(ERROR, "Table '%s' not exist.", table_ref->table);
+}
+
+static void check_table_ref_set(TableRefSetNode *table_ref_set) {
+    for (uint32_t i = 0; i < table_ref_set->size; i++) {
+        check_table_ref(table_ref_set->set[i]);
     }
-    return check_selection(query_param->selection, table->meta_table) 
-             && check_condition_node(query_param->condition_node, table->meta_table);
+}
+
+static void check_from_clause(FromClauseNode *from_clause) {
+    check_table_ref_set(from_clause->from);
+}
+
+/* Check WhereClauseNode. */
+static void check_where_clause(WhereClauseNode *where_clause, FromClauseNode *from_clause) {
+    if (where_clause == NULL)
+        return;
+    if (from_clause == NULL) {
+        check_condition_node(where_clause->condition, NULL);
+    } else {
+        TableRefSetNode *table_ref_set = from_clause->from;
+        for (uint32_t i = 0; i < table_ref_set->size; i++) {
+            TableRefNode *table_ref = table_ref_set->set[i];
+            Table *table = open_table(table_ref->table);
+            MetaTable *meta_table = table->meta_table;
+            check_condition_node(where_clause->condition, meta_table);
+        }
+    }
+}
+
+/* Check TableExpNode. */
+static void check_table_exp(TableExpNode *table_exp) {
+    check_from_clause(table_exp->from_clause);
+    check_where_clause(table_exp->where_clause, table_exp->from_clause);
+}
+
+/* Check SelectNode. */
+void check_select_node(SelectNode *select_node) {
+    check_table_exp(select_node->table_exp);
+    check_selection(select_node->selection, select_node->table_exp);
 }
 
 /* Check assignment set node */

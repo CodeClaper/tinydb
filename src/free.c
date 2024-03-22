@@ -428,6 +428,53 @@ void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node) {
     }
 }
 
+/* Free TableRefNode. */
+void free_table_ref_node(TableRefNode *table_ref_node) {
+    if (table_ref_node) {
+        if (table_ref_node->table) 
+            db_free(table_ref_node->table);
+        db_free(table_ref_node);
+    }
+}
+
+/* Free TableRefSetNode. */
+void free_table_ref_set_node(TableRefSetNode *table_ref_set_node) {
+    if (table_ref_set_node) {
+        if (table_ref_set_node->set) {
+            for (uint32_t i = 0; i < table_ref_set_node->size; i++) {
+                free_table_ref_node(table_ref_set_node->set[i]);
+            }
+            db_free(table_ref_set_node->set);
+        }
+        db_free(table_ref_set_node);
+    }
+}
+
+/* Free FromClauseNode. */
+void free_from_clause_node(FromClauseNode *from_clause_node) {
+    if (from_clause_node) {
+        free_table_ref_set_node(from_clause_node->from);
+        db_free(from_clause_node);
+    }
+}
+
+/* Free WhereClauseNode. */
+void free_where_clause_node(WhereClauseNode *where_clause_node) {
+    if (where_clause_node) {
+        free_condition_node(where_clause_node->condition);
+        db_free(where_clause_node);
+    }
+}
+
+/* Free TableExpNode. */
+void free_table_exp_node(TableExpNode *table_exp_node) {
+    if (table_exp_node) {
+        free_from_clause_node(table_exp_node->from_clause);
+        free_where_clause_node(table_exp_node->where_clause);
+        db_free(table_exp_node);
+    }
+}
+
 /* Free SelectionNode. */
 void free_selection_node(SelectionNode *selection_node) {
     if (selection_node) {
@@ -441,10 +488,7 @@ void free_selection_node(SelectionNode *selection_node) {
 void free_select_node(SelectNode *select_node) {
     if (select_node) {
         free_selection_node(select_node->selection);
-        if (select_node->table_name) 
-            db_free(select_node->table_name);
-        free_condition_node(select_node->condition_node);
-        free_limit_node(select_node->limit_node);
+        free_table_exp_node(select_node->table_exp);
         db_free(select_node);
     }
 }

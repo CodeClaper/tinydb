@@ -53,6 +53,11 @@ typedef enum SysDataType{
     SDT_LIKE_NODE,
     SDT_IN_NODE,
     SDT_LIMIT_NODE,
+    SDT_TABLE_REF_NODE,
+    SDT_TABLE_REF_SET_NODE,
+    SDT_FROM_CLAUSE_NODE,
+    SDT_WHERE_CLAUSE_NODE,
+    SDT_TABLE_EXP_NODE,
     SDT_CREATE_TABLE_NODE,
     SDT_DROP_TABLE_NODE,
     SDT_SELECT_NODE,
@@ -130,6 +135,11 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "LIKE_NODE",\
    "IN_NODE",\
    "LIMIT_NODE",\
+   "TABLE_REF_NODE",\
+   "TABLE_REF_SET_NODE",\
+   "FROM_CLAUSE_NODE",\
+   "WHERE_CLAUSE_NODE",\
+   "TABLE_EXP_NODE",\
    "CREATE_TABLE_NODE",\
    "DROP_TABLE_NODE",\
    "SELECT_NODE",\
@@ -480,6 +490,33 @@ typedef struct LimitNode {
     int32_t end;
 } LimitNode;
 
+/* TableRefNode. */
+typedef struct TableRefNode {
+    char *table;
+} TableRefNode;
+
+/* TableRefSetNode. */
+typedef struct TableRefSetNode {
+    uint32_t size;
+    TableRefNode **set;
+} TableRefSetNode;
+
+/* FromClauseNode. */
+typedef struct FromClauseNode {
+    TableRefSetNode *from;
+} FromClauseNode;
+
+/* WhereClauseNode. */
+typedef struct WhereClauseNode {
+    ConditionNode *condition; 
+} WhereClauseNode;
+
+/* TableExpNode */
+typedef struct TableExpNode {
+    FromClauseNode *from_clause;
+    WhereClauseNode *where_clause;
+} TableExpNode;
+
 /* CreateTableNode */
 typedef struct {
     char *table_name;
@@ -494,11 +531,8 @@ typedef struct {
 
 /* SelectNode */
 typedef struct {
-    // SelectItemsNode *select_items_node;
     SelectionNode *selection;
-    char *table_name;
-    ConditionNode *condition_node;
-    LimitNode *limit_node;
+    TableExpNode *table_exp;
 } SelectNode;
 
 /* InsertNode */
@@ -635,7 +669,7 @@ typedef struct Map {
 typedef struct MapList {
     Map **data;
     uint32_t size;
-}MapList;
+} MapList;
 
 /* Row */
 typedef struct Row {
@@ -658,10 +692,8 @@ typedef struct SelectResult {
     char *table_name;   /* Table name. */
     uint32_t row_size;  /* Row size. */
     int32_t row_index;  /* current row index. */
-    int32_t limit_index;/* Current limit index. */
     Row **rows;         /* Selected rows. */
 } SelectResult;
-
 
 /* MEntry */
 typedef struct MEntry {
@@ -705,7 +737,7 @@ typedef struct Refer{
     char table_name[MAX_TABLE_NAME_LEN];
     int32_t page_num;
     int32_t cell_num;
-}Refer;
+} Refer;
 
 typedef struct ReferUpdateEntity {
     Refer *old_refer;

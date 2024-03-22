@@ -236,6 +236,11 @@ union YYSTYPE
    LikeNode                 *like_node;
    InNode                   *in_node;
    LimitNode                *limit_node;
+   TableRefNode             *table_ref_node;
+   TableRefSetNode          *table_ref_set_node;
+   FromClauseNode           *from_clause_node;
+   WhereClauseNode          *where_clause_node;
+   TableExpNode             *table_exp_node; 
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
    SelectNode               *select_node;
@@ -247,7 +252,7 @@ union YYSTYPE
    Statement                *statement;
    Statements               *statements;
 
-#line 251 "y.tab.h"
+#line 256 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

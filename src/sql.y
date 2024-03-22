@@ -43,6 +43,11 @@ int yylex();
    LikeNode                 *like_node;
    InNode                   *in_node;
    LimitNode                *limit_node;
+   TableRefNode             *table_ref_node;
+   TableRefSetNode          *table_ref_set_node;
+   FromClauseNode           *from_clause_node;
+   WhereClauseNode          *where_clause_node;
+   TableExpNode             *table_exp_node; 
    CreateTableNode          *create_table_node;
    DropTableNode            *drop_table_node;
    SelectNode               *select_node;
@@ -115,6 +120,12 @@ int yylex();
 %type <function_value_node> non_all_function_value
 %type <function_node> function
 %type <calculate_node> calculate
+%type <table_ref_node> table_ref
+%type <table_ref_set_node> table_ref_commalist
+%type <from_clause_node> from_clause
+%type <where_clause_node> where_clause
+%type <where_clause_node> opt_where_clause
+%type <table_exp_node> table_exp   
 %type <select_node> select_statement
 %type <insert_node> insert_statement
 %type <update_node> update_statement
@@ -251,21 +262,11 @@ drop_table_statement:
         }
     ;
 select_statement:
-    SELECT selection FROM table WHERE condition opt_limit end
+    SELECT selection table_exp end
         {
             SelectNode *select_node = make_select_node();
             select_node->selection = $2;
-            select_node->table_name = $4;
-            select_node->condition_node = $6;
-            select_node->limit_node = $7;
-            $$ = select_node;
-        }
-    | SELECT selection FROM table opt_limit end
-        {
-            SelectNode *select_node = make_select_node();
-            select_node->selection = $2;
-            select_node->table_name = $4;
-            select_node->limit_node = $5;
+            select_node->table_exp = $3;
             $$ = select_node;
         }
     ;
@@ -353,10 +354,66 @@ selection:
             $$ = selection_node;
         }
     ;
+table_exp:
+    from_clause opt_where_clause
+        {
+            TableExpNode *table_exp = make_table_exp_node();
+            table_exp->from_clause = $1;
+            table_exp->where_clause = $2;
+            $$ = table_exp;
+        }
+    ;
+from_clause:
+    FROM table_ref_commalist
+        {
+            FromClauseNode *from_clause = make_from_clause_node();
+            from_clause->from = $2;
+            $$ = from_clause;
+        }
+    ;
+table_ref_commalist:
+    table_ref 
+        {
+            TableRefSetNode *table_ref_set = make_table_ref_set_node();
+            add_table_ref_to_set(table_ref_set, $1);
+            $$ = table_ref_set;
+        }
+    | table_ref_commalist COMMA table_ref 
+        {
+            add_table_ref_to_set($1, $3);
+            $$ = $1;
+        }
+    ;
+table_ref:
+    table
+        {
+            TableRefNode *table_ref = make_table_ref_node();
+            table_ref->table = $1;
+            $$ = table_ref;
+        }
+    ;
 table:       
     IDENTIFIER     
         {
             $$ = $1;
+        }
+    ;
+opt_where_clause:
+    /* empty */
+        {
+            $$ = NULL;
+        }
+    | where_clause
+        {
+            $$ = $1;
+        }
+    ;
+where_clause:
+    WHERE condition
+        {
+            WhereClauseNode *where_clause_node = make_where_clause_node();
+            where_clause_node->condition = $2;
+            $$ = where_clause_node;
         }
     ;
 scalar_exp_commalist:

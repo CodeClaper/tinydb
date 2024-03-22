@@ -496,6 +496,7 @@ ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node
     return copy;
 }
 
+
 /* Copy SelectionNode. */
 SelectionNode *copy_selection_node(SelectionNode *selection_node) {
     if (selection_node == NULL)

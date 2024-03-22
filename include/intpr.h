@@ -24,6 +24,24 @@ ScalarExpSetNode *make_scalar_exp_set_node();
 /* Add a ScalarExpNode to ScalarExpSetNode. */
 void add_scalar_exp_node(ScalarExpSetNode *scalar_exp_set_node, ScalarExpNode *scalar_exp_node);
 
+/* Make a TableRefNode. */
+TableRefNode *make_table_ref_node();
+
+/* Make a TableRefSetNode. */
+TableRefSetNode *make_table_ref_set_node();
+
+/* Add a TableRefNode to TableRefSetNode. */
+void add_table_ref_to_set(TableRefSetNode *table_ref_set, TableRefNode *table_ref);
+
+/* Make a FromClauseNode. */
+FromClauseNode *make_from_clause_node();
+
+/* Make a WhereClauseNode. */
+WhereClauseNode *make_where_clause_node();
+
+/* Make a TableExpNode. */
+TableExpNode *make_table_exp_node();
+
 /* Make a select node. */
 SelectNode *make_select_node();
 

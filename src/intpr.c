@@ -188,6 +188,44 @@ PrimaryKeyNode *make_primary_key_node() {
     return primary_key_node;
 }
 
+/* Make a TableRefNode. */
+TableRefNode *make_table_ref_node() {
+    TableRefNode *table_ref_node = db_malloc(sizeof(TableRefNode), SDT_TABLE_REF_NODE);
+    return table_ref_node;
+}
+
+/* Make a TableRefSetNode. */
+TableRefSetNode *make_table_ref_set_node() {
+    TableRefSetNode *table_ref_set = db_malloc(sizeof(TableRefSetNode), SDT_TABLE_REF_SET_NODE);
+    table_ref_set->size = 0;
+    table_ref_set->set = db_malloc(0, SDT_POINTER);
+    return table_ref_set;
+}
+
+/* Add a TableRefNode to TableRefSetNode. */
+void add_table_ref_to_set(TableRefSetNode *table_ref_set, TableRefNode *table_ref) {
+    table_ref_set->set = db_realloc(table_ref_set->set, sizeof(TableRefNode *) * (table_ref_set->size + 1));
+    table_ref_set->set[table_ref_set->size++] = table_ref;
+}
+
+/* Make a FromClauseNode. */
+FromClauseNode *make_from_clause_node() {
+    FromClauseNode *from_clause_node = db_malloc(sizeof(FromClauseNode), SDT_FROM_CLAUSE_NODE);
+    return from_clause_node;
+}
+
+/* Make a WhereClauseNode. */
+WhereClauseNode *make_where_clause_node() {
+    WhereClauseNode *where_clause_node = db_malloc(sizeof(WhereClauseNode), SDT_WHERE_CLAUSE_NODE);
+    return where_clause_node;
+}
+
+/* Make a TableExpNode. */
+TableExpNode *make_table_exp_node() {
+    TableExpNode *table_exp_node = db_malloc(sizeof(TableExpNode), SDT_TABLE_EXP_NODE);
+    return table_exp_node;
+}
+
 /* make a select node. */
 SelectNode *make_select_node() {
     SelectNode *select_node = db_malloc(sizeof(SelectNode), SDT_SELECT_NODE);
