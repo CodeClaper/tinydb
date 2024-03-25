@@ -57,7 +57,7 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
     if (drop_table(table_name, result)) {
         result->success = true;
         result->rows = 0;
-        assgin_result_message(result, "Table '%s' droped successfully.", table_name);
+        result->message = ("Table '%s' droped successfully.", table_name);
         db_log(SUCCESS, "Table '%s' droped successfully.", table_name);
     }
 }
@@ -70,7 +70,7 @@ static void statement_insert(Statement *stmt, DBResult *result) {
     if (refer != NULL) {
         result->success = true;
         result->rows = 1;
-        assgin_result_message(result, "Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
+        result->message = format("Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
         db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
     }
 }

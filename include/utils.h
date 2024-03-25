@@ -29,5 +29,8 @@ char *replace(char *str, char *old_str, char *new_str);
 /* Check if empty string. */
 bool is_empty(char *s);
 
+/* Format String and return. */
+char *format(char *format, ...);
+
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);

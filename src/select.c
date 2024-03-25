@@ -1904,6 +1904,8 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
 
     /* Select with condition to define which rows. */
     ConditionNode *condition = get_table_exp_condition(select_node->table_exp);
+
+    /* Query with condition to filter satisfied conditions rows. */
     query_with_condition(condition, select_result, select_row, NULL);
 
     /* Query Selection to define row content. */
@@ -1913,7 +1915,7 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
     result->rows = select_result->row_size;
     result->data = select_result;
     result->success = true;
-    assgin_result_message(result, "Query data successfully.");
+    result->message = db_strdup("Query data successfully.");
 
     /* Make up success result. */
     db_log(SUCCESS, "Query data successfully.");

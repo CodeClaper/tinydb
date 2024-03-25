@@ -90,6 +90,6 @@ void exec_describe_statement(DescribeNode *describe_node, DBResult *result) {
     /* Success resule. */
     result->success = true;
     result->data = map_list;
-    assgin_result_message(result, "Describe executed successfully.");
+    result->message = db_strdup("Describe executed successfully.");
     db_log(SUCCESS, "Describe executed successfully.");
 }

@@ -1,6 +1,8 @@
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <string.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include "utils.h"
 #include "mmu.h"
@@ -114,6 +116,17 @@ bool is_empty(char *s) {
             return false;
     }
     return true;
+}
+
+/* Format String and return. */
+char *format(char *format, ...) {
+    char message[BUFF_SIZE];
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(message, format, ap);
+    char *ret = db_strdup(message);
+    va_end(ap);
+    return ret;
 }
 
 /**********************************************************************/

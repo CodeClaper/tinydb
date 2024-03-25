@@ -18,6 +18,7 @@
 #include "refer.h"
 #include "asserts.h"
 #include "session.h"
+#include "utils.h"
 #include "index.h"
 #include "xlog.h"
 #include "ret.h"
@@ -151,7 +152,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
 
     result->success = true;
     result->rows = update_rows_size;
-    assgin_result_message(result, "Successfully updated %d row data.", update_rows_size);
+    result->message = format("Successfully updated %d row data.", update_rows_size);
 
     db_log(SUCCESS, "Successfully updated %d row data.", update_rows_size);
 

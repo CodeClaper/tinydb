@@ -65,6 +65,7 @@
 #include "timer.h"
 #include "refer.h"
 #include "asserts.h"
+#include "utils.h"
 #include "ret.h"
 #include "xlog.h"
 
@@ -222,7 +223,7 @@ void begin_transaction(DBResult *result) {
     register_transaction(trans_handle);
 
     result->success = true;
-    assgin_result_message(result, "Begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
+    result->message = format("Begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
 
     /* Send message. */
     db_log(SUCCESS, "Begin new transaction successfully.");
@@ -251,7 +252,7 @@ void commit_transaction(DBResult *result) {
     db_log(INFO, "Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
     
     result->success = true;
-    assgin_result_message(result, "Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
+    result->message = format("Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
 
     db_log(SUCCESS, "Commit the transaction successfully");
 }
@@ -278,7 +279,7 @@ void rollback_transaction(DBResult *result) {
         execute_roll_back();
         commit_transaction(result);
         result->success = true;
-        assgin_result_message(result, "Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
+        result->message = format("Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
         db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
     } 
     else 
