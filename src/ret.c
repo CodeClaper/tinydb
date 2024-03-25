@@ -13,11 +13,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <stdarg.h>
 #include "data.h"
 #include "mmu.h"
 #include "ret.h"
 #include "log.h"
+#include "utils.h"
 #include "meta.h"
 #include "copy.h"
 #include "free.h"
@@ -25,6 +25,9 @@
 #include "select.h"
 #include "asserts.h"
 #include "session.h"
+
+/* Handle duplicate Key. */
+static void handle_dulicate_key(Row *row);
 
 /* Generate new db result. */
 DBResult *new_db_result() {
@@ -54,9 +57,11 @@ void add_db_result(DBResultSet *result_set, DBResult *result) {
 
 /* Send out row. */
 static void db_send_row(Row *row) {
+    /* Handler duplacate key. */
+    handle_dulicate_key(row);
+
     db_send("{ ");
-    int i;
-    for (i = 0; i < row->column_len; i++) {
+    for (uint32_t i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         switch (key_value->data_type) {
             /* Specially deal with T_REFERENCE data. */
@@ -165,6 +170,22 @@ static void db_send_map_list(DBResult *result) {
         map_list->size == 1 ? db_send("") : db_send("]");
     }
     db_send(", \"duration\": %lf }", result->duration);
+}
+
+/* Handle duplicate Key. */
+static void handle_dulicate_key(Row *row) {
+    uint32_t times = 0;
+    uint32_t i,j;
+    for (i = 0; i < row->column_len; i++) {
+        KeyValue *first = row->data[i];
+        for (j = i + 1; j < row->column_len; j++) {
+            KeyValue *second = row->data[j];
+            if (strcmp(second->key, first->key) == 0) {
+                db_free(second->key);
+                second->key = format("%s(%d)", first->key, ++times);
+            }
+        } 
+    }
 }
 
 /* Send out db execution result. */
