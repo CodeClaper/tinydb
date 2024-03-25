@@ -27,13 +27,19 @@ static void check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
     if (meta_table == NULL)
         db_log(ERROR, "Unknown column '%s'.", column_node->column_name);
-    int i;
+    uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_node->column_name) == 0)
-            return true;
+        if (strcmp(meta_column->column_name, column_node->column_name) == 0) {
+            if (column_node->has_sub_column == false)
+                return true;
+            else if (meta_column->column_type == T_REFERENCE && column_node->has_sub_column) {
+                Table *table = open_table(meta_column->table_name);
+                return check_column_node(table->meta_table, column_node->sub_column);
+            }
+        }
     }
-    db_log(ERROR, "Unknown column '%s' in table '%s'", column_node->column_name, meta_table->table_name);
+    db_log(ERROR, "Unknown column '%s' in table '%s'. ", column_node->column_name, meta_table->table_name);
     return false;
 }
 
