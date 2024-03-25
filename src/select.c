@@ -330,8 +330,7 @@ static bool include_leaf_comparison_predicate(void *destinct, ComparisonNode *co
 /* Check if include in value item set. */
 static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void *value, MetaColumn *meta_column) {
     bool ret = false;
-    int i;
-    for (i = 0; i < value_item_set_node->num; i++) {
+    for (uint32_t i = 0; i < value_item_set_node->num; i++) {
         void *target = get_value_from_value_item_node(value_item_set_node->value_item_node[i], meta_column);
         ret = equal(value, target, meta_column->column_type);
 

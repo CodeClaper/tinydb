@@ -62,8 +62,9 @@ int yylex();
 
 %left OR
 %left AND
-%left PLUS MINUS
-%left ASTERISK SOLIDUS  
+%left '+' '-'
+%left '*' '/'  
+%left '(' ')'
 
 %token NL
 %token <keyword> BEGINN COMMIT ROLLBACK
@@ -86,8 +87,6 @@ int yylex();
 %token <keyword> PRIMARY KEY
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> AND OR NOT
-%token <keyword> ASTERISK SOLIDUS PLUS MINUS
-%token <keyword> COMMA SEMICOLON QUOTE POINT LEFTPAREN RIGHTPAREN
 %token <keyword> SYSTEM CONFIG MEMORY
 %token <s_value> IDENTIFIER
 %token <i_value> INTVALUE
@@ -96,6 +95,7 @@ int yylex();
 %type <b_value> BOOLVALUE
 %type <r_value> REFERVALUE
 %type <s_value> table
+%type <s_value> range_variable
 %type <scalar_exp_node> scalar_exp
 %type <scalar_exp_set_node> scalar_exp_commalist
 %type <selection_node> selection
@@ -237,14 +237,14 @@ rollback_transaction_statement:
     ROLLBACK end
     ;
 create_table_statement: 
-    CREATE TABLE table LEFTPAREN column_defs RIGHTPAREN end
+    CREATE TABLE table '(' column_defs ')' end
         {
             CreateTableNode *create_table_node = make_create_table_node();
             create_table_node->table_name = $3;
             create_table_node->column_def_set_node = $5;
             $$ = create_table_node;
         }
-    | CREATE TABLE table LEFTPAREN column_defs COMMA primary_key_statement RIGHTPAREN end
+    | CREATE TABLE table '(' column_defs ',' primary_key_statement ')' end
         {
             CreateTableNode *create_table_node = make_create_table_node();
             create_table_node->table_name = $3;
@@ -271,7 +271,7 @@ select_statement:
         }
     ;
 insert_statement: 
-    INSERT INTO table VALUES LEFTPAREN value_items RIGHTPAREN end
+    INSERT INTO table VALUES '(' value_items ')' end
         {
             InsertNode *node = make_insert_node();
             node->all_column = true;
@@ -279,7 +279,7 @@ insert_statement:
             node->value_item_set_node = $6;
             $$ = node;
         }
-    | INSERT INTO table LEFTPAREN columns RIGHTPAREN VALUES LEFTPAREN value_items RIGHTPAREN end
+    | INSERT INTO table '(' columns ')' VALUES '(' value_items ')' end
         {
             InsertNode *node = make_insert_node();
             node->all_column = false;
@@ -347,7 +347,7 @@ selection:
             selection_node->scalar_exp_set = $1;
             $$ = selection_node;
         }
-    | ASTERISK
+    | '*'
         {
             SelectionNode *selection_node = make_selection_node();
             selection_node->all_column = true;
@@ -378,7 +378,7 @@ table_ref_commalist:
             add_table_ref_to_set(table_ref_set, $1);
             $$ = table_ref_set;
         }
-    | table_ref_commalist COMMA table_ref 
+    | table_ref_commalist ',' table_ref 
         {
             add_table_ref_to_set($1, $3);
             $$ = $1;
@@ -391,9 +391,29 @@ table_ref:
             table_ref->table = $1;
             $$ = table_ref;
         }
+    | table range_variable 
+        {
+            TableRefNode *table_ref = make_table_ref_node();
+            table_ref->table = $1;
+            table_ref->range_variable = $2;
+            $$ = table_ref;
+        }
+    | table AS range_variable 
+        {
+            TableRefNode *table_ref = make_table_ref_node();
+            table_ref->table = $1;
+            table_ref->range_variable = $3;
+            $$ = table_ref;
+        }
     ;
 table:       
     IDENTIFIER     
+        {
+            $$ = $1;
+        }
+    ;
+range_variable:
+    IDENTIFIER
         {
             $$ = $1;
         }
@@ -423,7 +443,7 @@ scalar_exp_commalist:
             add_scalar_exp_node(scalar_exp_set_node, $1);
             $$ = scalar_exp_set_node;
         }
-    | scalar_exp_commalist COMMA scalar_exp
+    | scalar_exp_commalist ',' scalar_exp
         {
             add_scalar_exp_node($1, $3);
             $$ = $1;
@@ -458,7 +478,7 @@ scalar_exp:
             scalar_exp_node->value = $1;
             $$ = scalar_exp_node;
         }
-    | LEFTPAREN scalar_exp RIGHTPAREN
+    | '(' scalar_exp ')'
         {
             $$ = $2;
         }
@@ -469,7 +489,7 @@ scalar_exp:
         }
     ;
 calculate:
-    scalar_exp PLUS scalar_exp
+    scalar_exp '+' scalar_exp
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_ADD;
@@ -477,7 +497,7 @@ calculate:
             calculate_node->right = $3;
             $$ = calculate_node;
         }
-    | scalar_exp MINUS scalar_exp
+    | scalar_exp '-' scalar_exp
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_SUB;
@@ -485,7 +505,7 @@ calculate:
             calculate_node->right = $3;
             $$ = calculate_node;
         }
-    | scalar_exp ASTERISK scalar_exp
+    | scalar_exp '*' scalar_exp
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_MUL;
@@ -493,7 +513,7 @@ calculate:
             calculate_node->right = $3;
             $$ = calculate_node;
         }
-    | scalar_exp SOLIDUS scalar_exp
+    | scalar_exp '/' scalar_exp
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_DIV;
@@ -509,7 +529,7 @@ columns:
             add_column_to_set(column_set_node, $1);
             $$ = column_set_node;
         }
-    | columns COMMA column
+    | columns ',' column
         {
             $$ = $1;
             add_column_to_set($$, $3);
@@ -522,7 +542,7 @@ column_defs:
             add_column_def_to_set(column_def_set_node, $1);
             $$ = column_def_set_node;
         }
-    | column_defs COMMA column_def
+    | column_defs ',' column_def
         {
             $$ = $1;
             add_column_def_to_set($$, $3);
@@ -539,7 +559,7 @@ column_def:
             column_def_node->is_define_len = false;
             $$ = column_def_node;
         }
-    | column STRING LEFTPAREN INTVALUE RIGHTPAREN
+    | column STRING '(' INTVALUE ')'
         {
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = $1;
@@ -592,7 +612,7 @@ data_type:
     | DATE       { $$ = T_DATE; }
     ;
 primary_key_statement:
-    PRIMARY KEY LEFTPAREN column RIGHTPAREN
+    PRIMARY KEY '(' column ')'
          {
              PrimaryKeyNode *primary_key_node = make_primary_key_node();
              primary_key_node->column = $4;
@@ -607,7 +627,7 @@ column:
             column_node->has_sub_column = false;
             $$ = column_node;
         }
-    | IDENTIFIER POINT column
+    | IDENTIFIER '[' column ']'
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = db_strdup($1);
@@ -615,7 +635,7 @@ column:
             column_node->has_sub_column = true;
             $$ = column_node;
         }
-    | IDENTIFIER LEFTPAREN scalar_exp_commalist RIGHTPAREN
+    | IDENTIFIER '{' scalar_exp_commalist '}'
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = db_strdup($1);
@@ -631,7 +651,7 @@ value_items:
             add_value_item(node, $1);
             $$ = node;
         }
-    | value_items COMMA value_item
+    | value_items ',' value_item
         {
             $$ = $1;
             add_value_item($$, $3);
@@ -676,7 +696,7 @@ value_item:
     ;
 REFERVALUE:
     /* Directly insert way. */
-    LEFTPAREN value_items RIGHTPAREN
+    '(' value_items ')'
         {
             ReferValue *refer = make_refer_value();
             refer->type = DIRECTLY;
@@ -684,7 +704,7 @@ REFERVALUE:
             $$ = refer;
         }
     /* Indirectly fetch already row refer. */
-    | REF LEFTPAREN condition RIGHTPAREN 
+    | REF '(' condition ')' 
         {
             ReferValue *refer = make_refer_value();
             refer->type = INDIRECTLY;
@@ -709,7 +729,7 @@ assignments:
             add_assignment_to_set(node, $1);
             $$ = node;
         }
-    | assignments COMMA assignment
+    | assignments ',' assignment
         {
             add_assignment_to_set($1, $3);
             $$ = $1;
@@ -741,7 +761,7 @@ condition:
             condition->right = $3;
             $$ = condition;
         }
-    | LEFTPAREN condition RIGHTPAREN
+    | '(' condition ')'
         {
             $$ = $2;
         }
@@ -796,7 +816,7 @@ like_predicate:
         }
     ;
 in_predicate: 
-    column IN LEFTPAREN value_items RIGHTPAREN
+    column IN '(' value_items ')'
         {
             InNode *in_node = make_in_node();
             in_node->column = $1;
@@ -816,7 +836,7 @@ opt_limit:
             limit_node->end = $2;
             $$ = limit_node;
         }
-    | LIMIT INTVALUE COMMA INTVALUE
+    | LIMIT INTVALUE ',' INTVALUE
         {
             LimitNode *limit_node = make_limit_node();
             limit_node->start = $2;
@@ -833,35 +853,35 @@ compare:
     | LE    { $$ = O_LE; }
     ;
 function:       
-    MAX LEFTPAREN non_all_function_value RIGHTPAREN
+    MAX '(' non_all_function_value ')'
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_MAX;
             function_node->value = $3;
             $$ = function_node;
         }
-    | MIN LEFTPAREN non_all_function_value RIGHTPAREN
+    | MIN '(' non_all_function_value ')'
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_MIN;
             function_node->value = $3;
             $$ = function_node;
         }
-    | COUNT LEFTPAREN function_value RIGHTPAREN
+    | COUNT '(' function_value ')'
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_COUNT;
             function_node->value = $3;
             $$ = function_node;
         }
-    | SUM LEFTPAREN function_value RIGHTPAREN
+    | SUM '(' function_value ')'
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_SUM;
             function_node->value = $3;
             $$ = function_node;
         }
-    | AVG LEFTPAREN function_value RIGHTPAREN
+    | AVG '(' function_value ')'
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_AVG;
@@ -884,7 +904,7 @@ function_value:
             node->value_type = V_COLUMN;
             $$ = node;
         }
-    | ASTERISK
+    | '*'
         {
             FunctionValueNode *node = make_function_value_node();
             node->value_type = V_ALL;
@@ -909,6 +929,6 @@ non_all_function_value:
     ;
 end:        
     NL
-    | SEMICOLON NL
+    | ';' NL
     ;
 %%

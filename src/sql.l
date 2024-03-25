@@ -11,6 +11,9 @@
 int lineno = 1;
 int yyerror(const char *s);
 int yylex();
+
+/* macro to save the text and return a token */
+#define TOK(name) { return name; }
 %}
 %%
 begin                   return BEGINN;
@@ -53,19 +56,10 @@ null                    return NULLX;
 system                  return SYSTEM;
 memory                  return MEMORY;
 config                  return CONFIG;
-[*]                     return ASTERISK;
-[+]                     return PLUS;
-[-]                     return MINUS;
-[/]                     return SOLIDUS;
-[,]                     return COMMA;
-[;]                     return SEMICOLON;
-[(]                     return LEFTPAREN;
-[)]                     return RIGHTPAREN;
+[-+*/(),.;{}\[\]]	    return yytext[0];
 [=]                     return EQ;
 [>]                     return GT;
 [<]                     return LT;
-[']                     return QUOTE;
-[.]                     return POINT;
 "!="                    return NE;
 ">="                    return GE;
 "<="                    return LE;

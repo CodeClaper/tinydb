@@ -27,15 +27,21 @@ static void check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
     if (meta_table == NULL)
         db_log(ERROR, "Unknown column '%s'.", column_node->column_name);
-    uint32_t i;
-    for (i = 0; i < meta_table->column_size; i++) {
+    for (uint32_t i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_node->column_name) == 0) {
             if (column_node->has_sub_column == false)
                 return true;
             else if (meta_column->column_type == T_REFERENCE && column_node->has_sub_column) {
                 Table *table = open_table(meta_column->table_name);
-                return check_column_node(table->meta_table, column_node->sub_column);
+                if (column_node->sub_column)
+                    return check_column_node(table->meta_table, column_node->sub_column);
+                else if (column_node->scalar_exp_set) {
+                    for (uint32_t j = 0; j < column_node->scalar_exp_set->size; j++) {
+                        check_scalar_exp(column_node->scalar_exp_set->data[j], table->meta_table);
+                    }
+                    return true;
+                }
             }
         }
     }
@@ -215,7 +221,7 @@ static void check_calculate_node(MetaTable *meta_table, CalculateNode *calculate
 }
 
 /* Check ScalarExpNode if column. */
-static void  check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
+static void check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
         switch (scalar_exp->type) {
             case SCALAR_COLUMN:
                 check_column_node(meta_table, scalar_exp->column);
@@ -352,18 +358,29 @@ static bool check_column_set(ColumnSetNode *column_set_node, MetaTable *meta_tab
     return true;
 }
 
+/* Check TableRefNode. */
 static void check_table_ref(TableRefNode *table_ref) {
     Table *table = open_table(table_ref->table);
     if (table == NULL)
         db_log(ERROR, "Table '%s' not exist.", table_ref->table);
 }
 
+/* Check TableRefSetNode. */
 static void check_table_ref_set(TableRefSetNode *table_ref_set) {
-    for (uint32_t i = 0; i < table_ref_set->size; i++) {
-        check_table_ref(table_ref_set->set[i]);
+    uint32_t i, j;
+    for (i = 0; i < table_ref_set->size; i++) {
+        TableRefNode *table_ref = table_ref_set->set[i];
+        check_table_ref(table_ref);
+        for (j = i + 1; j < table_ref_set->size; j++) {
+            TableRefNode *table_ref2 = table_ref_set->set[j];
+            if (table_ref->range_variable && table_ref2->range_variable 
+                && strcmp(table_ref->range_variable, table_ref2->range_variable) == 0)
+                db_log(ERROR, "Not unique table alias name: '%s'. ", table_ref->range_variable);
+        }
     }
 }
 
+/* Check FromClauseNode. */
 static void check_from_clause(FromClauseNode *from_clause) {
     check_table_ref_set(from_clause->from);
 }
@@ -391,11 +408,6 @@ static void check_table_exp(TableExpNode *table_exp) {
     check_where_clause(table_exp->where_clause, table_exp->from_clause);
 }
 
-/* Check SelectNode. */
-void check_select_node(SelectNode *select_node) {
-    check_table_exp(select_node->table_exp);
-    check_selection(select_node->selection, select_node->table_exp);
-}
 
 /* Check assignment set node */
 static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Table *table, SelectResult *select_result) { 
@@ -482,6 +494,12 @@ static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
         }
     }
     return true;
+}
+
+/* Check SelectNode. */
+void check_select_node(SelectNode *select_node) {
+    check_table_exp(select_node->table_exp);
+    check_selection(select_node->selection, select_node->table_exp);
 }
 
 /* Check insert node. */
@@ -579,7 +597,6 @@ static bool if_table_used_refer(char *table_name, char *refer_table_name) {
     }
     return false;
 }
-
 
 /* Chech allowed to drop table. */
 bool check_drop_table(char *table_name) {

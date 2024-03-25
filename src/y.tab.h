@@ -106,23 +106,13 @@ extern int yydebug;
     AND = 307,                     /* AND  */
     OR = 308,                      /* OR  */
     NOT = 309,                     /* NOT  */
-    ASTERISK = 310,                /* ASTERISK  */
-    SOLIDUS = 311,                 /* SOLIDUS  */
-    PLUS = 312,                    /* PLUS  */
-    MINUS = 313,                   /* MINUS  */
-    COMMA = 314,                   /* COMMA  */
-    SEMICOLON = 315,               /* SEMICOLON  */
-    QUOTE = 316,                   /* QUOTE  */
-    POINT = 317,                   /* POINT  */
-    LEFTPAREN = 318,               /* LEFTPAREN  */
-    RIGHTPAREN = 319,              /* RIGHTPAREN  */
-    SYSTEM = 320,                  /* SYSTEM  */
-    CONFIG = 321,                  /* CONFIG  */
-    MEMORY = 322,                  /* MEMORY  */
-    IDENTIFIER = 323,              /* IDENTIFIER  */
-    INTVALUE = 324,                /* INTVALUE  */
-    FLOATVALUE = 325,              /* FLOATVALUE  */
-    STRINGVALUE = 326              /* STRINGVALUE  */
+    SYSTEM = 310,                  /* SYSTEM  */
+    CONFIG = 311,                  /* CONFIG  */
+    MEMORY = 312,                  /* MEMORY  */
+    IDENTIFIER = 313,              /* IDENTIFIER  */
+    INTVALUE = 314,                /* INTVALUE  */
+    FLOATVALUE = 315,              /* FLOATVALUE  */
+    STRINGVALUE = 316              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -183,23 +173,13 @@ extern int yydebug;
 #define AND 307
 #define OR 308
 #define NOT 309
-#define ASTERISK 310
-#define SOLIDUS 311
-#define PLUS 312
-#define MINUS 313
-#define COMMA 314
-#define SEMICOLON 315
-#define QUOTE 316
-#define POINT 317
-#define LEFTPAREN 318
-#define RIGHTPAREN 319
-#define SYSTEM 320
-#define CONFIG 321
-#define MEMORY 322
-#define IDENTIFIER 323
-#define INTVALUE 324
-#define FLOATVALUE 325
-#define STRINGVALUE 326
+#define SYSTEM 310
+#define CONFIG 311
+#define MEMORY 312
+#define IDENTIFIER 313
+#define INTVALUE 314
+#define FLOATVALUE 315
+#define STRINGVALUE 316
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -252,7 +232,7 @@ union YYSTYPE
    Statement                *statement;
    Statements               *statements;
 
-#line 256 "y.tab.h"
+#line 236 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

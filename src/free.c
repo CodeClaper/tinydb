@@ -433,6 +433,8 @@ void free_table_ref_node(TableRefNode *table_ref_node) {
     if (table_ref_node) {
         if (table_ref_node->table) 
             db_free(table_ref_node->table);
+        if (table_ref_node->range_variable)
+            db_free(table_ref_node->range_variable);
         db_free(table_ref_node);
     }
 }

@@ -493,6 +493,7 @@ typedef struct LimitNode {
 /* TableRefNode. */
 typedef struct TableRefNode {
     char *table;
+    char *range_variable;
 } TableRefNode;
 
 /* TableRefSetNode. */
