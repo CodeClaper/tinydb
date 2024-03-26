@@ -127,6 +127,8 @@ void free_column_node(ColumnNode *column_node) {
             free_scalar_exp_set_node(column_node->scalar_exp_set);
         if (column_node->column_name)
             db_free(column_node->column_name);
+        if (column_node->range_variable)
+            db_free(column_node->range_variable);
         db_free(column_node);
     }
 

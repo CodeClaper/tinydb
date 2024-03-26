@@ -643,6 +643,11 @@ column:
             column_node->has_sub_column = true;
             $$ = column_node;
         }
+    | IDENTIFIER '.' column
+        {
+            $$ = $3;
+            $$->range_variable = db_strdup($1);
+        }
     ;
 value_items:
     value_item

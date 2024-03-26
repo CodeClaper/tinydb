@@ -282,6 +282,7 @@ typedef enum DDLType { DDL_INSERT, DDL_DELETE } DDLType;
 /* ColumnNode */
 typedef struct ColumnNode {
     char *column_name;
+    char *range_variable;
     bool *has_sub_column;
     struct ColumnNode *sub_column;
     struct ScalarExpSetNode *scalar_exp_set;

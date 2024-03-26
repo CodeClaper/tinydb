@@ -239,7 +239,7 @@ static void check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
 
 /* Check ScalarExpNode. */
 static void check_scalar_exp_with_table(ScalarExpNode *scalar_exp, TableExpNode *table_exp) {
-    /* Allow from clause NULL, but cant`t apear Column in ScalarExpNode. */
+    /* Allow from clause NULL, but select items cant`t be Column. */
     if (table_exp->from_clause == NULL) {
         check_scalar_exp(scalar_exp, NULL);
     } else {
@@ -255,8 +255,7 @@ static void check_scalar_exp_with_table(ScalarExpNode *scalar_exp, TableExpNode 
 
 /* Check ScalarExpSetNode. */
 static void check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, TableExpNode *table_exp) {
-    uint32_t i;
-    for (i = 0; i < scalar_exp_set->size; i++) {
+    for (uint32_t i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
         check_scalar_exp_with_table(scalar_exp, table_exp);
     }

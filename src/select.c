@@ -4,6 +4,7 @@
  * Besides, Update statement, delete statement also use these module for query under conditon.
  * ===========================================================================================
  * */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -48,7 +49,7 @@
 static bool include_internal_node(void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table);
 
 /* Check if the key include the leaf node. */
-static bool include_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table);
+static bool include_leaf_node(Row *row, ConditionNode *condition_node, MetaTable *meta_table);
 
 /* Get meta column by condition name. */
 static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *meta_table);
@@ -69,11 +70,9 @@ static Row *query_plain_row_selection(ScalarExpSetNode *scalar_exp_set, Row *row
 /* Generate select row. */
 static Row *generate_row(void *destinct, MetaTable *meta_table);
 
-
 /* Calulate offset of every column in cell. */
 static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
-    uint32_t off_set = 0;
-    int i;
+    uint32_t i, off_set = 0;
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_name) == 0)
@@ -279,12 +278,12 @@ static bool include_internal_node(void *min_key, void *max_key, ConditionNode *c
 }
 
 /* Check if include leaf node if the condition is logic condition. */
-static bool include_logic_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+static bool include_logic_leaf_node(Row *row, ConditionNode *condition_node, MetaTable *meta_table) {
     switch(condition_node->conn_type) {
         case C_AND:
-            return include_leaf_node(destinct, condition_node->left, meta_table) && include_leaf_node(destinct, condition_node->right, meta_table);
+            return include_leaf_node(row, condition_node->left, meta_table) && include_leaf_node(row, condition_node->right, meta_table);
         case C_OR:
-            return include_leaf_node(destinct, condition_node->left, meta_table) || include_leaf_node(destinct, condition_node->right, meta_table);
+            return include_leaf_node(row, condition_node->left, meta_table) || include_leaf_node(row, condition_node->right, meta_table);
         case C_NONE:
             db_log(PANIC, "System Logic Error");
     } 
@@ -322,8 +321,7 @@ static bool check_row_predicate(Row *row, ColumnNode *column, ComparisonNode *co
 
 
 /* Check if include leaf node satisfy comparison predicate. */
-static bool include_leaf_comparison_predicate(void *destinct, ComparisonNode *comparison, MetaTable *meta_table) {
-    Row *row = generate_row(destinct, meta_table);
+static bool include_leaf_comparison_predicate(Row *row, ComparisonNode *comparison, MetaTable *meta_table) {
     return check_row_predicate(row, comparison->column, comparison);
 }
 
@@ -333,11 +331,9 @@ static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void 
     for (uint32_t i = 0; i < value_item_set_node->num; i++) {
         void *target = get_value_from_value_item_node(value_item_set_node->value_item_node[i], meta_column);
         ret = equal(value, target, meta_column->column_type);
-
         /* Reference data is allocated, so free it. */
         if (meta_column->column_type == T_REFERENCE)
             free_refer(target);
-
         if (ret)
             break;
     }
@@ -345,16 +341,15 @@ static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void 
 }
 
 /* Check if include leaf node satisfy in predicate. */
-static bool include_leaf_in_predicate(void *destinct, InNode *in_node, MetaTable *meta_table) {
-    int i; uint32_t off_set = 0;
-    for (i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
+static bool include_leaf_in_predicate(Row *row, InNode *in_node, MetaTable *meta_table) {
+    uint32_t i;
+    for (i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
         /* Define the column. */
-        if (strcmp(meta_column->column_name, in_node->column->column_name) == 0) {
-            void *value = destinct + off_set;
-            return check_in_value_item_set(in_node->value_set, value, meta_column);
+        if (strcmp(key_value->key, in_node->column->column_name) == 0) {
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
+            return check_in_value_item_set(in_node->value_set, key_value->value, meta_column);
         }
-        off_set += meta_column->column_length;
     }
     return false;
 }
@@ -386,33 +381,28 @@ static bool check_like_string_value(char *value, char *target) {
 
 
 /* Check if include leaf node satisfy like predicate. */
-static bool include_leaf_like_predicate(void *destinct, LikeNode *like_node, MetaTable *meta_table) {
+static bool include_leaf_like_predicate(Row *row, LikeNode *like_node, MetaTable *meta_table) {
     bool ret = false;
-    uint32_t off_set = 0;
-
-    int i; 
-    for (i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-
+    uint32_t i; 
+    for (i = 0; i < row->column_len; i++) {
+        KeyValue *key_value = row->data[i];
         /* Define the column. */
-        if (strcmp(meta_column->column_name, like_node->column->column_name) == 0) {
-            void *value = destinct + off_set;
-            void *target = get_value_from_value_item_node(like_node->value, meta_column);
-            ret = check_like_string_value(value, target);
+        if (strcmp(key_value->key, like_node->column->column_name) == 0) {
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, key_value->key);
+            void *target_value = get_value_from_value_item_node(like_node->value, meta_column);
+            ret = check_like_string_value(key_value->value, target_value);
 
             /* Reference data is allocated, so free it. */
             if (meta_column->column_type == T_REFERENCE)
-                free_refer(target);
-
+                free_refer(target_value);
             break;
         }
-        off_set += meta_column->column_length;
     }
     return ret;
 }
 
 /* Check if include leaf node if the condition is exec condition. */
-static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+static bool include_exec_leaf_node(Row *row, ConditionNode *condition_node, MetaTable *meta_table) {
 
     /* If without condition, of course the key include, so just return true. */
     if (condition_node == NULL)
@@ -424,17 +414,17 @@ static bool include_exec_leaf_node(void *destinct, ConditionNode *condition_node
 
     switch (predicate->type) {
         case PRE_COMPARISON:
-            return include_leaf_comparison_predicate(destinct, predicate->comparison, meta_table);
+            return include_leaf_comparison_predicate(row, predicate->comparison, meta_table);
         case PRE_IN:
-            return include_leaf_in_predicate(destinct, predicate->in, meta_table);
+            return include_leaf_in_predicate(row, predicate->in, meta_table);
         case PRE_LIKE:
-            return include_leaf_like_predicate(destinct, predicate->like, meta_table);
+            return include_leaf_like_predicate(row, predicate->like, meta_table);
     }
 
 }
 
 /* Check if the key include the leaf node. */
-static bool include_leaf_node(void *destinct, ConditionNode *condition_node, MetaTable *meta_table) {
+static bool include_leaf_node(Row *row, ConditionNode *condition_node, MetaTable *meta_table) {
 
     /* If without condition, of course the key include, so just return true. */
     if (condition_node == NULL) 
@@ -443,9 +433,9 @@ static bool include_leaf_node(void *destinct, ConditionNode *condition_node, Met
     switch(condition_node->conn_type) {
         case C_OR:
         case C_AND:
-            return include_logic_leaf_node(destinct, condition_node, meta_table);
+            return include_logic_leaf_node(row, condition_node, meta_table);
         case C_NONE:
-            return include_exec_leaf_node(destinct, condition_node, meta_table);
+            return include_exec_leaf_node(row, condition_node, meta_table);
     }
 }
 
@@ -540,16 +530,14 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         /* Get leaf node cell value. */
         void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
 
-        /* Check if the row data include, in another word, check if the row data satisfy the condition. */
-        if (!include_leaf_node(destinct, condition, table->meta_table)) {
-            continue;
-        }
-
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, table->meta_table);
 
-        /* Execute row handler. */
-        row_handler(row, select_result, table, arg);
+        /* Check if the row data include, in another word, check if the row data satisfy the condition. */
+        if (include_leaf_node(row, condition, table->meta_table)) {
+            /* Execute row handler. */
+            row_handler(row, select_result, table, arg);
+        }
 
         /* Free useless row. */
         free_row(row);
