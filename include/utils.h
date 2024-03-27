@@ -32,5 +32,12 @@ bool is_empty(char *s);
 /* Format String and return. */
 char *format(char *format, ...);
 
+/* Check both string if equal. */
+bool streq(char *str1, char *str2);
+
+/* Check both string if equal, 
+ * if both is null, also return true. */
+bool streq_or_null(char *str1, char *str2);
+
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);

@@ -129,6 +129,23 @@ char *format(char *format, ...) {
     return ret;
 }
 
+/* Check both string if equal. */
+bool streq(char *str1, char *str2) {
+    return strcmp(str1, str2) == 0;
+}
+
+/* Check both string if equal, 
+ * if both is null, also return true. */
+bool streq_or_null(char *str1, char *str2) {
+    if (str1 && str2)
+        return strcmp(str1, str2) == 0;
+    else if (!str1 && !str2)
+        return true;
+    else
+        return false;
+}
+
+
 /**********************************************************************/
 /* Get a line from a socket, whether the line ends in a newline,
  * carriage return, or a CRLF combination.  Terminates the string read
