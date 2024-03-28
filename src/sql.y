@@ -802,7 +802,7 @@ predicate:
         }
     ;
 comparison_predicate:
-    column compare value_item
+    column compare scalar_exp
         {
             ComparisonNode *comparison_node = make_comparison_node();
             comparison_node->column = $1;

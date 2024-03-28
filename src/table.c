@@ -131,7 +131,10 @@ bool create_table(MetaTable *meta_table, DBResult *result) {
 Table *open_table(char *table_name) {
 
     /* Check valid. */
-    assert_not_null(table_name, "Table name must be supported.\n");
+    if (table_name == NULL) {
+        db_log(ERROR, "Table name must be supported.");
+        return NULL;
+    }
 
     /* Firstly, try to find in memory. */
     Table *mtable = find_table_buffer(table_name);

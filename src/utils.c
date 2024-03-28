@@ -129,13 +129,14 @@ char *format(char *format, ...) {
     return ret;
 }
 
-/* Check both string if equal. */
+/* Check if two strings are equal. 
+ * Any of strings is NULL, return false. */
 bool streq(char *str1, char *str2) {
-    return strcmp(str1, str2) == 0;
+    return str1 && str2 && strcmp(str1, str2) == 0;
 }
 
-/* Check both string if equal, 
- * if both is null, also return true. */
+/* Check if two strings are equal, 
+ * if both are null, also return true. */
 bool streq_or_null(char *str1, char *str2) {
     if (str1 && str2)
         return strcmp(str1, str2) == 0;

@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <stdarg.h>
 #include "mmu.h"
 #include "asserts.h"
 #include "log.h"
@@ -37,7 +36,7 @@
 #define MININUM_CAPACITY 1<<10
 #define DEFAULT_LOAD_FACTOR 0.75
 
-#define MAX_ALLOCATE_SIZE 1 << 20
+#define MAX_ALLOCATE_SIZE MAX_LONG_VALUE
 
 static MHashTable *mtable;
 static uint32_t max_value;

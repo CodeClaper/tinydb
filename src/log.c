@@ -187,10 +187,10 @@ void db_log(LogLevel lev, char *format, ...) {
 
     /* According to LogLevel, there are diffent treatments. 
      * SUCCESS: statement exeucted successfully.
-     * WARN: for unexpected messages.
-     * ERROR: abort current transaction, return to known state.
-     * FATAL: abort session.
-     * PANIC: take down the server.
+     * WARN:    for unexpected messages.
+     * ERROR:   for expected error, abort current transaction, return to known state.
+     * FATAL:   abort session.
+     * PANIC:   for unexpected error, caused by system error, take down the server.
      * */
     switch(lev) {
         case SUCCESS:

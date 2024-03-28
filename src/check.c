@@ -4,6 +4,7 @@
 #include <string.h>
 #include <regex.h>
 #include "check.h"
+#include "utils.h"
 #include "asserts.h"
 #include "compare.h"
 #include "data.h"
@@ -21,7 +22,7 @@
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node);
 
 /* Check ScalarExpNode. */
-static void check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
+static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
 
 /* Check ident node. */
 static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
@@ -45,7 +46,6 @@ static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
             }
         }
     }
-    db_log(ERROR, "Unknown column '%s' in table '%s'. ", column_node->column_name, meta_table->table_name);
     return false;
 }
 
@@ -203,37 +203,23 @@ static bool check_function_node(MetaTable *meta_table, FunctionNode *function) {
     }
 }
 
-/* Check column set node */
-static bool check_column_set_node(ColumnSetNode *column_set_node, MetaTable *meta_table) {
-    int i;
-    for (i = 0; i < column_set_node->size; i++) {
-        ColumnNode *column_node = *(column_set_node->columns + i);
-        if (!check_column_node(meta_table, column_node))
-            return false;
-    }
-    return true;
-}
-
 /* Check CalculateNode. */
-static void check_calculate_node(MetaTable *meta_table, CalculateNode *calculate_node) {
-    check_scalar_exp(calculate_node->left, meta_table);
-    check_scalar_exp(calculate_node->right, meta_table);
+static bool check_calculate_node(MetaTable *meta_table, CalculateNode *calculate_node) {
+    return check_scalar_exp(calculate_node->left, meta_table) 
+        && check_scalar_exp(calculate_node->right, meta_table);
 }
 
 /* Check ScalarExpNode if column. */
-static void check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
+static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
         switch (scalar_exp->type) {
             case SCALAR_COLUMN:
-                check_column_node(meta_table, scalar_exp->column);
-                break;
+                return check_column_node(meta_table, scalar_exp->column);
             case SCALAR_FUNCTION:
-                check_function_node(meta_table, scalar_exp->function);
-                break;
+                return check_function_node(meta_table, scalar_exp->function);
             case SCALAR_CALCULATE:
-                check_calculate_node(meta_table, scalar_exp->calculate);
-                break;
+                return check_calculate_node(meta_table, scalar_exp->calculate);
             case SCALAR_VALUE:
-                break;
+                return true;
         }
 }
 
@@ -248,7 +234,7 @@ static void check_scalar_exp_with_table(ScalarExpNode *scalar_exp, TableExpNode 
             TableRefNode *table_ref = table_ref_set->set[i];
             Table *table = open_table(table_ref->table);
             MetaTable *meta_table = table->meta_table;
-            check_scalar_exp(scalar_exp, meta_table);
+            // check_scalar_exp(scalar_exp, meta_table);
         }
     }
 }
@@ -288,12 +274,23 @@ static bool check_opr(CompareType compare_type, DataType data_type) {
     }
 }
 
+/* Check ComparisonNode value.*/
+static bool check_comparison_value(ScalarExpNode *comparion_value, MetaTable *meta_table, MetaColumn *meta_column) {
+    switch (comparion_value->type) {
+        case SCALAR_VALUE:
+            return if_convert_type(meta_column->column_type, comparion_value->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
+                && check_value_valid(meta_column, get_value_from_value_item_node(comparion_value->value, meta_column)); // check if value valid
+        case SCALAR_COLUMN:
+        case SCALAR_FUNCTION:
+        case SCALAR_CALCULATE:
+    }
+}
+
 /* Check ComparisonNode.*/
 static bool check_comparison_node(ComparisonNode *comparison, MetaTable *meta_table) {
     MetaColumn *meta_column = get_meta_column_by_name(meta_table, comparison->column->column_name);
     return check_column_node(meta_table, comparison->column) // check select column
-           && if_convert_type(meta_column->column_type, comparison->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
-           && check_value_valid(meta_column, get_value_from_value_item_node(comparison->value, meta_column)) // check if value valid
+           && check_comparison_value(comparison->value, meta_table, meta_column)
            && check_opr(comparison->type, meta_column->column_type);
 }
 
@@ -372,9 +369,15 @@ static void check_table_ref_set(TableRefSetNode *table_ref_set) {
         check_table_ref(table_ref);
         for (j = i + 1; j < table_ref_set->size; j++) {
             TableRefNode *table_ref2 = table_ref_set->set[j];
+            
+            /* Check duplicate table. */
+            if (streq(table_ref->table, table_ref2->table))
+                db_log(ERROR, "Duaplicate table '%s'. ", table_ref->table);
+
+            /* Check duplicate table alias name. */
             if (table_ref->range_variable && table_ref2->range_variable 
-                && strcmp(table_ref->range_variable, table_ref2->range_variable) == 0)
-                db_log(ERROR, "Not unique table alias name: '%s'. ", table_ref->range_variable);
+                && streq(table_ref->range_variable, table_ref2->range_variable))
+                db_log(ERROR, "Duaplicate table alias name: '%s'. ", table_ref->range_variable);
         }
     }
 }

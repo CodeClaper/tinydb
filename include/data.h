@@ -17,6 +17,10 @@
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define MAX_TABLE_NAME_LEN 30
 
+#define MAX_INT_VALUE   (1 << 31) - 1
+#define MAX_UINT_VALUE  (1 << 32) - 1
+#define MAX_LONG_VALUE  (1 << 63) - 1
+
 #define CREATED_XID_COLUMN_NAME  "created_xid"
 #define EXPIRED_XID_COLUMN_NAME  "expired_xid"
 
@@ -470,7 +474,7 @@ typedef struct PredicateNode {
 typedef struct ComparisonNode {
     CompareType type;
     ColumnNode *column;
-    ValueItemNode *value;
+    ScalarExpNode *value;
 } ComparisonNode;
 
 /* LikeNode */
@@ -660,6 +664,7 @@ typedef struct KeyValue {
     char *key;
     void *value;
     DataType data_type;
+    char *table_name;
 } KeyValue;
 
 /* Map */
@@ -691,10 +696,13 @@ typedef struct QueryParam {
 
 /* SelectResult */
 typedef struct SelectResult {
-    char *table_name;   /* Table name. */
-    uint32_t row_size;  /* Row size. */
-    int32_t row_index;  /* current row index. */
-    Row **rows;         /* Selected rows. */
+    char *table_name;               /* Table name. */
+    char *range_variable;           /* Range variable. */
+    uint32_t row_size;              /* Row size. */
+    int32_t row_index;              /* current row index. */
+    Row **rows;                     /* Selected rows. */
+    struct SelectResult *derived;   /* Derived select result, used for multi-table query. */
+    bool last_derived;              /* Last derived flag. */
 } SelectResult;
 
 /* MEntry */

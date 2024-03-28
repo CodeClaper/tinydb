@@ -77,6 +77,7 @@ KeyValue *copy_key_value(KeyValue *key_value) {
     /*Meta column may be null, in fact, key aggregate function, key is min, max, sum, avg ect. there is no meta column. */
     key_value_copy->value = copy_value(key_value->value, key_value->data_type);
     key_value_copy->data_type = key_value->data_type;
+    key_value_copy->table_name = db_strdup(key_value->table_name);
 
     return key_value_copy;
 }
@@ -87,8 +88,10 @@ Row *copy_row(Row *row) {
     if (row == NULL)
         return NULL;
     Table *table = open_table(row->table_name);
-    if (table == NULL)
+    if (table == NULL) {
+        db_log(ERROR, "Table '%s' not exists. ", row->table_name);
         return NULL;
+    }
 
     /* copy row */
     Row *row_copy = db_malloc(sizeof(Row), SDT_ROW);
@@ -98,7 +101,7 @@ Row *copy_row(Row *row) {
     row_copy->table_name = db_strdup(row->table_name);
     row_copy->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
 
-    int i;
+    uint32_t i;
     for(i = 0; i < row->column_len; i++) {
         row_copy->data[i] = copy_key_value(row->data[i]);
     }
@@ -112,8 +115,10 @@ Row *copy_row_without_reserved(Row *row) {
     if (row == NULL)
         return NULL;
     Table *table = open_table(row->table_name);
-    if (table == NULL)
+    if (table == NULL) {
+        db_log(ERROR, "Table '%s' not exists. ", row->table_name);
         return NULL;
+    }
 
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
 
@@ -124,7 +129,7 @@ Row *copy_row_without_reserved(Row *row) {
     row_copy->column_len = 0;
     row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, SDT_STRING);
 
-    int i;
+    uint32_t i;
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
 
@@ -135,8 +140,7 @@ Row *copy_row_without_reserved(Row *row) {
 
         row_copy->data = db_realloc(row_copy->data, sizeof(KeyValue *) * (row_copy->column_len + 1));
         /* copy key value. */
-        row_copy->data[row_copy->column_len] = copy_key_value(key_value);
-        row_copy->column_len++;
+        row_copy->data[row_copy->column_len++] = copy_key_value(key_value);
     }
 
     return row_copy;
@@ -385,7 +389,7 @@ ComparisonNode *copy_comparison_node(ComparisonNode *comparison_node) {
     ComparisonNode *comparison_node_copy = db_malloc(sizeof(ComparisonNode), SDT_COMPARISON_NODE);
     comparison_node_copy->type = comparison_node->type;
     comparison_node_copy->column = copy_column_node(comparison_node->column);
-    comparison_node_copy->value = copy_value_item_node(comparison_node->value);
+    comparison_node_copy->value = copy_scalar_exp_node(comparison_node->value);
     return comparison_node_copy;
 }
 

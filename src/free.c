@@ -82,8 +82,11 @@ void free_row(Row *row) {
 void free_select_result(SelectResult *select_result) {
     if (select_result) {
         /* free table name. */
-        if (select_result->table_name != NULL)
+        if (select_result->table_name)
             db_free(select_result->table_name);
+
+        if (select_result->range_variable) 
+            db_free(select_result->range_variable);
 
         if (select_result->rows) {
             /* free rows. */
@@ -92,6 +95,10 @@ void free_select_result(SelectResult *select_result) {
             }
             db_free(select_result->rows);
         }
+
+        if (select_result->derived)
+            free_select_result(select_result->derived);
+
         db_free(select_result);
     }
 }
@@ -309,7 +316,7 @@ void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
 void free_comparison_node(ComparisonNode *comparison_node) {
     if (comparison_node) {
         free_column_node(comparison_node->column);
-        free_value_item_node(comparison_node->value);
+        free_scalar_exp_node(comparison_node->value);
         db_free(comparison_node);
     }
 }
