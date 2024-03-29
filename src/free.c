@@ -521,7 +521,8 @@ void free_update_node(UpdateNode *update_node) {
     if (update_node) {
         if (update_node->table_name)
             db_free(update_node->table_name);
-        free_condition_node(update_node->condition_node);
+        free_assignment_set_node(update_node->assignment_set_node);
+        free_where_clause_node(update_node->where_clause);
         db_free(update_node);
     } 
 }

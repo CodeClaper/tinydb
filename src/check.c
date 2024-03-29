@@ -5,6 +5,7 @@
 #include <regex.h>
 #include "check.h"
 #include "utils.h"
+#include "mmu.h"
 #include "asserts.h"
 #include "compare.h"
 #include "data.h"
@@ -22,31 +23,98 @@
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node);
 
 /* Check ScalarExpNode. */
-static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table);
+static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map);
+
+
 
 /* Check ident node. */
-static bool check_column_node(MetaTable *meta_table, ColumnNode *column_node) {
-    if (meta_table == NULL)
-        db_log(ERROR, "Unknown column '%s'.", column_node->column_name);
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+static bool check_column_node(ColumnNode *column_node, MetaTable *meta_table) {
+    uint32_t i;
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_node->column_name) == 0) {
+        if (streq(meta_column->column_name, column_node->column_name)) {
             if (column_node->has_sub_column == false)
                 return true;
             else if (meta_column->column_type == T_REFERENCE && column_node->has_sub_column) {
                 Table *table = open_table(meta_column->table_name);
                 if (column_node->sub_column)
-                    return check_column_node(table->meta_table, column_node->sub_column);
+                    return check_column_node(column_node->sub_column, table->meta_table);
                 else if (column_node->scalar_exp_set) {
                     for (uint32_t j = 0; j < column_node->scalar_exp_set->size; j++) {
-                        check_scalar_exp(column_node->scalar_exp_set->data[j], table->meta_table);
+                        ScalarExpNode *scalar_exp = column_node->scalar_exp_set->data[j];
+                        switch (scalar_exp->type) {
+                            case SCALAR_COLUMN:{
+                                check_column_node(scalar_exp->column, table->meta_table);
+                                break;
+                            }
+                            case SCALAR_FUNCTION:
+                                db_log(ERROR, "Not allowed use funtion in nested column. ");
+                                break;
+                            case SCALAR_CALCULATE:
+                            case SCALAR_VALUE:
+                                break;
+                            default:
+                                db_log(PANIC, "Unknown Scalar Express type.");
+                        }
                     }
                     return true;
                 }
             }
         }
     }
+    
+    /* Reach here, means column is unknown. */
+    if (column_node->range_variable) 
+        db_log(ERROR, "Unknown column '%s.%s', ", column_node->range_variable, column_node->column_name);
+    else 
+        db_log(ERROR, "Unknown column '%s', ", column_node->column_name);
+
     return false;
+}
+
+/* Confirm MetaTable via ColumnNode. */
+static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap alias_map) {
+
+    MetaTable *current_meta_table = NULL;
+    int times = 0;
+
+    uint32_t i, j;
+    for (i = 0; i < alias_map.size; i++) {
+        AliasEntry alias_entry = alias_map.map[i];
+        Table *table = open_table(alias_entry.name);
+        MetaTable *meta_table = table->meta_table;
+
+        if (column->range_variable && (streq(column->range_variable, alias_entry.name) || streq(column->range_variable, alias_entry.alias))) {
+            current_meta_table = meta_table;
+        }
+
+        if (column->range_variable == NULL) {
+            for (j = 0; j < meta_table->column_size; j++) {
+                MetaColumn *meta_column = meta_table->meta_column[j];
+                if (streq(meta_column->column_name, column->column_name)) {
+                    current_meta_table = meta_table;
+                    times++;
+                }            
+            }
+        }
+    }
+
+    if (current_meta_table == NULL) {
+        if (column->range_variable)
+            db_log(ERROR, "Unknown column name '%s.%s'. ", column->range_variable, column->column_name);
+        else
+            db_log(ERROR, "Unknown column name '%s'. ", column->column_name);
+
+        return current_meta_table;
+    }
+
+    if (times > 1) {
+        db_log(ERROR, "Column name '%s' is ambiguous.", column->column_name);
+        return current_meta_table;
+    }
+
+    return current_meta_table;
+
 }
 
 /* Check if type convert pass. */
@@ -166,7 +234,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
 
 /* Check ValueItemNode. */
 static bool check_value_item_node(MetaTable *meta_table, char *column_name, ValueItemNode *value_item_node) {
-    int i;
+    uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_name) == 0 
@@ -180,7 +248,7 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
 
 /* Check ValueItemSetNode. */
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node) {
-    int i;
+    uint32_t i;
     for (i = 0; i < value_item_set_node->num; i++) {
         ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
         if (!check_value_item_node(meta_table, column_name, value_item_node))
@@ -190,7 +258,7 @@ static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, 
 }
 
 /* Check function node */
-static bool check_function_node(MetaTable *meta_table, FunctionNode *function) {
+static bool check_function_node(FunctionNode *function, AliasMap alias_map) {
     FunctionValueNode *value_node = function->value;
     switch(value_node->value_type) {
         case V_INT:
@@ -198,59 +266,54 @@ static bool check_function_node(MetaTable *meta_table, FunctionNode *function) {
             return true;
         case V_COLUMN: {
             ColumnNode *column = value_node->column;
-            return check_column_node(meta_table, column); 
+            MetaTable *meta_table = confirm_meta_table_via_column(column, alias_map);
+            return check_column_node(column, meta_table); 
         }
     }
 }
 
 /* Check CalculateNode. */
-static bool check_calculate_node(MetaTable *meta_table, CalculateNode *calculate_node) {
-    return check_scalar_exp(calculate_node->left, meta_table) 
-        && check_scalar_exp(calculate_node->right, meta_table);
+static bool check_calculate_node(CalculateNode *calculate_node, AliasMap alias_map) {
+    return check_scalar_exp(calculate_node->left, alias_map) 
+        && check_scalar_exp(calculate_node->right, alias_map);
 }
 
 /* Check ScalarExpNode if column. */
-static bool check_scalar_exp(ScalarExpNode *scalar_exp, MetaTable *meta_table) {
-        switch (scalar_exp->type) {
-            case SCALAR_COLUMN:
-                return check_column_node(meta_table, scalar_exp->column);
-            case SCALAR_FUNCTION:
-                return check_function_node(meta_table, scalar_exp->function);
-            case SCALAR_CALCULATE:
-                return check_calculate_node(meta_table, scalar_exp->calculate);
-            case SCALAR_VALUE:
-                return true;
+static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map) {
+    switch (scalar_exp->type) {
+        case SCALAR_COLUMN:{
+            ColumnNode *column = scalar_exp->column;
+            MetaTable *meta_table = confirm_meta_table_via_column(column, alias_map);
+            return check_column_node(scalar_exp->column, meta_table);
         }
-}
-
-/* Check ScalarExpNode. */
-static void check_scalar_exp_with_table(ScalarExpNode *scalar_exp, TableExpNode *table_exp) {
-    /* Allow from clause NULL, but select items cant`t be Column. */
-    if (table_exp->from_clause == NULL) {
-        check_scalar_exp(scalar_exp, NULL);
-    } else {
-        TableRefSetNode *table_ref_set = table_exp->from_clause->from;
-        for (uint32_t i = 0; i < table_ref_set->size; i++) {
-            TableRefNode *table_ref = table_ref_set->set[i];
-            Table *table = open_table(table_ref->table);
-            MetaTable *meta_table = table->meta_table;
-            // check_scalar_exp(scalar_exp, meta_table);
-        }
+        case SCALAR_FUNCTION:
+            return check_function_node(scalar_exp->function, alias_map);
+        case SCALAR_CALCULATE:
+            return check_calculate_node(scalar_exp->calculate, alias_map);
+        case SCALAR_VALUE:
+            return true;
+        default:
+            db_log(PANIC, "Unknown Scalar Express type.");
     }
 }
 
 /* Check ScalarExpSetNode. */
-static void check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, TableExpNode *table_exp) {
-    for (uint32_t i = 0; i < scalar_exp_set->size; i++) {
+static bool check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, AliasMap alias_map) {
+    uint32_t i;
+    for (i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
-        check_scalar_exp_with_table(scalar_exp, table_exp);
+        if (!check_scalar_exp(scalar_exp, alias_map))
+            return false;
     }
+
+    return true;
 }
 
 /* Check select items if exist int meta column */
-static void check_selection(SelectionNode *selection_node, TableExpNode *table_exp) {
-    if (!selection_node->all_column)
-        check_scalar_exp_set(selection_node->scalar_exp_set, table_exp);
+static bool check_selection(SelectionNode *selection_node, AliasMap alias_map) {
+    return selection_node->all_column 
+           ? true 
+           : check_scalar_exp_set(selection_node->scalar_exp_set, alias_map);
 }
 
 /* Check opr if allowd. */
@@ -279,30 +342,39 @@ static bool check_comparison_value(ScalarExpNode *comparion_value, MetaTable *me
     switch (comparion_value->type) {
         case SCALAR_VALUE:
             return if_convert_type(meta_column->column_type, comparion_value->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
-                && check_value_valid(meta_column, get_value_from_value_item_node(comparion_value->value, meta_column)); // check if value valid
+                   && check_value_valid(meta_column, get_value_from_value_item_node(comparion_value->value, meta_column)); // check if value valid
         case SCALAR_COLUMN:
         case SCALAR_FUNCTION:
         case SCALAR_CALCULATE:
+            return true;
     }
 }
 
 /* Check ComparisonNode.*/
-static bool check_comparison_node(ComparisonNode *comparison, MetaTable *meta_table) {
-    MetaColumn *meta_column = get_meta_column_by_name(meta_table, comparison->column->column_name);
-    return check_column_node(meta_table, comparison->column) // check select column
-           && check_comparison_value(comparison->value, meta_table, meta_column)
+static bool check_comparison_node(ComparisonNode *comparison, AliasMap alias_map) {
+    ColumnNode *column = comparison->column;
+
+    /* Confirm MetaTable. */
+    MetaTable *current_meta_table = confirm_meta_table_via_column(column, alias_map);
+    MetaColumn *meta_column = get_meta_column_by_name(current_meta_table, column->column_name);
+
+    return check_column_node(comparison->column, current_meta_table) // check select column
+           && check_comparison_value(comparison->value, current_meta_table, meta_column)
            && check_opr(comparison->type, meta_column->column_type);
 }
 
 /* Check InNode. */
-static bool check_in_node(InNode *in_node, MetaTable *meta_table) {
-    MetaColumn *meta_column = get_meta_column_by_name(meta_table, in_node->column->column_name);
-    return check_column_node(meta_table, in_node->column) // check select column
-           && check_value_item_set_node(meta_table, in_node->column->column_name, in_node->value_set);
+static bool check_in_node(InNode *in_node, AliasMap alias_map) {
+    ColumnNode *column = in_node->column;
+    /* Confirm MetaTable. */
+    MetaTable *current_meta_table = confirm_meta_table_via_column(column, alias_map);
+
+    return check_column_node(in_node->column, current_meta_table) // check select column
+           && check_value_item_set_node(current_meta_table, column->column_name, in_node->value_set);
 }
 
-/* Check like data. */
-static bool check_like_data(MetaColumn *meta_column) {
+/* Check like data type. */
+static bool check_like_data_type(MetaColumn *meta_column) {
     if (meta_column->column_type != T_STRING) {
         db_log(ERROR, "For like predicate, only support string data type.");
         return false;
@@ -311,109 +383,106 @@ static bool check_like_data(MetaColumn *meta_column) {
 }
 
 /* Check LikeNode. */
-static bool check_like_node(LikeNode *like_node, MetaTable *meta_table) {
-    MetaColumn *meta_column = get_meta_column_by_name(meta_table, like_node->column->column_name);
-    return check_column_node(meta_table, like_node->column) // check select column
-           && check_like_data(meta_column)
-           && check_value_item_node(meta_table, like_node->column->column_name, like_node->value);
+static bool check_like_node(LikeNode *like_node, AliasMap alias_map) {
+    ColumnNode *column = like_node->column;
+
+    /* Confirm MetaTable. */
+    MetaTable *current_meta_table = confirm_meta_table_via_column(column, alias_map);
+    MetaColumn *meta_column = get_meta_column_by_name(current_meta_table, column->column_name);
+
+    return check_column_node(column, current_meta_table) // check select column
+           && check_like_data_type(meta_column)
+           && check_value_item_node(current_meta_table, column->column_name, like_node->value);
 }
 
 /* Check PredicateNode. */
-static bool check_predicate_node(PredicateNode *predicate_node, MetaTable *meta_table) {
+static bool check_predicate_node(PredicateNode *predicate_node, AliasMap alias_map) {
     switch (predicate_node->type) {
         case PRE_COMPARISON:
-            return check_comparison_node(predicate_node->comparison, meta_table);
+            return check_comparison_node(predicate_node->comparison, alias_map);
         case PRE_IN:
-            return check_in_node(predicate_node->in, meta_table);
+            return check_in_node(predicate_node->in, alias_map);
         case PRE_LIKE:
-            return check_like_node(predicate_node->like, meta_table);
+            return check_like_node(predicate_node->like, alias_map);
     }
 }
 
 /* Check condition node. */
-static bool check_condition_node(ConditionNode *condition_node, MetaTable *meta_table) {
+static bool check_condition_node(ConditionNode *condition_node, AliasMap alias_entry) {
     if (condition_node == NULL)
         return true;
     switch(condition_node->conn_type) {
         case C_AND:
         case C_OR:
-            return check_condition_node(condition_node->left, meta_table) 
-                && check_condition_node(condition_node->right, meta_table);
+            return check_condition_node(condition_node->left, alias_entry) 
+                && check_condition_node(condition_node->right, alias_entry);
         case C_NONE: 
-            return check_predicate_node(condition_node->predicate, meta_table);
+            return check_predicate_node(condition_node->predicate, alias_entry);
     }
 }
 
-/* check column set. */
-static bool check_column_set(ColumnSetNode *column_set_node, MetaTable *meta_table) {
-    for (uint32_t i = 0; i < column_set_node->size; i++) {
-        ColumnNode *column_node = *(column_set_node->columns + i);
-        if (!check_column_node(meta_table, column_node))
-            return false;
-    } 
+
+/* Check TableRefNode. */
+static bool check_table_ref(TableRefNode *table_ref) {
+    Table *table = open_table(table_ref->table);
+    if (table == NULL) {
+        db_log(ERROR, "Table '%s' not exist.", table_ref->table);
+        return false;
+    }
     return true;
 }
 
-/* Check TableRefNode. */
-static void check_table_ref(TableRefNode *table_ref) {
-    Table *table = open_table(table_ref->table);
-    if (table == NULL)
-        db_log(ERROR, "Table '%s' not exist.", table_ref->table);
-}
-
 /* Check TableRefSetNode. */
-static void check_table_ref_set(TableRefSetNode *table_ref_set) {
+static bool check_table_ref_set(TableRefSetNode *table_ref_set) {
     uint32_t i, j;
     for (i = 0; i < table_ref_set->size; i++) {
         TableRefNode *table_ref = table_ref_set->set[i];
-        check_table_ref(table_ref);
+        if (!check_table_ref(table_ref))
+            return false;
+
         for (j = i + 1; j < table_ref_set->size; j++) {
             TableRefNode *table_ref2 = table_ref_set->set[j];
-            
             /* Check duplicate table. */
-            if (streq(table_ref->table, table_ref2->table))
+            if (streq(table_ref->table, table_ref2->table)) {
                 db_log(ERROR, "Duaplicate table '%s'. ", table_ref->table);
-
+                return false;
+            }
             /* Check duplicate table alias name. */
             if (table_ref->range_variable && table_ref2->range_variable 
-                && streq(table_ref->range_variable, table_ref2->range_variable))
+                && streq(table_ref->range_variable, table_ref2->range_variable)) {
                 db_log(ERROR, "Duaplicate table alias name: '%s'. ", table_ref->range_variable);
+                return false;
+            }
         }
     }
+
+    return true;
 }
 
 /* Check FromClauseNode. */
-static void check_from_clause(FromClauseNode *from_clause) {
-    check_table_ref_set(from_clause->from);
+static bool check_from_clause(FromClauseNode *from_clause) {
+    return check_table_ref_set(from_clause->from);
 }
 
 /* Check WhereClauseNode. */
-static void check_where_clause(WhereClauseNode *where_clause, FromClauseNode *from_clause) {
+static bool check_where_clause(WhereClauseNode *where_clause, AliasMap alias_map) {
     if (where_clause == NULL)
-        return;
-    if (from_clause == NULL) {
-        check_condition_node(where_clause->condition, NULL);
-    } else {
-        TableRefSetNode *table_ref_set = from_clause->from;
-        for (uint32_t i = 0; i < table_ref_set->size; i++) {
-            TableRefNode *table_ref = table_ref_set->set[i];
-            Table *table = open_table(table_ref->table);
-            MetaTable *meta_table = table->meta_table;
-            check_condition_node(where_clause->condition, meta_table);
-        }
-    }
+        return true;
+
+    return check_condition_node(where_clause->condition, alias_map);
 }
 
 /* Check TableExpNode. */
-static void check_table_exp(TableExpNode *table_exp) {
-    check_from_clause(table_exp->from_clause);
-    check_where_clause(table_exp->where_clause, table_exp->from_clause);
+static bool check_table_exp(TableExpNode *table_exp, AliasMap alias_map) {
+    return check_from_clause(table_exp->from_clause)
+        && check_where_clause(table_exp->where_clause, alias_map);
 }
 
 
 /* Check assignment set node */
 static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Table *table, SelectResult *select_result) { 
-    for (uint32_t i = 0; i < assignment_set_node->num; i++) {
+    uint32_t i;
+    for (i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assignment_node = *(assignment_set_node->assignment_node + i);
         ColumnNode *column_node = assignment_node->column;
         ValueItemNode *value_node = assignment_node->value;
@@ -421,7 +490,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
 
         /* Check column, check type, check if value valid. */
-        if (!check_column_node(table->meta_table, column_node) 
+        if (!check_column_node(column_node, table->meta_table) 
             || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name) 
             || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column)))
             return false;
@@ -452,6 +521,7 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
             }
         }
     }
+
     return true;
 }
 
@@ -473,18 +543,20 @@ static bool check_primary_null(CreateTableNode *create_table_node) {
         return true;
 
     /* check column def define primary. */
-    int i;
+    uint32_t i;
     for(i = 0; i < create_table_node->column_def_set_node->size; i++) {
         if (create_table_node->column_def_set_node->column_defs[i]->is_primary)
             return true;
     }
+
     db_log(ERROR, "Must support primary key.");
+
     return false;
 }
 
 /* Check if exists duplicate column name. */
 static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
-    int i, j;
+    uint32_t i, j;
     for(i = 0; i < column_def_set_node->size; i++) {
         ColumnDefNode *column_def_node1 = column_def_set_node->column_defs[i];
         for(j = 0; j < column_def_set_node->size; j++) {
@@ -495,13 +567,38 @@ static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
             }
         }
     }
+
     return true;
 }
 
+/* Get table alias map. */
+static void define_alias_map(AliasMap alias_map, TableExpNode *table_exp) {
+}
+
 /* Check SelectNode. */
-void check_select_node(SelectNode *select_node) {
-    check_table_exp(select_node->table_exp);
-    check_selection(select_node->selection, select_node->table_exp);
+bool check_select_node(SelectNode *select_node) {
+    AliasMap alias_map;
+    alias_map.size = 0;
+
+    FromClauseNode *from_clause = select_node->table_exp->from_clause;
+    if (from_clause == NULL)
+        return true;
+
+    if (from_clause->from->size > MAX_MULTI_TABLE_NUM) {
+        db_log(ERROR, "Exceed max table numbers.");
+        return false;
+    }
+
+    uint32_t i;
+    for (i = 0; i < from_clause->from->size; i++) {
+        TableRefNode *table_ref = from_clause->from->set[i];
+        alias_map.map[i].name = table_ref->table;
+        alias_map.map[i].alias = table_ref->range_variable;
+        alias_map.size++;
+    }
+
+    return check_table_exp(select_node->table_exp, alias_map)
+        && check_selection(select_node->selection, alias_map);
 }
 
 /* Check insert node. */
@@ -546,7 +643,7 @@ bool check_insert_node(InsertNode *insert_node) {
             return false;
         }
 
-        int i;
+        uint32_t i;
         for (i = 0; i < insert_node->columns_set_node->size; i++) {
             ColumnNode *column_node = *(insert_node->columns_set_node->columns + i);
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
@@ -559,21 +656,33 @@ bool check_insert_node(InsertNode *insert_node) {
                 return false;
         }
     }
+
     return true;
 }
 
 /* Check for update node. */
 bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
+    AliasMap alias_map;
+    alias_map.size = 1;
+    alias_map.map[0].name = update_node->table_name;
+    alias_map.map[0].alias = update_node->table_name;
+
     Table *table = open_table(update_node->table_name);
     return table != NULL 
            && check_assignment_set_node(update_node->assignment_set_node, table, select_result) 
-           && check_condition_node(update_node->condition_node, table->meta_table);
+           && check_where_clause(update_node->where_clause, alias_map);
 }
 
 /* Check for delete node. */
 bool check_delete_node(DeleteNode *delete_node) {
-    Table *table = open_table(delete_node->table_name);
-    return check_condition_node(delete_node->condition_node, table->meta_table);
+    /* Unimplement. */
+    AliasMap alias_map;
+    alias_map.size = 1;
+    alias_map.map[0].name = delete_node->table_name;
+    alias_map.map[0].alias = delete_node->table_name;
+
+    return check_table_exist(delete_node->table_name)
+        && check_condition_node(delete_node->condition_node, alias_map);
 }
 
 /* Check for create table node. */
@@ -589,7 +698,7 @@ static bool if_table_used_refer(char *table_name, char *refer_table_name) {
     assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
     MetaTable *meta_table = table->meta_table;
 
-    int i;
+    uint32_t i;
     for(i = 0; i < meta_table->column_size; i++) {
         MetaColumn *current_meta_column = meta_table->meta_column[i];
         if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
@@ -597,17 +706,20 @@ static bool if_table_used_refer(char *table_name, char *refer_table_name) {
             return true;
         }
     }
+
     return false;
 }
 
 /* Chech allowed to drop table. */
 bool check_drop_table(char *table_name) {
     TableList *table_list = get_table_list();
-    int i;
+
+    uint32_t i;
     for (i = 0; i < table_list->count; i++) {
         char *curent_table_name = table_list->table_name_list[i];
         if (if_table_used_refer(curent_table_name, table_name))
             return false;
     }
+
     return true;
 }

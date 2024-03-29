@@ -299,10 +299,12 @@ static bool include_exec_internal_node(SelectResult *select_result, void *min_ke
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node->predicate, meta_table);
 
     /* Skipped the internal node must satisfy tow factors: 
-     * (1) primary key columns
-     * (2) not satisfied internal node condition. 
+     * (1) Current condition is current table columns.
+     * (2) It is primary key
+     * (3) not satisfied internal node condition. 
      */
-    return !cond_meta_column->is_primary 
+    return !cond_meta_column 
+           || !cond_meta_column->is_primary 
            || include_internal_predicate(select_result, min_key, max_key, condition_node->predicate, meta_table);
 }
 

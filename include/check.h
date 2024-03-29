@@ -1,7 +1,8 @@
+#include <stdbool.h>
 #include "data.h"
 
 /* Check SelectNode. */
-void check_select_node(SelectNode *select_node);
+bool check_select_node(SelectNode *select_node);
 
 /* Check insert node. */
 bool check_insert_node(InsertNode *insert_node);

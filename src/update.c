@@ -126,6 +126,13 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     free_cursor(new_cursor);
 }
 
+static ConditionNode *get_condition_from_where(WhereClauseNode *where_clause) {
+    if (where_clause)
+        return where_clause->condition;
+    else
+        return NULL;
+}
+
 /* Execute update statment. */
 void exec_update_statment(UpdateNode *update_node, DBResult *result) {
 
@@ -139,8 +146,10 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     /* Query with conditon, and update satisfied condition row. */
     SelectResult *select_result = new_select_result(update_node->table_name);
 
+    ConditionNode *condition_node = get_condition_from_where(update_node->where_clause);
+
     /* Before update row, count satisfied row num which help to check. */
-    query_with_condition(update_node->condition_node, select_result, count_row, NULL);
+    query_with_condition(condition_node, select_result, count_row, NULL);
     uint32_t update_rows_size = select_result->row_size;
 
     /* Check out update node. */
@@ -148,7 +157,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
         return;
 
     /* Query with update row operation. */
-    query_with_condition(update_node->condition_node, select_result, update_row, update_node->assignment_set_node);
+    query_with_condition(condition_node, select_result, update_row, update_node->assignment_set_node);
 
     result->success = true;
     result->rows = update_rows_size;

@@ -290,19 +290,12 @@ insert_statement:
         }
     ;
 update_statement:
-    UPDATE table SET assignments end
+    UPDATE table SET assignments opt_where_clause end
         {
             UpdateNode *node = make_update_node();
             node->table_name = $2;
             node->assignment_set_node = $4;
-            $$ = node;
-        }
-    | UPDATE table SET assignments WHERE condition end
-        {
-            UpdateNode *node = make_update_node();
-            node->table_name = $2;
-            node->assignment_set_node = $4;
-            node->condition_node = $6;
+            node->where_clause = $5;
             $$ = node;
         }
     ;

@@ -1,8 +1,8 @@
+#include <sys/types.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/types.h>
 
 #ifndef DATA_H
 #define DATA_H
@@ -11,6 +11,7 @@
 #define MAX_TABLE_PAGE 10000
 #define MAX_COLUMN_SIZE 256    // max column size
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
+#define MAX_MULTI_TABLE_NUM 30 // max multi-table number.
 #define BUFF_SIZE 1024
 #define SPOOL_SIZE 1024   /* Spool buffer size. */
 
@@ -104,7 +105,9 @@ typedef enum SysDataType{
     SDT_LOG_ENTRY,
     SDT_LOG_TABLE,
     SDT_XLOG_ENTRY,
-    SDT_XLOG_TABLE
+    SDT_XLOG_TABLE,
+    SDT_ALIAS_ENTRY,
+    SDT_ALIAS_MAP
 }SysDataType;
 
 static char *SYS_DATA_TYPE_NAMES[] = { \
@@ -186,7 +189,9 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "LOG_ENTRY",\
    "LOG_TABLE",\
    "XLOG_ENTRY",\
-   "XLOG_TABLE"\
+   "XLOG_TABLE",\
+   "ALIAS_ENTRY", \
+   "ALIAS_MAP" \
 };
 
 /* CompareType */
@@ -553,7 +558,7 @@ typedef struct {
 typedef struct {
     char *table_name;
     AssignmentSetNode *assignment_set_node;
-    ConditionNode *condition_node;
+    WhereClauseNode *where_clause;
 } UpdateNode;
 
 /* DeleteNode */
@@ -825,10 +830,10 @@ typedef struct LogTable {
 
 /* XLogEntry */
 typedef struct XLogEntry {
-    int64_t xid;    /* Transaction Id */
-    Refer *refer;   /* Row refer. */
-    DDLType type;  /* DDL type. */
-    struct XLogEntry *next; /* Next */
+    int64_t xid;            /* Transaction Id */
+    Refer *refer;           /* Row refer. */
+    DDLType type;           /* DDL type. */
+    struct XLogEntry *next; /* Next XLogEntry */
 }XLogEntry;
 
 /* XLogEntry */
@@ -836,5 +841,17 @@ typedef struct XLogTable {
     XLogEntry **list;
     uint32_t size;
 } XLogTable;
+
+/* AliasEntry */
+typedef struct AliasEntry {
+    char *name;
+    char *alias;
+} AliasEntry;
+
+/* AliasMap */
+typedef struct AliasMap {
+    uint32_t size;
+    AliasEntry map[MAX_MULTI_TABLE_NUM];
+} AliasMap;
 
 #endif
