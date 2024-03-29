@@ -357,7 +357,11 @@ table_exp:
         }
     ;
 from_clause:
-    FROM table_ref_commalist
+    /* empty */
+        {
+            $$ = NULL;
+        }
+    | FROM table_ref_commalist
         {
             FromClauseNode *from_clause = make_from_clause_node();
             from_clause->from = $2;

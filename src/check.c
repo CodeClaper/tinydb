@@ -461,7 +461,7 @@ static bool check_table_ref_set(TableRefSetNode *table_ref_set) {
 
 /* Check FromClauseNode. */
 static bool check_from_clause(FromClauseNode *from_clause) {
-    return check_table_ref_set(from_clause->from);
+    return from_clause == NULL || check_table_ref_set(from_clause->from);
 }
 
 /* Check WhereClauseNode. */

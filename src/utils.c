@@ -146,6 +146,13 @@ bool streq_or_null(char *str1, char *str2) {
         return false;
 }
 
+/* Check if string is empty.
+ * Empty means string is NULL or "".
+ * */
+bool strempty(char *str) {
+    return str == NULL || strlen(str) == 0;
+}
+
 
 /**********************************************************************/
 /* Get a line from a socket, whether the line ends in a newline,

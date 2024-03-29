@@ -2075,9 +2075,8 @@ static ConditionNode *get_table_exp_condition(TableExpNode *table_exp) {
 /* Query with condition when multiple table. */
 static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
 
-    
     /* If no from clause, return an empty select result. */
-    if (!select_node->table_exp->from_clause) 
+    if (select_node->table_exp->from_clause == NULL) 
         return new_select_result(NULL);
 
     TableRefSetNode *table_ref_set = select_node->table_exp->from_clause->from;
