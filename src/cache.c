@@ -4,6 +4,7 @@
 #include <string.h>
 #include "cache.h"
 #include "spinlock.h"
+#include "utils.h"
 #include "mmu.h"
 #include "copy.h"
 #include "free.h"
@@ -79,10 +80,10 @@ bool sync_page(char *table_name, uint32_t page_num, void *page) {
 
     spin_lock_acquire(&slock);
 
-    int i;
+    uint32_t i;
     for (i = 0; i < cache->size; i++) {
         Table *cur_table = *(cache->table_list + i);
-        if (strcmp(cur_table->meta_table->table_name, table_name) == 0) {
+        if (streq(cur_table->meta_table->table_name, table_name)) {
             void *old_page = cur_table->pager->pages[page_num];
             /* Notice: must copy the page, because the page will be freed at <remove_table_buffer>*/
             cur_table->pager->pages[page_num] = copy_block(page, PAGE_SIZE);

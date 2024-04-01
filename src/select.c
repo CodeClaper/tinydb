@@ -5,7 +5,6 @@
  * ===========================================================================================
  * */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -390,6 +389,7 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
                     db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
                     return false;
                 }
+                /* May subling tables, skip it temporarily. */
                 if (!table_name || !streq(table_name, key_value->table_name))
                     continue;
             }
@@ -403,14 +403,17 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
             }
 
             if (column->has_sub_column && column->sub_column) {
-                /* If has sub column, must be Reference. */
-                assert(meta_column->column_type == T_REFERENCE);
+                /* Just check, if column has sub column, it must be Reference type. */
+                Assert(meta_column->column_type == T_REFERENCE);
 
                 /* Get subrow, and recursion. */
                 Refer *refer = key_value->value;
                 Row *sub_row = define_row(refer);
                 return check_row_predicate(select_result, sub_row, column->sub_column, comparison); 
 
+            } else if (column->has_sub_column && column->scalar_exp_set) {
+                db_log(ERROR, "Not support support sub column for pridicate.");
+                return false;
             } else {
                 ScalarExpNode *comparison_value = comparison->value;
                 switch (comparison_value->type) {
@@ -420,10 +423,12 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
                         return check_row_predicate_value(select_result, key_value->value, comparison_value->value, comparison->type, meta_column);
                     case SCALAR_FUNCTION:
                         db_log(ERROR, "Not support function as comparison value.");
-                        break;
+                        return false;
                     case SCALAR_CALCULATE:
                         db_log(ERROR, "Not support calcuation comparison value.");
-                        break;
+                        return false;
+                    default:
+                        db_log(PANIC, "Unknown Scalar type.");
                 }
             }
 
@@ -626,7 +631,7 @@ Row *define_row(Refer *refer) {
     return generate_row(destinct, table->meta_table);
 }
 
-/* Merge tow row and generate new one. */
+/* Merge tow row into new one. */
 static Row *merge_row(Row *row1, Row *row2) {
     /* According the first row generate new merge row. */
     Row *row = copy_row(row1);
@@ -635,9 +640,7 @@ static Row *merge_row(Row *row1, Row *row2) {
 
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {
-        if (i < row1->column_len)
-            row->data[i] = copy_key_value(row1->data[i]);
-        else
+        if (i >= row1->column_len)
             row->data[i] = copy_key_value(row2->data[i - row1->column_len]);
     }
 
@@ -651,6 +654,7 @@ static char *search_table_via_alias(SelectResult *select_result, char *range_var
     if (select_result == NULL) 
         db_log(PANIC, "Support SelectResult. ");
 
+    /* Either table name or range variable is equal. */
     if (streq(select_result->table_name, range_variable) || streq(select_result->range_variable, range_variable))
         return select_result->table_name;
 
@@ -742,7 +746,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     void *internal_node_snapshot = copy_block(internal_node, PAGE_SIZE);
 
     /* Loop each interanl node cell to check if satisfy condition. */
-    int i;
+    uint32_t i;
     for (i = 0; i < keys_num; i++) {
     
         /* Check if index column, use index to avoid full text scanning. */
@@ -802,7 +806,7 @@ SelectResult *new_select_result(char *table_name) {
     select_result->row_index = 0;
     select_result->table_name = table_name ? db_strdup(table_name) : NULL;
     select_result->range_variable = NULL;
-    select_result->rows = NULL;
+    select_result->rows = db_malloc(0, SDT_POINTER);
     select_result->derived = NULL;
     select_result->last_derived = false;
     return select_result;
@@ -2082,13 +2086,14 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
     TableRefSetNode *table_ref_set = select_node->table_exp->from_clause->from;
     SelectResult *result = NULL;
 
-    assert(table_ref_set->size > 0);
+    Assert(table_ref_set->size > 0);
 
     uint32_t i; 
     for (i = 0; i < table_ref_set->size; i++) {
 
         TableRefNode *table_ref = table_ref_set->set[i];
         SelectResult *current_result = new_select_result(table_ref->table);
+
         /* If use not define tale alias name, use table name as range variable automatically. */
         current_result->range_variable = table_ref->range_variable ? strdup(table_ref->range_variable) : strdup(table_ref->table);
         current_result->derived = result;

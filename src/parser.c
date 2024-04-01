@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "log.h"
 #include "y.tab.h"
+#include "intpr.h"
 #include "asserts.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
@@ -31,7 +32,7 @@ Statements *parse(char *sql) {
     sprintf(buff, "%s%c", sql, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(buff);
 
-    Statements *states = db_malloc(sizeof(Statements), SDT_STATEMENTS);
+    Statements *states = make_statements();
 
     return yyparse(states) == 0 ? states : NULL;
 }

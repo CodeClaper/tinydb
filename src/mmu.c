@@ -329,7 +329,8 @@ void *db_realloc(void *ptr, size_t size) {
 
 #ifdef DEBUG
     MEntry *entry = search_entry(ptr);
-    assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
+    if (ptr == NULL)
+        assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
 #endif
 
 

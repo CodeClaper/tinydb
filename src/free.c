@@ -26,6 +26,8 @@ void free_key_value(KeyValue *key_value) {
     if (key_value) {
         if (key_value->key)
             db_free(key_value->key);
+        if (key_value->table_name)
+            db_free(key_value->table_name);
         if (key_value->data_type == T_ROW) 
             free_row(key_value->value);
         else
@@ -62,14 +64,14 @@ void free_row(Row *row) {
         /* free key. */
         if (row->key)
             db_free(row->key);
-
         /* free row data. */
-        int i;
-        for(i = 0; i < row->column_len; i++) {
-            free_key_value(row->data[i]);
+        if (row->data) {
+            uint32_t i;
+            for(i = 0; i < row->column_len; i++) {
+                free_key_value(row->data[i]);
+            }
+            db_free(row->data);
         }
-        db_free(row->data);
-
         /* table name. */
         if (row->table_name)
             db_free(row->table_name);
@@ -90,7 +92,8 @@ void free_select_result(SelectResult *select_result) {
 
         if (select_result->rows) {
             /* free rows. */
-            for (uint32_t i = 0; i < select_result->row_size; i++) {
+            uint32_t i;
+            for (i = 0; i < select_result->row_size; i++) {
                 free_row(select_result->rows[i]);
             }
             db_free(select_result->rows);
@@ -116,7 +119,7 @@ void free_meta_table(MetaTable *meta_table) {
         if (meta_table->table_name) {
             db_free(meta_table->table_name);
         }
-        int i;
+        uint32_t i;
         for (i = 0; i < meta_table->all_column_size; i++) {
             free_meta_column(meta_table->meta_column[i]);
         }

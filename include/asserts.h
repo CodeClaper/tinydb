@@ -1,5 +1,12 @@
 #include <stdbool.h>
 
+#ifdef DEBUG
+#include "assert.h"
+#define Assert(condition) assert(condition)
+#else
+#define Assert(condition) ((void)true)
+#endif
+
 /* Assert condition is true. */
 void assert_true(bool condition, char *format, ...);
 

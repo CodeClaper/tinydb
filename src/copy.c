@@ -73,6 +73,7 @@ KeyValue *copy_key_value(KeyValue *key_value) {
 
     /* copy key value */
     KeyValue *key_value_copy = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+
     key_value_copy->key = db_strdup(key_value->key);
     /*Meta column may be null, in fact, key aggregate function, key is min, max, sum, avg ect. there is no meta column. */
     key_value_copy->value = copy_value(key_value->value, key_value->data_type);
