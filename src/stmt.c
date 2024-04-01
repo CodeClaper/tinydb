@@ -57,7 +57,7 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
     if (drop_table(table_name, result)) {
         result->success = true;
         result->rows = 0;
-        result->message = ("Table '%s' droped successfully.", table_name);
+        result->message = format("Table '%s' droped successfully.", table_name);
         db_log(SUCCESS, "Table '%s' droped successfully.", table_name);
     }
 }

@@ -61,7 +61,8 @@ static void db_send_row(Row *row) {
     handle_dulicate_key(row);
 
     db_send("{ ");
-    for (uint32_t i = 0; i < row->column_len; i++) {
+    uint32_t i;
+    for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         switch (key_value->data_type) {
             /* Specially deal with T_REFERENCE data. */
@@ -159,15 +160,15 @@ static void db_send_map_list(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\" ", result->success ? "true" : "false", result->success ? result->message : get_log_msg());
     if (result->success) {
         db_send(", \"data\": ");
-        map_list->size == 1 ? db_send("") : db_send("[");
-        int i;
+        db_send("[");
+        uint32_t i;
         for(i = 0; i < map_list->size; i++) {
             Map *map = map_list->data[i];
             db_send_map(map);
             if (i < map_list->size - 1)
                 db_send(", ");
         }
-        map_list->size == 1 ? db_send("") : db_send("]");
+        db_send("]");
     }
     db_send(", \"duration\": %lf }", result->duration);
 }

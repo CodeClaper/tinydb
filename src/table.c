@@ -73,9 +73,6 @@ bool check_table_exist(char *table_name) {
     char *file_path = table_file_path(table_name);
     bool ret = table_file_exist(file_path);
     db_free(file_path);
-    if (!ret) {
-        db_log(ERROR, "Table '%s' not exists. ", table_name);
-    }
     return ret;
 }
 

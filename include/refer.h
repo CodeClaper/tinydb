@@ -25,6 +25,9 @@ Cursor *convert_cursor(Refer *refer);
 /* Check if refer equals. */
 bool refer_equals(Refer *refer1, Refer *refer2);
 
+/* Check if cursor equals. */
+bool cursor_equals(Cursor *cursor1, Cursor * cursor2);
+
 /* Check if refer null. 
  * If page number is -1 and cell number is -1, it means refer null. */
 bool refer_null(Refer *refer);

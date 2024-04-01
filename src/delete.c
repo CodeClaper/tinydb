@@ -69,7 +69,7 @@ void exec_delete_statement(DeleteNode *delete_node, DBResult *result) {
     /* Success Result . */
     result->success = true;
     result->rows = select_result->row_size;
-    result->message = format(result, "Successfully deleted %d row data.", select_result->row_size);
+    result->message = format("Successfully deleted %d row data.", select_result->row_size);
 
     db_log(SUCCESS, "Successfully deleted %d row data.", select_result->row_size);
 }

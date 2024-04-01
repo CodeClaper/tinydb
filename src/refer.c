@@ -24,6 +24,7 @@
 #include "ltree.h"
 #include "xlog.h"
 #include "pager.h"
+#include "utils.h"
 #include "asserts.h"
 #include "log.h"
 
@@ -186,9 +187,16 @@ static bool if_table_refer_to(char *table_name, char *refer_table_name) {
 
 /* Check if refer equals. */
 bool refer_equals(Refer *refer1, Refer *refer2) {
-    return strcmp(refer1->table_name, refer2->table_name) == 0
+    return streq(refer1->table_name, refer2->table_name)
             && refer1->page_num == refer2->page_num 
             && refer1->cell_num == refer2->cell_num;
+}
+
+/* Check if cursor equals. */
+bool cursor_equals(Cursor *cursor1, Cursor * cursor2) {
+    return streq(cursor1->table->meta_table->table_name, cursor2->table->meta_table->table_name)
+            && cursor1->page_num == cursor2->page_num 
+            && cursor1->cell_num == cursor2->cell_num;
 }
 
 /* Update row key value. */

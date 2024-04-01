@@ -492,7 +492,7 @@ static void copy_root_to_leaf_node(Table *table, uint32_t new_page_num, uint32_t
     set_leaf_node_next_leaf(leaf_node, get_leaf_node_next_leaf(root));
     uint32_t cell_num = get_leaf_node_cell_num(root); 
 
-    int i;
+    uint32_t i;
     for(i = 0; i < cell_num; i++) {
         set_leaf_node_cell_key(leaf_node, i, key_len, value_len, get_leaf_node_cell_key(root, i, key_len, value_len)); 
         memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, i), get_leaf_node_cell_value(root, key_len, value_len, i), value_len);
@@ -771,7 +771,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     uint32_t RIGHT_SPLIT_COUNT = (cell_num + 1) / 2;
     uint32_t LEFT_SPLIT_COUNT = (cell_num + 1) - RIGHT_SPLIT_COUNT;
 
-    int i; 
+    uint32_t i; 
     for (i = cell_num; i >= 0; i--) {
         /* If index greater than LEAF_SPLIT_COUNT, destination is new old, othersize, stay in the old node. */
         void *destination_node = i >= LEFT_SPLIT_COUNT ? new_node : old_node;
@@ -846,7 +846,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     else {
         if (cursor->cell_num < cell_num) {
             /* Make room for new cell. */
-            int i;
+            uint32_t i;
             for (i = cell_num; i > cursor->cell_num; i--) {
                 /* Movement. */
                 memcpy(get_leaf_node_cell(node, key_len, value_len, i), get_leaf_node_cell(node, key_len, value_len, i - 1), cell_length);
