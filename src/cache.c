@@ -27,7 +27,7 @@ void init_table_cache() {
 
 /* Save or update table cache. */
 void save_or_update_table_cache(Table *table) {
-    int i;
+    uint32_t i;
     for(i = 0; i < cache->size; i++) {
         Table *current = cache->table_list[i] ;
         if (strcmp(current->meta_table->table_name, table->meta_table->table_name) == 0) {
@@ -47,7 +47,7 @@ void save_or_update_table_cache(Table *table) {
 
 /* Find cache table by name, return null if not exist. */
 Table *find_table_cache(char *table_name) {
-    int i;
+    uint32_t i;
     for(i = 0; i < cache->size; i++) {
         Table *current = *(cache->table_list + i);
         if (strcmp(current->meta_table->table_name, table_name) == 0)

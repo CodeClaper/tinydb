@@ -186,7 +186,8 @@ void execute(char *sql) {
         if (setjmp(errEnv) == 0) {
             statements = parse(sql);
             /* Execute each statement. */
-            for (uint32_t i = 0; i < statements->size; i++) {
+            uint32_t i;
+            for (i = 0; i < statements->size; i++) {
                 DBResult *result = new_db_result();
                 add_db_result(result_set, result);
                 Statement *statement = statements->list[i];

@@ -164,7 +164,8 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     result->message = format("Successfully updated %d row data.", update_rows_size);
 
     db_log(SUCCESS, "Successfully updated %d row data.", update_rows_size);
-
+    
+    select_result->row_size = 0;
     free_select_result(select_result);
 
 }

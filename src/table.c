@@ -171,8 +171,8 @@ Table *open_table(char *table_name) {
     /* Free memory. */
     db_free(file_path);
 
-    /* Only return cache table. */
-    return find_table_cache(table_name);
+    /* Only return buffer table to keep same table pointer in same thread. */
+    return find_table_buffer(table_name);
 }
 
 
