@@ -268,7 +268,8 @@ void update_refer(char *table_name, int32_t old_page_num, int32_t old_cell_num,
     TableList *table_list = get_table_list();
 
     /* Update table refer. */
-    for (uint32_t i = 0; i < table_list->count; i++) {
+    uint32_t i;
+    for (i = 0; i < table_list->count; i++) {
         char *curent_table_name = table_list->table_name_list[i];
         if (if_table_refer_to(curent_table_name, table_name)) 
             update_table_refer(curent_table_name, refer_update_entity);

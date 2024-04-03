@@ -771,7 +771,8 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     uint32_t RIGHT_SPLIT_COUNT = (cell_num + 1) / 2;
     uint32_t LEFT_SPLIT_COUNT = (cell_num + 1) - RIGHT_SPLIT_COUNT;
 
-    uint32_t i; 
+    /* Notice, cant make i uint32_t when i decrease, when i = 0 and decrease, it still satisfy i >= 0. */
+    int i; 
     for (i = cell_num; i >= 0; i--) {
         /* If index greater than LEAF_SPLIT_COUNT, destination is new old, othersize, stay in the old node. */
         void *destination_node = i >= LEFT_SPLIT_COUNT ? new_node : old_node;
@@ -783,7 +784,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 
         /* The cursor rigth cells should move one cell to the right to make space for the cursor, include the cell having the old same num as cursor.
          * The cursor leaf cells do`t need to make space.
-         * Because i start with cell number, and decrease. so right cells firstly move and make space. */
+         * Because i start with cell number and decrease, right cells firstly move and make space. */
         if (i == cursor->cell_num) {
             /* Deposit cursor. */
             void *serial_data = serialize_row_data(row, cursor->table);

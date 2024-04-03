@@ -142,7 +142,7 @@ void commit_xlog() {
 void execute_roll_back() {
     TransactionHandle *transaction = find_transaction();
     if (transaction == NULL) {
-        db_log(WARN, "Not found current transaction.");
+        db_log(ERROR, "Not found current transaction.");
         return;
     }
 
@@ -159,7 +159,7 @@ void execute_roll_back() {
     }
 
     if (current == NULL) {
-        db_log(WARN, "Not found current transaction xlog.");
+        db_log(ERROR, "Not found current transaction xlog.");
         return;
     }
     
@@ -209,5 +209,5 @@ static void reverse_delete(Refer *refer, TransactionHandle *transaction) {
     Cursor *new_cur = define_cursor(table, row->key);
 
     /* Re-insert. */
-    insert_leaf_node_cell(new_cur, row);
+    insert_leaf_node_cell(new_cur, row, NULL);
 }
