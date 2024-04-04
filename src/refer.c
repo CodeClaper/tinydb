@@ -28,6 +28,60 @@
 #include "asserts.h"
 #include "log.h"
 
+typedef struct {
+    uint32_t size;
+    Refer **list;
+} UpdateReferLockContent;
+
+static UpdateReferLockContent *update_refer_lock_content;
+
+
+/* Add Refer to UpdateReferLockContent. */
+void add_refer_update_lock(Refer *refer) {
+    if (!update_refer_lock_content) {
+        update_refer_lock_content = db_malloc(sizeof(UpdateReferLockContent), SDT_VOID);
+        update_refer_lock_content->list = db_malloc(0, SDT_VOID);
+        update_refer_lock_content->size = 0;
+    }
+
+    update_refer_lock_content->list = db_realloc(update_refer_lock_content->list, sizeof(Refer *) * (update_refer_lock_content->size + 1));
+    update_refer_lock_content->list[update_refer_lock_content->size++] = copy_refer(refer);
+}
+
+/* Free refer in UpdateReferLockContent. */
+void free_refer_update_lock(Refer *refer) {
+    Assert(update_refer_lock_content);
+    uint32_t i, j;
+    for (i = 0; i < update_refer_lock_content->size; i++) {
+        Refer *current = update_refer_lock_content->list[i];
+        if (refer_equals(refer, current)) {
+            for (j = i; j < update_refer_lock_content->size; j++) {
+                memcpy(update_refer_lock_content->list + j, update_refer_lock_content->list + j + 1, sizeof(Refer *));
+            }
+            memset(update_refer_lock_content->list + j, 0, sizeof(Refer *));
+
+            free_refer(current);
+
+            update_refer_lock_content->size--;
+            update_refer_lock_content->list = db_realloc(update_refer_lock_content->list, sizeof(Refer *) * update_refer_lock_content->size);
+            break;
+        }
+    }
+}
+
+/* Check if a refer include in ReferUpdateEntity. */
+static bool include_update_refer_lock(Refer *refer) {
+    Assert(update_refer_lock_content);
+    uint32_t i;
+    for (i = 0; i < update_refer_lock_content->size; i++) {
+        Refer *current = update_refer_lock_content->list[i];
+        if (refer_equals(refer, current))
+            return true;
+    }
+    return false;
+}
+
+
 /* Generate new Refer. 
  * Note: if page_num is -1 and cell_num is -1 which means refer null. */
 Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num) {
@@ -63,7 +117,7 @@ static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t p
 
 /* Define cursor when meet internal node. */
 static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
-    uint keys_num = get_internal_node_keys_num(internal_node);
+    uint32_t keys_num = get_internal_node_keys_num(internal_node);
     uint32_t key_len = calc_primary_key_length(table);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
@@ -141,7 +195,7 @@ Refer *make_null_refer() {
 }
 
 /* Generate new ReferUpdateEntity. */
-static ReferUpdateEntity *new_refer_update_entity(Refer *old_refer, Refer *new_refer) {
+ReferUpdateEntity *new_refer_update_entity(Refer *old_refer, Refer *new_refer) {
     ReferUpdateEntity *refer_update_entity = db_malloc(sizeof(ReferUpdateEntity), SDT_REFER_UPDATE_ENTITY);
     refer_update_entity->old_refer = old_refer;
     refer_update_entity->new_refer = new_refer;
@@ -170,7 +224,7 @@ Cursor *convert_cursor(Refer *refer) {
 }
 
 /* Check if table has column refer to. */
-static bool if_table_refer_to(char *table_name, char *refer_table_name) {
+static bool if_related_table(char *table_name, char *refer_table_name) {
     Table *table = open_table(table_name);
     assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
     MetaTable *meta_table = table->meta_table;
@@ -206,7 +260,7 @@ static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cu
     for (uint32_t i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         if (key_value->data_type == T_REFERENCE 
-            && strcmp(key_value->key, meta_column->column_name) == 0
+            && streq(key_value->key, meta_column->column_name)
             && refer_equals(key_value->value, refer_update_entity->old_refer)) {
                 /* Check if refer equals. */
                 key_value->value = copy_refer(refer_update_entity->new_refer);
@@ -243,6 +297,10 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
 /* Update table refer. */
 static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update_entity) {
 
+    /* Skip update locked refer. */
+    if (include_update_refer_lock(refer_update_entity->old_refer))
+        return;
+
     Table *table = open_table(table_name);
 
     /* Query with condition, and delete satisfied condition row. */
@@ -252,6 +310,19 @@ static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update
     query_with_condition(NULL, select_result, update_row_refer, refer_update_entity);
     
     free_select_result(select_result);
+}
+
+/* Update releated tables reference. */
+void update_related_tables_refer(ReferUpdateEntity *refer_update_entity) {
+
+    TableList *table_list = get_table_list();
+    /* Update table refer. */
+    uint32_t i;
+    for (i = 0; i < table_list->count; i++) {
+        char *curent_table_name = table_list->table_name_list[i];
+        if (if_related_table(curent_table_name, refer_update_entity->old_refer->table_name)) 
+            update_table_refer(curent_table_name, refer_update_entity);
+    }
 }
 
 
@@ -264,16 +335,9 @@ void update_refer(char *table_name, int32_t old_page_num, int32_t old_cell_num,
     Refer *old_one = new_refer(table_name, old_page_num, old_cell_num);
     Refer *new_one = new_refer(table_name, new_page_num, new_cell_num);
     ReferUpdateEntity *refer_update_entity = new_refer_update_entity(old_one, new_one);
-    
-    TableList *table_list = get_table_list();
-
-    /* Update table refer. */
-    uint32_t i;
-    for (i = 0; i < table_list->count; i++) {
-        char *curent_table_name = table_list->table_name_list[i];
-        if (if_table_refer_to(curent_table_name, table_name)) 
-            update_table_refer(curent_table_name, refer_update_entity);
-    }
+   
+    /* Update related tables. */
+    update_related_tables_refer(refer_update_entity);
 
     /* Update Xlog. */
     update_xlog_entry_refer(refer_update_entity);

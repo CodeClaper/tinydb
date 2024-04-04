@@ -79,12 +79,19 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
     } 
 }
 
+
 /* Update row */
 static void update_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
     /* Only update row that is visible for current transaction. */
     if (!row_is_visible(row)) 
         return;
+
+    select_result->row_size++;
+
+    /* Get old refer, and lock update refer. */
+    Refer *old_refer = define_refer(row);
+    add_refer_update_lock(old_refer);
 
     /* Update operation can be regarded as delete + re-insert operation. 
      * It makes transaction roll back simpler. */
@@ -97,7 +104,8 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     uint32_t key_len = calc_primary_key_length(table);
 
     /* Use old primary key as default. */
-    void *new_key = row->key;
+    void *old_key = row->key;
+    void *new_key = old_key;
 
     /* Handle each of assignment. */
     uint32_t i;
@@ -107,25 +115,40 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
         update_cell(row, assign_node);
         if (meta_column->is_primary) { 
             /* If primary key changed, reassign new value. */
-            void *new_key = get_value_from_value_item_node(assign_node->value, meta_column);
+            new_key = get_value_from_value_item_node(assign_node->value, meta_column);
         }
     }
    
-    /* Re-insert. */
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     row->key = copy_value(new_key, primary_meta_column->column_type);
     Cursor *new_cursor = define_cursor(table, new_key);
     update_transaction_state(row, TR_INSERT);
+    /* Re-insert*/
     insert_leaf_node_cell(new_cursor, row);
 
+    /* Recalculate Refer, because afer insert, row refer may be changed. */
+    Refer *new_refer = define_refer(row);
     /* Record xlog for insert. */
-    Refer *refer = convert_refer(new_cursor);
-    insert_xlog_entry(refer, DDL_INSERT);
+    insert_xlog_entry(new_refer, DDL_INSERT);
 
+    /* Free Update refer lock. */
+    free_refer_update_lock(old_refer);
+    
+    ReferUpdateEntity *refer_update_entity = new_refer_update_entity(old_refer, new_refer);
+    /* If Refer changed, update refer. */
+    if (!refer_equals(old_refer, new_refer)) {
+        Row *new_row = define_row(new_refer);
+        assert_true(row_is_visible(new_row), "System error, row not visible. ");
+        update_related_tables_refer(refer_update_entity);
+        free_row(new_row);
+    }
+        
     /* Free memory. */
     free_cursor(new_cursor);
+    free_refer_update_entity(refer_update_entity);
 }
 
+/* Get ConditionNode form WhereClause.. */
 static ConditionNode *get_condition_from_where(WhereClauseNode *where_clause) {
     if (where_clause)
         return where_clause->condition;
@@ -143,29 +166,23 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
         return;
     }
 
+    /* Check out update node. */
+    if (!check_update_node(update_node)) 
+        return;
+
     /* Query with conditon, and update satisfied condition row. */
     SelectResult *select_result = new_select_result(update_node->table_name);
-
     ConditionNode *condition_node = get_condition_from_where(update_node->where_clause);
-
-    /* Before update row, count satisfied row num which help to check. */
-    query_with_condition(condition_node, select_result, count_row, NULL);
-    uint32_t update_rows_size = select_result->row_size;
-
-    /* Check out update node. */
-    if (!check_update_node(update_node, select_result)) 
-        return;
 
     /* Query with update row operation. */
     query_with_condition(condition_node, select_result, update_row, update_node->assignment_set_node);
 
     result->success = true;
-    result->rows = update_rows_size;
-    result->message = format("Successfully updated %d row data.", update_rows_size);
+    result->rows = select_result->row_size;
+    result->message = format("Successfully updated %d row data.", result->rows);
 
-    db_log(SUCCESS, "Successfully updated %d row data.", update_rows_size);
+    db_log(SUCCESS, "Successfully updated %d row data.", result->rows);
     
     select_result->row_size = 0;
     free_select_result(select_result);
-
 }

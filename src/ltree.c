@@ -302,7 +302,7 @@ uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, u
     /* Binary search */
     uint32_t min_index = 0;
     uint32_t max_index = keys_num;
-    while(min_index != max_index) {
+    while (min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
         void* index_key = get_internal_node_key(node, index, key_len);
         if (greater_equal(index_key, key, key_data_type)) {
@@ -314,15 +314,16 @@ uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, u
     return min_index;
 }
 
-
 /* Get internal node child page num. */
 uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, DataType key_data_type) {
-    // binary search
+    /* Binary search */
     uint32_t min_index = 0;
     uint32_t max_index = keys_num;
     while(min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
         void *index_key = get_internal_node_key(node, index, key_len);
+        /* Notice: Greate Equal opreator is really import for store data, 
+         * when keep the prince: always keep visible row lie at the forefront of same key cells. */
         if (greater_equal(index_key, key, key_data_type)) {
             max_index = index;
         } else {
@@ -330,8 +331,7 @@ uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t k
         }
     }
     if (min_index > keys_num) {
-        printf("Tried to access child_num %d > num_keys %d\n", min_index, keys_num);
-        exit(EXIT_FAILURE);
+        db_log(PANIC, "Tried to access child_num %d > num_keys %d. ", min_index, keys_num);
     } else if (min_index == keys_num) {
         return get_internal_node_right_child(node);
     } else {
@@ -340,7 +340,7 @@ uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t k
 }
 
 /* Get leaf node cell index, 
-* Maybe the key not exist in the node,then return the bigger one. */
+ * maybe the key not exist in the node,then return the bigger one. */
 uint32_t get_leaf_node_cell_index(void *node, void *key, uint32_t cell_num, uint32_t key_len, uint32_t value_len, DataType key_data_type) {
     // binary search
     uint32_t min_index = 0;
@@ -348,6 +348,8 @@ uint32_t get_leaf_node_cell_index(void *node, void *key, uint32_t cell_num, uint
     while (min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
         void *key_at_index = get_leaf_node_cell_key(node, index, key_len, value_len);
+        /* Notice: Greate Equal opreator is really import for store data, 
+         * when keep the prince: always keep visible row lie at the forefront of same key cells. */
         if (greater_equal(key_at_index, key, key_data_type)) {
             max_index = index;
         } else {
@@ -357,7 +359,7 @@ uint32_t get_leaf_node_cell_index(void *node, void *key, uint32_t cell_num, uint
     return min_index;
 }
 
-/* get index meta column pointer */
+/* Get index meta column pointer */
 void *get_meta_column_pointer(void *root_node, uint32_t index) {
     return root_node + ROOT_NODE_META_COLUMN_OFFSET + ROOT_NODE_META_COLUMN_SIZE * index;
 }
@@ -713,13 +715,28 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
         } else {
             /* If not exist in the right child node, then exist in the cells. */ 
             uint32_t new_child_max_key_index = get_internal_node_key_index(internal_node, new_child_max_key, keys_num, key_len, primary_key_meta_column->column_type);
-            /* Move the right cells and make space for the new one. */
-            for(int i = keys_num; i > new_child_max_key_index; i--) {
-                uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
-                memcpy(get_internal_node_cell(internal_node, i, key_len), get_internal_node_cell(internal_node, i - 1, key_len), cell_len); 
-            } 
-            set_internal_node_key(internal_node, new_child_max_key_index, new_child_max_key, key_len);
-            set_internal_node_child(internal_node,  new_child_max_key_index, new_child_page_num, key_len);
+
+            /* Check the default key if equals the inserting one. */
+            void *default_key = get_internal_node_key(internal_node, new_child_max_key_index, key_len);
+            if (equal(default_key, new_child_max_key, primary_key_meta_column->column_type)) {
+                /* Move the right cells and make space for the new one. */
+                int i;
+                for (i = keys_num; i > new_child_max_key_index + 1; i--) {
+                    uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
+                    memcpy(get_internal_node_cell(internal_node, i, key_len), get_internal_node_cell(internal_node, i - 1, key_len), cell_len); 
+                } 
+                set_internal_node_key(internal_node, new_child_max_key_index + 1, new_child_max_key, key_len);
+                set_internal_node_child(internal_node,  new_child_max_key_index + 1, new_child_page_num, key_len);
+            } else {
+                /* Move the right cells and make space for the new one. */
+                int i;
+                for (i = keys_num; i > new_child_max_key_index; i--) {
+                    uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
+                    memcpy(get_internal_node_cell(internal_node, i, key_len), get_internal_node_cell(internal_node, i - 1, key_len), cell_len); 
+                } 
+                set_internal_node_key(internal_node, new_child_max_key_index, new_child_max_key, key_len);
+                set_internal_node_child(internal_node,  new_child_max_key_index, new_child_page_num, key_len);
+            }
         }
         /* Increase keys number. */
         set_internal_node_keys_num(internal_node, keys_num + 1);
@@ -728,10 +745,11 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
     }
 }
 
-
 /* When page full, it will generate a new leaf node. 
  * And half high cell in the old leaf will be moved to new leaf node. */
 static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
+
+    db_log(INFO, "leaf split ...");
 
     /* Get cell key, value and cell lenght. */
     uint32_t key_len, value_len, cell_length;
@@ -847,7 +865,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     else {
         if (cursor->cell_num < cell_num) {
             /* Make room for new cell. */
-            uint32_t i;
+            int i;
             for (i = cell_num; i > cursor->cell_num; i--) {
                 /* Movement. */
                 memcpy(get_leaf_node_cell(node, key_len, value_len, i), get_leaf_node_cell(node, key_len, value_len, i - 1), cell_length);

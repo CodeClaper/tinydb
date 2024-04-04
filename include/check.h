@@ -8,7 +8,7 @@ bool check_select_node(SelectNode *select_node);
 bool check_insert_node(InsertNode *insert_node);
 
 /* Check for update node. */
-bool check_update_node(UpdateNode *update_node, SelectResult *select_result);
+bool check_update_node(UpdateNode *update_node);
 
 /* Check for delete node. */
 bool check_delete_node(DeleteNode *delete_node);

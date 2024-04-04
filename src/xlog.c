@@ -121,7 +121,7 @@ void commit_xlog() {
         XLogEntry *head = xtable->list[i];
         if (head->xid == handle->xid) {
             /* Right move forward. */
-            for (j = 0; j < xtable->size - 1; j++) {
+            for (j = i; j < xtable->size - 1; j++) {
                 memcpy(xtable->list + j, xtable->list + j + 1, sizeof(XLogEntry *));
             }
             memset(xtable->list + j, 0, sizeof(XLogEntry *));
@@ -209,5 +209,5 @@ static void reverse_delete(Refer *refer, TransactionHandle *transaction) {
     Cursor *new_cur = define_cursor(table, row->key);
 
     /* Re-insert. */
-    insert_leaf_node_cell(new_cur, row, NULL);
+    insert_leaf_node_cell(new_cur, row);
 }

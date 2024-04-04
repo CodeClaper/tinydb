@@ -13,6 +13,7 @@
 #include "log.h"
 #include "free.h"
 #include "ltree.h"
+#include "trans.h"
 #include "pager.h"
 #include "meta.h"
 #include "index.h"
@@ -26,6 +27,12 @@ static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, 
 static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map);
 
 
+/* Get ConditionNode from WhereClauseNode. */
+static ConditionNode *get_condition_from_where_clause(WhereClauseNode *where_clause) {
+    if (!where_clause)
+        return NULL;
+    return where_clause->condition;
+}
 
 /* Check ident node. */
 static bool check_column_node(ColumnNode *column_node, MetaTable *meta_table) {
@@ -480,7 +487,17 @@ static bool check_table_exp(TableExpNode *table_exp, AliasMap alias_map) {
 
 
 /* Check assignment set node */
-static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Table *table, SelectResult *select_result) { 
+static bool check_assignment_set_node(UpdateNode *update_node, Table *table) { 
+
+    AssignmentSetNode *assignment_set_node = update_node->assignment_set_node;
+    SelectResult *select_result = new_select_result(update_node->table_name);
+    ConditionNode *condition_node = get_condition_from_where_clause(update_node->where_clause);
+    query_with_condition(condition_node, select_result, count_row, NULL);
+
+    bool change_priamry = false;
+    void *new_key = NULL;
+    MetaColumn *primary_meta_column = NULL;
+
     uint32_t i;
     for (i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assignment_node = *(assignment_set_node->assignment_node + i);
@@ -489,39 +506,49 @@ static bool check_assignment_set_node(AssignmentSetNode *assignment_set_node, Ta
         assert_not_null(column_node, "System error, there is no column node in assignment set node.\n");
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
 
+        if (meta_column->is_primary) {
+            change_priamry = true;
+            new_key = get_value_from_value_item_node(value_node, meta_column);
+            primary_meta_column = meta_column;
+        }
+
         /* Check column, check type, check if value valid. */
         if (!check_column_node(column_node, table->meta_table) 
             || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name) 
-            || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column)))
+            || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column))) {
+            free_select_result(select_result);
             return false;
+        }
+    }
 
-        /* It means to change the primary key column and may cause duplicate key. */
-        if (meta_column->is_primary) {
-
-            /* It means to change the primary key column and may cause duplicate key. 
-             * Firstly, multirows absulutely case duplicate.
-             * Secondly, if priamry key is assigned to the old value, there is no influnece.
-             * Thirdly, if priamry key is assigned to different value, should check if key aleady exists, avoid cause duplicate.
-             * */
-            if (select_result->row_size > 1) {
-                db_log(ERROR, "Duaplicate key not allowed.");
+    if (change_priamry) {
+        if (select_result->row_size > 1) {
+            select_result->row_size = 0;
+            free_select_result(select_result);
+            db_log(ERROR, "Duplicate key not allowd. ");
+            return false;
+        }
+        
+        Assert(new_key);
+        Assert(primary_meta_column);
+        if (select_result->row_size == 1) {
+            Cursor *new_cursor = define_cursor(table, new_key);
+            Refer *new_refer = convert_refer(new_cursor);
+            Row *default_row = define_row(new_refer);
+            free_cursor(new_cursor);
+            free_refer(new_refer);
+            if (!row_is_deleted(default_row) && equal(default_row->key, new_key, primary_meta_column->column_type)) {
+                free_row(default_row);
+                select_result->row_size = 0;
+                free_select_result(select_result);
+                db_log(ERROR, "Key '%s' already exists, not allowd duplicate key. ", get_key_str(new_key, primary_meta_column->column_type));
                 return false;
-            }
-            if (select_result->row_size == 1) {
-                void *new_key = get_value_from_value_item_node(value_node, meta_column);
-                Cursor *cursor = define_cursor(table, new_key);
-                uint32_t value_len = calc_table_row_length(table);
-                uint32_t key_len = calc_primary_key_length(table);
-                void *leaf_node = get_page(table->meta_table->table_name, cursor->table->pager, cursor->page_num);
-                void *key = get_leaf_node_cell_key(leaf_node, cursor->cell_num, key_len, value_len);
-                if (equal(key, new_key, meta_column->column_type) && !cursor_is_deleted(cursor)) {
-                    db_log(ERROR, "key '%s' already exists, not allow duplicate key.", get_key_str(key, meta_column->column_type));
-                    return false;
-                }
             }
         }
     }
 
+    select_result->row_size = 0;
+    free_select_result(select_result);
     return true;
 }
 
@@ -549,7 +576,7 @@ static bool check_primary_null(CreateTableNode *create_table_node) {
             return true;
     }
 
-    db_log(ERROR, "Must support primary key.");
+    db_log(ERROR, "Lack primary key definition in table '%s'. ", create_table_node->table_name);
 
     return false;
 }
@@ -569,10 +596,6 @@ static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
     }
 
     return true;
-}
-
-/* Get table alias map. */
-static void define_alias_map(AliasMap alias_map, TableExpNode *table_exp) {
 }
 
 /* Check SelectNode. */
@@ -661,7 +684,7 @@ bool check_insert_node(InsertNode *insert_node) {
 }
 
 /* Check for update node. */
-bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
+bool check_update_node(UpdateNode *update_node) {
     AliasMap alias_map;
     alias_map.size = 1;
     alias_map.map[0].name = update_node->table_name;
@@ -669,7 +692,7 @@ bool check_update_node(UpdateNode *update_node, SelectResult *select_result) {
 
     Table *table = open_table(update_node->table_name);
     return table != NULL 
-           && check_assignment_set_node(update_node->assignment_set_node, table, select_result) 
+           && check_assignment_set_node(update_node, table) 
            && check_where_clause(update_node->where_clause, alias_map);
 }
 
