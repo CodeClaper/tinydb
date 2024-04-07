@@ -36,6 +36,9 @@ static void reverse_insert(Refer *refer, TransactionHandle *transaction);
 /* Reverse delete operation. */
 static void reverse_delete(Refer *refer, TransactionHandle *transaction);
 
+/* Reverse update delete transaction. */
+static void reverse_update_delete(Refer *refer, TransactionHandle *transaction);
+
 /* Initialise XLOG. */
 void init_xlog() {
     xtable = db_malloc(sizeof(XLogTable), SDT_XLOG_TABLE);
@@ -172,6 +175,14 @@ void execute_roll_back() {
             case DDL_DELETE:
                 reverse_delete(current->refer, transaction);
                 break;
+            case DDL_UPDATE_INSERT:
+                reverse_insert(current->refer, transaction);
+                break;
+            case DDL_UPDATE_DELETE:
+                reverse_update_delete(current->refer, transaction);
+                break;
+            default:
+                db_log(PANIC, "Unknown DDLType.");
         }        
     }
 }
@@ -210,4 +221,36 @@ static void reverse_delete(Refer *refer, TransactionHandle *transaction) {
 
     /* Re-insert. */
     insert_leaf_node_cell(new_cur, row);
+}
+
+/* Reverse update delete transaction. */
+static void reverse_update_delete(Refer *refer, TransactionHandle *transaction) {
+
+    Row *row = define_row(refer);
+
+    assert_true(row_is_deleted(row), "System error, row not been deleted.");
+    int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
+    assert_true(row_expired_xid == transaction->xid, "System error, row expired xid not equals transaction xid");
+
+    /* Make the row visible. */
+    *(int64_t *)row->data[row->column_len - 1]->value = 0;
+
+    Table *table = open_table(refer->table_name);
+    
+    /* Repositioning. */
+    Cursor *new_cur = define_cursor(table, row->key);
+
+    Refer *new_ref = convert_refer(new_cur);
+
+    /* Lock update refer. */
+    add_refer_update_lock(new_ref);
+
+    /* Re-insert. */
+    insert_leaf_node_cell(new_cur, row);
+
+    /* Free update refer lock. */
+    free_refer_update_lock(new_ref);
+
+    free_cursor(new_cur);
+    free_refer(new_ref);
 }

@@ -79,8 +79,41 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
     } 
 }
 
+/* Delete row for update */
+static void delete_row_for_update(Row *row, Table *table) {
+    if (row_is_visible(row)) {
+        Cursor *cursor = define_cursor(table, row->key);
+        Refer *refer = convert_refer(cursor);
+        update_transaction_state(row, TR_DELETE);
+        update_row_data(row, cursor);
+        insert_xlog_entry(refer, DDL_UPDATE_DELETE);
+        free_cursor(cursor);
+        free_refer(refer);
+    }
+}
 
-/* Update row */
+/* Insert row for update. */
+static void insert_row_for_update(Row *row, Table *table) {
+
+    Cursor *new_cur = define_cursor(table, row->key);
+    update_transaction_state(row, TR_INSERT);
+
+    /* Insert */
+    insert_leaf_node_cell(new_cur, row);
+
+    Refer *new_ref = convert_refer(new_cur);
+
+    /* Record xlog for insert. */
+    insert_xlog_entry(new_ref, DDL_UPDATE_INSERT);
+
+    free_cursor(new_cur);
+    free_refer(new_ref);
+}
+
+
+/* Update row 
+ * Update operation can be regarded as delete + re-insert operation. 
+ * It makes transaction roll back simpler. */
 static void update_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 
     /* Only update row that is visible for current transaction. */
@@ -93,9 +126,8 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     Refer *old_refer = define_refer(row);
     add_refer_update_lock(old_refer);
 
-    /* Update operation can be regarded as delete + re-insert operation. 
-     * It makes transaction roll back simpler. */
-    delete_row(row, select_result, table, arg);
+    /* Delete row for update. */
+    delete_row_for_update(row, table);
 
     /* For update row funciton, the arg is AssignmentSetNode data type arguement. */
     AssignmentSetNode *assignment_set_node = (AssignmentSetNode *) arg;
@@ -121,15 +153,12 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
    
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     row->key = copy_value(new_key, primary_meta_column->column_type);
-    Cursor *new_cursor = define_cursor(table, new_key);
-    update_transaction_state(row, TR_INSERT);
-    /* Re-insert*/
-    insert_leaf_node_cell(new_cursor, row);
+    
+    /* Insert row for update. */
+    insert_row_for_update(row, table);
 
     /* Recalculate Refer, because afer insert, row refer may be changed. */
     Refer *new_refer = define_refer(row);
-    /* Record xlog for insert. */
-    insert_xlog_entry(new_refer, DDL_INSERT);
 
     /* Free Update refer lock. */
     free_refer_update_lock(old_refer);
@@ -144,7 +173,6 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     }
         
     /* Free memory. */
-    free_cursor(new_cursor);
     free_refer_update_entity(refer_update_entity);
 }
 
