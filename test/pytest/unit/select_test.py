@@ -38,13 +38,14 @@ def test_select_not_exist_condition_filed():
 def test_select_simple_condition():
     ret = client.execute("select id from Students where id = 'S001'");
     assert ret["success"] == True
-    assert ret["data"] == { "id": "S001" }
+    assert ret["rows"] == 1
+    assert ret["data"][0] == { "id": "S001" }
 
 ## test select complex condition
 def test_select_complex_condition1():
     ret = client.execute("select id from Students where age = 8 and address = 'beijing'")
     assert ret["success"] == True
-    assert ret["data"] == { "id": "S001" }
+    assert ret["data"][0] == { "id": "S001" }
 
 ## test select complex condition
 def test_select_complex_condition2():
@@ -111,13 +112,13 @@ def test_select_in_predicate3():
 def test_max_function1():
     ret = client.execute("select max(age) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "max": 10 }
+    assert ret["data"][0] == { "max": 10 }
 
 ## test max function.
 def test_max_function2():
     ret = client.execute("select max(age), id from Students where id in ('S001', 'S002')")
     assert ret["success"] == True
-    assert ret["data"] == { "max": 10, "id": "S001" }
+    assert ret["data"][0] == { "max": 10, "id": "S001" }
 
 ## test max function.
 def test_max_function3():
@@ -128,92 +129,92 @@ def test_max_function3():
 def test_max_function4():
     ret = client.execute("select max(100) from Students where id in ('S001', 'S002')")
     assert ret["success"] == True
-    assert ret["data"] == { "max": 100 }
+    assert ret["data"][0] == { "max": 100 }
 
 ## test max function.
 def test_max_function5():
     ret = client.execute("select max(id) from Students where id in ('S001', 'S002')")
     assert ret["success"] == True
-    assert ret["data"] == { "max": 'S002' }
+    assert ret["data"][0] == { "max": 'S002' }
 
 ## test min function.
 def test_min_function1():
     ret = client.execute("select min(id) from Students where id like 'S%'")
     assert ret["success"] == True
-    assert ret["data"] == { "min": "S001" }
+    assert ret["data"][0] == { "min": "S001" }
 
 ## test min function.
 def test_min_function2():
     ret = client.execute("select min(age), name from Students where id like 'S%'")
     assert ret["success"] == True
-    assert ret["data"] == { "min": 7, "name": "lili" }
+    assert ret["data"][0] == { "min": 7, "name": "lili" }
 
 ## test min function.
 def test_min_function3():
     ret = client.execute("select min(age), max(name) from Students where id like 'S%'")
     assert ret["success"] == True
-    assert ret["data"] == { "min": 7, "max": "zhaoxia" }
+    assert ret["data"][0] == { "min": 7, "max": "zhaoxia" }
 
 ## test min function.
 def test_min_function4():
     ret = client.execute("select min(10) from Students where id like 'S%'")
     assert ret["success"] == True
-    assert ret["data"] == { "min": 10 }
+    assert ret["data"][0] == { "min": 10 }
 
 ## test count function.
 def test_count_function1():
     ret = client.execute("select count(1) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "count": 3 }
+    assert ret["data"][0] == { "count": 3 }
 
 ## test count function.
 def test_count_function2():
     ret = client.execute("select count(10) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "count": 3 }
+    assert ret["data"][0] == { "count": 3 }
 
 ## test count function.
 def test_count_function3():
     ret = client.execute("select count(age) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "count": 3 }
+    assert ret["data"][0] == { "count": 3 }
 
 ## test count function.
 def test_count_function4():
     ret = client.execute("select count(id) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "count": 3 }
+    assert ret["data"][0] == { "count": 3 }
 
 ## test sum function.
 def test_sum_function1():
     ret = client.execute("select sum(id) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "sum": 0 }
+    assert ret["data"][0] == { "sum": 0 }
 
 
 ## test sum function.
 def test_sum_function2():
     ret = client.execute("select sum(age) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "sum": 25 }
+    assert ret["data"][0] == { "sum": 25 }
 
 ## test avg function.
 def test_avg_function1():
     ret = client.execute("select avg(age) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "avg": 8.333333}
+    assert ret["data"][0] == { "avg": 8.333333}
 
 ## test avg function.
 def test_avg_function2():
     ret = client.execute("select avg(id) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "avg": 0.0 }
+    assert ret["data"][0] == { "avg": 0.0 }
 
 ## test calculate selection
 def test_calculate_selection_add1():
     ret = client.execute("select count(id) + count(1) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "add": 6 }
+    assert ret["data"][0] == { "add": 6 }
 
 ## test calculate selection
 def test_calculate_selection_add2():
@@ -225,19 +226,19 @@ def test_calculate_selection_add2():
 def test_calculate_selection_add3():
     ret = client.execute("select age + age from Students where id = 'S001'")
     assert ret["success"] == True
-    assert ret["data"] == { "add": 16 }
+    assert ret["data"][0] == { "add": 16 }
 
 ## test calculate selection
 def test_calculate_selection_sub1():
     ret = client.execute("select sum(age) - sum(class) from Students")
     assert ret["success"] == True
-    assert ret["data"] == { "sub": 15 }
+    assert ret["data"][0] == { "sub": 15 }
 
 ## test calculate selection
 def test_calculate_selection_sub2():
     ret = client.execute("select sum(age) - sum(class) from Students where address = 'beijing'")
     assert ret["success"] == True
-    assert ret["data"] == { "sub": 10 }
+    assert ret["data"][0] == { "sub": 10 }
 
 ## test calculate select not exists column
 def test_calculate_selection_none_column():
