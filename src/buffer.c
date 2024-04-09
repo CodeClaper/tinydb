@@ -68,9 +68,8 @@ static bool save_or_update_table_buffer(Table *table) {
 
     /* Try to get current transaction. */
     TransactionHandle *trans = find_transaction();
-    if (trans == NULL) {
+    if (trans == NULL) 
         return false;
-    }
 
     /* Generate TableBufferEntry. */
     TableBufferEntry *entry = db_malloc(sizeof(TableBufferEntry), SDT_TABLE_BUFFER_ENTRY);

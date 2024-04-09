@@ -18,9 +18,9 @@
 #define MAX_COLUMN_NAME_LEN 30 // max column name length
 #define MAX_TABLE_NAME_LEN 30
 
-#define MAX_INT_VALUE   (1 << 31) - 1
-#define MAX_UINT_VALUE  (1 << 32) - 1
-#define MAX_LONG_VALUE  (1 << 63) - 1
+#define MAX_INT_VALUE   (1<<31) - 1
+#define MAX_UINT_VALUE  (1<<32) - 1
+#define MAX_LONG_VALUE  (1l<<63) - 1
 
 #define CREATED_XID_COLUMN_NAME  "created_xid"
 #define EXPIRED_XID_COLUMN_NAME  "expired_xid"
@@ -30,6 +30,7 @@ typedef enum SysDataType{
     SDT_VOID,
     SDT_STRING,
     SDT_INT,
+    SDT_LONG,
     SDT_BOOL,
     SDT_FLOAT,
     SDT_DOUBLE,
@@ -112,8 +113,9 @@ typedef enum SysDataType{
 
 static char *SYS_DATA_TYPE_NAMES[] = { \
    "VOID",\
-   "STRING",\ 
-   "INT",\ 
+   "STRING",\
+   "INT",\
+   "LONG",\
    "BOOL",\
    "FLOAT",\
    "DOUBLE",\
@@ -748,7 +750,7 @@ typedef struct {
 } Conf;
 
 /* Refer */
-typedef struct Refer{
+typedef struct Refer {
     char table_name[MAX_TABLE_NAME_LEN];
     int32_t page_num;
     int32_t cell_num;

@@ -20,6 +20,15 @@
 #define DEFAULT_TIMESTAMP_LENGTH    20
 #define DEFAULT_REFERENCE_LENGTH    48
 
+#define SYMBOL_LENGTH 11
+#define MAX_BOOL_STR_LENGTH 10
+#define MAX_INT_STR_LENGTH 20
+#define MAX_LONG_STR_LENGTH 30
+#define MAX_FLOAT_STR_LENGTH 50
+#define MAX_DOUBLE_STR_LENGTH 100
+#define MAX_DATE_STR_LENGTH 30
+#define MAX_TIMESTAMP_STR_LENGTH 30
+
 
 /* Column type length */
 uint32_t default_data_len(DataType column_type) {
@@ -53,57 +62,57 @@ uint32_t default_data_len(DataType column_type) {
 char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
     switch(data_type) {
         case T_BOOL: {
-            uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/
+            uint32_t len = strlen(key) + MAX_BOOL_STR_LENGTH; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %s", key, value && (*(bool *)value) ? "true" : "false");
             return s;
         }
         case T_INT: {
-            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            uint32_t len = strlen(key) + MAX_INT_STR_LENGTH; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %d", key, value ? *(int32_t *)value : 0);
             return s;
         }
         case T_LONG: {
-            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            uint32_t len = strlen(key) + MAX_LONG_STR_LENGTH; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %" PRIu64, key, value ? *(int64_t *)value : 0);
             return s;
         }
         case T_CHAR: {
-            uint32_t len = strlen(key) + 10; /*len = key len + symbol len + value len.*/ 
+            uint32_t len = strlen(key) + SYMBOL_LENGTH; /*len = key len + symbol len + value len.*/ 
             char *s = db_malloc(len, SDT_STRING);
-            sprintf(s, "\"%s\": \"%c\"", key, value ? *(char *)value: "null");
+            sprintf(s, "\"%s\": \"%s\"", key, value ? (char *)value: "null");
             return s;
         }
         case T_STRING: {
             if (value) {
-                uint32_t len = strlen(key) + 6 + strlen(value); /*len = key len + symbol len + value len.*/
+                uint32_t len = strlen(key) + SYMBOL_LENGTH + strlen(value); /*len = key len + symbol len + value len.*/
                 char *s = db_malloc(len, SDT_STRING);
-                sprintf(s, "\"%s\": \"%s\"", key, value ? (char *)value : "null");
+                sprintf(s, "\"%s\": \"%s\"", key, (char *)value);
                 return s;
             } else {
-                uint32_t len = strlen(key) + 10 ; /*len = key len + symbol len + value len.*/
+                uint32_t len = strlen(key) + SYMBOL_LENGTH ; /*len = key len + symbol len + value len.*/
                 char *s = db_malloc(len, SDT_STRING);
                 sprintf(s, "\"%s\": \"%s\"", key, "null");
                 return s;
             }
         }
         case T_FLOAT: {
-            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            uint32_t len = strlen(key) + MAX_FLOAT_STR_LENGTH; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %f", key, value ? *(float *)value : 0);
             return s;
         }
         case T_DOUBLE: {
-            uint32_t len = strlen(key) + 50; /*len = key len + symbol len + value len.*/
+            uint32_t len = strlen(key) + MAX_DOUBLE_STR_LENGTH; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
             sprintf(s, "\"%s\": %lf", key, value ? *(double *)value : 0);
             return s;
         }
         case T_TIMESTAMP: {
             char temp[90];
-            uint32_t len = strlen(key) + 30; /*len = key len + symbol len + value len.*/
+            uint32_t len = strlen(key) + MAX_TIMESTAMP_STR_LENGTH; /*len = key len + symbol len + value len.*/
             char *s = db_malloc(len, SDT_STRING);
             if (value) {
                 time_t t = *(time_t *)value;
@@ -117,7 +126,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
         }
         case T_DATE: {
             char temp[90];
-            uint32_t len = strlen(key) + 4 + 100; /*len =key len + symbol len + value len*/
+            uint32_t len = strlen(key) + MAX_TIMESTAMP_STR_LENGTH; /*len =key len + symbol len + value len*/
             char *s = db_malloc(len, SDT_STRING);
             if (value) {
                 time_t t = *(time_t *)value;
@@ -130,7 +139,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
             return s;
         }
         default:
-            db_log(PANIC, "Not support data type");
+            db_log(PANIC, "Not support data type at <get_key_value_pair_str>");
     }
     return NULL;
 }

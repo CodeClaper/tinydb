@@ -340,7 +340,7 @@ static bool include_logic_leaf_node(SelectResult *select_result, Row *row, Condi
 
 /* Check the row predicate for column. */
 static bool check_row_predicate_column(SelectResult *select_result, Row *row, void *value, ColumnNode *column, CompareType type, MetaColumn *meta_column) {
-    Table *table_name = search_table_via_alias(select_result, column->range_variable);
+    char *table_name = search_table_via_alias(select_result, column->range_variable);
     if (select_result->last_derived && table_name == NULL) {
         db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
         return false;
@@ -612,6 +612,7 @@ static Row *generate_row(void *destinct, MetaTable *meta_table) {
 
 /* Define row by refer. */
 Row *define_row(Refer *refer) {
+
     /* Check table exists. */
     Table *table = open_table(refer->table_name);
     if (table == NULL) 
@@ -853,7 +854,7 @@ static KeyValue *get_key_value_from_row(Row *row, char *column_name) {
     int i;
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
-        if (strcmp(column_name, key_value->key) == 0)
+        if (streq(column_name, key_value->key))
             return key_value;
     }
     return NULL;
@@ -2095,7 +2096,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
         SelectResult *current_result = new_select_result(table_ref->table);
 
         /* If use not define tale alias name, use table name as range variable automatically. */
-        current_result->range_variable = table_ref->range_variable ? strdup(table_ref->range_variable) : strdup(table_ref->table);
+        current_result->range_variable = table_ref->range_variable ? db_strdup(table_ref->range_variable) : db_strdup(table_ref->table);
         current_result->derived = result;
         current_result->last_derived = (i == table_ref_set->size - 1);
 

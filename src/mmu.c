@@ -298,7 +298,6 @@ void *sys_malloc(size_t size) {
     return ret;
 }
 
-
 /* System level reallocate. */
 void *sys_realloc(void *ptr, size_t size) {
     void *ret = realloc(ptr, size);

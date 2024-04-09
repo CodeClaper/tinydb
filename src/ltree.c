@@ -1246,8 +1246,8 @@ void *serialize_row_data(Row *row, Table *table) {
     uint32_t row_length = calc_table_row_length(table);
     void *destination = db_malloc(row_length, SDT_VOID);
     MetaTable *meta_table = table->meta_table;
-    uint32_t offset = 0;
-    for(int32_t i = 0; i < meta_table->all_column_size; i++) {
+    uint32_t i, offset = 0;
+    for(i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
         void *value = get_row_value(row, meta_column);
         memcpy(destination + offset, value, meta_column->column_length);

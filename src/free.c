@@ -252,7 +252,8 @@ void free_column_def_node(ColumnDefNode *column_def_node) {
 /* Free column def set node. */
 void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
     if (column_def_set_node) {
-        for(uint32_t i = 0; i < column_def_set_node->size; i++) {
+        uint32_t i;
+        for (i = 0; i < column_def_set_node->size; i++) {
             free_column_def_node(*(column_def_set_node->column_defs + i));
         }
         db_free(column_def_set_node->column_defs);
@@ -263,7 +264,8 @@ void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
 /* Free value item set node. */
 void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
     if (value_item_set_node) {
-        for(uint32_t i = 0; i < value_item_set_node->num; i++) {
+        uint32_t i;
+        for (i = 0; i < value_item_set_node->num; i++) {
             free_value_item_node(*(value_item_set_node->value_item_node + i));
         }
         db_free(value_item_set_node->value_item_node);

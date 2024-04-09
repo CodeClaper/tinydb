@@ -17,7 +17,7 @@
 void *copy_value(void *value, DataType data_type) {
     if (value == NULL)
         return NULL;
-    switch(data_type) {
+    switch (data_type) {
         case T_BOOL: {
             bool *new_val = db_malloc(sizeof(bool), SDT_BOOL);
             memcpy(new_val, value, sizeof(bool));
@@ -29,7 +29,7 @@ void *copy_value(void *value, DataType data_type) {
             return new_val;
         }
         case T_LONG: {
-            int64_t *new_val = db_malloc(sizeof(int64_t), SDT_INT);
+            int64_t *new_val = db_malloc(sizeof(int64_t), SDT_LONG);
             memcpy(new_val, value, sizeof(int64_t));
             return new_val;
         }
@@ -50,15 +50,10 @@ void *copy_value(void *value, DataType data_type) {
             return new_val;
         }
         case T_CHAR:
-        case T_STRING: {
-            char *new_val = db_strdup((char *)value);
-            return new_val;
-        }
-        case T_REFERENCE: {
-            Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
-            memcpy(refer, value, sizeof(Refer));
-            return refer;
-        }
+        case T_STRING: 
+            return db_strdup((char *)value);
+        case T_REFERENCE: 
+            return copy_refer(value);
         default:
             db_log(PANIC, "Not supported data type occurs at <copy_value>.");
     }    
@@ -115,6 +110,7 @@ Row *copy_row_without_reserved(Row *row) {
     /* check */
     if (row == NULL)
         return NULL;
+
     Table *table = open_table(row->table_name);
     if (table == NULL) {
         db_log(ERROR, "Table '%s' not exists. ", row->table_name);
@@ -128,7 +124,7 @@ Row *copy_row_without_reserved(Row *row) {
     row_copy->key = copy_value(row->key, primary_meta_column->column_type);
     row_copy->table_name = db_strdup(row->table_name);
     row_copy->column_len = 0;
-    row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, SDT_STRING);
+    row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, SDT_POINTER);
 
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {

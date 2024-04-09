@@ -19,7 +19,7 @@ static volatile s_lock slock =  SPIN_UN_LOCKED_STATUS;
 /* Initialise table cache. */
 void init_table_cache() {
     if (cache == NULL) {
-        cache = db_malloc(sizeof(TableCache),SDT_TABLE_CACHE);
+        cache = db_malloc(sizeof(TableCache), SDT_TABLE_CACHE);
         cache->table_list = db_malloc(0, SDT_POINTER);
         cache->size = 0;
     }
@@ -28,9 +28,9 @@ void init_table_cache() {
 /* Save or update table cache. */
 void save_or_update_table_cache(Table *table) {
     uint32_t i;
-    for(i = 0; i < cache->size; i++) {
+    for (i = 0; i < cache->size; i++) {
         Table *current = cache->table_list[i] ;
-        if (strcmp(current->meta_table->table_name, table->meta_table->table_name) == 0) {
+        if (streq(current->meta_table->table_name, table->meta_table->table_name)) {
             /* Replace and free old table. */
             cache->table_list[i] = table; 
             /* Notice: maybe table not change, only changed, need to free old. */
@@ -48,9 +48,9 @@ void save_or_update_table_cache(Table *table) {
 /* Find cache table by name, return null if not exist. */
 Table *find_table_cache(char *table_name) {
     uint32_t i;
-    for(i = 0; i < cache->size; i++) {
+    for (i = 0; i < cache->size; i++) {
         Table *current = *(cache->table_list + i);
-        if (strcmp(current->meta_table->table_name, table_name) == 0)
+        if (streq(current->meta_table->table_name, table_name))
             return copy_table(current);
     }
     return NULL;

@@ -21,6 +21,7 @@
 #include "session.h"
 #include "conf.h"
 #include "gc.h"
+#include "refer.h"
 #include "cache.h"
 #include "buffer.h"
 #include "log.h"
@@ -28,7 +29,6 @@
 
 Conf *conf; /* Conf */
 jmp_buf errEnv; /* jmp_buf for error. */
-
 
 /* DB Start. */
 static void db_start() {
@@ -48,6 +48,8 @@ static void db_start() {
     init_table_cache();
     /* Initialise table buffer. */
     init_table_buffer();
+    /* Initialise refer. */
+    init_refer();
     /* Load configuration. */
     conf = load_conf();
 }

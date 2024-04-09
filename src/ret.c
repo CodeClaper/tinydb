@@ -59,7 +59,6 @@ void add_db_result(DBResultSet *result_set, DBResult *result) {
 static void db_send_row(Row *row) {
     /* Handler duplacate key. */
     handle_dulicate_key(row);
-
     db_send("{ ");
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {
@@ -181,7 +180,7 @@ static void handle_dulicate_key(Row *row) {
         KeyValue *first = row->data[i];
         for (j = i + 1; j < row->column_len; j++) {
             KeyValue *second = row->data[j];
-            if (strcmp(second->key, first->key) == 0) {
+            if (streq(second->key, first->key)) {
                 db_free(second->key);
                 second->key = format("%s(%d)", first->key, ++times);
             }
@@ -211,7 +210,8 @@ void db_send_result(DBResult *result) {
 /* Send out db execution result set. */
 void db_send_result_set(DBResultSet *result_set) {
     db_send(result_set->size > 1 ? "[" : "");
-    for (uint32_t i = 0; i < result_set->size; i++) {
+    uint32_t i;
+    for (i = 0; i < result_set->size; i++) {
         db_send_result(result_set->set[i]);
         if (i < result_set->size - 1)
             db_send(", ");

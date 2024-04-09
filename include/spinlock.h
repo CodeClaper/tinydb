@@ -7,10 +7,10 @@
 typedef int s_lock;
 
 /* Init spin lock. */
-void spin_lock_init(s_lock *lock);
+void spin_lock_init(volatile s_lock *lock);
 
 /* Acquire spin lock, if fail, it will block. */
-void spin_lock_acquire(s_lock *lock);
+void spin_lock_acquire(volatile s_lock *lock);
 
 /* Release spin lock. */
-void spin_lock_release(s_lock *lock);
+void spin_lock_release(volatile s_lock *lock);

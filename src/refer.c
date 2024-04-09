@@ -15,7 +15,7 @@
 #include "refer.h"
 #include "data.h"
 #include "table.h"
-#include "mmu.h"'
+#include "mmu.h"
 #include "copy.h"
 #include "free.h"
 #include "select.h"
@@ -35,17 +35,22 @@ typedef struct {
 
 static UpdateReferLockContent *update_refer_lock_content;
 
+/* Check if a refer include in ReferUpdateEntity. */
+static bool include_update_refer_lock(Refer *refer);
+
+/* Init Refer. */
+void init_refer() {
+    update_refer_lock_content = db_malloc(sizeof(UpdateReferLockContent), SDT_VOID);
+    update_refer_lock_content->list = db_malloc(0, SDT_VOID);
+    update_refer_lock_content->size = 0;
+}
 
 /* Add Refer to UpdateReferLockContent. */
 void add_refer_update_lock(Refer *refer) {
-    if (!update_refer_lock_content) {
-        update_refer_lock_content = db_malloc(sizeof(UpdateReferLockContent), SDT_VOID);
-        update_refer_lock_content->list = db_malloc(0, SDT_VOID);
-        update_refer_lock_content->size = 0;
+    if (!include_update_refer_lock(refer)) {
+        update_refer_lock_content->list = db_realloc(update_refer_lock_content->list, sizeof(Refer *) * (update_refer_lock_content->size + 1));
+        update_refer_lock_content->list[update_refer_lock_content->size++] = copy_refer(refer);
     }
-
-    update_refer_lock_content->list = db_realloc(update_refer_lock_content->list, sizeof(Refer *) * (update_refer_lock_content->size + 1));
-    update_refer_lock_content->list[update_refer_lock_content->size++] = copy_refer(refer);
 }
 
 /* Free refer in UpdateReferLockContent. */
@@ -80,7 +85,6 @@ static bool include_update_refer_lock(Refer *refer) {
     }
     return false;
 }
-
 
 /* Generate new Refer. 
  * Note: if page_num is -1 and cell_num is -1 which means refer null. */
