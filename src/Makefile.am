@@ -1,9 +1,9 @@
 BUILT_SOURCES = ../include/data.h
 AM_YFLAGS = -d
 if DEBUG
-AM_CFLAGS = -g -O0 -w -I../include/
+AM_CFLAGS = -g -O0 -I../include/
 else
-AM_CFLAGS = -O2 -w -I../include/
+AM_CFLAGS = -O2 -I../include/
 endif
 LDADD = -lpthread -lm
 
