@@ -26,12 +26,40 @@ static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, 
 /* Check ScalarExpNode. */
 static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map);
 
-
 /* Get ConditionNode from WhereClauseNode. */
 static ConditionNode *get_condition_from_where_clause(WhereClauseNode *where_clause) {
     if (!where_clause)
         return NULL;
     return where_clause->condition;
+}
+
+/* Get value from ValueItemNode. 
+ * Notice, CHAR, DATE, TIMESTAMP use '%s' format to pass value. */
+static void *get_value_from_value_item(ValueItemNode *value_item) {
+    switch (value_item->data_type) {
+        case T_BOOL:
+            return &value_item->value.b_value;
+        case T_CHAR:
+            return value_item->value.s_value;
+        case T_INT:
+            return &value_item->value.i_value;
+        case T_LONG:
+            return &value_item->value.i_value;
+        case T_FLOAT:
+            return &value_item->value.f_value;
+        case T_DOUBLE:
+            return &value_item->value.d_value;
+        case T_STRING:
+            return value_item->value.s_value;
+        case T_DATE:
+            return value_item->value.s_value;
+        case T_TIMESTAMP:
+            return value_item->value.s_value;
+        case T_REFERENCE:
+            return value_item->value.r_value;
+        default:
+            db_log(ERROR, "Not support data type");
+    }
 }
 
 /* Check ident node. */
@@ -168,25 +196,23 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
 
 /* Check value if valid. 
  * Because, CHAR, DATE, TIMESTAMP use '%s' format to pass value, thus check it. */
-static bool check_value_valid(MetaColumn *meta_column, void* value) {
+static bool check_value_valid(MetaColumn *meta_column, ValueItemNode *value_item) {
+    void *value = get_value_from_value_item(value_item);
     switch(meta_column->column_type) {
         case T_BOOL:
         case T_INT:
         case T_LONG:
         case T_FLOAT:
         case T_DOUBLE:
+        case T_REFERENCE: 
             return true;
-        case T_REFERENCE: {
-            free_refer(value);
-            return true;
-        }
         case T_CHAR: {
             if (value == NULL)
                 return false;
             /* For CHAR type, only allow one character. */
             size_t len = strlen((char *) value);
             if (len != 1)
-                db_log(ERROR, "Try to convert value '%s' to CHAR type fail\n", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to CHAR type fail", (char *) value);
             return len == 1;
         }
         case T_STRING: {
@@ -194,7 +220,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
                 return false;
             size_t size = strlen(value);
             if (size > meta_column->column_length)
-                db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'\n", size, meta_column->column_length - 1, meta_column->column_name);
+                db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'. ", size, meta_column->column_length - 1, meta_column->column_name);
             return size <= meta_column->column_length;
         }
         case T_TIMESTAMP: {   
@@ -211,7 +237,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             regfree(&reegex);
 
             if (exe_result == REG_NOMATCH) 
-                db_log(ERROR, "Try to convert value '%s' to timestamp fail\n", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to timestamp value fail.", (char *) value);
 
             return exe_result == REG_NOERROR;
         }
@@ -229,7 +255,7 @@ static bool check_value_valid(MetaColumn *meta_column, void* value) {
             regfree(&reegex);
 
             if (exe_result == REG_NOMATCH) 
-                db_log(ERROR, "Try to convert value '%s' to timestamp fail\n", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to date value fail. ", (char *) value);
 
             return exe_result == REG_NOERROR;
         }
@@ -246,7 +272,7 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (strcmp(meta_column->column_name, column_name) == 0 
             && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name)
-            && check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column))) 
+            && check_value_valid(meta_column, value_item_node))
             return true;
     }
     db_log(ERROR, "Column '%s' data type error.", column_name);
@@ -349,7 +375,7 @@ static bool check_comparison_value(ScalarExpNode *comparion_value, MetaTable *me
     switch (comparion_value->type) {
         case SCALAR_VALUE:
             return if_convert_type(meta_column->column_type, comparion_value->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
-                   && check_value_valid(meta_column, get_value_from_value_item_node(comparion_value->value, meta_column)); // check if value valid
+                   && check_value_valid(meta_column, comparion_value->value); // check if value valid
         case SCALAR_COLUMN:
         case SCALAR_FUNCTION:
         case SCALAR_CALCULATE:
@@ -515,7 +541,7 @@ static bool check_assignment_set_node(UpdateNode *update_node, Table *table) {
         /* Check column, check type, check if value valid. */
         if (!check_column_node(column_node, table->meta_table) 
             || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name) 
-            || !check_value_valid(meta_column, get_value_from_value_item_node(value_node, meta_column))) {
+            || !check_value_valid(meta_column, value_node)) {
             free_select_result(select_result);
             return false;
         }
@@ -642,20 +668,14 @@ bool check_insert_node(InsertNode *insert_node) {
             db_log(ERROR, "Column count doesn't match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
             return false;
         }
-
-        for (uint32_t i = 0; i < meta_table->column_size; i++) {
+        uint32_t i;
+        for (i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
             /* Check data type. */
             if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
                 return false;
-            /* Checke value valid. */
-            void *value = get_value_from_value_item_node(value_item_node, meta_column);
-            if (value == NULL) {
-                db_log(ERROR, "Not allowed null for column '%s' in table '%s'.", meta_column->column_name, meta_column->table_name);
-                return false;
-            }
-            if (!check_value_valid(meta_column, value))
+            if (!check_value_valid(meta_column, value_item_node))
                 return false;
         }
     } else {
@@ -675,7 +695,7 @@ bool check_insert_node(InsertNode *insert_node) {
             if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
                 return false;
             /* Check value valid. */
-            if (!check_value_valid(meta_column, get_value_from_value_item_node(value_item_node, meta_column))) 
+            if (!check_value_valid(meta_column, value_item_node)) 
                 return false;
         }
     }
