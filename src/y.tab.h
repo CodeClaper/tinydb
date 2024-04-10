@@ -218,6 +218,8 @@ union YYSTYPE
    LimitNode                *limit_node;
    TableRefNode             *table_ref_node;
    TableRefSetNode          *table_ref_set_node;
+   QuerySpecNode            *query_spec_node;
+   ValuesOrQuerySpecNode    *values_or_query_spec_node;
    FromClauseNode           *from_clause_node;
    WhereClauseNode          *where_clause_node;
    TableExpNode             *table_exp_node; 
@@ -232,7 +234,7 @@ union YYSTYPE
    Statement                *statement;
    Statements               *statements;
 
-#line 236 "y.tab.h"
+#line 238 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

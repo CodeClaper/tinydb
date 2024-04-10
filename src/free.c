@@ -273,6 +273,30 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
     }
 }
 
+/* Free QuerySpecNode. */
+void free_query_spec_node(QuerySpecNode *query_spec_node) {
+    if (query_spec_node) {
+        free_select_node(query_spec_node->selection);
+        free_table_exp_node(query_spec_node->table_exp);  
+        db_free(query_spec_node);
+    }
+}
+
+/* Free ValuesOrQuerySpecNode. */
+void free_values_or_query_spec_node(ValuesOrQuerySpecNode *value_or_query_spec_node) {
+    if (value_or_query_spec_node) {
+        switch (value_or_query_spec_node->type) {
+            case VQ_VALUES:
+                free_value_item_set_node(value_or_query_spec_node->values);
+                break;
+            case VQ_QUERY_SPEC:
+                free_query_spec_node(value_or_query_spec_node->query_spec);
+                break;
+        }
+        db_free(value_or_query_spec_node);
+    }
+}
+
 /* Free primary key node. */
 void free_primary_key_node(PrimaryKeyNode *primary_key_node) {
     if (primary_key_node != NULL) {
@@ -516,7 +540,7 @@ void free_insert_node(InsertNode *insert_node) {
             db_free(insert_node->table_name);
         if (!insert_node->all_column)
             free_column_set_node(insert_node->columns_set_node);
-        free_value_item_set_node(insert_node->value_item_set_node);
+        free_values_or_query_spec_node(insert_node->values_or_query_spec);
         db_free(insert_node);
     }
 }
@@ -614,7 +638,8 @@ void free_statement(Statement *statement) {
 /* Free statements. */
 void free_statements(Statements *statements) {
     if (statements) {
-        for (uint32_t i = 0; i < statements->size; i++) {
+        uint32_t i;
+        for (i = 0; i < statements->size; i++) {
             free_statement(statements->list[i]);
         }
         db_free(statements->list);

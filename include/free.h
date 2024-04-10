@@ -81,6 +81,9 @@ void free_select_items_node(SelectItemsNode *select_items_node);
 /* Free condition node. */
 void free_condition_node(ConditionNode *condition_node);
 
+/* Free TableExpNode. */
+void free_table_exp_node(TableExpNode *table_exp_node);
+
 /* Free SelectionNode. */
 void free_selection_node(SelectionNode *selection_node);
 

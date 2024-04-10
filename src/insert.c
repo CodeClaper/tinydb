@@ -47,11 +47,6 @@ static uint32_t get_insert_column_size(InsertNode *insert_node, MetaTable *meta_
         return insert_node->columns_set_node->size;
 }
 
-/* Get value number. */
-static uint32_t get_value_size(InsertNode *insert_node) {
-    return insert_node->value_item_set_node->num;
-}
-
 /* Get column name. */
 static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable *meta_table) {
     if (insert_node->all_column)
@@ -75,7 +70,7 @@ static int get_column_index(InsertNode *insert_node, char *column_name) {
 static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
 
     /* Get value item node at index. */
-    ValueItemNode* value_item_node = insert_node->value_item_set_node->value_item_node[index];
+    ValueItemNode* value_item_node = insert_node->values_or_query_spec->values->value_item_node[index];
 
     /* Different data type column, has diffrenet way to get value.
      * Data type CHAR, STRING, DATE, TIMESTAMP both use '%s' format to pass value.
@@ -167,12 +162,20 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     }
 }
 
+/* Fake ValuesOrQuerySpecNode for VALUES type. */
+static ValuesOrQuerySpecNode *fake_values_or_query_spec_node(ValueItemSetNode *value_item_set_node) {
+    ValuesOrQuerySpecNode *values_or_query_spec = db_malloc(sizeof(ValuesOrQuerySpecNode), SDT_VALUES_OR_QUERY_SPECE_NODE);
+    values_or_query_spec->type = VQ_VALUES;
+    values_or_query_spec->values = copy_value_item_set_node(value_item_set_node);
+    return values_or_query_spec;
+}
+
 /* Make a fake InsertNode. */
 InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node) {
     InsertNode *insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
     insert_node->table_name = db_strdup(table_name);
     insert_node->all_column = true;
-    insert_node->value_item_set_node = copy_value_item_set_node(value_item_set_node);
+    insert_node->values_or_query_spec = fake_values_or_query_spec_node(value_item_set_node);
     return insert_node;
 }
 

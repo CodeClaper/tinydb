@@ -145,7 +145,6 @@ AssignmentNode *make_assignment_node() {
     return assignment_node;
 }
 
-
 /* make an assignment set node. */
 AssignmentSetNode *make_assignment_set_node() {
     AssignmentSetNode *assignment_set_node = db_malloc(sizeof(AssignmentSetNode), SDT_ASSIGNMENT_SET_NODE);
@@ -224,6 +223,18 @@ WhereClauseNode *make_where_clause_node() {
 TableExpNode *make_table_exp_node() {
     TableExpNode *table_exp_node = db_malloc(sizeof(TableExpNode), SDT_TABLE_EXP_NODE);
     return table_exp_node;
+}
+
+/* Make a QuerySpecNode. */
+QuerySpecNode *make_query_spec_node() {
+    QuerySpecNode *node = db_malloc(sizeof(QuerySpecNode), SDT_QUERY_SPEC_NODE);
+    return node;
+}
+
+/* Make a ValuesOrQuerySpecNode. */
+ValuesOrQuerySpecNode *make_values_or_query_spec_node() {
+    ValuesOrQuerySpecNode *node = db_malloc(sizeof(ValuesOrQuerySpecNode), SDT_VALUES_OR_QUERY_SPECE_NODE);
+    return node;
 }
 
 /* make a select node. */

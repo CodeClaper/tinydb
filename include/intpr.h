@@ -42,8 +42,6 @@ WhereClauseNode *make_where_clause_node();
 /* Make a TableExpNode. */
 TableExpNode *make_table_exp_node();
 
-/* Make a select node. */
-SelectNode *make_select_node();
 
 /* Make a column node.  */
 ColumnNode *make_column_node();
@@ -113,6 +111,15 @@ void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode
 
 /* make a primary key node. */
 PrimaryKeyNode *make_primary_key_node();
+
+/* Make a QuerySpecNode. */
+QuerySpecNode *make_query_spec_node();
+
+/* Make a ValuesOrQuerySpecNode. */
+ValuesOrQuerySpecNode *make_values_or_query_spec_node();
+
+/* Make a select node. */
+SelectNode *make_select_node();
 
 /* make an insert node. */
 InsertNode *make_insert_node();

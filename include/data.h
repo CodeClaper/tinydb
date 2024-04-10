@@ -48,9 +48,11 @@ typedef enum SysDataType{
     SDT_COLUMN_DEF_NODE,
     SDT_COLUMN_DEF_SET_NODE,
     SDT_PRIMARY_KEY_NODE,
+    SDT_VALUES_OR_QUERY_SPECE_NODE,
     SDT_REFER_VALUE,
     SDT_VALUE_ITEM_NODE,
     SDT_VALUE_ITEM_SET_NODE,
+    SDT_QUERY_SPEC_NODE,
     SDT_ASSIGNMENT_NODE,
     SDT_ASSIGNMENT_SET_NODE,
     SDT_CONDITION_NODE,
@@ -133,9 +135,11 @@ static char *SYS_DATA_TYPE_NAMES[] = { \
    "COLUMN_DEF_NODE",\
    "COLUMN_DEF_SET_NODE",\
    "PRIMARY_KEY_NODE",\
+   "VALUES_OR_QUERY_SPEC_NODE",\
    "REFER_VALUE",\
    "VALUE_ITEM_NODE",\
    "VALUE_ITEM_SET_NODE",\
+   "QUERY_SPEC_NODE",\
    "ASSIGNMENT_NODE",\
    "ASSIGNMENT_SET_NODE",\
    "CONDITION_NODE",\
@@ -396,6 +400,19 @@ typedef struct {
     ColumnNode *column;
 } PrimaryKeyNode;
 
+/* ValuesOrQuerySpecType */
+typedef enum ValuesOrQuerySpecType {
+    VQ_VALUES,
+    VQ_QUERY_SPEC
+} ValuesOrQuerySpecType;
+
+/* ValuesOrQuerySpecNode. */
+typedef struct {
+    ValuesOrQuerySpecType type;
+    struct ValueItemSetNode *values;
+    struct QuerySpecNode *query_spec;
+} ValuesOrQuerySpecNode;
+
 /* ReferFetchType */
 typedef enum ReferFetchType {
     DIRECTLY = 1,
@@ -439,6 +456,12 @@ typedef struct ValueItemSetNode {
     ValueItemNode **value_item_node;
     uint32_t num;
 } ValueItemSetNode;
+
+/* QuerySpecNode. */
+typedef struct QuerySpecNode {
+    struct SelectionNode *selection;
+    struct TableExpNode *table_exp;
+} QuerySpecNode;
 
 /* AssignmentNode */
 typedef struct {
@@ -553,7 +576,7 @@ typedef struct {
     bool all_column;
     char *table_name;
     ColumnSetNode *columns_set_node;
-    ValueItemSetNode *value_item_set_node;
+    ValuesOrQuerySpecNode *values_or_query_spec;
 } InsertNode;
 
 /* UpdateNode */

@@ -45,6 +45,8 @@ int yylex();
    LimitNode                *limit_node;
    TableRefNode             *table_ref_node;
    TableRefSetNode          *table_ref_set_node;
+   QuerySpecNode            *query_spec_node;
+   ValuesOrQuerySpecNode    *values_or_query_spec_node;
    FromClauseNode           *from_clause_node;
    WhereClauseNode          *where_clause_node;
    TableExpNode             *table_exp_node; 
@@ -122,6 +124,8 @@ int yylex();
 %type <calculate_node> calculate
 %type <table_ref_node> table_ref
 %type <table_ref_set_node> table_ref_commalist
+%type <query_spec_node> query_spec
+%type <values_or_query_spec_node> values_or_query_spec
 %type <from_clause_node> from_clause
 %type <where_clause_node> where_clause
 %type <where_clause_node> opt_where_clause
@@ -236,6 +240,7 @@ commit_transaction_statement:
 rollback_transaction_statement:
     ROLLBACK end
     ;
+/* Create table statement. */
 create_table_statement: 
     CREATE TABLE table '(' column_defs ')' end
         {
@@ -253,6 +258,7 @@ create_table_statement:
             $$ = create_table_node;
         }
     ;
+/* Drop table Statement */
 drop_table_statement:
     DROP TABLE table end
         {
@@ -261,6 +267,7 @@ drop_table_statement:
             $$ = drop_table_node;
         }
     ;
+/* Select Statement */
 select_statement:
     SELECT selection table_exp end
         {
@@ -270,25 +277,27 @@ select_statement:
             $$ = select_node;
         }
     ;
+/* Insert Statement */
 insert_statement: 
-    INSERT INTO table VALUES '(' value_items ')' end
+    INSERT INTO table values_or_query_spec end
         {
             InsertNode *node = make_insert_node();
             node->all_column = true;
             node->table_name = $3;
-            node->value_item_set_node = $6;
+            node->values_or_query_spec = $4;
             $$ = node;
         }
-    | INSERT INTO table '(' columns ')' VALUES '(' value_items ')' end
+    | INSERT INTO table '(' columns ')' values_or_query_spec end
         {
             InsertNode *node = make_insert_node();
             node->all_column = false;
             node->table_name = $3;
             node->columns_set_node = $5;
-            node->value_item_set_node = $9;
+            node->values_or_query_spec = $7;
             $$ = node;
         }
     ;
+/* Update Statement */
 update_statement:
     UPDATE table SET assignments opt_where_clause end
         {
@@ -299,6 +308,7 @@ update_statement:
             $$ = node;
         }
     ;
+/* Delete Statement. */
 delete_statement:
     DELETE FROM table end
         {
@@ -314,6 +324,7 @@ delete_statement:
             $$ = node;
         }
     ;
+/* Describe Statement. */
 describe_statement:
     DESCRIBE table end
         {
@@ -322,6 +333,7 @@ describe_statement:
             $$ = node;
         }
     ;
+/* Show Statement. */
 show_statement:
     SHOW TABLES end
         {
@@ -431,6 +443,31 @@ where_clause:
             WhereClauseNode *where_clause_node = make_where_clause_node();
             where_clause_node->condition = $2;
             $$ = where_clause_node;
+        }
+    ;
+values_or_query_spec:
+    VALUES '(' value_items')'
+        {
+            ValuesOrQuerySpecNode *values_or_query_spec = make_values_or_query_spec_node();
+            values_or_query_spec->type = VQ_VALUES;
+            values_or_query_spec->values = $3;
+            $$ = values_or_query_spec;
+        }
+    | query_spec 
+        {
+            ValuesOrQuerySpecNode *values_or_query_spec = make_values_or_query_spec_node();
+            values_or_query_spec->type = VQ_QUERY_SPEC;
+            values_or_query_spec->query_spec = $1;
+            $$ = values_or_query_spec;
+        }
+    ;
+query_spec:
+    SELECT selection table_exp
+        {
+            QuerySpecNode *query_spec = make_query_spec_node();
+            query_spec->selection = $2;
+            query_spec->table_exp = $3;
+            $$ = query_spec;
         }
     ;
 scalar_exp_commalist:

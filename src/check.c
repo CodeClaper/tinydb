@@ -270,7 +270,7 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (strcmp(meta_column->column_name, column_name) == 0 
+        if (streq(meta_column->column_name, column_name) 
             && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name)
             && check_value_valid(meta_column, value_item_node))
             return true;
@@ -624,6 +624,65 @@ static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
     return true;
 }
 
+/* Check InsertNode for VALUES. */
+static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNode *value_item_set_node) {
+    /* Check table exist.*/
+    Table *table = open_table(insert_node->table_name);
+    if (table == NULL)
+        return false;
+
+    MetaTable *meta_table = table->meta_table;
+
+    /* According to all column flag, determine the number of column set. */
+    if (insert_node->all_column) {
+        
+        /* Check column number equals the insert values number. */
+        if (meta_table->column_size != value_item_set_node->num) {
+            db_log(ERROR, "Column count doesn`t match value count: %d != %d.", meta_table->column_size, value_item_set_node->num);
+            return false;
+        }
+
+        uint32_t i;
+        for (i = 0; i < meta_table->column_size; i++) {
+            MetaColumn *meta_column = meta_table->meta_column[i];
+            ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
+            /* Check data type. */
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
+                return false;
+            if (!check_value_valid(meta_column, value_item_node))
+                return false;
+        }
+    } else {
+
+        /* Check column number equals the insert values number. */
+        if (insert_node->columns_set_node->size  != value_item_set_node->num) {
+            db_log(ERROR, "Column count doesn`t match value count\n");
+            return false;
+        }
+
+        uint32_t i;
+        for (i = 0; i < insert_node->columns_set_node->size; i++) {
+            ColumnNode *column_node = insert_node->columns_set_node->columns[i];
+            ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
+            /* Check data type. */
+            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
+                return false;
+            /* Check value valid. */
+            if (!check_value_valid(meta_column, value_item_node)) 
+                return false;
+        }
+    }
+
+    return true;
+}
+
+/* Check InsertNode for QUERY_SPEC. */
+static bool check_insert_node_for_query_spec(InsertNode *insert_node, QuerySpecNode *query_spec) {
+    db_log(ERROR, "Not support query spec in insert statement.");
+    return false;
+}
+
 /* Check SelectNode. */
 bool check_select_node(SelectNode *select_node) {
     AliasMap alias_map;
@@ -652,56 +711,13 @@ bool check_select_node(SelectNode *select_node) {
 
 /* Check insert node. */
 bool check_insert_node(InsertNode *insert_node) {
-
-    /* Check table exist.*/
-    Table *table = open_table(insert_node->table_name);
-    if (table == NULL)
-        return false;
-
-    MetaTable *meta_table = table->meta_table;
-    
-    /* According to all column flag, determine the number of column set. */
-    if (insert_node->all_column) {
-        
-        /* Check column number equals the insert values number. */
-        if (meta_table->column_size != insert_node->value_item_set_node->num) {
-            db_log(ERROR, "Column count doesn`t match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
-            return false;
-        }
-
-        uint32_t i;
-        for (i = 0; i < meta_table->column_size; i++) {
-            MetaColumn *meta_column = meta_table->meta_column[i];
-            ValueItemNode *value_item_node = insert_node->value_item_set_node->value_item_node[i];
-            /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
-                return false;
-            if (!check_value_valid(meta_column, value_item_node))
-                return false;
-        }
-    } else {
-
-        /* Check column number equals the insert values number. */
-        if (insert_node->columns_set_node->size  != insert_node->value_item_set_node->num) {
-            db_log(ERROR, "Column count doesn`t match value count\n");
-            return false;
-        }
-
-        uint32_t i;
-        for (i = 0; i < insert_node->columns_set_node->size; i++) {
-            ColumnNode *column_node = insert_node->columns_set_node->columns[i];
-            ValueItemNode *value_item_node = insert_node->value_item_set_node->value_item_node[i];
-            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-            /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
-                return false;
-            /* Check value valid. */
-            if (!check_value_valid(meta_column, value_item_node)) 
-                return false;
-        }
+    ValuesOrQuerySpecNode *values_or_query_spec = insert_node->values_or_query_spec;
+    switch (values_or_query_spec->type) {
+        case VQ_VALUES:
+            return check_insert_node_for_values(insert_node, values_or_query_spec->values);
+        case VQ_QUERY_SPEC:
+            return check_insert_node_for_query_spec(insert_node, values_or_query_spec->query_spec);
     }
-
-    return true;
 }
 
 /* Check for update node. */
