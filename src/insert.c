@@ -1,3 +1,8 @@
+/*
+ *================================== Insert Statement Module ===================================
+ *   
+ *==============================================================================================
+ * */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -29,9 +34,6 @@
 #include "log.h"
 #include "ret.h"
 
-
-/* Make a fake InsertNode. */
-static InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node);
 /* Make a fake QueryParam. */
 static QueryParam *fake_query_param(char *table_name, ConditionNode *condition_node);
 /* Make a fake SelectItemsNode. */
@@ -70,7 +72,7 @@ static int get_column_index(InsertNode *insert_node, char *column_name) {
 }
 
 /* Get value in insert node to assign column at index. */
-static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column, DBResult *result) {
+static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
 
     /* Get value item node at index. */
     ValueItemNode* value_item_node = insert_node->value_item_set_node->value_item_node[index];
@@ -152,7 +154,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             switch (value_item_node->value.r_value->type) {
                 case DIRECTLY: {
                     InsertNode *insert_node = fake_insert_node(meta_column->table_name, value_item_node->value.r_value->nest_value_item_set);
-                    Refer *refer = exec_insert_statement(insert_node, result);
+                    Refer *refer = exec_insert_statement(insert_node);
                     free_insert_node(insert_node);
                     return refer;
                 }
@@ -166,7 +168,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 }
 
 /* Make a fake InsertNode. */
-static InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node) {
+InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node) {
     InsertNode *insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
     insert_node->table_name = db_strdup(table_name);
     insert_node->all_column = true;
@@ -175,7 +177,7 @@ static InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_it
 }
 
 /* Generate insert row. */
-static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
+static Row *generate_insert_row(InsertNode *insert_node) {
 
     Row *row = db_malloc(sizeof(Row), SDT_ROW);
 
@@ -207,10 +209,10 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
         key_value->data_type = meta_column->column_type;
 
         if (insert_node->all_column)
-            key_value->value = get_column_value(insert_node, i, meta_column, result);
+            key_value->value = get_column_value(insert_node, i, meta_column);
         else {
             int index = get_column_index(insert_node, key_value->key);          
-            key_value->value = get_column_value(insert_node, index, meta_column, result);
+            key_value->value = get_column_value(insert_node, index, meta_column);
         }
 
         /* Value of KeyValue may be null when it is Refer. */
@@ -231,7 +233,7 @@ static Row *generate_insert_row(InsertNode *insert_node, DBResult *result) {
 /* Execute insert statement. 
  * If successfully, return the Refer which maybe used by other table.
  * If fail, return NULL. */
-Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
+Refer *exec_insert_statement(InsertNode *insert_node) {
     
     /* Check if table exists. */
     Table *table = open_table(insert_node->table_name);
@@ -244,7 +246,7 @@ Refer *exec_insert_statement(InsertNode *insert_node, DBResult *result) {
     if (!check_insert_node(insert_node)) 
         return NULL;
 
-    Row *row = generate_insert_row(insert_node, result);
+    Row *row = generate_insert_row(insert_node);
     if (row == NULL) 
         return NULL;
 

@@ -212,7 +212,7 @@ static bool check_value_valid(MetaColumn *meta_column, ValueItemNode *value_item
             /* For CHAR type, only allow one character. */
             size_t len = strlen((char *) value);
             if (len != 1)
-                db_log(ERROR, "Try to convert value '%s' to CHAR type fail", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to char value type fail.", (char *) value);
             return len == 1;
         }
         case T_STRING: {
@@ -255,7 +255,7 @@ static bool check_value_valid(MetaColumn *meta_column, ValueItemNode *value_item
             regfree(&reegex);
 
             if (exe_result == REG_NOMATCH) 
-                db_log(ERROR, "Try to convert value '%s' to date value fail. ", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to date value fail.", (char *) value);
 
             return exe_result == REG_NOERROR;
         }
@@ -665,7 +665,7 @@ bool check_insert_node(InsertNode *insert_node) {
         
         /* Check column number equals the insert values number. */
         if (meta_table->column_size != insert_node->value_item_set_node->num) {
-            db_log(ERROR, "Column count doesn't match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
+            db_log(ERROR, "Column count doesn`t match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
             return false;
         }
         uint32_t i;
@@ -682,7 +682,7 @@ bool check_insert_node(InsertNode *insert_node) {
 
         /* Check column number equals the insert values number. */
         if (insert_node->columns_set_node->size  != insert_node->value_item_set_node->num) {
-            db_log(ERROR, "Column count doesn't match value count\n");
+            db_log(ERROR, "Column count doesn`t match value count\n");
             return false;
         }
 
