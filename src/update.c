@@ -7,6 +7,7 @@
 #include "meta.h"
 #include "select.h"
 #include "delete.h"
+#include "insert.h"
 #include "copy.h"
 #include "compare.h"
 #include "table.h"
@@ -24,12 +25,12 @@
 #include "ret.h"
 #include "log.h"
 
-
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node) {
-    for (uint32_t i = 0; i < row->column_len; i++) {
+    uint32_t i;
+    for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
-        if (strcmp(key_value->key, assign_node->column->column_name) == 0) {
+        if (streq(key_value->key, assign_node->column->column_name)) {
             ValueItemNode *value_item = assign_node->value;
             /* Free old value. */
             free_value(key_value->value, key_value->data_type);
@@ -71,9 +72,26 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     key_value->value = db_strdup(value_item->value.s_value);
                     break;
                 }
-                case T_REFERENCE:
-                    db_log(PANIC, "Not implement yet.");
+                case T_REFERENCE: {
+                    ReferValue *refer_value = value_item->value.r_value;
+                    Table *table = open_table(row->table_name);
+                    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
+                    switch (refer_value->type) {
+                        case DIRECTLY: {
+                            InsertNode *insert_node = fake_insert_node(meta_column->table_name, refer_value->nest_value_item_set);
+                            Refer *refer = exec_insert_statement(insert_node);
+                            free_insert_node(insert_node);
+                            key_value->value = refer;
+                            break;
+                        }
+                        case INDIRECTLY: {
+                            Refer *refer = fetch_refer(meta_column, refer_value->condition);
+                            key_value->value = refer;
+                            break;
+                        }
+                    }
                     break;
+                }
             }    
         }
     } 

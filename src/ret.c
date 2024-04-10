@@ -1,9 +1,9 @@
 /*
  * =============================================== Result Module ===============================================================
  * DBResult is the json format that db finally output, include flows:
- * [success]  Whether execution result successful or fail.
- * [message]  Output message.
- * [data]     Query data.
+ * [success]  Whether execution result is successful or unsuccessful, its value is true or false.
+ * [message]  Output message to client.
+ * [data]     Query data, only used when select statement.
  * [rows]     The number of rows affected.
  * [duration] The execution time.
  * =============================================================================================================================
@@ -28,6 +28,9 @@
 
 /* Handle duplicate Key. */
 static void handle_dulicate_key(Row *row);
+
+/* Send out row. */
+static void db_send_row(Row *row);
 
 /* Generate new db result. */
 DBResult *new_db_result() {
@@ -55,6 +58,17 @@ void add_db_result(DBResultSet *result_set, DBResult *result) {
     result_set->set[result_set->size++] = result;
 }
 
+/* Send out subrow. */
+static void db_send_subrow(Row *subrow) {
+    if (subrow == NULL || row_is_deleted(subrow)) 
+        db_send("null");
+    else {
+        Row *slimrow = copy_row_without_reserved(subrow);
+        db_send_row(slimrow);
+        free_row(slimrow);
+    }
+}
+
 /* Send out row. */
 static void db_send_row(Row *row) {
     /* Handler duplacate key. */
@@ -69,24 +83,15 @@ static void db_send_row(Row *row) {
                 db_send("\"%s\": ", key_value->key);
                 Refer *refer = (Refer *)key_value->value;
                 assert_not_null(refer, "Try to get Reference type value fail.\n");
-                Row *sub_row = define_row(refer);
-                if (sub_row == NULL || row_is_deleted(sub_row)) 
-                    db_send("null");
-                else {
-                    Row *slim_row = copy_row_without_reserved(sub_row);
-                    db_send_row(slim_row);
-                    free_row(slim_row);
-                }
-                free_row(sub_row);
+                Row *subrow = define_row(refer);
+                db_send_subrow(subrow);
+                free_row(subrow);
                 break;
             }
             case T_ROW: {
                 db_send("\"%s\": ", key_value->key);
-                Row *sub_row = key_value->value;
-                if (sub_row == NULL) 
-                    db_send("null");
-                else 
-                    db_send_row(sub_row);
+                Row *subrow = key_value->value;
+                db_send_subrow(subrow);
                 break;
             }
             default: {
@@ -194,12 +199,14 @@ void db_send_result(DBResult *result) {
         case SELECT_STMT:
             db_send_select_result(result);
             break;
+        case INSERT_STMT:
+        case DELETE_STMT:
+        case UPDATE_STMT:
+            db_send_nondata_rows_result(result);
+            break;
         case SHOW_STMT:
         case DESCRIBE_STMT:
             db_send_map_list(result);
-            break;
-        case DELETE_STMT:
-            db_send_nondata_rows_result(result);
             break;
         default:
             db_send_nondata_result(result);

@@ -66,7 +66,7 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
 static void statement_insert(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == INSERT_STMT, "System error, insert statement type error.\n");
     auto_begin_transaction();
-    Refer *refer = exec_insert_statement(stmt->insert_node, result);
+    Refer *refer = exec_insert_statement(stmt->insert_node);
     if (refer != NULL) {
         result->success = true;
         result->rows = 1;

@@ -176,9 +176,8 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
                 case DIRECTLY:
                     db_log(WARN, "Not support directly fetch refer when query.");
                     return make_null_refer();
-                case INDIRECTLY: {
+                case INDIRECTLY: 
                     return fetch_refer(meta_column, value_item_node->value.r_value->condition);
-                }
             }
             break;
         }
@@ -848,8 +847,8 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
     select_result->rows[select_result->row_size++] = copy_row_without_reserved(row);
 }
 
-/* Get KeyValue from a Row.
- * return NULL if not found. */
+/* Get KeyValue from a Row by column name.
+ * Return NULL if not found KeyValue match the column name. */
 static KeyValue *get_key_value_from_row(Row *row, char *column_name) {
     int i;
     for (i = 0; i < row->column_len; i++) {

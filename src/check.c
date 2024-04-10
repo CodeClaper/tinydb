@@ -610,7 +610,7 @@ static bool check_primary_null(CreateTableNode *create_table_node) {
 /* Check if exists duplicate column name. */
 static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
     uint32_t i, j;
-    for(i = 0; i < column_def_set_node->size; i++) {
+    for (i = 0; i < column_def_set_node->size; i++) {
         ColumnDefNode *column_def_node1 = column_def_set_node->column_defs[i];
         for(j = 0; j < column_def_set_node->size; j++) {
             ColumnDefNode *column_def_node2 = column_def_set_node->column_defs[j];
@@ -668,10 +668,11 @@ bool check_insert_node(InsertNode *insert_node) {
             db_log(ERROR, "Column count doesn`t match value count: %d != %d.", meta_table->column_size, insert_node->value_item_set_node->num);
             return false;
         }
+
         uint32_t i;
         for (i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
-            ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
+            ValueItemNode *value_item_node = insert_node->value_item_set_node->value_item_node[i];
             /* Check data type. */
             if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
                 return false;
@@ -688,8 +689,8 @@ bool check_insert_node(InsertNode *insert_node) {
 
         uint32_t i;
         for (i = 0; i < insert_node->columns_set_node->size; i++) {
-            ColumnNode *column_node = *(insert_node->columns_set_node->columns + i);
-            ValueItemNode *value_item_node = *(insert_node->value_item_set_node->value_item_node + i);
+            ColumnNode *column_node = insert_node->columns_set_node->columns[i];
+            ValueItemNode *value_item_node = insert_node->value_item_set_node->value_item_node[i];
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             /* Check data type. */
             if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
@@ -731,8 +732,8 @@ bool check_delete_node(DeleteNode *delete_node) {
 /* Check for create table node. */
 bool check_create_table_node(CreateTableNode *create_table_node) {
     return check_duplicate_table(create_table_node->table_name)
-           && check_duplicate_column_name(create_table_node->column_def_set_node)
-           && check_primary_null(create_table_node);
+        && check_duplicate_column_name(create_table_node->column_def_set_node)
+        && check_primary_null(create_table_node);
 }
 
 /* Check if table uses refer. */
