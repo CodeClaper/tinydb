@@ -187,12 +187,12 @@ union YYSTYPE
 {
 #line 16 "sql.y"
 
-   char                     *s_value;
-   int64_t                  i_value;
-   float                    f_value;
-   bool                     b_value;
+   char                     *strVal;
+   int64_t                  intVal;
+   float                    floatVal;
+   bool                     boolVal;
    char                     *keyword;
-   ReferValue               *r_value;
+   ReferValue               *referVal;
    DataType                 data_type;
    CompareType              compare_type;
    ColumnDefNode            *column_def_node;

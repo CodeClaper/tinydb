@@ -71,12 +71,12 @@ avg                     return AVG;
 ref                     return REF;
 true                    return TRUE;
 false                   return FALSE;
-[a-zA-Z][a-zA-Z0-9_]*   { yylval.s_value = db_strdup(yytext); return IDENTIFIER;} 
-[0-9]+                  { yylval.i_value = atoi(yytext); return INTVALUE;}
+[a-zA-Z][a-zA-Z0-9_]*   { yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
+[0-9]+                  { yylval.intVal = atoi(yytext); return INTVALUE;}
 [0-9]+	|
 [0-9]+"."[0-9]* |
-"."[0-9]*	            { yylval.f_value = atof(yytext); return FLOATVALUE; }
-'[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.s_value = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.s_value =  strdup(str);} return STRINGVALUE;} 
+"."[0-9]*	            { yylval.floatVal = atof(yytext); return FLOATVALUE; }
+'[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.strVal = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.strVal =  strdup(str);} return STRINGVALUE;} 
 '[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
 [ \t]           /* igonore space */

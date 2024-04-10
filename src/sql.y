@@ -14,12 +14,12 @@ int yylex();
 %} 
 %union 
 {
-   char                     *s_value;
-   int64_t                  i_value;
-   float                    f_value;
-   bool                     b_value;
+   char                     *strVal;
+   int64_t                  intVal;
+   float                    floatVal;
+   bool                     boolVal;
    char                     *keyword;
-   ReferValue               *r_value;
+   ReferValue               *referVal;
    DataType                 data_type;
    CompareType              compare_type;
    ColumnDefNode            *column_def_node;
@@ -88,14 +88,14 @@ int yylex();
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> AND OR NOT
 %token <keyword> SYSTEM CONFIG MEMORY
-%token <s_value> IDENTIFIER
-%token <i_value> INTVALUE
-%token <f_value> FLOATVALUE
-%token <s_value> STRINGVALUE
-%type <b_value> BOOLVALUE
-%type <r_value> REFERVALUE
-%type <s_value> table
-%type <s_value> range_variable
+%token <strVal> IDENTIFIER
+%token <intVal> INTVALUE
+%token <floatVal> FLOATVALUE
+%token <strVal> STRINGVALUE
+%type <boolVal> BOOLVALUE
+%type <referVal> REFERVALUE
+%type <strVal> table
+%type <strVal> range_variable
 %type <scalar_exp_node> scalar_exp
 %type <scalar_exp_set_node> scalar_exp_commalist
 %type <selection_node> selection

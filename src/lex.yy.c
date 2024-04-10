@@ -1136,12 +1136,12 @@ return FALSE;
 case 56:
 YY_RULE_SETUP
 #line 74 "sql.l"
-{ yylval.s_value = db_strdup(yytext); return IDENTIFIER;} 
+{ yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 75 "sql.l"
-{ yylval.i_value = atoi(yytext); return INTVALUE;}
+{ yylval.intVal = atoi(yytext); return INTVALUE;}
 	YY_BREAK
 case 58:
 #line 77 "sql.l"
@@ -1150,12 +1150,12 @@ case 59:
 case 60:
 YY_RULE_SETUP
 #line 78 "sql.l"
-{ yylval.f_value = atof(yytext); return FLOATVALUE; }
+{ yylval.floatVal = atof(yytext); return FLOATVALUE; }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
 #line 79 "sql.l"
-{ if (strcmp(yytext, "''") == 0) { yylval.s_value = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.s_value =  strdup(str);} return STRINGVALUE;} 
+{ if (strcmp(yytext, "''") == 0) { yylval.strVal = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.strVal =  strdup(str);} return STRINGVALUE;} 
 	YY_BREAK
 case 62:
 *yy_cp = (yy_hold_char); /* undo effects of setting up yytext */

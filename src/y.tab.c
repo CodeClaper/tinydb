@@ -259,12 +259,12 @@ union YYSTYPE
 {
 #line 16 "sql.y"
 
-   char                     *s_value;
-   int64_t                  i_value;
-   float                    f_value;
-   bool                     b_value;
+   char                     *strVal;
+   int64_t                  intVal;
+   float                    floatVal;
+   bool                     boolVal;
    char                     *keyword;
-   ReferValue               *r_value;
+   ReferValue               *referVal;
    DataType                 data_type;
    CompareType              compare_type;
    ColumnDefNode            *column_def_node;
@@ -1721,7 +1721,7 @@ yyreduce:
 #line 241 "sql.y"
         {
             CreateTableNode *create_table_node = make_create_table_node();
-            create_table_node->table_name = (yyvsp[-4].s_value);
+            create_table_node->table_name = (yyvsp[-4].strVal);
             create_table_node->column_def_set_node = (yyvsp[-2].column_def_set_node);
             (yyval.create_table_node) = create_table_node;
         }
@@ -1732,7 +1732,7 @@ yyreduce:
 #line 248 "sql.y"
         {
             CreateTableNode *create_table_node = make_create_table_node();
-            create_table_node->table_name = (yyvsp[-6].s_value);
+            create_table_node->table_name = (yyvsp[-6].strVal);
             create_table_node->column_def_set_node = (yyvsp[-4].column_def_set_node);
             create_table_node->primary_key_node = (yyvsp[-2].primary_key_node);
             (yyval.create_table_node) = create_table_node;
@@ -1744,7 +1744,7 @@ yyreduce:
 #line 258 "sql.y"
         {
             DropTableNode *drop_table_node = make_drop_table_node();
-            drop_table_node->table_name = (yyvsp[-1].s_value);
+            drop_table_node->table_name = (yyvsp[-1].strVal);
             (yyval.drop_table_node) = drop_table_node;
         }
 #line 1751 "y.tab.c"
@@ -1766,7 +1766,7 @@ yyreduce:
         {
             InsertNode *node = make_insert_node();
             node->all_column = true;
-            node->table_name = (yyvsp[-5].s_value);
+            node->table_name = (yyvsp[-5].strVal);
             node->value_item_set_node = (yyvsp[-2].value_item_set_node);
             (yyval.insert_node) = node;
         }
@@ -1778,7 +1778,7 @@ yyreduce:
         {
             InsertNode *node = make_insert_node();
             node->all_column = false;
-            node->table_name = (yyvsp[-8].s_value);
+            node->table_name = (yyvsp[-8].strVal);
             node->columns_set_node = (yyvsp[-6].column_set_node);
             node->value_item_set_node = (yyvsp[-2].value_item_set_node);
             (yyval.insert_node) = node;
@@ -1790,7 +1790,7 @@ yyreduce:
 #line 294 "sql.y"
         {
             UpdateNode *node = make_update_node();
-            node->table_name = (yyvsp[-4].s_value);
+            node->table_name = (yyvsp[-4].strVal);
             node->assignment_set_node = (yyvsp[-2].assignment_set_node);
             node->where_clause = (yyvsp[-1].where_clause_node);
             (yyval.update_node) = node;
@@ -1802,7 +1802,7 @@ yyreduce:
 #line 304 "sql.y"
         {
             DeleteNode *node = make_delete_node();
-            node->table_name = (yyvsp[-1].s_value);
+            node->table_name = (yyvsp[-1].strVal);
             (yyval.delete_node) = node;
         }
 #line 1809 "y.tab.c"
@@ -1812,7 +1812,7 @@ yyreduce:
 #line 310 "sql.y"
         {
             DeleteNode *node = make_delete_node();
-            node->table_name = (yyvsp[-3].s_value);
+            node->table_name = (yyvsp[-3].strVal);
             node->condition_node = (yyvsp[-1].condition_node);
             (yyval.delete_node) = node;
         }
@@ -1823,7 +1823,7 @@ yyreduce:
 #line 319 "sql.y"
         {
             DescribeNode *node = make_describe_node();
-            node->table_name = db_strdup((yyvsp[-1].s_value));
+            node->table_name = db_strdup((yyvsp[-1].strVal));
             (yyval.describe_node) = node;
         }
 #line 1830 "y.tab.c"
@@ -1918,7 +1918,7 @@ yyreduce:
 #line 386 "sql.y"
         {
             TableRefNode *table_ref = make_table_ref_node();
-            table_ref->table = (yyvsp[0].s_value);
+            table_ref->table = (yyvsp[0].strVal);
             (yyval.table_ref_node) = table_ref;
         }
 #line 1925 "y.tab.c"
@@ -1928,8 +1928,8 @@ yyreduce:
 #line 392 "sql.y"
         {
             TableRefNode *table_ref = make_table_ref_node();
-            table_ref->table = (yyvsp[-1].s_value);
-            table_ref->range_variable = (yyvsp[0].s_value);
+            table_ref->table = (yyvsp[-1].strVal);
+            table_ref->range_variable = (yyvsp[0].strVal);
             (yyval.table_ref_node) = table_ref;
         }
 #line 1936 "y.tab.c"
@@ -1939,8 +1939,8 @@ yyreduce:
 #line 399 "sql.y"
         {
             TableRefNode *table_ref = make_table_ref_node();
-            table_ref->table = (yyvsp[-2].s_value);
-            table_ref->range_variable = (yyvsp[0].s_value);
+            table_ref->table = (yyvsp[-2].strVal);
+            table_ref->range_variable = (yyvsp[0].strVal);
             (yyval.table_ref_node) = table_ref;
         }
 #line 1947 "y.tab.c"
@@ -1949,7 +1949,7 @@ yyreduce:
   case 40: /* table: IDENTIFIER  */
 #line 408 "sql.y"
         {
-            (yyval.s_value) = (yyvsp[0].s_value);
+            (yyval.strVal) = (yyvsp[0].strVal);
         }
 #line 1955 "y.tab.c"
     break;
@@ -1957,7 +1957,7 @@ yyreduce:
   case 41: /* range_variable: IDENTIFIER  */
 #line 414 "sql.y"
         {
-            (yyval.s_value) = (yyvsp[0].s_value);
+            (yyval.strVal) = (yyvsp[0].strVal);
         }
 #line 1963 "y.tab.c"
     break;
@@ -2062,7 +2062,7 @@ yyreduce:
   case 52: /* scalar_exp: scalar_exp AS IDENTIFIER  */
 #line 483 "sql.y"
         {
-            (yyvsp[-2].scalar_exp_node)->alias = (yyvsp[0].s_value);
+            (yyvsp[-2].scalar_exp_node)->alias = (yyvsp[0].strVal);
             (yyval.scalar_exp_node) = (yyvsp[-2].scalar_exp_node);
         }
 #line 2069 "y.tab.c"
@@ -2174,7 +2174,7 @@ yyreduce:
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = (yyvsp[-4].column_node);
             column_def_node->data_type = T_STRING;
-            column_def_node->data_len = (yyvsp[-1].i_value);
+            column_def_node->data_len = (yyvsp[-1].intVal);
             column_def_node->is_define_len = true;
             column_def_node->is_primary = false;
             column_def_node->allow_null = false;
@@ -2189,7 +2189,7 @@ yyreduce:
             ColumnDefNode *column_def_node = make_column_def_node();
             column_def_node->column = (yyvsp[-1].column_node);
             column_def_node->data_type = T_REFERENCE;
-            column_def_node->table_name = (yyvsp[0].s_value);
+            column_def_node->table_name = (yyvsp[0].strVal);
             column_def_node->is_define_len = false;
             column_def_node->is_primary = false;
             column_def_node->allow_null = false;
@@ -2292,7 +2292,7 @@ yyreduce:
 #line 621 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
-            column_node->column_name = db_strdup((yyvsp[0].s_value));
+            column_node->column_name = db_strdup((yyvsp[0].strVal));
             column_node->has_sub_column = false;
             (yyval.column_node) = column_node;
         }
@@ -2303,7 +2303,7 @@ yyreduce:
 #line 628 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
-            column_node->column_name = db_strdup((yyvsp[-3].s_value));
+            column_node->column_name = db_strdup((yyvsp[-3].strVal));
             column_node->sub_column = (yyvsp[-1].column_node);
             column_node->has_sub_column = true;
             (yyval.column_node) = column_node;
@@ -2315,7 +2315,7 @@ yyreduce:
 #line 636 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
-            column_node->column_name = db_strdup((yyvsp[-3].s_value));
+            column_node->column_name = db_strdup((yyvsp[-3].strVal));
             column_node->scalar_exp_set = (yyvsp[-1].scalar_exp_set_node);
             column_node->has_sub_column = true;
             (yyval.column_node) = column_node;
@@ -2327,7 +2327,7 @@ yyreduce:
 #line 644 "sql.y"
         {
             (yyval.column_node) = (yyvsp[0].column_node);
-            (yyval.column_node)->range_variable = db_strdup((yyvsp[-2].s_value));
+            (yyval.column_node)->range_variable = db_strdup((yyvsp[-2].strVal));
         }
 #line 2333 "y.tab.c"
     break;
@@ -2355,7 +2355,7 @@ yyreduce:
 #line 664 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.i_value = (yyvsp[0].i_value);
+            node->value.i_value = (yyvsp[0].intVal);
             node->data_type = T_INT;
             (yyval.value_item_node) = node;
         }
@@ -2366,7 +2366,7 @@ yyreduce:
 #line 671 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.b_value = (yyvsp[0].b_value);
+            node->value.b_value = (yyvsp[0].boolVal);
             node->data_type = T_BOOL;
             (yyval.value_item_node) = node;
         }
@@ -2377,7 +2377,7 @@ yyreduce:
 #line 678 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.s_value = (yyvsp[0].s_value);
+            node->value.s_value = (yyvsp[0].strVal);
             node->data_type = T_STRING;
             (yyval.value_item_node) = node;
         }
@@ -2388,7 +2388,7 @@ yyreduce:
 #line 685 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.f_value = (yyvsp[0].f_value);
+            node->value.f_value = (yyvsp[0].floatVal);
             node->data_type = T_FLOAT;
             (yyval.value_item_node) = node;
         }
@@ -2399,7 +2399,7 @@ yyreduce:
 #line 692 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.r_value = (yyvsp[0].r_value);
+            node->value.r_value = (yyvsp[0].referVal);
             node->data_type = T_REFERENCE;
             (yyval.value_item_node) = node;
         }
@@ -2412,7 +2412,7 @@ yyreduce:
             ReferValue *refer = make_refer_value();
             refer->type = DIRECTLY;
             refer->nest_value_item_set = (yyvsp[-1].value_item_set_node);
-            (yyval.r_value) = refer;
+            (yyval.referVal) = refer;
         }
 #line 2418 "y.tab.c"
     break;
@@ -2423,7 +2423,7 @@ yyreduce:
             ReferValue *refer = make_refer_value();
             refer->type = INDIRECTLY;
             refer->condition = (yyvsp[-1].condition_node);
-            (yyval.r_value) = refer;
+            (yyval.referVal) = refer;
         }
 #line 2429 "y.tab.c"
     break;
@@ -2431,7 +2431,7 @@ yyreduce:
   case 89: /* BOOLVALUE: TRUE  */
 #line 719 "sql.y"
         {
-            (yyval.b_value) = true;
+            (yyval.boolVal) = true;
         }
 #line 2437 "y.tab.c"
     break;
@@ -2439,7 +2439,7 @@ yyreduce:
   case 90: /* BOOLVALUE: FALSE  */
 #line 723 "sql.y"
         {
-            (yyval.b_value) = false;
+            (yyval.boolVal) = false;
         }
 #line 2445 "y.tab.c"
     break;
@@ -2679,7 +2679,7 @@ yyreduce:
 #line 896 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
-            node->i_value = (yyvsp[0].i_value);
+            node->i_value = (yyvsp[0].intVal);
             node->value_type = V_INT;
             (yyval.function_value_node) = node;
         }
@@ -2711,7 +2711,7 @@ yyreduce:
 #line 918 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
-            node->i_value = (yyvsp[0].i_value);
+            node->i_value = (yyvsp[0].intVal);
             node->value_type = V_INT;
             (yyval.function_value_node) = node;
         }
