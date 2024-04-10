@@ -6,16 +6,46 @@ from support.asserts import assert_all
 client = TinyDbClient("127.0.0.1", 4083)    
 
 # create table
-def test_create_table():
-    ret = client.execute("create table Student(id string primary key, name string, age int, grade int, sex char, birth date, phone string, address string, createdTime timestamp);")
-    assert ret["success"] == True
+def test_create_mock_table():
+    sql = "create table Student(id string primary key, name string, age int, grade int, sex char, birth date, phone string, address string, createdTime timestamp);\n" \
+          "create table Parent(id string primary key, name string, student Student);"
+    ret = client.execute(sql)
+    assert_all(ret)
 
 ## test insert one.
-def test_insert1():
+def test_insert_row():
     sql = "insert into Student values('S001', 'lili', 8, 3, 'F', '2010-11-12', '13001332823', 'beijing', '2024-04-01 15:54:00');\n" \
           "insert into Student values('S002', 'wanglang', 10, 5, 'M', '2013-03-05', '18856239982', 'beijing', '2024-03-20 16:08:30');\n"
     ret = client.execute(sql)
     assert_all(ret)
+
+## test insert with direct reference column value.
+def test_insert_with_direct_reference():
+    sql = "insert into Parent values ('P001', 'Kim', ('S003', 'lili', 10, 5, 'M', '2013-03-05', '139924422323', 'nanjing', '2024-03-20 16:08:30'))"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["rows"] == 1
+
+## test select after insert directg reference.
+def test_select_after_insert_direct_reference():
+    sql = "select student[id] from Parent where id = 'P001';"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"][0] == { "id": "S003" }
+
+## test insert with indirect reference column value.
+def test_insert_with_indirect_reference():
+    sql = "insert into Parent values ('P002', 'Jerry', ref(id = 'S001'));"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["rows"] == 1
+
+## test select after insert indirectg reference.
+def test_select_after_insert_indirect_reference():
+    sql = "select student[id] from Parent where id = 'P002';"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"][0] == { "id": "S001" }
 
 ## test dupliacate key.
 def test_duplicate_key():
@@ -58,6 +88,8 @@ def test_no_exist_table():
 
 ## drop table
 def test_drop_table():
-    ret = client.execute("drop table Student")
-    assert ret["success"] == True
+    sql = "drop table Parent;\n"\
+          "drop table Student;\n"
+    ret = client.execute(sql)
+    assert_all(ret)
 
