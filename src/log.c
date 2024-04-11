@@ -29,7 +29,7 @@ static LogTable *ltable;
 
 /* Initialise Log */
 void init_log() {
-    ltable = db_malloc(sizeof(LogTable), SDT_LOG_TABLE);
+    ltable = instance(LogTable);
     ltable->head = NULL;
     ltable->tail = NULL;
     ltable->size = 0;
@@ -53,7 +53,7 @@ static LogEntry *search_log_entry() {
 
 /* Generate new LogEntry*/
 static LogEntry *new_log_entry(char *msg) {
-    LogEntry *entry = db_malloc(sizeof(LogEntry), SDT_LOG_ENTRY);
+    LogEntry *entry = instance(LogEntry);
     entry->message = db_strdup(msg);
     entry->tid = pthread_self();
     entry->next = NULL;

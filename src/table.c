@@ -27,9 +27,9 @@
 /* Get table list. */
 TableList *get_table_list() {
 
-    TableList *table_list = db_malloc(sizeof(TableList), SDT_TABLE_LIST);
+    TableList *table_list = instance(TableList);
     table_list->count = 0;
-    table_list->table_name_list = db_malloc(0, SDT_POINTER);
+    table_list->table_name_list = db_malloc(0, "pointer");
 
     DIR *dir;
     struct dirent *entry;
@@ -56,7 +56,7 @@ static char *table_file_path(char *table_name) {
         exit(EXIT_FAILURE);
     }
     int len = strlen(conf->data_dir) + strlen(table_name) + strlen(".dbt") + 1;
-    char *file_path = db_malloc(len, SDT_STRING);
+    char *file_path = db_malloc(len, "string");
     sprintf(file_path, "%s%s%s", conf->data_dir, table_name, ".dbt");
     return file_path;
 }
@@ -92,7 +92,7 @@ bool create_table(MetaTable *meta_table, DBResult *result) {
         db_log(ERROR, "Open database file '%s' fail.\n", file_path);
         return false;
     }
-    void *root_node = db_malloc(PAGE_SIZE, SDT_VOID);
+    void *root_node = db_malloc(PAGE_SIZE, "pointer");
 
     /* initialize root node */
     initial_leaf_node(root_node, true);
@@ -149,7 +149,7 @@ Table *open_table(char *table_name) {
     }
     
     /* Combine table. */
-    Table *table = db_malloc(sizeof(Table), SDT_TABLE);
+    Table *table = instance(Table);
     Pager *pager = open_pager(file_path);
     if (pager == NULL) 
         return NULL;

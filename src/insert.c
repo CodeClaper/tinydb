@@ -113,7 +113,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_DATE: {
             switch(value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm), "tm");
                     strptime(value_item_node->value.s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
@@ -132,7 +132,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_TIMESTAMP: {
             switch(value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
+                    struct tm *tmp_time = db_malloc(sizeof(struct tm), "tm");
                     strptime(value_item_node->value.s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
                     value_item_node->value.t_value = mktime(tmp_time);
@@ -164,7 +164,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
 
 /* Fake ValuesOrQuerySpecNode for VALUES type. */
 static ValuesOrQuerySpecNode *fake_values_or_query_spec_node(ValueItemSetNode *value_item_set_node) {
-    ValuesOrQuerySpecNode *values_or_query_spec = db_malloc(sizeof(ValuesOrQuerySpecNode), SDT_VALUES_OR_QUERY_SPECE_NODE);
+    ValuesOrQuerySpecNode *values_or_query_spec = instance(ValuesOrQuerySpecNode);
     values_or_query_spec->type = VQ_VALUES;
     values_or_query_spec->values = copy_value_item_set_node(value_item_set_node);
     return values_or_query_spec;
@@ -172,7 +172,7 @@ static ValuesOrQuerySpecNode *fake_values_or_query_spec_node(ValueItemSetNode *v
 
 /* Make a fake InsertNode. */
 InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node) {
-    InsertNode *insert_node = db_malloc(sizeof(InsertNode), SDT_INSERT_NODE);
+    InsertNode *insert_node = instance(InsertNode);
     insert_node->table_name = db_strdup(table_name);
     insert_node->all_column = true;
     insert_node->values_or_query_spec = fake_values_or_query_spec_node(value_item_set_node);
@@ -182,7 +182,7 @@ InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_
 /* Generate insert row. */
 static Row *generate_insert_row(InsertNode *insert_node) {
 
-    Row *row = db_malloc(sizeof(Row), SDT_ROW);
+    Row *row = instance(Row);
 
     /* Table and MetaTable. */
     Table *table = open_table(insert_node->table_name);
@@ -195,7 +195,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
     /* Combination */
     row->table_name = db_strdup(meta_table->table_name);
     row->column_len = meta_table->all_column_size;
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
     
     /* Row data. */
     uint32_t i;
@@ -207,7 +207,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         if (meta_column->sys_reserved) 
             continue;
 
-        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+        KeyValue *key_value = instance(KeyValue);
         key_value->key = db_strdup(meta_column->column_name);
         key_value->data_type = meta_column->column_type;
 

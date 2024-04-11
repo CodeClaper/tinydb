@@ -41,15 +41,15 @@ static void reverse_update_delete(Refer *refer, TransactionHandle *transaction);
 
 /* Initialise XLOG. */
 void init_xlog() {
-    xtable = db_malloc(sizeof(XLogTable), SDT_XLOG_TABLE);
+    xtable = instance(XLogTable);
     xtable->size = 0;
-    xtable->list = db_malloc(sizeof(XLogEntry *) * xtable->size, SDT_POINTER);
+    xtable->list = db_malloc(sizeof(XLogEntry *) * xtable->size, "pointer");
     pthread_mutex_init(&mutex, NULL);
 }
 
 /* Genrate new XLogEntry. */
 static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
-    XLogEntry *entry = db_malloc(sizeof(XLogEntry), SDT_XLOG_ENTRY);
+    XLogEntry *entry = instance(XLogEntry);
     entry->type = type;
     entry->next = NULL;
     entry->refer = copy_refer(refer);

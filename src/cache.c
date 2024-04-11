@@ -19,8 +19,8 @@ static volatile s_lock slock =  SPIN_UN_LOCKED_STATUS;
 /* Initialise table cache. */
 void init_table_cache() {
     if (cache == NULL) {
-        cache = db_malloc(sizeof(TableCache), SDT_TABLE_CACHE);
-        cache->table_list = db_malloc(0, SDT_POINTER);
+        cache = instance(TableCache);
+        cache->table_list = db_malloc(0, "pointer");
         cache->size = 0;
     }
 }

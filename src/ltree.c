@@ -1206,7 +1206,7 @@ void root_fall_back_root_node(Table *table) {
 
 /* Deserialize meta column */
 MetaColumn *deserialize_meta_column(void *destination) {
-    MetaColumn *meta_column = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
+    MetaColumn *meta_column = instance(MetaColumn);
     strcpy(meta_column->column_name, destination); 
     meta_column->column_type = (DataType)*(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE);
     meta_column->column_length = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE);
@@ -1219,7 +1219,7 @@ MetaColumn *deserialize_meta_column(void *destination) {
 
 /* Deserialize meta column */
 void *serialize_meta_column(MetaColumn *meta_column) {
-    void *destination= db_malloc(ROOT_NODE_META_COLUMN_SIZE, SDT_VOID);
+    void *destination= db_malloc(ROOT_NODE_META_COLUMN_SIZE, "pointer");
     strcpy(destination, meta_column->column_name);
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE) = (uint32_t) meta_column->column_type;
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE) = (uint32_t) meta_column->column_length;
@@ -1244,7 +1244,7 @@ static void *get_row_value(Row *row, MetaColumn *meta_column) {
 /* Serialize row data */
 void *serialize_row_data(Row *row, Table *table) {
     uint32_t row_length = calc_table_row_length(table);
-    void *destination = db_malloc(row_length, SDT_VOID);
+    void *destination = db_malloc(row_length, "pointer");
     MetaTable *meta_table = table->meta_table;
     uint32_t i, offset = 0;
     for(i = 0; i < meta_table->all_column_size; i++) {

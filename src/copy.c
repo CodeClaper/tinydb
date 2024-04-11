@@ -19,33 +19,33 @@ void *copy_value(void *value, DataType data_type) {
         return NULL;
     switch (data_type) {
         case T_BOOL: {
-            bool *new_val = db_malloc(sizeof(bool), SDT_BOOL);
+            bool *new_val = instance(bool);
             memcpy(new_val, value, sizeof(bool));
             return new_val;
         }
         case T_INT: {
-            int32_t *new_val = db_malloc(sizeof(int32_t), SDT_INT);
+            int32_t *new_val = instance(int32_t);
             memcpy(new_val, value, sizeof(int32_t));
             return new_val;
         }
         case T_LONG: {
-            int64_t *new_val = db_malloc(sizeof(int64_t), SDT_LONG);
+            int64_t *new_val = instance(int64_t);
             memcpy(new_val, value, sizeof(int64_t));
             return new_val;
         }
         case T_FLOAT: {
-            float *new_val = db_malloc(sizeof(float), SDT_FLOAT);
+            float *new_val = instance(float);
             memcpy(new_val, value, sizeof(float));
             return new_val;
         }
         case T_DOUBLE: {
-            double *new_val = db_malloc(sizeof(double), SDT_DOUBLE);
+            double *new_val = instance(double);
             memcpy(new_val, value, sizeof(double));
             return new_val;
         }
         case T_DATE:
         case T_TIMESTAMP: {
-            time_t *new_val = db_malloc(sizeof(time_t), SDT_TIME_T);
+            time_t *new_val = instance(time_t);
             memcpy(new_val, value, sizeof(time_t));
             return new_val;
         }
@@ -67,7 +67,7 @@ KeyValue *copy_key_value(KeyValue *key_value) {
         return NULL;
 
     /* copy key value */
-    KeyValue *key_value_copy = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value_copy = instance(KeyValue);
 
     key_value_copy->key = db_strdup(key_value->key);
     /*Meta column may be null, in fact, key aggregate function, key is min, max, sum, avg ect. there is no meta column. */
@@ -90,12 +90,12 @@ Row *copy_row(Row *row) {
     }
 
     /* copy row */
-    Row *row_copy = db_malloc(sizeof(Row), SDT_ROW);
+    Row *row_copy = instance(Row);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type);
     row_copy->column_len = row->column_len;
     row_copy->table_name = db_strdup(row->table_name);
-    row_copy->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
+    row_copy->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
 
     uint32_t i;
     for(i = 0; i < row->column_len; i++) {
@@ -120,11 +120,11 @@ Row *copy_row_without_reserved(Row *row) {
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
 
     /* copy row. */
-    Row *row_copy = db_malloc(sizeof(Row), SDT_ROW);
+    Row *row_copy = instance(Row);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type);
     row_copy->table_name = db_strdup(row->table_name);
     row_copy->column_len = 0;
-    row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, SDT_POINTER);
+    row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, "pointer");
 
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {
@@ -146,7 +146,7 @@ Row *copy_row_without_reserved(Row *row) {
 /* Copy refer. */
 Refer *copy_refer(Refer *refer) {
     if (refer == NULL) return NULL;
-    Refer *copy_refer = db_malloc(sizeof(Refer), SDT_REFER);
+    Refer *copy_refer = instance(Refer);
     memset(copy_refer, 0, sizeof(Refer));
     strcpy(copy_refer->table_name, refer->table_name);
     copy_refer->page_num = refer->page_num;
@@ -159,7 +159,7 @@ MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     if (meta_column == NULL)
         return NULL;
 
-    MetaColumn *meta_column_copy = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
+    MetaColumn *meta_column_copy = instance(MetaColumn);
     meta_column_copy->is_primary = meta_column->is_primary;
     meta_column_copy->column_type = meta_column->column_type;
     meta_column_copy->column_length = meta_column->column_length;
@@ -175,11 +175,11 @@ MetaTable *copy_meta_table(MetaTable *meta_table) {
     if (meta_table == NULL)
         return NULL;
 
-    MetaTable *copy = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
+    MetaTable *copy = instance(MetaTable);
     copy->table_name = db_strdup(meta_table->table_name);
     copy->column_size = meta_table->column_size;
     copy->all_column_size = meta_table->all_column_size;
-    copy->meta_column = db_malloc(sizeof(MetaColumn *) * copy->all_column_size, SDT_POINTER);
+    copy->meta_column = db_malloc(sizeof(MetaColumn *) * copy->all_column_size, "pointer");
 
     int i;
     for (i = 0; i < meta_table->all_column_size; i++) {
@@ -194,7 +194,7 @@ Pager *copy_pager(Pager *pager) {
     if (pager == NULL)
         return NULL;
 
-    Pager *pager_copy = db_malloc(sizeof(Pager), SDT_PAGER);
+    Pager *pager_copy = instance(Pager);
     pager_copy->size = pager->size;
     pager_copy->file_length = pager->file_length;
     pager_copy->file_descriptor = pager->file_descriptor;
@@ -212,7 +212,7 @@ Table *copy_table(Table *table) {
     if (table == NULL)
         return NULL;
 
-    Table *table_copy = db_malloc(sizeof(Table), SDT_TABLE);
+    Table *table_copy = instance(Table);
     table_copy->root_page_num = table->root_page_num;
     table_copy->pager = copy_pager(table->pager);
     table_copy->meta_table = copy_meta_table(table->meta_table);
@@ -224,7 +224,7 @@ Table *copy_table(Table *table) {
 ColumnNode *copy_column_node(ColumnNode *column_node) {
     if (column_node == NULL)
         return NULL;
-    ColumnNode *column_node_copy = db_malloc(sizeof(ColumnNode), SDT_COLUMN_NODE);
+    ColumnNode *column_node_copy = instance(ColumnNode);
     column_node_copy->has_sub_column = column_node->has_sub_column;
     if (column_node_copy->has_sub_column) {
         column_node_copy->sub_column = copy_column_node(column_node->sub_column);
@@ -238,9 +238,9 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
 ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
     if (column_set_node == NULL)
         return NULL;
-    ColumnSetNode *column_set_node_copy = db_malloc(sizeof(ColumnSetNode), SDT_COLUMN_SET_NODE);
+    ColumnSetNode *column_set_node_copy = instance(ColumnSetNode);
     column_set_node_copy->size = column_set_node->size;
-    column_set_node_copy->columns = db_malloc(sizeof(ColumnNode *) * column_set_node_copy->size, SDT_POINTER);
+    column_set_node_copy->columns = db_malloc(sizeof(ColumnNode *) * column_set_node_copy->size, "pointer");
     for (uint32_t i = 0; i < column_set_node_copy->size; i++) {
         *(column_set_node_copy->columns + i) = copy_column_node(*(column_set_node->columns + i));
     }
@@ -251,7 +251,7 @@ ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node == NULL)
         return NULL;
-    ValueItemNode *value_item_node_copy = db_malloc(sizeof(ValueItemNode), SDT_VALUE_ITEM_NODE);
+    ValueItemNode *value_item_node_copy = instance(ValueItemNode);
     value_item_node_copy->data_type = value_item_node->data_type;
     switch(value_item_node->data_type) {
         case T_CHAR:
@@ -286,9 +286,9 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
 ValueItemSetNode *copy_value_item_set_node(ValueItemSetNode *value_item_set_node) {
     if (value_item_set_node == NULL)
         return NULL;
-    ValueItemSetNode *copy = db_malloc(sizeof(ValueItemSetNode), SDT_VALUE_ITEM_SET_NODE);
+    ValueItemSetNode *copy = instance(ValueItemSetNode);
     copy->num = value_item_set_node->num;
-    copy->value_item_node = db_malloc(sizeof(ValueItemNode *) * value_item_set_node->num, SDT_POINTER);
+    copy->value_item_node = db_malloc(sizeof(ValueItemNode *) * value_item_set_node->num, "pointer");
 
     int i;
     for (i = 0; i < value_item_set_node->num; i++) {
@@ -301,7 +301,7 @@ ValueItemSetNode *copy_value_item_set_node(ValueItemSetNode *value_item_set_node
 FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_node) {
     if (function_value_node == NULL)
         return NULL;
-    FunctionValueNode *function_value_node_copy = db_malloc(sizeof(FunctionValueNode), SDT_FUNCTION_VALUE_NODE);
+    FunctionValueNode *function_value_node_copy = instance(FunctionValueNode);
     function_value_node_copy->value_type = function_value_node->value_type;
     switch(function_value_node->value_type) {
         case V_INT:
@@ -320,7 +320,7 @@ FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_no
 FunctionNode *copy_function_node(FunctionNode *function_node) {
     if (function_node == NULL)
         return NULL;
-    FunctionNode *function_node_copy = db_malloc(sizeof(FunctionNode), SDT_FUNCTION_NODE);
+    FunctionNode *function_node_copy = instance(FunctionNode);
     function_node_copy->type = function_node->type;
     function_node_copy->value = copy_function_value_node(function_node->value);
     return function_node_copy;
@@ -329,7 +329,7 @@ FunctionNode *copy_function_node(FunctionNode *function_node) {
 CalculateNode *copy_calculate_node(CalculateNode *calculate_node) {
     if (calculate_node == NULL)
         return NULL;
-    CalculateNode *copy = db_malloc(sizeof(CalculateNode), SDT_CALCULATE_NODE);
+    CalculateNode *copy = instance(CalculateNode);
     copy->type = calculate_node->type;
     copy->left = copy_scalar_exp_node(calculate_node->left);
     copy->right = copy_scalar_exp_node(calculate_node->right);
@@ -341,7 +341,7 @@ CalculateNode *copy_calculate_node(CalculateNode *calculate_node) {
 PredicateNode *copy_predicate_node(PredicateNode *predicate_node) {
     if (predicate_node == NULL)
         return NULL;
-    PredicateNode *copy = db_malloc(sizeof(PredicateNode), SDT_PREDICATE_NODE);
+    PredicateNode *copy = instance(PredicateNode);
     copy->type = predicate_node->type;
     switch (copy->type) {
         case PRE_COMPARISON:
@@ -363,7 +363,7 @@ PredicateNode *copy_predicate_node(PredicateNode *predicate_node) {
 ConditionNode *copy_condition_node(ConditionNode *condition_node) {
     if (condition_node == NULL)
         return NULL;
-    ConditionNode *condition_node_copy = db_malloc(sizeof(ConditionNode), SDT_CONDITION_NODE);
+    ConditionNode *condition_node_copy = instance(ConditionNode);
     condition_node_copy->conn_type = condition_node->conn_type;
     switch(condition_node->conn_type) {
         case C_OR:
@@ -383,7 +383,7 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
 ComparisonNode *copy_comparison_node(ComparisonNode *comparison_node) {
     if (comparison_node == NULL)
         return NULL;
-    ComparisonNode *comparison_node_copy = db_malloc(sizeof(ComparisonNode), SDT_COMPARISON_NODE);
+    ComparisonNode *comparison_node_copy = instance(ComparisonNode);
     comparison_node_copy->type = comparison_node->type;
     comparison_node_copy->column = copy_column_node(comparison_node->column);
     comparison_node_copy->value = copy_scalar_exp_node(comparison_node->value);
@@ -394,7 +394,7 @@ ComparisonNode *copy_comparison_node(ComparisonNode *comparison_node) {
 LikeNode *copy_like_node(LikeNode *like_node) {
     if (like_node == NULL)
         return NULL;
-    LikeNode *copy = db_malloc(sizeof(LikeNode), SDT_LIKE_NODE);
+    LikeNode *copy = instance(LikeNode);
     copy->column = copy_column_node(like_node->column);
     copy->value = copy_value_item_node(like_node->value);
     return copy;
@@ -404,7 +404,7 @@ LikeNode *copy_like_node(LikeNode *like_node) {
 InNode *copy_in_node(InNode *in_node) {
     if (in_node == NULL)
         return NULL;
-    InNode *copy = db_malloc(sizeof(InNode), SDT_IN_NODE);
+    InNode *copy = instance(InNode);
     copy->column = copy_column_node(in_node->column);
     copy->value_set = copy_value_item_set_node(in_node->value_set);
     return copy;
@@ -414,7 +414,7 @@ InNode *copy_in_node(InNode *in_node) {
 LimitNode *copy_limit_node(LimitNode *limit_node) {
     if (limit_node == NULL)
         return NULL;
-    LimitNode *limit_node_copy = db_malloc(sizeof(LimitNode), SDT_LIMIT_NODE);
+    LimitNode *limit_node_copy = instance(LimitNode);
     limit_node_copy->start = limit_node->start;
     limit_node_copy->end = limit_node->end;
     return limit_node_copy;
@@ -424,7 +424,7 @@ LimitNode *copy_limit_node(LimitNode *limit_node) {
 ReferValue *copy_refer_value(ReferValue *refer_value) {
     if (refer_value == NULL)
         return NULL;
-    ReferValue *refer_value_copy = db_malloc(sizeof(ReferValue), SDT_REFER_VALUE);
+    ReferValue *refer_value_copy = instance(ReferValue);
     refer_value_copy->type = refer_value->type;
     switch (refer_value->type) {
         case DIRECTLY:
@@ -441,7 +441,7 @@ ReferValue *copy_refer_value(ReferValue *refer_value) {
 SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
     if (select_items_node == NULL)
         return NULL;
-    SelectItemsNode *select_items_node_copy = db_malloc(sizeof(SelectItemsNode), SDT_SELECT_ITEMS_NODE);
+    SelectItemsNode *select_items_node_copy = instance(SelectItemsNode);
     select_items_node_copy->type = select_items_node->type;
     switch(select_items_node_copy->type) {
         case SELECT_FUNCTION:
@@ -461,7 +461,7 @@ ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
     if (scalar_exp_node == NULL)
         return NULL;
 
-    ScalarExpNode *copy = db_malloc(sizeof(ScalarExpNode), SDT_SCALAR_EXP_NODE);
+    ScalarExpNode *copy = instance(ScalarExpNode);
     copy->type = scalar_exp_node->type;
     switch (scalar_exp_node->type) {
         case SCALAR_COLUMN:
@@ -487,9 +487,9 @@ ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
 ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node) {
     if (scalar_exp_set_node == NULL)
          return NULL;
-    ScalarExpSetNode *copy = db_malloc(sizeof(ScalarExpSetNode), SDT_SCALAR_EXP_SET_NODE);
+    ScalarExpSetNode *copy = instance(ScalarExpSetNode);
     copy->size = scalar_exp_set_node->size;
-    copy->data = db_malloc(sizeof(ScalarExpNode *) * scalar_exp_set_node->size, SDT_POINTER);
+    copy->data = db_malloc(sizeof(ScalarExpNode *) * scalar_exp_set_node->size, "pointer");
     int i;
     for (i = 0; i < scalar_exp_set_node->size; i++) {
         copy->data[i] = copy_scalar_exp_node(scalar_exp_set_node->data[i]);
@@ -502,7 +502,7 @@ ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node
 SelectionNode *copy_selection_node(SelectionNode *selection_node) {
     if (selection_node == NULL)
         return NULL;
-    SelectionNode *copy = db_malloc(sizeof(SelectionNode), SDT_SELECTION_NODE);
+    SelectionNode *copy = instance(SelectionNode);
     copy->all_column = selection_node->all_column;
     if (!copy->all_column)
         copy->scalar_exp_set = copy_scalar_exp_set_node(selection_node->scalar_exp_set);
@@ -513,7 +513,7 @@ SelectionNode *copy_selection_node(SelectionNode *selection_node) {
 QueryParam *copy_query_param(QueryParam *query_param) {
     if (query_param == NULL)
         return NULL;
-    QueryParam *query_param_copy = db_malloc(sizeof(QueryParam), SDT_QUERY_PARAM);
+    QueryParam *query_param_copy = instance(QueryParam);
     query_param_copy->table_name = db_strdup(query_param->table_name);
     query_param_copy->condition_node = copy_condition_node(query_param->condition_node); 
     query_param_copy->selection = copy_selection_node(query_param->selection);
@@ -524,7 +524,7 @@ QueryParam *copy_query_param(QueryParam *query_param) {
 void *copy_block(void *value, size_t size) {
     if (value == NULL)
         return NULL;
-    void * block = db_malloc(size, SDT_VOID);
+    void * block = db_malloc(size, "pointer");
     memcpy(block, value, size);
     return block;
 }

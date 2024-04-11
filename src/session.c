@@ -30,7 +30,7 @@ void init_session() {
 
 /* Generate new session. */
 Session *new_session(int client) {
-    Session *session = db_malloc(sizeof(Session), SDT_SESSION);
+    Session *session = instance(Session);
     session->client = client;
     session->frequency = 0;
     session->volumn = 0;

@@ -35,7 +35,7 @@ static void db_send_row(Row *row);
 /* Generate new db result. */
 DBResult *new_db_result() {
     /* New DbResule and initialize it. */
-    DBResult *result = db_malloc(sizeof(DBResult), SDT_DB_RESULT);
+    DBResult *result = instance(DBResult);
     result->success = false;
     result->message = NULL;
     result->data = NULL;
@@ -46,9 +46,9 @@ DBResult *new_db_result() {
 
 /* Generate new db result set. */
 DBResultSet *new_db_result_set() {
-    DBResultSet *result_set = db_malloc(sizeof(DBResultSet), SDT_DB_RESULT_SET);
+    DBResultSet *result_set = instance(DBResultSet);
     result_set->size = 0;
-    result_set->set = db_malloc(0, SDT_POINTER);
+    result_set->set = db_malloc(0, "pointer");
     return result_set;
 }
 

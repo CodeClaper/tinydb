@@ -38,6 +38,7 @@
 
 #define MAX_ALLOCATE_SIZE MAX_LONG_VALUE
 
+
 static MHashTable *mtable;
 static uint32_t max_value;
 static pthread_mutex_t mutex;
@@ -253,28 +254,27 @@ static MEntry *search_entry(void *ptr) {
         } while ((current = current->next));
     }
     if (count > 1) {
-        db_log(PANIC, "Duplicate pointer in mmu for %s", SYS_DATA_TYPE_NAMES[target->stype]);
+        db_log(PANIC, "Duplicate pointer in mmu for %s", target->stype);
     }
     return target;
 }
 
 /* Register a MEntry */
-static void register_entry(void *ptr, size_t size, SysDataType stype) {
+static void register_entry(void *ptr, size_t size, char *stype) {
     /* Check repeated register. */
     assert_null(search_entry(ptr), 
-        "System error, pointer [%p] data type [%s] already registered.\n", ptr, SYS_DATA_TYPE_NAMES[stype]); 
+        "System error, pointer [%p] data type [%s] already registered.\n", ptr, stype); 
 
     MEntry *entry = sys_malloc(sizeof(MEntry));
     entry->ptr = ptr;
     entry->size = size;
-    entry->stype = stype;
     entry->next = NULL;
-
+    strncpy(entry->stype, stype, MENTRY_STYPE_LENGTH);
     insert_entry(ptr, entry);
 }
 
 /* Change MEntry`s size. */
-static void change_entry(void *old_ptr, void* new_ptr, size_t resize, SysDataType stype) {
+static void change_entry(void *old_ptr, void* new_ptr, size_t resize, char *stype) {
     if (old_ptr == new_ptr) {
         MEntry *entry = search_entry(old_ptr);
         assert_not_null(entry, "System error, try to find MEntry fail.\n");
@@ -309,7 +309,7 @@ void *sys_realloc(void *ptr, size_t size) {
 }
 
 /* Database level mallocate. */
-void *db_malloc(size_t size, SysDataType stype) {
+void *db_malloc(size_t size, char *stype) {
     assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
 
     void *ret = malloc(size);
@@ -339,7 +339,7 @@ void *db_realloc(void *ptr, size_t size) {
 #ifdef DEBUG
         return db_malloc(size, entry->stype);
 #else
-        return db_malloc(size, SDT_POINTER);
+        return db_malloc(size, "pointer");
 #endif
     }
 
@@ -360,7 +360,7 @@ char *db_strdup(char *str) {
     assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.\n");
 
 #ifdef DEBUG
-    register_entry(ret, strlen(str), SDT_STRING);
+    register_entry(ret, strlen(str), str);
 #endif
 
     return ret;
@@ -384,7 +384,7 @@ size_t db_memesize() {
         MEntry *entry = *(mtable->entry_list + i);
         while(entry) {
 #ifdef DEBUG
-            printf("%s \t", SYS_DATA_TYPE_NAMES[entry->stype]);
+            printf("%s \t", entry->stype);
 #endif
             total += entry->size;
             entry = entry->next;

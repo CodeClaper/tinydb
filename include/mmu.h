@@ -1,5 +1,7 @@
 #include "data.h"
 
+#define instance(_type_)  ((_type_ *) db_malloc(sizeof(_type_), #_type_))
+
 /* Initialise mem */
 void init_mem();
 
@@ -10,7 +12,7 @@ void *sys_malloc(size_t size);
 void *sys_realloc(void *ptr, size_t size);
 
 /* Database level mallocate. */
-void *db_malloc(size_t size, SysDataType stype);
+void *db_malloc(size_t size, char *stype);
 
 /* Database level reallocate */
 void *db_realloc(void *ptr, size_t size);

@@ -50,7 +50,7 @@ int64_t get_current_sys_time(TIME_LEVEL time_level) {
 
 /* Get format time string. */
 char *format_time(char *format, time_t t) {
-    char *res = db_malloc(20, SDT_STRING);
+    char *res = db_malloc(20, "string");
     struct tm *tm = localtime(&t);
     strftime(res, 20, format, tm);
     return res;

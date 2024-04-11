@@ -78,7 +78,7 @@ static char* append_dir_end(char *dir) {
     if (dir[size - 1] == '/')
         return dir;
     else {
-        char *append = db_malloc(size + 1, SDT_STRING);
+        char *append = db_malloc(size + 1, "string");
         sprintf(append, "%s/", dir);
         return append;
     }
@@ -87,7 +87,7 @@ static char* append_dir_end(char *dir) {
 
 /* Load configuration. */
 Conf *load_conf() {
-    Conf *conf = db_malloc(sizeof(Conf), SDT_CONF);
+    Conf *conf = instance(Conf);
     conf->data_dir = append_dir_end(read_conf("data", "dir"));
     conf->port = (ushort)atoi(read_conf("base", "port"));
     conf->log_dir = append_dir_end(read_conf("log", "dir"));

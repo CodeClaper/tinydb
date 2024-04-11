@@ -41,17 +41,17 @@ char *get_key_str(void *key, DataType data_type) {
         case T_STRING:
             return (char *)key;
         case T_INT: {
-            char *str = db_malloc(50, SDT_STRING);
+            char *str = db_malloc(50, "string");
             sprintf(str, "%d", *(uint32_t *)key);
             return str;
         }
         case T_DOUBLE: {
-            char *str = db_malloc(50, SDT_STRING);
+            char *str = db_malloc(50, "string");
             sprintf(str, "%lf", *(double *)key);
             return str;
         }
         case T_FLOAT: {
-            char *str = db_malloc(50, SDT_STRING);
+            char *str = db_malloc(50, "string");
             sprintf(str, "%f", *(float *)key);
             return str;
         }

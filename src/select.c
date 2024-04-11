@@ -139,7 +139,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
         case T_TIMESTAMP: {
             switch (value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
+                    struct tm *tmp_time = instance(struct tm);
                     strptime(value_item_node->value.s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->value.t_value = mktime(tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
@@ -155,7 +155,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
         case T_DATE: {
             switch (value_item_node->data_type) {
                 case T_STRING: {
-                    struct tm *tmp_time = db_malloc(sizeof(struct tm), SDT_TIME_T);
+                    struct tm *tmp_time = instance(struct tm);
                     strptime(value_item_node->value.s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
@@ -580,10 +580,10 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
 static Row *generate_row(void *destinct, MetaTable *meta_table) {
 
     /* Define row data. */
-    Row *row = db_malloc(sizeof(Row), SDT_ROW);
+    Row *row = instance(Row);
     row->column_len = meta_table->all_column_size;
     row->table_name = db_strdup(meta_table->table_name);
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
 
     /* Assignment row data. */
     uint32_t i;
@@ -594,7 +594,7 @@ static Row *generate_row(void *destinct, MetaTable *meta_table) {
         uint32_t offset = calc_offset(meta_table, meta_column->column_name);
         
         /* Generate a key value pair. */
-        KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+        KeyValue *key_value = instance(KeyValue);
         key_value->key = db_strdup(meta_column->column_name);
         key_value->value = copy_value(destinct + offset, meta_column->column_type);
         key_value->data_type = meta_column->column_type;
@@ -801,12 +801,12 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 
 /* Generate new select result structure. */
 SelectResult *new_select_result(char *table_name) {
-    SelectResult *select_result = db_malloc(sizeof(SelectResult), SDT_SELECT_RESULT);
+    SelectResult *select_result = instance(SelectResult);
     select_result->row_size = 0;
     select_result->row_index = 0;
     select_result->table_name = table_name ? db_strdup(table_name) : NULL;
     select_result->range_variable = NULL;
-    select_result->rows = db_malloc(0, SDT_POINTER);
+    select_result->rows = db_malloc(0, "pointer");
     select_result->derived = NULL;
     select_result->last_derived = false;
     return select_result;
@@ -1032,7 +1032,7 @@ static void calc_column_min_value(KeyValue *key_value, ColumnNode *column, Selec
 
 /* Query count function. */
 static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *selct_result) {
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("count");
     key_value->data_type = T_INT;
     key_value->value = copy_value(&selct_result->row_size, T_INT);
@@ -1041,7 +1041,7 @@ static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *se
 
 /* Query sum function. */
 static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("sum");
 
     switch (value->value_type) {
@@ -1066,7 +1066,7 @@ static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *sele
 
 /* Query avg function. */
 KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("avg");
 
     switch (value->value_type) {
@@ -1091,7 +1091,7 @@ KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_resu
 
 /* Query max function. */
 KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("max");
 
     switch (value->value_type) {
@@ -1115,7 +1115,7 @@ KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_resu
 
 /* Query min function. */
 KeyValue *query_min_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("min");
 
     switch (value->value_type) {
@@ -1156,7 +1156,7 @@ static KeyValue *query_function_column_value(FunctionNode *function, SelectResul
 
 /* Generate new KeyValue instance. */
 static KeyValue *new_key_value(char *key, void *value, DataType data_type) {
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = key;
     key_value->value = value;
     key_value->data_type = data_type;
@@ -1204,7 +1204,7 @@ static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNod
 /* Calulate addition. */
 static KeyValue *calulate_addition(KeyValue *left, KeyValue *right) {
     
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("add");
     
     switch (left->data_type) {
@@ -1362,7 +1362,7 @@ static KeyValue *calulate_addition(KeyValue *left, KeyValue *right) {
 /* Calulate substraction .*/
 static KeyValue *calulate_substraction(KeyValue *left, KeyValue *right) {
     
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("sub");
     
     switch (left->data_type) {
@@ -1521,7 +1521,7 @@ static KeyValue *calulate_substraction(KeyValue *left, KeyValue *right) {
 /* Calulate multiplication .*/
 static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
     
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("mul");
     
     switch (left->data_type) {
@@ -1679,7 +1679,7 @@ static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
 /* Calulate division .*/
 static KeyValue *calulate_division(KeyValue *left, KeyValue *right) {
     
-    KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *key_value = instance(KeyValue);
     key_value->key = db_strdup("div");
     
     switch (left->data_type) {
@@ -1870,7 +1870,7 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
             ColumnNode *column = scalar_exp->column;
             if (select_result->row_size == 0) {
                 Table *table = open_table(select_result->table_name);
-                KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+                KeyValue *key_value = instance(KeyValue);
                 key_value->key = db_strdup(column->column_name);
                 MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
                 key_value->value = NULL;
@@ -1887,7 +1887,7 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
         case SCALAR_VALUE: {
             ValueItemNode *value = scalar_exp->value;
             if (select_result->row_size == 0) {
-                KeyValue *key_value = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+                KeyValue *key_value = instance(KeyValue);
                 key_value->key = db_strdup("value");
                 key_value->value = NULL;
                 key_value->data_type = value->data_type;
@@ -1902,10 +1902,10 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
 
 /* Query function data. */
 static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
-    Row *row = db_malloc(sizeof(Row), SDT_ROW);
+    Row *row = instance(Row);
     row->table_name = db_strdup(select_result->table_name);
     row->column_len = scalar_exp_set->size;
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, SDT_POINTER);
+    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
 
     for (uint32_t i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
@@ -1996,11 +1996,11 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
     Table *table = open_table(row->table_name);
     MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
 
-    Row *new_row = db_malloc(sizeof(Row), SDT_ROW);
+    Row *new_row = instance(Row);
     new_row->key = copy_value(row->key, key_meta_column->column_type);
     new_row->table_name = db_strdup(row->table_name);
     new_row->column_len = scalar_exp_set->size;
-    new_row->data = db_malloc(sizeof(KeyValue *) * new_row->column_len, SDT_POINTER);
+    new_row->data = db_malloc(sizeof(KeyValue *) * new_row->column_len, "pointer");
 
     uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {

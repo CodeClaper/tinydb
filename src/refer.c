@@ -40,8 +40,8 @@ static bool include_update_refer_lock(Refer *refer);
 
 /* Init Refer. */
 void init_refer() {
-    update_refer_lock_content = db_malloc(sizeof(UpdateReferLockContent), SDT_VOID);
-    update_refer_lock_content->list = db_malloc(0, SDT_VOID);
+    update_refer_lock_content = instance(UpdateReferLockContent);
+    update_refer_lock_content->list = db_malloc(0, "pointer");
     update_refer_lock_content->size = 0;
 }
 
@@ -89,7 +89,7 @@ static bool include_update_refer_lock(Refer *refer) {
 /* Generate new Refer. 
  * Note: if page_num is -1 and cell_num is -1 which means refer null. */
 Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num) {
-    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
+    Refer *refer = instance(Refer);
     strcpy(refer->table_name, table_name);
     refer->page_num = page_num;
     refer->cell_num = cell_num;
@@ -98,7 +98,7 @@ Refer *new_refer(char *table_name, int32_t page_num, int32_t cell_num) {
 
 /* Generate new cursor. */
 Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
-    Cursor *cursor = db_malloc(sizeof(Cursor), SDT_CURSOR);
+    Cursor *cursor = instance(Cursor);
     cursor->table = table;
     cursor->page_num = page_num;
     cursor->cell_num = cell_num;
@@ -108,7 +108,7 @@ Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
 
 /* Define cursor when meet leaf node. */
 static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t page_num, void *key) {
-    Cursor *cursor = db_malloc(sizeof(Cursor), SDT_CURSOR);
+    Cursor *cursor = instance(Cursor);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
     uint32_t row_len = calc_table_row_length(table);
@@ -192,7 +192,7 @@ bool refer_null(Refer *refer) {
 
 /* Make a NULL Refer. */
 Refer *make_null_refer() {
-    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
+    Refer *refer = instance(Refer);
     refer->page_num = -1;
     refer->cell_num = -1;
     return refer;
@@ -200,7 +200,7 @@ Refer *make_null_refer() {
 
 /* Generate new ReferUpdateEntity. */
 ReferUpdateEntity *new_refer_update_entity(Refer *old_refer, Refer *new_refer) {
-    ReferUpdateEntity *refer_update_entity = db_malloc(sizeof(ReferUpdateEntity), SDT_REFER_UPDATE_ENTITY);
+    ReferUpdateEntity *refer_update_entity = instance(ReferUpdateEntity);
     refer_update_entity->old_refer = old_refer;
     refer_update_entity->new_refer = new_refer;
 }
@@ -209,8 +209,9 @@ ReferUpdateEntity *new_refer_update_entity(Refer *old_refer, Refer *new_refer) {
 Refer *convert_refer(Cursor *cursor) {
     if (cursor == NULL) 
         return NULL;
+
     /* Generate new refer. */
-    Refer *refer = db_malloc(sizeof(Refer), SDT_REFER);
+    Refer *refer = instance(Refer);
     strcpy(refer->table_name, cursor->table->meta_table->table_name);
     refer->page_num = cursor->page_num;
     refer->cell_num = cursor->cell_num;

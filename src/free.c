@@ -276,7 +276,7 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
 /* Free QuerySpecNode. */
 void free_query_spec_node(QuerySpecNode *query_spec_node) {
     if (query_spec_node) {
-        free_select_node(query_spec_node->selection);
+        free_selection_node(query_spec_node->selection);
         free_table_exp_node(query_spec_node->table_exp);  
         db_free(query_spec_node);
     }
@@ -639,7 +639,7 @@ void free_statement(Statement *statement) {
 void free_statements(Statements *statements) {
     if (statements) {
         uint32_t i;
-        for (i = 0; i < statements->size; i++) {
+        for (uint32_t i = 0; i < statements->size; i++) {
             free_statement(statements->list[i]);
         }
         db_free(statements->list);

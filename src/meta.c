@@ -63,57 +63,57 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
     switch(data_type) {
         case T_BOOL: {
             uint32_t len = strlen(key) + MAX_BOOL_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             sprintf(s, "\"%s\": %s", key, value && (*(bool *)value) ? "true" : "false");
             return s;
         }
         case T_INT: {
             uint32_t len = strlen(key) + MAX_INT_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             sprintf(s, "\"%s\": %d", key, value ? *(int32_t *)value : 0);
             return s;
         }
         case T_LONG: {
             uint32_t len = strlen(key) + MAX_LONG_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             sprintf(s, "\"%s\": %" PRIu64, key, value ? *(int64_t *)value : 0);
             return s;
         }
         case T_CHAR: {
             uint32_t len = strlen(key) + SYMBOL_LENGTH; /*len = key len + symbol len + value len.*/ 
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             sprintf(s, "\"%s\": \"%s\"", key, value ? (char *)value: "null");
             return s;
         }
         case T_STRING: {
             if (value) {
                 uint32_t len = strlen(key) + SYMBOL_LENGTH + strlen(value); /*len = key len + symbol len + value len.*/
-                char *s = db_malloc(len, SDT_STRING);
+                char *s = db_malloc(len, "string");
                 sprintf(s, "\"%s\": \"%s\"", key, (char *)value);
                 return s;
             } else {
                 uint32_t len = strlen(key) + SYMBOL_LENGTH ; /*len = key len + symbol len + value len.*/
-                char *s = db_malloc(len, SDT_STRING);
+                char *s = db_malloc(len, "string");
                 sprintf(s, "\"%s\": \"%s\"", key, "null");
                 return s;
             }
         }
         case T_FLOAT: {
             uint32_t len = strlen(key) + MAX_FLOAT_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             sprintf(s, "\"%s\": %f", key, value ? *(float *)value : 0);
             return s;
         }
         case T_DOUBLE: {
             uint32_t len = strlen(key) + MAX_DOUBLE_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             sprintf(s, "\"%s\": %lf", key, value ? *(double *)value : 0);
             return s;
         }
         case T_TIMESTAMP: {
             char temp[90];
             uint32_t len = strlen(key) + MAX_TIMESTAMP_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             if (value) {
                 time_t t = *(time_t *)value;
                 struct tm *tmp_time = localtime(&t);
@@ -127,7 +127,7 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
         case T_DATE: {
             char temp[90];
             uint32_t len = strlen(key) + MAX_TIMESTAMP_STR_LENGTH; /*len =key len + symbol len + value len*/
-            char *s = db_malloc(len, SDT_STRING);
+            char *s = db_malloc(len, "string");
             if (value) {
                 time_t t = *(time_t *)value;
                 struct tm *tmp_time = localtime(&t);
@@ -202,18 +202,18 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
     /* Check valid. */
     assert_not_null(table_name, "Input table name can`t be null.");
 
-    MetaTable *meta_table = db_malloc(sizeof(MetaTable), SDT_META_TABLE);
+    MetaTable *meta_table = instance(MetaTable);
     void *root_node = get_page(table_name, table->pager, table->root_page_num);
     uint32_t column_size = get_column_size(root_node);
 
     meta_table->table_name = db_strdup(table_name);
     meta_table->column_size = 0;
     meta_table->all_column_size = 0;
-    meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * column_size, SDT_POINTER);
+    meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * column_size, "pointer");
 
     for (int i = 0; i < column_size; i++) {
         MetaColumn *current = get_meta_column_by_index(root_node, i);
-        meta_table->meta_column[i] = db_malloc(sizeof(MetaColumn), SDT_META_COLUMN);
+        meta_table->meta_column[i] = instance(MetaColumn);
         memcpy(meta_table->meta_column[i], current, sizeof(MetaColumn));
 
         /* Skip to system reserved column. */

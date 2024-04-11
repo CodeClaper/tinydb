@@ -82,7 +82,7 @@ static int64_t next_xid() {
 
 /* Initialise transaction. */
 void init_transaction() {
-    xtable = db_malloc(sizeof(TransactionTable), SDT_TRANSACTION_TABLE);
+    xtable = instance(TransactionTable);
     xtable->head = NULL;
     xtable->tail = NULL;
     xtable->size = 0;
@@ -188,7 +188,7 @@ void auto_begin_transaction() {
         return;
 
     /* Generate new transaction. */
-    trans_handle = db_malloc(sizeof(TransactionHandle), SDT_TRANSACTION_HANDLE);
+    trans_handle = instance(TransactionHandle);
     trans_handle->xid = next_xid();
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = true;
@@ -212,7 +212,7 @@ void begin_transaction(DBResult *result) {
     }
 
     /* Generate new transaction. */
-    trans_handle = db_malloc(sizeof(TransactionHandle), SDT_TRANSACTION_HANDLE);
+    trans_handle = instance(TransactionHandle);
     trans_handle->xid = next_xid();
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = false;
@@ -332,7 +332,7 @@ static void transaction_insert_row(Row *row) {
     }
 
     /* For created_xid */
-    KeyValue *created_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *created_xid_col = instance(KeyValue);
     created_xid_col->key = db_strdup("created_xid");
     created_xid_col->value = copy_value(&current_trans->xid, T_LONG);
     created_xid_col->data_type = T_LONG;
@@ -340,7 +340,7 @@ static void transaction_insert_row(Row *row) {
 
     /* For expired_xid */
     int64_t zero = 0;
-    KeyValue *expired_xid_col = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+    KeyValue *expired_xid_col = instance(KeyValue);
     expired_xid_col->key = db_strdup("expired_xid");
     expired_xid_col->value = copy_value(&zero, T_LONG);
     expired_xid_col->data_type = T_LONG;

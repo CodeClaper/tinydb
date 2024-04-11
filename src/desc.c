@@ -29,41 +29,41 @@ static uint32_t calc_meta_column_len(MetaColumn *meta_column) {
 /* Generate DescribeResult. */
 static MapList *gen_describe_result(MetaTable *meta_table) {
 
-    MapList *map_list = db_malloc(sizeof(MapList), SDT_MAP_LIST);
+    MapList *map_list = instance(MapList);
     map_list->size = meta_table->column_size;
-    map_list->data = db_malloc(sizeof(Map *) * map_list->size, SDT_POINTER);
+    map_list->data = db_malloc(sizeof(Map *) * map_list->size, "pointer");
 
     int i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
 
-        Map *map = db_malloc(sizeof(Map), SDT_MAP);
+        Map *map = instance(Map);
         map->size = 4;
-        map->body = db_malloc(sizeof(KeyValue *) * map->size, SDT_POINTER);
+        map->body = db_malloc(sizeof(KeyValue *) * map->size, "pointer");
 
         /* filed */
-        KeyValue *key_value_field = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+        KeyValue *key_value_field = instance(KeyValue);
         key_value_field->key = db_strdup("field");
         key_value_field->value = db_strdup(meta_column->column_name);
         key_value_field->data_type = T_STRING;
         map->body[0] = key_value_field;
 
         /* type */
-        KeyValue *key_value_type = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+        KeyValue *key_value_type = instance(KeyValue);
         key_value_type->key = db_strdup("type");
         key_value_type->value = db_strdup(DATA_TYPE_NAMES[meta_column->column_type]);
         key_value_type->data_type = T_STRING;
         map->body[1] = key_value_type;
 
         /* primary key */
-        KeyValue *key_value_key = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+        KeyValue *key_value_key = instance(KeyValue);
         key_value_key->key = db_strdup("primary_key");
         key_value_key->value = copy_value(&meta_column->is_primary, T_BOOL);
         key_value_key->data_type = T_BOOL;
         map->body[2] = key_value_key;
 
         /* primary key */
-        KeyValue *key_value_size = db_malloc(sizeof(KeyValue), SDT_KEY_VALUE);
+        KeyValue *key_value_size = instance(KeyValue);
         key_value_size->key = db_strdup("size");
         uint32_t column_length = calc_meta_column_len(meta_column);
         key_value_size->value = copy_value(&column_length, T_INT);

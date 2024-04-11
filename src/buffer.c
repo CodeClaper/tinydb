@@ -23,9 +23,9 @@ static volatile s_lock lock = SPIN_UN_LOCKED_STATUS;
 /* Initialise table buffer. */
 void init_table_buffer() {
     if (buffer == NULL) {
-        buffer = db_malloc(sizeof(TableBuffer), SDT_TABLE_BUFFER);
+        buffer = instance(TableBuffer);
         buffer->size = 0;
-        buffer->buffer = db_malloc(0, SDT_POINTER); 
+        buffer->buffer = db_malloc(0, "pointer"); 
     }
 }
 
@@ -72,7 +72,7 @@ static bool save_or_update_table_buffer(Table *table) {
         return false;
 
     /* Generate TableBufferEntry. */
-    TableBufferEntry *entry = db_malloc(sizeof(TableBufferEntry), SDT_TABLE_BUFFER_ENTRY);
+    TableBufferEntry *entry = instance(TableBufferEntry);
     entry->table = table;
     entry->tid = trans->tid;
     entry->xid = trans->xid;
