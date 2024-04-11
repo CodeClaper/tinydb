@@ -310,7 +310,7 @@ void *sys_realloc(void *ptr, size_t size) {
 
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype) {
-    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
+    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.\n");
 
     void *ret = malloc(size);
     assert_not_null(ret, "Not enough memory to allocate.");
@@ -324,7 +324,7 @@ void *db_malloc(size_t size, char *stype) {
 
 /* Database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
-    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size: %ld > %ld.\n", size, MAX_ALLOCATE_SIZE);
+    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.\n");
 
 #ifdef DEBUG
     MEntry *entry = search_entry(ptr);

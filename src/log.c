@@ -15,6 +15,7 @@
 #include "defs.h"
 #include "timer.h"
 #include "xlog.h"
+#include "trans.h"
 #include "asserts.h"
 
 /* Log Level names */
@@ -198,6 +199,17 @@ void db_log(LogLevel lev, char *format, ...) {
             store_log_msg(message);
             break;
         case ERROR:
+            store_log_msg(message);
+            /* Auto rollback*/
+            if (conf->auto_rollback) {
+                TransactionHandle *transaction = find_transaction();
+                if (transaction && !transaction->auto_commit)
+                    execute_roll_back();
+            }
+            /* Stop the process, goto stmt. */
+            longjmp(errEnv, 1);
+            break;
+        case SYS_ERROR:
             store_log_msg(message);
             /* Stop the process, goto stmt. */
             longjmp(errEnv, 1);

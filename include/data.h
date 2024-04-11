@@ -20,7 +20,7 @@
 
 #define MAX_INT_VALUE   (1<<31) - 1
 #define MAX_UINT_VALUE  (1<<32) - 1
-#define MAX_LONG_VALUE  (1l<<63) - 1
+#define MAX_LONG_VALUE  (1L<<63) - 1
 
 #define MENTRY_STYPE_LENGTH 48
 
@@ -105,7 +105,8 @@ typedef enum {
     INFO,       /* DB running Infomation. */
     SUCCESS,    /* Success result to client. */
     WARN,       /* For unexpected messages including sql syntaxt error, reapeated begin transaction or commit .etc. */ 
-    ERROR,      /* Abort transaction. */
+    ERROR,      /* User error, will abort transaction. */
+    SYS_ERROR,  /* System error */
     FATAL,      /* Abort process. */
     PANIC       /* Shut down the database. */
 } 
@@ -127,7 +128,7 @@ typedef enum DDLType { DDL_INSERT, DDL_DELETE, DDL_UPDATE_INSERT, DDL_UPDATE_DEL
 typedef struct ColumnNode {
     char *column_name;
     char *range_variable;
-    bool *has_sub_column;
+    bool has_sub_column;
     struct ColumnNode *sub_column;
     struct ScalarExpSetNode *scalar_exp_set;
 } ColumnNode;
@@ -599,6 +600,7 @@ typedef struct {
     LogLevel log_level; /* log level */
     /* transaction */
     TransIsolationLevel trans_iso_level;
+    bool auto_rollback;
 } Conf;
 
 /* Refer */

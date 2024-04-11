@@ -84,6 +84,12 @@ static char* append_dir_end(char *dir) {
     }
 }
 
+/* Define bool value. */
+static bool define_bool_value(char *title, char *key) {
+    char *bstr = read_conf(title, key);
+    return streq("true", bstr);
+}
+
 
 /* Load configuration. */
 Conf *load_conf() {
@@ -92,5 +98,6 @@ Conf *load_conf() {
     conf->port = (ushort)atoi(read_conf("base", "port"));
     conf->log_dir = append_dir_end(read_conf("log", "dir"));
     conf->log_level = define_log_level(read_conf("log", "level"));
+    conf->auto_rollback = define_bool_value("transaction", "auto_rollback");
     return conf;
 }

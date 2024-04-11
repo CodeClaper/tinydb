@@ -145,7 +145,7 @@ void commit_xlog() {
 void execute_roll_back() {
     TransactionHandle *transaction = find_transaction();
     if (transaction == NULL) {
-        db_log(ERROR, "Not found current transaction.");
+        db_log(SYS_ERROR, "Not found current transaction.");
         return;
     }
 
@@ -160,11 +160,10 @@ void execute_roll_back() {
             break;
         }
     }
-
-    if (current == NULL) {
-        db_log(ERROR, "Not found current transaction xlog.");
+    
+    /* If not found xlog, not rollback. */
+    if (current == NULL) 
         return;
-    }
     
     /* Loop to rollback. */
     for (; current != NULL; current = current->next) {
