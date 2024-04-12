@@ -8,7 +8,10 @@ client = TinyDbClient("127.0.0.1", 4083)
 # create table
 def test_create_mock_table():
     sql = "create table Student(id string primary key, name string, age int, grade int, sex char, birth date, phone string, address string, createdTime timestamp);\n" \
-          "create table Parent(id string primary key, name string, student Student);"
+          "create table Parent(id string primary key, name string, student Student);\n" \
+          "create table ParentDup1(id string primary key, name string, student Student);\n" \
+          "create table ParentDup2(id string primary key, name int, student Student);\n" \
+          "create table ParentDup3(id string primary key, content string, student Student);\n" 
     ret = client.execute(sql)
     assert_all(ret)
 
@@ -81,6 +84,22 @@ def test_string_data_type():
     ret = client.execute("insert into Student values('S001', 'Jerry', 9, 5, 'M', '2009-03-05', 17232323223, 'NewYork', '2023-08-09T10:20:00');")
     assert ret["success"] == False
 
+## test insert query spc
+def test_insert_for_query_spec():
+    ret = client.execute("insert into ParentDup1 select * from Parent;")
+    assert ret["success"] == True
+    assert ret["rows"] == 2
+
+## test insert query spc with wrong data type.
+def test_insert_for_query_spec_with_wrong_type():
+    ret = client.execute("insert into ParentDup2 select * from Parent;")
+    assert ret["success"] == False
+
+## test insert query spec not match columns
+def test_insert_for_query_spec_not_match_columns():
+    ret = client.execute("insert into ParentDup3 select * from Parent;")
+    assert ret["success"] == False
+
 ## test insert into not exist table.
 def test_no_exist_table():
     ret = client.execute("insert into X values('S001', 'lili', 8, 3, 'F', '2010-11-12', '13001332823', 'beijing', '2024-04-01 15:54:00');")
@@ -89,6 +108,9 @@ def test_no_exist_table():
 ## drop table
 def test_drop_table():
     sql = "drop table Parent;\n"\
+          "drop table ParentDup1;\n"\
+          "drop table ParentDup2;\n"\
+          "drop table ParentDup3;\n"\
           "drop table Student;\n"
     ret = client.execute(sql)
     assert_all(ret)
