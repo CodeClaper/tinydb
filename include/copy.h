@@ -61,6 +61,9 @@ ReferValue *copy_refer_value(ReferValue *refer_value);
 /* Copy select items node. */
 SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node);
 
+/* Copy TableExpNode. */
+TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node);
+
 /* Copy SelectionNode. */
 SelectionNode *copy_selection_node(SelectionNode *selection_node);
 

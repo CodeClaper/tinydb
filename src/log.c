@@ -19,7 +19,7 @@
 #include "asserts.h"
 
 /* Log Level names */
-static char* LOG_LEVEL_NAME_LIST[] = { "TRACE", "DEBUG", "INFO", "SUCCS", "WARN", "ERROR", "TATAL", "PANIC" };
+static char* LOG_LEVEL_NAME_LIST[] = { "TRACE", "DEBUG", "INFO", "SUCCS", "WARN", "ERROR", "SYSERR", "TATAL", "PANIC" };
 
 /* Lock */
 static pthread_mutex_t mutex;

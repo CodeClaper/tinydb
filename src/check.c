@@ -11,6 +11,7 @@
 #include "data.h"
 #include "table.h"
 #include "log.h"
+#include "copy.h"
 #include "free.h"
 #include "ltree.h"
 #include "trans.h"
@@ -59,6 +60,72 @@ static void *get_value_from_value_item(ValueItemNode *value_item) {
             return value_item->value.r_value;
         default:
             db_log(ERROR, "Not support data type");
+    }
+}
+
+/* Find meta column in table ref set.
+ * Return meta column or NULL if not found.
+ * */
+static MetaColumn *find_meta_column_in_table_ref_set(TableRefSetNode *table_ref_set, char *column_name) {
+    uint32_t i;
+    for (i = 0; i< table_ref_set->size; i++) {
+        TableRefNode *table_ref = table_ref_set->set[i];
+        Table *table = open_table(table_ref->table);
+        if (!table) {
+            db_log(ERROR, "Table '%s' not exist.", table_ref->table);
+            return NULL;
+        }
+        MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_name);
+        if (meta_column)
+            return meta_column;
+    }
+    return NULL;
+}
+
+static bool include_column_for_query_spece(MetaColumn *meta_column, QuerySpecNode *query_spec) {
+    SelectionNode *selection = query_spec->selection;
+    TableRefSetNode *table_ref_set = query_spec->table_exp->from_clause->from;
+    if (selection->all_column) {
+        MetaColumn *target_meta_column = find_meta_column_in_table_ref_set(table_ref_set, meta_column->column_name);
+        if (!target_meta_column) {
+            db_log(ERROR, "Lack column '%s' in query spec. ", meta_column->column_name);
+            return false;
+        }
+        if (meta_column->column_type != target_meta_column->column_type) {
+            db_log(ERROR, "Column '%s' data type is %s, but support data type %s in query spec.", 
+                   meta_column->column_name,
+                   DATA_TYPE_NAMES[meta_column->column_type],
+                   DATA_TYPE_NAMES[target_meta_column->column_type]);
+            return false;
+        }
+        return true;
+    } else {
+        MetaColumn *target_meta_column = NULL;
+        uint32_t i;
+        for (i = 0; i < selection->scalar_exp_set->size; i++) {
+            ScalarExpNode *scalar_exp = selection->scalar_exp_set->data[i];
+            char *alias_name = scalar_exp->alias;
+            char *column_name = scalar_exp->column->column_name;
+            if (alias_name) {
+                if (streq(meta_column->column_name, alias_name)) 
+                    target_meta_column = find_meta_column_in_table_ref_set(table_ref_set, column_name);
+            } else {
+               if (streq(meta_column->column_name, column_name)) 
+                    target_meta_column = find_meta_column_in_table_ref_set(table_ref_set, column_name);
+            }
+        }
+        if (!target_meta_column) {
+            db_log(ERROR, "Lack column '%s' in query spec. ", meta_column->column_name);
+            return false;
+        }
+        if (meta_column->column_type != target_meta_column->column_type) {
+            db_log(ERROR, "Column '%s' data type is %s, but support data type %s in query spec.", 
+                   meta_column->column_name,
+                   DATA_TYPE_NAMES[meta_column->column_type],
+                   DATA_TYPE_NAMES[target_meta_column->column_type]);
+            return false;
+        }
+        return true;
     }
 }
 
@@ -679,8 +746,28 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
 
 /* Check InsertNode for QUERY_SPEC. */
 static bool check_insert_node_for_query_spec(InsertNode *insert_node, QuerySpecNode *query_spec) {
-    db_log(ERROR, "Not support query spec in insert statement.");
-    return false;
+    /* Check table exist.*/
+    Table *table = open_table(insert_node->table_name);
+    if (table == NULL)
+        return false;
+    if (insert_node->all_column) {
+        MetaTable *meta_table = table->meta_table;
+        uint32_t i;
+        for (i = 0; i < meta_table->column_size; i++) {
+            MetaColumn *meta_column = meta_table->meta_column[i];
+            if (!include_column_for_query_spece(meta_column, query_spec))
+                return false;
+        }
+    } else {
+        uint32_t i;
+        for (i = 0; i < insert_node->columns_set_node->size; i++) {
+            ColumnNode *column_node = insert_node->columns_set_node->columns[i];
+            MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
+            if (!include_column_for_query_spece(meta_column, query_spec))
+                return false;
+        }
+    }
+    return true;
 }
 
 /* Check SelectNode. */

@@ -49,6 +49,20 @@ void free_refer(Refer *refer) {
     }
 }
 
+/* Free ReferSet. */
+void free_refer_set(ReferSet *refer_set) {
+    if (refer_set) {
+        if (refer_set->set) {
+            uint32_t i;
+            for (i = 0; i < refer_set->size; i++) {
+                free_refer(refer_set->set[i]);
+            }
+            db_free(refer_set->set);
+        }
+        db_free(refer_set);
+    }
+}
+
 /* Free ReferUpdateEntity. */
 void free_refer_update_entity(ReferUpdateEntity *refer_update_entity) {
     if (refer_update_entity) {

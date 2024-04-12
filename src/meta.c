@@ -10,6 +10,7 @@
 #include "meta.h"
 #include "mmu.h"
 #include "log.h"
+#include "utils.h"
 #include "common.h"
 #include "ltree.h"
 #include "asserts.h"
@@ -180,7 +181,7 @@ MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index) {
 MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
     for (uint32_t i = 0; i < meta_table->column_size; i++) {
       MetaColumn *meta_column = meta_table->meta_column[i];
-      if (strcmp(meta_column->column_name, name) == 0)
+      if (streq(meta_column->column_name, name))
         return meta_column;
     }
     return NULL;

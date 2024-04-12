@@ -391,18 +391,18 @@ typedef struct {
 } CreateTableNode;
 
 /* DropTableNode */
-typedef struct {
+typedef struct DropTableNode {
     char *table_name;
 } DropTableNode;
 
 /* SelectNode */
-typedef struct {
+typedef struct SelectNode {
     SelectionNode *selection;
     TableExpNode *table_exp;
 } SelectNode;
 
 /* InsertNode */
-typedef struct {
+typedef struct InsertNode {
     bool all_column;
     char *table_name;
     ColumnSetNode *columns_set_node;
@@ -410,30 +410,30 @@ typedef struct {
 } InsertNode;
 
 /* UpdateNode */
-typedef struct {
+typedef struct UpdateNode {
     char *table_name;
     AssignmentSetNode *assignment_set_node;
     WhereClauseNode *where_clause;
 } UpdateNode;
 
 /* DeleteNode */
-typedef struct {
+typedef struct DeleteNode {
     char *table_name;
     ConditionNode *condition_node;
 } DeleteNode;
 
 /* DescribeNode */
-typedef struct {
+typedef struct DescribeNode {
     char *table_name;
 } DescribeNode;
 
 /* ShowNode */
-typedef struct {
+typedef struct ShowNode {
     ShowNodeType type;
 } ShowNode;
 
 /* Statement */
-typedef struct {
+typedef struct Statement {
   StatementType statement_type;
   union {
         CreateTableNode *create_table_node;
@@ -448,13 +448,13 @@ typedef struct {
 } Statement;
 
 /* Statements */
-typedef struct {
+typedef struct Statements {
     uint32_t size;
     Statement **list;
 } Statements;
 
 /* Pager */
-typedef struct {
+typedef struct Pager {
     int file_descriptor;
     uint32_t file_length;
     uint32_t size;
@@ -462,7 +462,7 @@ typedef struct {
 } Pager;
 
 /* MetaColumn */
-typedef struct {
+typedef struct MetaColumn {
     char column_name[MAX_COLUMN_NAME_LEN];
     DataType column_type;
     char table_name[MAX_TABLE_NAME_LEN];
@@ -610,15 +610,17 @@ typedef struct Refer {
     int32_t cell_num;
 } Refer;
 
+/* ReferSet. */
+typedef struct ReferSet {
+    uint32_t size;
+    Refer **set;
+} ReferSet;
+
+/* ReferUpdateEntity */
 typedef struct ReferUpdateEntity {
     Refer *old_refer;
     Refer *new_refer;
 } ReferUpdateEntity;
-
-typedef struct {
-    ExecuteStatus status;
-    Refer *refer;
-} InsertExecuteResult;
 
 /* Db execute result. */
 typedef struct {

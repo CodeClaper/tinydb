@@ -497,6 +497,64 @@ ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node
     return copy;
 }
 
+/* Copy TableRefNode. */
+TableRefNode *copy_table_ref_node(TableRefNode *table_ref) {
+    if (!table_ref)
+        return NULL;
+    TableRefNode *table_ref_copy = instance(TableRefNode);
+    if (table_ref->table)
+        table_ref_copy->table = db_strdup(table_ref->table);
+    if (table_ref->range_variable)
+        table_ref_copy->range_variable = db_strdup(table_ref->range_variable);
+    return table_ref_copy;
+}
+
+/* Copy TableRefSetNode. */
+TableRefSetNode *copy_table_ref_set_node(TableRefSetNode *table_ref_set) {
+    if (!table_ref_set)
+        return NULL;
+
+    TableRefSetNode *table_ref_set_copy = instance(TableRefSetNode);
+    table_ref_set_copy->size = table_ref_set->size;
+    table_ref_set_copy->set = db_malloc(sizeof(TableRefNode *) * table_ref_set_copy->size, "pointer");
+
+    uint32_t i;
+    for (i = 0; i < table_ref_set_copy->size; i++) {
+        table_ref_set_copy->set[i] = copy_table_ref_node(table_ref_set->set[i]);
+    }
+
+    return table_ref_set_copy;
+}
+
+/* Copy FromClauseNode. */
+FromClauseNode *copy_from_clause_node(FromClauseNode *from_clause_node) {
+    if (!from_clause_node)
+        return NULL;
+
+    FromClauseNode *from_clause_copy = instance(FromClauseNode);
+    from_clause_copy->from = copy_table_ref_set_node(from_clause_node->from);
+    return from_clause_copy;
+}
+
+/* Copy WhereClauseNode. */
+WhereClauseNode *copy_where_clause_node(WhereClauseNode *where_clause) {
+    if (!where_clause)
+        return NULL;
+    WhereClauseNode *where_clause_copy = instance(WhereClauseNode);
+    where_clause_copy->condition = copy_condition_node(where_clause->condition);
+    return where_clause_copy;
+}
+
+/* Copy TableExpNode. */
+TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node) {
+    if (!table_exp_node) 
+        return NULL;
+    TableExpNode *table_exp_copy = instance(TableExpNode);
+    table_exp_copy->from_clause = copy_from_clause_node(table_exp_node->from_clause);
+    table_exp_copy->where_clause = copy_where_clause_node(table_exp_node->where_clause);
+    return table_exp_node;
+        
+}
 
 /* Copy SelectionNode. */
 SelectionNode *copy_selection_node(SelectionNode *selection_node) {

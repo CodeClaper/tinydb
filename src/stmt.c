@@ -66,12 +66,13 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
 static void statement_insert(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == INSERT_STMT, "System error, insert statement type error.\n");
     auto_begin_transaction();
-    Refer *refer = exec_insert_statement(stmt->insert_node);
-    if (refer != NULL) {
+    ReferSet *refer_set = exec_insert_statement(stmt->insert_node);
+    if (refer_set) {
         result->success = true;
-        result->rows = 1;
-        result->message = format("Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
-        db_log(SUCCESS, "Insert one row data to table '%s' successfully.", stmt->insert_node->table_name);
+        result->rows = refer_set->size;
+        result->message = format("Insert %d rows data to table '%s' successfully.", result->rows, stmt->insert_node->table_name);
+        db_log(SUCCESS, "Insert %d row data to table '%s' successfully.", result->rows, stmt->insert_node->table_name);
+        free_refer_set(refer_set);
     }
 }
 

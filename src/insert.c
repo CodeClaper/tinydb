@@ -39,22 +39,6 @@ static QueryParam *fake_query_param(char *table_name, ConditionNode *condition_n
 /* Make a fake SelectItemsNode. */
 static SelectItemsNode *fake_select_all_items_node();
 
-/* Get column number of insert statement. */
-static uint32_t get_insert_column_size(InsertNode *insert_node, MetaTable *meta_table) {
-    if (insert_node->all_column)
-        return meta_table->column_size;
-    else 
-        return insert_node->columns_set_node->size;
-}
-
-/* Get column name. */
-static char *get_column_name(InsertNode *insert_node, uint32_t index, MetaTable *meta_table) {
-    if (insert_node->all_column)
-        return meta_table->meta_column[index]->column_name;
-    else 
-        return ((ColumnNode *)(insert_node->columns_set_node->columns + index))->column_name;
-}
-
 /* Get the index of column in the insert node. */
 static int get_column_index(InsertNode *insert_node, char *column_name) {
     int i;
@@ -149,7 +133,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             switch (value_item_node->value.r_value->type) {
                 case DIRECTLY: {
                     InsertNode *insert_node = fake_insert_node(meta_column->table_name, value_item_node->value.r_value->nest_value_item_set);
-                    Refer *refer = exec_insert_statement(insert_node);
+                    Refer *refer = insert_for_values(insert_node);
                     free_insert_node(insert_node);
                     return refer;
                 }
@@ -177,6 +161,14 @@ InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_
     insert_node->all_column = true;
     insert_node->values_or_query_spec = fake_values_or_query_spec_node(value_item_set_node);
     return insert_node;
+}
+
+/* Convert QuerySpecNode to SelectionNode. */
+static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
+    SelectNode *select_node = instance(SelectNode);
+    select_node->selection = copy_selection_node(query_spec->selection);
+    select_node->table_exp = copy_table_exp_node(query_spec->table_exp);
+    return select_node;
 }
 
 /* Generate insert row. */
@@ -233,33 +225,39 @@ static Row *generate_insert_row(InsertNode *insert_node) {
     return row;
 }
 
-/* Execute insert statement. 
- * If successfully, return the Refer which maybe used by other table.
- * If fail, return NULL. */
-Refer *exec_insert_statement(InsertNode *insert_node) {
-    
-    /* Check if table exists. */
-    Table *table = open_table(insert_node->table_name);
-    if (table == NULL) {
-        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
-        return NULL;
+/* Convert to insert row. */
+static Row *convert_insert_row(Row *row, Table *table) {
+    Row *insert_row = instance(Row);
+
+    insert_row->table_name = db_strdup(table->meta_table->table_name);
+    /* Add reserved columns for created_xid and expired_xid. */
+    insert_row->column_len = row->column_len + 2;
+    insert_row->data = db_malloc(sizeof(KeyValue *) * insert_row->column_len, "pointer");
+    /* Copy data. */
+    uint32_t i;
+    for (i = 0; i < row->column_len; i++) {
+        insert_row->data[i] = copy_key_value(row->data[i]);
     }
+    /* Copy row key. */
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    insert_row->key = copy_value(row->key, primary_meta_column->column_type);
 
-    /* Check if insert node valid. */
-    if (!check_insert_node(insert_node)) 
-        return NULL;
+    return insert_row;
+}
 
-    Row *row = generate_insert_row(insert_node);
-    if (row == NULL) 
-        return NULL;
+/* Insert one row. 
+ * Return the row refer.
+ * */
+static Refer *insert_one_row(Table *table, Row *row) {
 
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
-        db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", get_key_str(row->key, primary_key_meta_column->column_type), insert_node->table_name);
+        db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
+               get_key_str(row->key, primary_key_meta_column->column_type), 
+               table->meta_table->table_name);
         /* Free unuesed memeory */
         free_cursor(cursor);
-        free_row(row);
         return NULL;
     }
 
@@ -277,8 +275,97 @@ Refer *exec_insert_statement(InsertNode *insert_node) {
 
     /* Free useless memeory */
     free_cursor(cursor);
-    free_row(row);
 
     return refer;    
+}
+
+/* Insert for values case. */
+Refer *insert_for_values(InsertNode *insert_node) {
+    /* Check if table exists. */
+    Table *table = open_table(insert_node->table_name);
+    if (!table) {
+        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
+        return NULL;
+    }
+
+    Row *row = generate_insert_row(insert_node);
+    if (!row) 
+        return NULL;
+
+    Refer *refer = insert_one_row(table, row);
+
+    free_row(row);
+
+    return refer;
+}
+
+/* Insert for query spec case. */
+static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
+
+    /* Check if table exists. */
+    Table *table = open_table(insert_node->table_name);
+    if (!table) {
+        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
+        return NULL;
+    }
+    
+    ReferSet *refer_set = instance(ReferSet);
+
+    ValuesOrQuerySpecNode *values_or_query_spec = insert_node->values_or_query_spec;
+    /* Make select statement to get safisfied rows. */
+    SelectNode *select_node = convert_select_node(values_or_query_spec->query_spec);
+    DBResult *result = new_db_result();
+    result->stmt_type = SELECT_STMT;
+    exec_select_statement(select_node, result);
+
+    if (result->success) {
+        SelectResult *select_result = (SelectResult *)result->data;
+        refer_set->size = select_result->row_size;
+        refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
+        /* Insert into rows. */
+        uint32_t i;
+        for (i = 0; i < select_result->row_size; i++) {
+            Row *insert_row = convert_insert_row(select_result->rows[i], table);
+            Refer *refer = insert_one_row(table, insert_row);
+            refer_set->set[i] = refer;
+            free_row(insert_row);
+        }
+    }
+
+    free_select_node(select_node);
+    free_db_result(result);
+
+    return refer_set;
+}
+
+/* Execute insert statement. 
+ * Return ReferSet if it excutes successfully,
+ * otherwise, return NULL.
+ * */
+ReferSet *exec_insert_statement(InsertNode *insert_node) {
+
+    /* Check if insert node valid. */
+    if (!check_insert_node(insert_node)) 
+        return NULL;
+
+    ValuesOrQuerySpecNode *values_or_query_spec = insert_node->values_or_query_spec;
+
+    switch (values_or_query_spec->type) {
+        case VQ_VALUES: {
+            Refer *refer = insert_for_values(insert_node);
+            if (!refer) return NULL;
+            ReferSet *refer_set = instance(ReferSet);
+            refer_set->size = 1;
+            refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
+            refer_set->set[0] = refer;
+            return refer_set;
+        }
+        case VQ_QUERY_SPEC: {
+            /* For query spec, there is no refer. 
+             * Note, maybe used in multi-values which will be supported. */
+            return insert_for_query_spec(insert_node);
+        }
+    }
+
 }
 

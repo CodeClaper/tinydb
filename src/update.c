@@ -79,7 +79,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     switch (refer_value->type) {
                         case DIRECTLY: {
                             InsertNode *insert_node = fake_insert_node(meta_column->table_name, refer_value->nest_value_item_set);
-                            Refer *refer = exec_insert_statement(insert_node);
+                            Refer *refer = insert_for_values(insert_node);
                             free_insert_node(insert_node);
                             key_value->value = refer;
                             break;

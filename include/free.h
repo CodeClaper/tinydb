@@ -36,6 +36,9 @@ void free_cursor(Cursor *cursor);
 /* Free Refer. */
 void free_refer(Refer *refer);
 
+/* Free ReferSet. */
+void free_refer_set(ReferSet *refer_set);
+
 /* Free ReferValue. */
 void free_refer_value(ReferValue *refer_value);
 
