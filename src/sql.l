@@ -15,6 +15,9 @@ int yylex();
 /* macro to save the text and return a token */
 #define TOK(name) { return name; }
 %}
+
+%option caseless
+
 %%
 begin                   return BEGINN;
 commit                  return COMMIT;

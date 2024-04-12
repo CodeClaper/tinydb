@@ -186,9 +186,9 @@ static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap ali
         Table *table = open_table(alias_entry.name);
         MetaTable *meta_table = table->meta_table;
 
-        if (column->range_variable && (streq(column->range_variable, alias_entry.name) || streq(column->range_variable, alias_entry.alias))) {
+        if (column->range_variable && 
+            (streq(column->range_variable, alias_entry.name) || streq(column->range_variable, alias_entry.alias))) 
             current_meta_table = meta_table;
-        }
 
         if (column->range_variable == NULL) {
             for (j = 0; j < meta_table->column_size; j++) {
@@ -299,7 +299,8 @@ static bool check_value_valid(MetaColumn *meta_column, ValueItemNode *value_item
 
             /* https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
             comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
-            assert_true(comp_result == 0, "Regex compile fail.\n");
+            if (comp_result != 0)
+                db_log(ERROR, "Regex compile fail.");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
             regfree(&reegex);
 
@@ -317,7 +318,8 @@ static bool check_value_valid(MetaColumn *meta_column, ValueItemNode *value_item
 
             /* Jump https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
             comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", REG_EXTENDED);
-            assert_true(comp_result == 0, "Regex compile fail.\n");
+            if (comp_result != 0)
+                db_log(ERROR, "Regex compile fail.");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
             regfree(&reegex);
 
@@ -374,8 +376,8 @@ static bool check_function_node(FunctionNode *function, AliasMap alias_map) {
 
 /* Check CalculateNode. */
 static bool check_calculate_node(CalculateNode *calculate_node, AliasMap alias_map) {
-    return check_scalar_exp(calculate_node->left, alias_map) 
-        && check_scalar_exp(calculate_node->right, alias_map);
+    return check_scalar_exp(calculate_node->left, alias_map) && 
+            check_scalar_exp(calculate_node->right, alias_map);
 }
 
 /* Check ScalarExpNode if column. */

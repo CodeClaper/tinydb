@@ -145,8 +145,10 @@ void free_meta_table(MetaTable *meta_table) {
 /* Free column */
 void free_column_node(ColumnNode *column_node) {
     if (column_node) {
+        /* Free subColumn. */
         if (column_node->has_sub_column && column_node->sub_column)
             free_column_node(column_node->sub_column);
+        /* Free subScalarExpNode. */
         if (column_node->has_sub_column && column_node->scalar_exp_set)
             free_scalar_exp_set_node(column_node->scalar_exp_set);
         if (column_node->column_name)
@@ -161,7 +163,8 @@ void free_column_node(ColumnNode *column_node) {
 /* Free column set node. */
 void free_column_set_node(ColumnSetNode *column_set_node) {
     if (column_set_node) {
-        for (uint32_t i = 0; i < column_set_node->size; i++) {
+        uint32_t i;
+        for (i = 0; i < column_set_node->size; i++) {
             free_column_node(*(column_set_node->columns + i));
         }
         db_free(column_set_node->columns);
@@ -172,7 +175,8 @@ void free_column_set_node(ColumnSetNode *column_set_node) {
 /* Free Pager. */
 void free_pager(Pager *pager) {
     if (pager) {
-        for (uint32_t i = 0; i < pager->size; i++) {
+        uint32_t i;
+        for (i = 0; i < pager->size; i++) {
             db_free(pager->pages[i]);
         }
         db_free(pager);
