@@ -11,7 +11,10 @@ def test_create_mock_table():
           "create table Parent(id string primary key, name string, student Student);\n" \
           "create table ParentDup1(id string primary key, name string, student Student);\n" \
           "create table ParentDup2(id string primary key, name int, student Student);\n" \
-          "create table ParentDup3(id string primary key, content string, student Student);\n" 
+          "create table ParentDup3(id string primary key, content string, student Student);\n" \
+          "create table Pointer(x float, y float);\n" \
+          "create table Circle(r float, p Pointer);\n" 
+
     ret = client.execute(sql)
     assert_all(ret)
 
@@ -105,13 +108,35 @@ def test_no_exist_table():
     ret = client.execute("insert into X values('S001', 'lili', 8, 3, 'F', '2010-11-12', '13001332823', 'beijing', '2024-04-01 15:54:00');")
     assert ret["success"] == False
 
+## test insert table without user-level priamry key
+def test_insert_table_without_primary_key():
+    sql = "insert into Circle values (10.23, (10.0, 20.56));\n" \
+          "insert into Circle values (33.23, (107.0, 77));\n" \
+          "insert into Circle values (19.75, (23.0, 17.55));\n" \
+          "insert into Circle values (100, (66.0, 73));\n" \
+          "insert into Circle values (45, (92.0, 29.5));\n"
+    ret = client.execute(sql)
+    assert_all(ret)
+
+## query after insert table without user-level priamry key
+def test_select_table_without_primary_key():
+    sql = "select * from Circle where r > 20 and p[x] > 70;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"] == [
+        {"r": 33.23, "p": { "x": 107.0, "y": 77}},
+        {"r": 45, "p": { "x": 92.0, "y": 29.5}},
+    ]
+
 ## drop table
 def test_drop_table():
     sql = "drop table Parent;\n"\
           "drop table ParentDup1;\n"\
           "drop table ParentDup2;\n"\
           "drop table ParentDup3;\n"\
-          "drop table Student;\n"
+          "drop table Student;\n"\
+          "drop table Circle;\n"\
+          "drop table Pointer;\n"
     ret = client.execute(sql)
     assert_all(ret)
 
