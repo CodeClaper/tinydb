@@ -16,6 +16,7 @@
 #include "asserts.h"
 #include "pager.h"
 
+#define DEFAULT_BOOL_LENGTH         2
 #define DEFAULT_STRING_LENGTH       48
 #define DEFAULT_DATE_LENGTH         20
 #define DEFAULT_TIMESTAMP_LENGTH    20
@@ -35,9 +36,11 @@
 uint32_t default_data_len(DataType column_type) {
     switch (column_type) {
         case T_BOOL:
-            return 2;
+            return DEFAULT_BOOL_LENGTH;
         case T_CHAR:
             return sizeof(char);
+        case T_VARCHAR:
+            return DEFAULT_STRING_LENGTH;
         case T_INT:
             return sizeof(int32_t);
         case T_LONG:
@@ -86,7 +89,8 @@ char *get_key_value_pair_str(char *key, void *value, DataType data_type) {
             sprintf(s, "\"%s\": \"%s\"", key, value ? (char *)value: "null");
             return s;
         }
-        case T_STRING: {
+        case T_STRING:
+        case T_VARCHAR: {
             if (value) {
                 uint32_t len = strlen(key) + SYMBOL_LENGTH + strlen(value); /*len = key len + symbol len + value len.*/
                 char *s = db_malloc(len, "string");
@@ -157,22 +161,18 @@ uint32_t calc_table_row_length(Table *table) {
 
 /* Calculate primary key lenght. if not exist primary key , return -1; */
 uint32_t calc_primary_key_length(Table *table) {
-    for (int i = 0; i < table->meta_table->column_size; i++) {
+    uint32_t i;
+    for (i = 0; i < table->meta_table->all_column_size; i++) {
        MetaColumn *meta_column = (table->meta_table->meta_column[i]);
        if (meta_column->is_primary)
            return meta_column->column_length;
-     }
-     db_log(PANIC, "Not found primary key.");
-     return -1;
+    }
+    db_log(PANIC, "Not found primary key.");
+    return -1;
 }
 
 /* Get index column meta info */
 MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index) {
-    uint32_t column_size = get_column_size(root_node);
-    if (index >= column_size) {
-       fprintf(stderr, "Exceed the maxinum column size: [%d]", column_size);   
-       exit(1);
-    }
     void *destination = get_meta_column_pointer(root_node, index);
     return deserialize_meta_column(destination);
 }
@@ -212,7 +212,8 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
     meta_table->all_column_size = 0;
     meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * column_size, "pointer");
 
-    for (int i = 0; i < column_size; i++) {
+    uint32_t i;
+    for (i = 0; i < column_size; i++) {
         MetaColumn *current = get_meta_column_by_index(root_node, i);
         meta_table->meta_column[i] = instance(MetaColumn);
         memcpy(meta_table->meta_column[i], current, sizeof(MetaColumn));

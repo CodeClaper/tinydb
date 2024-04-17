@@ -333,7 +333,7 @@ static void transaction_insert_row(Row *row) {
 
     /* For created_xid */
     KeyValue *created_xid_col = instance(KeyValue);
-    created_xid_col->key = db_strdup("created_xid");
+    created_xid_col->key = db_strdup(CREATED_XID_COLUMN_NAME);
     created_xid_col->value = copy_value(&current_trans->xid, T_LONG);
     created_xid_col->data_type = T_LONG;
     row->data[row->column_len - 2] = created_xid_col;
@@ -341,7 +341,7 @@ static void transaction_insert_row(Row *row) {
     /* For expired_xid */
     int64_t zero = 0;
     KeyValue *expired_xid_col = instance(KeyValue);
-    expired_xid_col->key = db_strdup("expired_xid");
+    expired_xid_col->key = db_strdup(EXPIRED_XID_COLUMN_NAME);
     expired_xid_col->value = copy_value(&zero, T_LONG);
     expired_xid_col->data_type = T_LONG;
     row->data[row->column_len - 1] = expired_xid_col;

@@ -70,8 +70,8 @@ SelectionNode *copy_selection_node(SelectionNode *selection_node);
 /* Copy a ScalarExpNode. */
 ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node);
 
-/* Copy query param. */
-QueryParam *copy_query_param(QueryParam *query_param);
+/* Copy ScalarExpSetNode. */
+ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node);
 
 /* Copy a dymamic memory block */
 void *copy_block(void *value, size_t size);

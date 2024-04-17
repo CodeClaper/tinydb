@@ -20,6 +20,7 @@
 #include "index.h"
 #include "select.h"
 #include "refer.h"
+#include "list.h"
 
 /* Check ValueItemSetNode. */
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node);
@@ -239,10 +240,11 @@ static bool if_convert_type(DataType source, DataType target, char *column_name,
             flag = target == T_INT || target == T_DOUBLE;
             break;
         case T_CHAR:
-            flag = target == T_CHAR || target == T_STRING;
+            flag = target == T_CHAR || target == T_VARCHAR ||target == T_STRING;
             break;
         case T_STRING:
-            flag = target == T_CHAR || target == T_STRING;
+        case T_VARCHAR:
+            flag = target == T_CHAR || target == T_VARCHAR || target == T_STRING;
             break;
         case T_TIMESTAMP:
             flag = target == T_TIMESTAMP || target == T_STRING;
@@ -656,39 +658,73 @@ static bool check_duplicate_table(char *table_name) {
         return true;
 }
 
-/* Check if support priamay key. 
- * Maybe it will allow to not support primary key, but now, must to do.  */
-static bool check_primary_null(CreateTableNode *create_table_node) {
-
-    /* check primary key node. */
-    if (create_table_node->primary_key_node)
-        return true;
-
-    /* check column def define primary. */
+/* Check if column already exists. */
+static bool check_if_column_already_exists(List *list, ColumnDefNode *column_def) {
     uint32_t i;
-    for(i = 0; i < create_table_node->column_def_set_node->size; i++) {
-        if (create_table_node->column_def_set_node->column_defs[i]->is_primary)
+    for (i = 0; i < list->size; i++) {
+        ColumnDefNode *current_column_def = (ColumnDefNode *)list->set[i];
+        if (streq(current_column_def->column->column, column_def->column->column))
             return true;
     }
+    return false;
+}
 
-    db_log(ERROR, "Lack primary key definition in table '%s'. ", create_table_node->table_name);
-
+/* Check if ColumnDefOptNodeList contains primary key. */
+static bool check_if_contain_primary_key(ColumnDefOptNodeList *column_def_opt_list) {
+    if (column_def_opt_list) {
+        uint32_t i;
+        for (i = 0; i < column_def_opt_list->size; i++) {
+            ColumnDefOptNode *column_def_opt = column_def_opt_list->set[i];
+            if (column_def_opt->opt_type == OPT_PRIMARY_KEY)
+                return true;
+        }
+    }
     return false;
 }
 
 /* Check if exists duplicate column name. */
-static bool check_duplicate_column_name(ColumnDefSetNode *column_def_set_node) {
+static bool check_table_element_commalist(BaseTableElementCommalist *base_table_element_commalist) {
+    List *list = create_list();
+
     uint32_t i, j;
-    for (i = 0; i < column_def_set_node->size; i++) {
-        ColumnDefNode *column_def_node1 = column_def_set_node->column_defs[i];
-        for(j = 0; j < column_def_set_node->size; j++) {
-            ColumnDefNode *column_def_node2 = column_def_set_node->column_defs[j];
-            if (i !=j && strcmp(column_def_node1->column->column_name, column_def_node2->column->column_name) == 0) {
-                db_log(ERROR, "Not allow duplicate column name '%s' in the same table.", column_def_node1->column->column_name);
-                return false;
+    bool primary_key_flag = false;
+    for (i = 0; i < base_table_element_commalist->size; i++) {
+        BaseTableElementNode *base_table_element = base_table_element_commalist->set[i];
+        switch (base_table_element->type) {
+            case TELE_COLUMN_DEF: {
+                ColumnDefNode *current_column_def = base_table_element->column_def;
+                if (check_if_column_already_exists(list, current_column_def)) {
+                    destroy_list(list);
+                    db_log(ERROR, "Column def '%s' already exists, not allowd duplicate defination.", current_column_def->column->column);
+                    return false;
+                }
+                if (check_if_contain_primary_key(current_column_def->column_def_opt_list)) {
+                    if (primary_key_flag) {
+                        destroy_list(list);
+                        db_log(ERROR, "Dulicate primary key.");
+                    } else
+                        primary_key_flag = true;
+                }
+                int index = append_list(list, current_column_def);
+                break;
             }
+            case TELE_TABLE_CONTRAINT_DEF: {
+                TableContraintDefNode *table_contraint_def = base_table_element->table_contraint_def;
+                if (table_contraint_def->type == TCONTRAINT_PRIMARY_KEY) {
+                    if (primary_key_flag) {
+                        destroy_list(list);
+                        db_log(ERROR, "Dulicate primary key.");
+                    } else
+                        primary_key_flag = true;
+                }
+                break;
+            }
+            default:
+                db_log(ERROR, "Unknown base table element type.");
+                break;
         }
     }
+    destroy_list(list);
 
     return true;
 }
@@ -806,6 +842,9 @@ bool check_insert_node(InsertNode *insert_node) {
             return check_insert_node_for_values(insert_node, values_or_query_spec->values);
         case VQ_QUERY_SPEC:
             return check_insert_node_for_query_spec(insert_node, values_or_query_spec->query_spec);
+        default:
+            db_log(ERROR, "Unknown ValuesOrQuerySpecNode type");
+            return false;
     }
 }
 
@@ -837,8 +876,7 @@ bool check_delete_node(DeleteNode *delete_node) {
 /* Check for create table node. */
 bool check_create_table_node(CreateTableNode *create_table_node) {
     return check_duplicate_table(create_table_node->table_name)
-        && check_duplicate_column_name(create_table_node->column_def_set_node)
-        && check_primary_null(create_table_node);
+        && check_table_element_commalist(create_table_node->base_table_element_commalist);
 }
 
 /* Check if table uses refer. */

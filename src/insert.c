@@ -30,12 +30,11 @@
 #include "free.h"
 #include "refer.h"
 #include "trans.h"
+#include "timer.h"
 #include "xlog.h"
 #include "log.h"
 #include "ret.h"
 
-/* Make a fake QueryParam. */
-static QueryParam *fake_query_param(char *table_name, ConditionNode *condition_node);
 /* Make a fake SelectItemsNode. */
 static SelectItemsNode *fake_select_all_items_node();
 
@@ -62,6 +61,7 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
     switch(meta_column->column_type) {
         case T_CHAR:
         case T_STRING:
+        case T_VARCHAR:
             return copy_value(value_item_node->value.s_value, meta_column->column_type);
         case T_INT:
         case T_LONG:
@@ -171,6 +171,21 @@ static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
     return select_node;
 }
 
+/* Make up sys_id. */
+static void make_up_sys_id(Row *row) {
+    /* Automatically insert sys_id using current sys time. */
+    int64_t sys_id = get_current_sys_time(NANOSECOND);
+    KeyValue *sys_id_col = instance(KeyValue);
+    sys_id_col->key = db_strdup(SYS_RESERVED_ID_COLUMN_NAME);
+    sys_id_col->value = copy_value(&sys_id, T_LONG);
+    sys_id_col->data_type = T_LONG;
+    row->data[row->column_len - 3] = sys_id_col;
+
+    /* If user not define primary, use sys_id as primary key. */
+    if (!row->key)
+        row->key = copy_value(&sys_id, T_LONG);
+}
+
 /* Generate insert row. */
 static Row *generate_insert_row(InsertNode *insert_node) {
 
@@ -182,6 +197,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
         return NULL;
     }
+
     MetaTable *meta_table = table->meta_table;
     
     /* Combination */
@@ -191,7 +207,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
     
     /* Row data. */
     uint32_t i;
-    for(i = 0; i < row->column_len; i++) {
+    for (i = 0; i < row->column_len; i++) {
 
         MetaColumn *meta_column = meta_table->meta_column[i];
 
@@ -218,9 +234,13 @@ static Row *generate_insert_row(InsertNode *insert_node) {
 
         /* Check if primary key column. */
         if (meta_column->is_primary) 
-            row->key = db_strdup(key_value->value);
-        *(row->data + i) = key_value;
+            row->key = copy_value(key_value->value, key_value->data_type);
+
+        row->data[i] = key_value;
     }
+
+    /* Make up sys_id column. */
+    make_up_sys_id(row);
 
     return row;
 }
@@ -230,8 +250,8 @@ static Row *convert_insert_row(Row *row, Table *table) {
     Row *insert_row = instance(Row);
 
     insert_row->table_name = db_strdup(table->meta_table->table_name);
-    /* Add reserved columns for created_xid and expired_xid. */
-    insert_row->column_len = row->column_len + 2;
+    /* Add reserved columns for sys_id, created_xid and expired_xid. */
+    insert_row->column_len = row->column_len + 3;
     insert_row->data = db_malloc(sizeof(KeyValue *) * insert_row->column_len, "pointer");
     /* Copy data. */
     uint32_t i;
@@ -240,6 +260,7 @@ static Row *convert_insert_row(Row *row, Table *table) {
     }
     /* Copy row key. */
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    Assert(primary_meta_column);
     insert_row->key = copy_value(row->key, primary_meta_column->column_type);
 
     return insert_row;
@@ -251,6 +272,7 @@ static Row *convert_insert_row(Row *row, Table *table) {
 static Refer *insert_one_row(Table *table, Row *row) {
 
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
+    Assert(primary_key_meta_column);
     Cursor *cursor = define_cursor(table, row->key);
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
         db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
@@ -314,18 +336,23 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
     ValuesOrQuerySpecNode *values_or_query_spec = insert_node->values_or_query_spec;
     /* Make select statement to get safisfied rows. */
     SelectNode *select_node = convert_select_node(values_or_query_spec->query_spec);
+
     DBResult *result = new_db_result();
     result->stmt_type = SELECT_STMT;
+
     exec_select_statement(select_node, result);
 
     if (result->success) {
         SelectResult *select_result = (SelectResult *)result->data;
         refer_set->size = select_result->row_size;
         refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
+
         /* Insert into rows. */
         uint32_t i;
         for (i = 0; i < select_result->row_size; i++) {
             Row *insert_row = convert_insert_row(select_result->rows[i], table);
+            /* Make up sys_id column. */
+            make_up_sys_id(insert_row);
             Refer *refer = insert_one_row(table, insert_row);
             refer_set->set[i] = refer;
             free_row(insert_row);
@@ -365,7 +392,10 @@ ReferSet *exec_insert_statement(InsertNode *insert_node) {
              * Note, maybe used in multi-values which will be supported. */
             return insert_for_query_spec(insert_node);
         }
+        default: {
+            db_log(ERROR, "Unknown ValuesOrQuerySpecNode type.");
+            return NULL;
+        }
     }
-
 }
 

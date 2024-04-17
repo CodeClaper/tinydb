@@ -68,7 +68,8 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
                     break;
                 }
                 case T_CHAR:
-                case T_STRING: {
+                case T_STRING: 
+                case T_VARCHAR: {
                     key_value->value = db_strdup(value_item->value.s_value);
                     break;
                 }

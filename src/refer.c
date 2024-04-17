@@ -161,7 +161,7 @@ Refer *define_refer(Row *row) {
 /* Fetch Refer. 
  * If found no one or many one, return NULL.  */
 Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
-    /* Make a fake QueryParam. */
+
     Table *table = open_table(meta_column->table_name);
 
     /* Make a new SelectResult. */

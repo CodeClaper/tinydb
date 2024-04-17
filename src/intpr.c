@@ -5,6 +5,12 @@
 #include "free.h"
 
 
+/* Make a DataTypeNode. */
+DataTypeNode *make_data_type_node() {
+    DataTypeNode *data_type_node = instance(DataTypeNode);
+    return data_type_node;
+}
+
 /* make a function value node. */
 FunctionValueNode *make_function_value_node() {
     FunctionValueNode *function_value_node = instance(FunctionValueNode);
@@ -33,6 +39,26 @@ ColumnNode *make_column_node() {
 CalculateNode *make_calculate_node() {
     CalculateNode *calculate_node = instance(CalculateNode);
     return calculate_node;
+}
+
+/* Make ColumnDefNode. */
+ColumnDefName *make_column_def_name() {
+    ColumnDefName *column_def_name = instance(ColumnDefName);
+    return column_def_name;
+}
+
+/* Make ColumnDefNameCommalist. */
+ColumnDefNameCommalist *make_column_def_name_list() {
+    ColumnDefNameCommalist *column_def_name_list = instance(ColumnDefNameCommalist);
+    column_def_name_list->set = db_malloc(0, "pointer");
+    column_def_name_list->size = 0;
+    return column_def_name_list;
+}
+
+/* Add ColumnDefName to set. */
+void add_column_def_name_to_set(ColumnDefNameCommalist *list, ColumnDefName *column_def_name) {
+    list->set = db_realloc(list->set, sizeof(ColumnDefName *) * (list->size + 1));
+    list->set[list->size++] = column_def_name;
 }
 
 /* make a column set node. */
@@ -160,6 +186,32 @@ void add_assignment_to_set(AssignmentSetNode *assignment_set_node, AssignmentNod
     assignment_set_node->num++;
 }
 
+/* Make TableContraintDefNode. */
+TableContraintDefNode *make_table_contraint_def_node() {
+    TableContraintDefNode *node = instance(TableContraintDefNode);
+    return node;
+}
+
+/* Make BaseTableElementNode. */
+BaseTableElementNode *make_base_table_element_node() {
+    BaseTableElementNode *node = instance(BaseTableElementNode);
+    return node;
+}
+
+/* Make BaseTableElementCommalist */
+BaseTableElementCommalist *make_base_table_element_commalist() {
+    BaseTableElementCommalist *base_table_element_commalist = instance(BaseTableElementCommalist);
+    base_table_element_commalist->set = db_malloc(0, "pointer");
+    base_table_element_commalist->size = 0;
+    return base_table_element_commalist;
+}
+
+/* Add BaseTableElementNode to set. */
+void add_base_table_element_to_set(BaseTableElementCommalist *list, BaseTableElementNode *node) {
+    list->set = db_realloc(list->set, sizeof(BaseTableElementNode *) * (list->size + 1));
+    list->set[list->size++] = node;
+}
+
 /* make a column def node. */
 ColumnDefNode *make_column_def_node() {
     ColumnDefNode *column_def_node = instance(ColumnDefNode);
@@ -179,6 +231,26 @@ void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode
     columns_def_set_node->column_defs = db_realloc(columns_def_set_node->column_defs, sizeof(ColumnDefNode *) * (columns_def_set_node->size + 1));
     *(columns_def_set_node->column_defs + columns_def_set_node->size) = column_def_node;
     columns_def_set_node->size++;
+}
+
+/* Make ColumnDefOptNode. */
+ColumnDefOptNode *make_column_def_opt_node() {
+    ColumnDefOptNode *column_def_opt = instance(ColumnDefOptNode);
+    return column_def_opt;
+}
+
+/* Make ColumnDefOptNodeList */
+ColumnDefOptNodeList *make_column_def_opt_list() {
+    ColumnDefOptNodeList *list = instance(ColumnDefOptNodeList);
+    list->size = 0;
+    list->set = db_malloc(0, "pointer");
+    return list;
+}
+
+/* Add ColumnDefOptNode to set. */
+void add_column_def_opt_to_set(ColumnDefOptNodeList *list, ColumnDefOptNode *node) {
+    list->set = db_realloc(list->set, sizeof(ColumnDefOptNode *) * (list->size + 1));
+    list->set[list->size++] = node;
 }
 
 /* make a primary key node. */

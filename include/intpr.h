@@ -3,6 +3,9 @@
 #ifndef INTPR_H
 #define INTPR_H
 
+/* Make a DataTypeNode. */
+DataTypeNode *make_data_type_node();
+
 /* Make a function value node.  */
 FunctionValueNode *make_function_value_node();
 
@@ -42,12 +45,20 @@ WhereClauseNode *make_where_clause_node();
 /* Make a TableExpNode. */
 TableExpNode *make_table_exp_node();
 
-
 /* Make a column node.  */
 ColumnNode *make_column_node();
 
 /* Make a CalculateNode. */
 CalculateNode *make_calculate_node();
+
+/* Make ColumnDefNode. */
+ColumnDefName *make_column_def_name();
+
+/* Make ColumnDefNameCommalist. */
+ColumnDefNameCommalist *make_column_def_name_list();
+
+/* Add ColumnDefName to set. */
+void add_column_def_name_to_set(ColumnDefNameCommalist *list, ColumnDefName *column_def_name);
 
 /* make a column set node. */
 ColumnSetNode *make_column_set_node();
@@ -108,6 +119,27 @@ ColumnDefSetNode *make_column_def_set_node();
 
 /* add column def node to set. */
 void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
+
+/* Make TableContraintDefNode. */
+TableContraintDefNode *make_table_contraint_def_node();
+
+/* Make BaseTableElementNode. */
+BaseTableElementNode *make_base_table_element_node();
+
+/* Make BaseTableElementCommalist */
+BaseTableElementCommalist *make_base_table_element_commalist();
+
+/* Add BaseTableElementNode to set. */
+void add_base_table_element_to_set(BaseTableElementCommalist *list, BaseTableElementNode *node);
+
+/* Make ColumnDefOptNode. */
+ColumnDefOptNode *make_column_def_opt_node();
+
+/* Make ColumnDefOptNodeList */
+ColumnDefOptNodeList *make_column_def_opt_list();
+
+/* Add ColumnDefOptNode to set. */
+void add_column_def_opt_to_set(ColumnDefOptNodeList *list, ColumnDefOptNode *node);
 
 /* make a primary key node. */
 PrimaryKeyNode *make_primary_key_node();

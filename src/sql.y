@@ -14,52 +14,58 @@ int yylex();
 %} 
 %union 
 {
-   char                     *strVal;
-   int64_t                  intVal;
-   float                    floatVal;
-   bool                     boolVal;
-   char                     *keyword;
-   ReferValue               *referVal;
-   DataType                 data_type;
-   CompareType              compare_type;
-   ColumnDefNode            *column_def_node;
-   ColumnDefSetNode         *column_def_set_node;
-   ColumnNode               *column_node;
-   ColumnSetNode            *column_set_node;
-   ValueItemNode            *value_item_node;
-   ValueItemSetNode         *value_item_set_node;
-   SelectionNode            *selection_node;
-   ScalarExpNode            *scalar_exp_node;
-   ScalarExpSetNode         *scalar_exp_set_node;
-   FunctionValueNode        *function_value_node;
-   FunctionNode             *function_node;
-   CalculateNode            *calculate_node;
-   PrimaryKeyNode           *primary_key_node;
-   AssignmentNode           *assignment_node;
-   AssignmentSetNode        *assignment_set_node;
-   ConditionNode            *condition_node;
-   PredicateNode            *predicate_node;
-   ComparisonNode           *comparison_node;
-   LikeNode                 *like_node;
-   InNode                   *in_node;
-   LimitNode                *limit_node;
-   TableRefNode             *table_ref_node;
-   TableRefSetNode          *table_ref_set_node;
-   QuerySpecNode            *query_spec_node;
-   ValuesOrQuerySpecNode    *values_or_query_spec_node;
-   FromClauseNode           *from_clause_node;
-   WhereClauseNode          *where_clause_node;
-   TableExpNode             *table_exp_node; 
-   CreateTableNode          *create_table_node;
-   DropTableNode            *drop_table_node;
-   SelectNode               *select_node;
-   InsertNode               *insert_node;
-   UpdateNode               *update_node;
-   DeleteNode               *delete_node;
-   DescribeNode             *describe_node;
-   ShowNode                 *show_node;
-   Statement                *statement;
-   Statements               *statements;
+   char                         *strVal;
+   int64_t                      intVal;
+   float                        floatVal;
+   bool                         boolVal;
+   char                         *keyword;
+   ReferValue                   *referVal;
+   CompareType                  compare_type;
+   DataTypeNode                 *data_type_node;
+   ColumnDefName                *column_def_name;
+   ColumnDefNameCommalist       *column_def_name_commalist;
+   ColumnDefNode                *column_def_node;
+   ColumnDefSetNode             *column_def_set_node;
+   BaseTableElementNode         *base_table_element;
+   BaseTableElementCommalist    *base_table_element_commalist;
+   ColumnDefOptNode             *column_def_opt;
+   ColumnDefOptNodeList         *column_def_opt_list;
+   TableContraintDefNode        *table_contraint_def;
+   ColumnNode                   *column_node;
+   ColumnSetNode                *column_set_node;
+   ValueItemNode                *value_item_node;
+   ValueItemSetNode             *value_item_set_node;
+   SelectionNode                *selection_node;
+   ScalarExpNode                *scalar_exp_node;
+   ScalarExpSetNode             *scalar_exp_set_node;
+   FunctionValueNode            *function_value_node;
+   FunctionNode                 *function_node;
+   CalculateNode                *calculate_node;
+   AssignmentNode               *assignment_node;
+   AssignmentSetNode            *assignment_set_node;
+   ConditionNode                *condition_node;
+   PredicateNode                *predicate_node;
+   ComparisonNode               *comparison_node;
+   LikeNode                     *like_node;
+   InNode                       *in_node;
+   LimitNode                    *limit_node;
+   TableRefNode                 *table_ref_node;
+   TableRefSetNode              *table_ref_set_node;
+   QuerySpecNode                *query_spec_node;
+   ValuesOrQuerySpecNode        *values_or_query_spec_node;
+   FromClauseNode               *from_clause_node;
+   WhereClauseNode              *where_clause_node;
+   TableExpNode                 *table_exp_node; 
+   CreateTableNode              *create_table_node;
+   DropTableNode                *drop_table_node;
+   SelectNode                   *select_node;
+   InsertNode                   *insert_node;
+   UpdateNode                   *update_node;
+   DeleteNode                   *delete_node;
+   DescribeNode                 *describe_node;
+   ShowNode                     *show_node;
+   Statement                    *statement;
+   Statements                   *statements;
 };
 
 %left OR
@@ -80,15 +86,16 @@ int yylex();
 %token <keyword> LIMIT
 %token <keyword> SHOW
 %token <keyword> TABLES
+%token <keyword> PRIMARY KEY
+%token <keyword> UNIQUE DEFAULT CHECK REFERENCES FOREIGN
 %token <keyword> MAX MIN COUNT SUM AVG
 %token <keyword> REF
 %token <keyword> TRUE FALSE
 %token <keyword> NULLX
 %token <keyword> AS
-%token <keyword> CHAR INT LONG STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
-%token <keyword> PRIMARY KEY
+%token <keyword> CHAR INT LONG VARCHAR STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> EQ NE GT GE LT LE IN LIKE
-%token <keyword> AND OR NOT
+%token <keyword> NOT
 %token <keyword> SYSTEM CONFIG MEMORY
 %token <strVal> IDENTIFIER
 %token <intVal> INTVALUE
@@ -105,9 +112,15 @@ int yylex();
 %type <column_set_node> columns 
 %type <value_item_node> value_item
 %type <value_item_set_node> value_items
+%type <column_def_name> column_def_name
+%type <column_def_name_commalist> column_def_name_commalist
+%type <base_table_element> base_table_element
+%type <base_table_element_commalist> base_table_element_commalist
+%type <column_def_opt> column_def_opt
+%type <column_def_opt_list> column_def_opt_list
+%type <table_contraint_def> table_contraint_def
 %type <column_def_node> column_def
 %type <column_def_set_node> column_defs
-%type <primary_key_node> primary_key_statement
 %type <condition_node> condition
 %type <predicate_node> predicate
 %type <comparison_node> comparison_predicate
@@ -116,7 +129,7 @@ int yylex();
 %type <limit_node> opt_limit
 %type <assignment_node> assignment
 %type <assignment_set_node> assignments
-%type <data_type> data_type
+%type <data_type_node> data_type
 %type <compare_type> compare
 %type <function_value_node> function_value
 %type <function_value_node> non_all_function_value
@@ -242,19 +255,11 @@ rollback_transaction_statement:
     ;
 /* Create table statement. */
 create_table_statement: 
-    CREATE TABLE table '(' column_defs ')' end
+    CREATE TABLE table '(' base_table_element_commalist ')' end
         {
             CreateTableNode *create_table_node = make_create_table_node();
             create_table_node->table_name = $3;
-            create_table_node->column_def_set_node = $5;
-            $$ = create_table_node;
-        }
-    | CREATE TABLE table '(' column_defs ',' primary_key_statement ')' end
-        {
-            CreateTableNode *create_table_node = make_create_table_node();
-            create_table_node->table_name = $3;
-            create_table_node->column_def_set_node = $5;
-            create_table_node->primary_key_node = $7;
+            create_table_node->base_table_element_commalist = $5;
             $$ = create_table_node;
         }
     ;
@@ -329,7 +334,7 @@ describe_statement:
     DESCRIBE table end
         {
             DescribeNode *node = make_describe_node();
-            node->table_name = db_strdup($2);
+            node->table_name = $2;
             $$ = node;
         }
     ;
@@ -569,6 +574,35 @@ columns:
             add_column_to_set($$, $3);
         }
     ;
+base_table_element_commalist:
+    base_table_element
+        {
+            BaseTableElementCommalist *base_table_element_commalist = make_base_table_element_commalist();
+            add_base_table_element_to_set(base_table_element_commalist, $1);
+            $$ = base_table_element_commalist;
+        }
+    | base_table_element_commalist ',' base_table_element
+        {
+            add_base_table_element_to_set($1, $3);
+            $$ = $1;
+        }
+    ;
+base_table_element:
+    column_def
+        {
+            $$ = make_base_table_element_node();
+            $$->column_def = $1;
+            $$->table_contraint_def = NULL;
+            $$->type = TELE_COLUMN_DEF;
+        }
+    | table_contraint_def
+        {
+            $$ = make_base_table_element_node();
+            $$->column_def = NULL;
+            $$->table_contraint_def = $1;
+            $$->type = TELE_TABLE_CONTRAINT_DEF;
+        }
+    ;
 column_defs:
     column_def
         {
@@ -578,93 +612,195 @@ column_defs:
         }
     | column_defs ',' column_def
         {
+            add_column_def_to_set($1, $3);
             $$ = $1;
-            add_column_def_to_set($$, $3);
         }
     ;
 column_def:
-    column data_type
+    column_def_name data_type column_def_opt_list
         {
-            ColumnDefNode *column_def_node = make_column_def_node();
-            column_def_node->column = $1;
-            column_def_node->data_type = $2;
-            column_def_node->is_primary = false;
-            column_def_node->allow_null = false;
-            column_def_node->is_define_len = false;
-            $$ = column_def_node;
+            ColumnDefNode *column_def = make_column_def_node();
+            column_def->column = $1;
+            column_def->data_type = $2;
+            column_def->column_def_opt_list = $3;
+            $$ = column_def;
         }
-    | column STRING '(' INTVALUE ')'
-        {
-            ColumnDefNode *column_def_node = make_column_def_node();
-            column_def_node->column = $1;
-            column_def_node->data_type = T_STRING;
-            column_def_node->data_len = $4;
-            column_def_node->is_define_len = true;
-            column_def_node->is_primary = false;
-            column_def_node->allow_null = false;
-            $$ = column_def_node;
-        }
-    | column table
-        {
-            ColumnDefNode *column_def_node = make_column_def_node();
-            column_def_node->column = $1;
-            column_def_node->data_type = T_REFERENCE;
-            column_def_node->table_name = $2;
-            column_def_node->is_define_len = false;
-            column_def_node->is_primary = false;
-            column_def_node->allow_null = false;
-            $$ = column_def_node;
-        }
-    | column data_type PRIMARY KEY
-        {
-            ColumnDefNode *column_def_node = make_column_def_node();
-            column_def_node->column = $1;
-            column_def_node->data_type = $2;
-            column_def_node->is_primary = true;
-            column_def_node->allow_null = false;
-            $$ = column_def_node;
-        }
-    | column data_type NOT NULLX
-        {
-            ColumnDefNode *column_def_node = make_column_def_node();
-            column_def_node->column = $1;
-            column_def_node->data_type = $2;
-            column_def_node->is_primary = false;
-            column_def_node->allow_null = true;
-            $$ = column_def_node;
-        }
-    
-data_type:
-    INT          { $$ = T_INT; }
-    | LONG       { $$ = T_LONG;  }
-    | CHAR       { $$ = T_CHAR; }
-    | STRING     { $$ = T_STRING; }
-    | BOOL       { $$ = T_BOOL; }
-    | FLOAT      { $$ = T_FLOAT; }  
-    | DOUBLE     { $$ = T_DOUBLE; }
-    | TIMESTAMP  { $$ = T_TIMESTAMP; }
-    | DATE       { $$ = T_DATE; }
     ;
-primary_key_statement:
-    PRIMARY KEY '(' column ')'
-         {
-             PrimaryKeyNode *primary_key_node = make_primary_key_node();
-             primary_key_node->column = $4;
-             $$ = primary_key_node;
-         }
+column_def_name_commalist:
+    column_def_name
+        {
+            ColumnDefNameCommalist *list = make_column_def_name_list();
+            add_column_def_name_to_set(list, $1);
+            $$ = list;
+        }
+    | column_def_name_commalist ',' column_def_name
+        {
+            add_column_def_name_to_set($1, $3);
+            $$ = $1;
+        }
+    ;
+column_def_name:
+    IDENTIFIER
+        {
+            ColumnDefName *column_def_name = make_column_def_name();
+            column_def_name->column = $1;
+            $$ = column_def_name;
+        }
+    ;
+data_type:
+    INT          
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_INT; 
+        }
+    | LONG       
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_LONG;  
+        }
+    | CHAR       
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_CHAR; 
+        }
+    | VARCHAR '(' INTVALUE ')'
+        {
+            $$ = make_data_type_node();
+            $$->type = T_VARCHAR; 
+            $$->len = $3; 
+        }
+    | STRING     
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_STRING; 
+        }
+    | BOOL       
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_BOOL; 
+        }
+    | FLOAT      
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_FLOAT; 
+        }  
+    | DOUBLE     
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_DOUBLE; 
+        }
+    | TIMESTAMP  
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_TIMESTAMP; 
+        }
+    | DATE       
+        { 
+            $$ = make_data_type_node();
+            $$->type = T_DATE; 
+        }
+    | table 
+        {
+            $$ = make_data_type_node();
+            $$->type = T_REFERENCE;
+            $$->table_name = $1;
+        }
+    ;
+column_def_opt_list:
+    /* empty */
+        {
+            $$ = NULL;
+        }
+    | column_def_opt
+        {
+            $$ = make_column_def_opt_list();
+            add_column_def_opt_to_set($$, $1);
+        }
+    | column_def_opt_list column_def_opt
+        {
+            add_column_def_opt_to_set($1, $2);
+            $$ = $1;
+        }
+    ;
+column_def_opt:
+    NOT NULLX
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_NOT_NULL; 
+        }
+    | UNIQUE
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_UNIQUE; 
+        }
+    | PRIMARY KEY
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_PRIMARY_KEY; 
+        }
+    | DEFAULT value_item
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_DEFAULT_VALUE;
+            $$->value = $2;
+        }
+    | DEFAULT NULLX
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_DEFAULT_NULL;
+        }
+    | CHECK '(' condition ')'
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_CHECK_CONDITION;
+            $$->condition = $3;
+        }
+    | REFERENCES table
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_REFERENECS;
+            $$->refer_table = $2;
+        }
+    ;
+table_contraint_def:
+    UNIQUE '(' column_def_name_commalist ')'
+        {
+            $$ = make_table_contraint_def_node();
+            $$->type = TCONTRAINT_UNIQUE;
+            $$->column_commalist = $3;
+        }
+    | PRIMARY KEY '(' column_def_name_commalist ')'
+        {
+            $$ = make_table_contraint_def_node();
+            $$->type = TCONTRAINT_PRIMARY_KEY;
+            $$->column_commalist = $4;
+        }
+    | FOREIGN KEY '(' column_def_name_commalist ')' REFERENCES table
+        {
+            $$ = make_table_contraint_def_node();
+            $$->type = TCONTRAINT_FOREIGN_KEY;
+            $$->column_commalist = $4;
+            $$->table = $7;
+        }
+    | CHECK '(' condition ')'
+        {
+            $$ = make_table_contraint_def_node();
+            $$->type = TCONTRAINT_CHECK;
+            $$->condition = $3;
+        }
     ;
 column: 
     IDENTIFIER
         {
             ColumnNode *column_node = make_column_node();
-            column_node->column_name = db_strdup($1);
+            column_node->column_name = $1;
             column_node->has_sub_column = false;
             $$ = column_node;
         }
     | IDENTIFIER '[' column ']'
         {
             ColumnNode *column_node = make_column_node();
-            column_node->column_name = db_strdup($1);
+            column_node->column_name = $1;
             column_node->sub_column = $3;
             column_node->has_sub_column = true;
             $$ = column_node;
@@ -672,7 +808,7 @@ column:
     | IDENTIFIER '{' scalar_exp_commalist '}'
         {
             ColumnNode *column_node = make_column_node();
-            column_node->column_name = db_strdup($1);
+            column_node->column_name = $1;
             column_node->scalar_exp_set = $3;
             column_node->has_sub_column = true;
             $$ = column_node;
@@ -680,7 +816,7 @@ column:
     | IDENTIFIER '.' column
         {
             $$ = $3;
-            $$->range_variable = db_strdup($1);
+            $$->range_variable = $1;
         }
     ;
 value_items:

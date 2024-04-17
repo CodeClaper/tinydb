@@ -46,9 +46,15 @@ SET                     return SET;
 VALUES                  return VALUES;
 PRIMARY                 return PRIMARY;
 KEY                     return KEY;
+UNIQUE                  return UNIQUE;
+DEFAULT                 return DEFAULT;
+REFERENCES              return REFERENCES;
+CHECK                   return CHECK;
+FOREIGN                 return FOREIGN;
 INT                     return INT;
 LONG                    return LONG;
 CHAR                    return CHAR;
+VARCHAR                 return VARCHAR;
 FLOAT                   return FLOAT;
 DOUBLE                  return DOUBLE;
 STRING                  return STRING;
@@ -82,8 +88,8 @@ FALSE                   return FALSE;
 '[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.strVal = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.strVal =  strdup(str);} return STRINGVALUE;} 
 '[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
-[ \t]           /* igonore space */
-"--".*$		;	/* comment */
+[ \t]                   /* igonore space */
+"--".*$		;	        /* comment */
 %%
 
 int yyerror(const char *s) {

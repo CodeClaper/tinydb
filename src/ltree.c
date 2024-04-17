@@ -1176,7 +1176,8 @@ void root_fall_back_root_node(Table *table) {
                 uint32_t cells_num = get_leaf_node_cell_num(replace_node); 
                 /* May be overflow. wait for resolution. */
                 assert_false(overflow_leaf_node(root, key_len, value_len, cells_num), "Leaf node overflow when root fall back.\n");
-                for (uint32_t i = 0; i < cells_num; i++) {
+                uint32_t i;
+                for (i = 0; i < cells_num; i++) {
                     set_leaf_node_cell_key(root, i, key_len, value_len, get_leaf_node_cell_key(replace_node, i, key_len, value_len)); 
                     memcpy(get_leaf_node_cell_value(root, key_len, value_len, i), get_leaf_node_cell_value(replace_node, key_len , value_len, i), value_len);
                 }
@@ -1188,7 +1189,8 @@ void root_fall_back_root_node(Table *table) {
                 uint32_t keys_num = get_internal_node_keys_num(replace_node);
                 /* May be overflow. wait for resolution. */
                 assert_false(overflow_internal_node(root, keys_num, key_len), "Internal node overflow when root fall back.\n");
-                for (uint32_t i = 0; i < keys_num; i++) {
+                uint32_t i;
+                for (i = 0; i < keys_num; i++) {
                     memcpy(get_internal_node_cell(root, i, key_len), get_internal_node_cell(replace_node, i, key_len), cell_len);
                     uint32_t child_node_num = get_internal_node_child(replace_node, i, key_len);
                     void *child_node = get_page(table->meta_table->table_name, table->pager, child_node_num);
@@ -1214,6 +1216,8 @@ MetaColumn *deserialize_meta_column(void *destination) {
     if (meta_column->column_type == T_REFERENCE)
         strcpy(meta_column->table_name, destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE);
     meta_column->sys_reserved = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE);
+    meta_column->is_unique = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE);
+    meta_column->not_null = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE);
     return meta_column;
 }
 
@@ -1227,6 +1231,8 @@ void *serialize_meta_column(MetaColumn *meta_column) {
     if (meta_column->column_type == T_REFERENCE)
         strcpy(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE, meta_column->table_name);
     *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE) = meta_column->sys_reserved;  
+    *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE) = meta_column->is_unique;  
+    *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE) = meta_column->not_null;  
     return destination;
 }
 
@@ -1238,7 +1244,7 @@ static void *get_row_value(Row *row, MetaColumn *meta_column) {
         if (strcmp(column_name, row->data[i]->key) == 0)
            return row->data[i]->value;
     }
-    db_log(PANIC, "Inner error, unknown column ", column_name);
+    db_log(PANIC, "Inner error, unknown column '%s'.", column_name);
     return NULL;
 }
 

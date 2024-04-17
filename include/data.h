@@ -24,6 +24,7 @@
 
 #define MENTRY_STYPE_LENGTH 48
 
+#define SYS_RESERVED_ID_COLUMN_NAME  "sys_id"
 #define CREATED_XID_COLUMN_NAME  "created_xid"
 #define EXPIRED_XID_COLUMN_NAME  "expired_xid"
 
@@ -33,11 +34,10 @@
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE } CompareType;
 
 /* DataType */
-typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE, T_ROW } DataType;
+typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_VARCHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE, T_ROW } DataType;
 
 /* DataTypeNames */
-static char *DATA_TYPE_NAMES[] = \
-    {"unknown", "bool",  "char",  "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
+static char *DATA_TYPE_NAMES[] = {"unknown", "bool",  "char", "varchar", "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
 
 /* FunctionType */
 typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
@@ -124,6 +124,13 @@ typedef enum { READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE }
 /* DDL Type. */
 typedef enum DDLType { DDL_INSERT, DDL_DELETE, DDL_UPDATE_INSERT, DDL_UPDATE_DELETE } DDLType;
 
+/* DataTypeNode */
+typedef struct DataTypeNode {
+    DataType type;
+    uint32_t len;
+    char *table_name;
+} DataTypeNode;
+
 /* ColumnNode */
 typedef struct ColumnNode {
     char *column_name;
@@ -135,17 +142,17 @@ typedef struct ColumnNode {
 
 /* ColumnSetNode */
 typedef struct ColumnSetNode {
-  ColumnNode **columns;
-  uint32_t size;
+    ColumnNode **columns;
+    uint32_t size;
 } ColumnSetNode;
 
 /* FunctionValueType */
 typedef struct FunctionValueNode {
-  FunctionValueType value_type;
-  union {
-    int32_t i_value;
-    ColumnNode *column;
-  };
+    FunctionValueType value_type;
+    union {
+        int32_t i_value;
+        ColumnNode *column;
+    };
 } FunctionValueNode;
 
 /* FunctionNode */
@@ -208,19 +215,85 @@ typedef struct ScalarExpNode {
     char *alias;
 } ScalarExpNode;
 
+typedef enum BaseTableElementType {
+    TELE_COLUMN_DEF,
+    TELE_TABLE_CONTRAINT_DEF
+} BaseTableElementType;
+
+/* BaseTableElementNode. */
+typedef struct BaseTableElementNode {
+    BaseTableElementType type;
+    struct ColumnDefNode *column_def;
+    struct TableContraintDefNode *table_contraint_def;
+} BaseTableElementNode; 
+
+/* BaseTableElementCommalist */
+typedef struct BaseTableElementCommalist {
+    uint32_t size;
+    struct BaseTableElementNode **set;
+} BaseTableElementCommalist;
+
+/* ColumnDefOptType */
+typedef enum ColumnDefOptType {
+    OPT_NOT_NULL,
+    OPT_UNIQUE,
+    OPT_PRIMARY_KEY,
+    OPT_DEFAULT_VALUE,
+    OPT_DEFAULT_NULL,
+    OPT_CHECK_CONDITION,
+    OPT_REFERENECS
+} ColumnDefOptType;
+
+/* ColumnDefOptNode */
+typedef struct ColumnDefOptNode {
+    ColumnDefOptType opt_type;
+    struct ValueItemNode *value;
+    struct ConditionNode *condition;
+    char *refer_table;
+} ColumnDefOptNode;
+
+/* ColumnDefOptNodeList */
+typedef struct ColumnDefOptNodeList {
+    uint32_t size;
+    ColumnDefOptNode **set;
+} ColumnDefOptNodeList;
+
+/* TableContraintType */
+typedef enum TableContraintType {
+    TCONTRAINT_UNIQUE,
+    TCONTRAINT_PRIMARY_KEY,
+    TCONTRAINT_FOREIGN_KEY,
+    TCONTRAINT_CHECK
+} TableContraintType;
+
+/* TableContraintDefNode */
+typedef struct TableContraintDefNode {
+    TableContraintType type;
+    struct ColumnDefNameCommalist *column_commalist;
+    char *table;
+    struct ConditionNode *condition;
+} TableContraintDefNode;
+
+/* ColumnDefName */
+typedef struct ColumnDefName {
+    char *column;
+} ColumnDefName;
+
+/* ColumnDefNameCommaList */
+typedef struct ColumnDefNameCommalist {
+    uint32_t size;
+    ColumnDefName **set;
+} ColumnDefNameCommalist;
+
 /* ColumnDefNode */
-typedef struct {
-    ColumnNode *column;
-    DataType data_type;
-    bool is_define_len;
-    uint32_t data_len;
-    char *table_name;
-    bool is_primary;
-    bool allow_null;
+typedef struct ColumnDefNode { 
+    ColumnDefName *column;
+    DataTypeNode *data_type;
+    ColumnDefOptNodeList *column_def_opt_list;
 } ColumnDefNode;
 
 /* ColumnDefSetNode */
-typedef struct {
+typedef struct ColumnDefSetNode {
     ColumnDefNode **column_defs;
     uint32_t size;
 } ColumnDefSetNode;
@@ -386,8 +459,7 @@ typedef struct TableExpNode {
 /* CreateTableNode */
 typedef struct {
     char *table_name;
-    ColumnDefSetNode *column_def_set_node;
-    PrimaryKeyNode *primary_key_node;
+    BaseTableElementCommalist *base_table_element_commalist;
 } CreateTableNode;
 
 /* DropTableNode */
@@ -468,6 +540,8 @@ typedef struct MetaColumn {
     char table_name[MAX_TABLE_NAME_LEN];
     uint32_t column_length;
     bool is_primary;
+    bool not_null;
+    bool is_unique;
     bool sys_reserved; /* System reserved column, only visible for system. */
 } MetaColumn;
 
@@ -545,14 +619,6 @@ typedef struct Row {
     KeyValue **data;
     uint32_t column_len;
 } Row;
-
-/* QueryParam */
-typedef struct QueryParam {
-    char *table_name;
-    SelectionNode *selection;
-    ConditionNode *condition_node;
-    LimitNode *limit_node;
-} QueryParam;
 
 /* SelectResult */
 typedef struct SelectResult {
@@ -645,9 +711,9 @@ typedef struct flock FileLock;
 /* LockState */
 typedef struct LockHandle {
     Refer *refer;
-    pthread_rwlock_t lock;  /* wrlock. */
-    uint32_t shared; /* number of shared the lock. */
-    struct LockHandle *next; /* next */
+    pthread_rwlock_t lock;      /* wrlock. */
+    uint32_t shared;            /* number of shared the lock. */
+    struct LockHandle *next;    /* next */
 } LockHandle;
 
 /* LockTable */
@@ -711,5 +777,11 @@ typedef struct AliasMap {
     uint32_t size;
     AliasEntry map[MAX_MULTI_TABLE_NUM];
 } AliasMap;
+
+/* List */
+typedef struct List {
+    uint32_t size;
+    void **set;
+} List;
 
 #endif

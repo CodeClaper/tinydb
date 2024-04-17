@@ -20,10 +20,13 @@ static char *get_table_name(DescribeNode *describe_node) {
 
 /* Calculate meta column length. Notice, T_STRING data has added on extra char. */
 static uint32_t calc_meta_column_len(MetaColumn *meta_column) {
-    if (meta_column->column_type == T_STRING)
-        return meta_column->column_length - 1;
-    else 
-        return meta_column->column_length;
+    switch (meta_column->column_type) {
+        case T_STRING:
+        case T_VARCHAR:
+            return meta_column->column_length - 1;
+        default:
+            return meta_column->column_length;
+    }
 }
 
 /* Generate DescribeResult. */
@@ -62,7 +65,7 @@ static MapList *gen_describe_result(MetaTable *meta_table) {
         key_value_key->data_type = T_BOOL;
         map->body[2] = key_value_key;
 
-        /* primary key */
+        /* length */
         KeyValue *key_value_size = instance(KeyValue);
         key_value_size->key = db_strdup("size");
         uint32_t column_length = calc_meta_column_len(meta_column);

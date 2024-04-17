@@ -20,7 +20,10 @@ bool equal(void *source, void *target, DataType data_type) {
             return *(char *)source == *(char *)target;
         case T_INT:
             return *(int32_t *)source == *(int32_t *)target;
+        case T_LONG:
+            return *(int64_t *)source ==  *(int64_t *)target;
         case T_STRING:
+        case T_VARCHAR:
             return strcmp((char *)source, (char *)target) == 0;
         case T_DOUBLE:
             return *(double *)source == *(double *)target;
@@ -54,7 +57,10 @@ bool not_equal(void *source, void *target, DataType data_type) {
             return *(char *)source != *(char *)target;
         case T_INT:
             return *(int32_t *)source != *(int32_t *)target;
+        case T_LONG:
+            return *(int64_t *)source !=  *(int64_t *)target;
         case T_STRING:
+        case T_VARCHAR:
             return strcmp((char *)source, (char *)target) != 0;
         case T_DOUBLE:
             return *(double *)source != *(double *)target;
@@ -86,7 +92,10 @@ bool greater(void *source, void *target, DataType data_type) {
             return *(char *)source > *(char *)target;
         case T_INT:
             return *(int32_t *)source > *(int32_t *)target;
+        case T_LONG:
+            return *(int64_t *)source >  *(int64_t *)target;
         case T_STRING:
+        case T_VARCHAR:
             return strcmp((char *)source, (char *)target) > 0;
         case T_DOUBLE:
             return *(double *)source > *(double *)target;
@@ -121,7 +130,10 @@ bool greater_equal(void *source, void *target, DataType data_type) {
             return *(char *)source >= *(char *)target;
         case T_INT:
             return *(int32_t *)source >= *(int32_t *)target;
+        case T_LONG:
+            return *(int64_t *)source >=  *(int64_t *)target;
         case T_STRING:
+        case T_VARCHAR:
             return strcmp((char *)source, (char *)target) >= 0;
         case T_DOUBLE:
             return *(double *)source >= *(double *)target;
@@ -156,7 +168,10 @@ bool less(void *source, void *target, DataType data_type) {
             return *(char *)source < *(char *)target;
         case T_INT:
             return *(int32_t *)source < *(int32_t *)target;
+        case T_LONG:
+            return *(int64_t *)source <  *(int64_t *)target;
         case T_STRING:
+        case T_VARCHAR:
             return strcmp((char *)source, (char *)target) < 0;
         case T_DOUBLE:
             return *(double *)source < *(double *)target;
@@ -191,7 +206,10 @@ bool less_equal(void *source, void *target, DataType data_type) {
             return *(char *)source <= *(char *)target;
         case T_INT:
             return *(int32_t *)source <= *(int32_t *)target;
+        case T_LONG:
+            return *(int64_t *)source <= *(int64_t *)target;
         case T_STRING:
+        case T_VARCHAR:
             return strcmp((char *)source, (char *)target) <= 0;
         case T_DOUBLE:
             return *(double *)source <= *(double *)target;

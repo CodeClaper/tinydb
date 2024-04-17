@@ -95,6 +95,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
         case T_CHAR: {
             switch (value_item_node->data_type) {
                 case T_STRING:
+                case T_VARCHAR:
                     value_item_node->data_type = T_CHAR;
                     return value_item_node->value.s_value;
                 default:
@@ -103,6 +104,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
             break;
         }
         case T_STRING:
+        case T_VARCHAR:
             return value_item_node->value.s_value;
         case T_INT:
         case T_LONG:
@@ -138,7 +140,8 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
         }
         case T_TIMESTAMP: {
             switch (value_item_node->data_type) {
-                case T_STRING: {
+                case T_STRING: 
+                case T_VARCHAR: {
                     struct tm *tmp_time = instance(struct tm);
                     strptime(value_item_node->value.s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->value.t_value = mktime(tmp_time);
@@ -154,7 +157,8 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
         }
         case T_DATE: {
             switch (value_item_node->data_type) {
-                case T_STRING: {
+                case T_STRING: 
+                case T_VARCHAR: {
                     struct tm *tmp_time = instance(struct tm);
                     strptime(value_item_node->value.s_value, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
@@ -2126,8 +2130,8 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
     result->rows = select_result->row_size;
     result->data = select_result;
     result->success = true;
-    result->message = db_strdup("Query data successfully.");
+    result->message = format("Query %d rows data from table '%s' successfully.", result->rows, select_result->table_name);
 
     /* Make up success result. */
-    db_log(SUCCESS, "Query data successfully.");
+    db_log(SUCCESS, "Query %d rows data from table '%s' successfully.", result->rows, select_result->table_name);
 }

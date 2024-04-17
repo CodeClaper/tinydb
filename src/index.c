@@ -24,7 +24,8 @@
 
 /* Get meta column of primary key. */
 MetaColumn *get_primary_key_meta_column(MetaTable *meta_table) {
-    for(uint32_t i = 0; i < meta_table->column_size; i++) {
+    uint32_t i;
+    for(i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (meta_column->is_primary)
             return meta_column;
@@ -39,6 +40,7 @@ char *get_key_str(void *key, DataType data_type) {
             return *(bool *)key ? "true" : "false";
         case T_CHAR:
         case T_STRING:
+        case T_VARCHAR:
             return (char *)key;
         case T_INT: {
             char *str = db_malloc(50, "string");

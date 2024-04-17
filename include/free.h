@@ -9,6 +9,9 @@ void free_key_value(KeyValue *key_value);
 /* Free Block. */
 void free_block(void *value);
 
+/* Free DataTyepNode. */
+void free_data_type_node(DataTypeNode *data_type);
+
 /* Free row. */
 void free_row(Row *row);
 
@@ -60,8 +63,8 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node);
 /* Free ScalarExpSetNode. */
 void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node);
 
-/* Copy ScalarExpSetNode. */
-ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node);
+
+void free_column_def_name(ColumnDefName *column_def_name);
 
 /* Free column set node. */
 void free_column_set_node(ColumnSetNode *column_set_node);
@@ -104,9 +107,6 @@ void free_statment(Statement *stmt);
 
 /* Free statements. */
 void free_statements(Statements *statements);
-
-/* Free query param. */
-void free_query_param(QueryParam *query_param);
 
 /* Free table list */
 void free_table_list(TableList *table_list);

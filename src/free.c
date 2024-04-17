@@ -5,6 +5,7 @@
 #include "refer.h"
 #include "table.h"
 #include "index.h"
+#include "log.h"
 #include "xlog.h"
 
 /* Free value */
@@ -12,7 +13,10 @@ void free_value(void *value, DataType data_type) {
     if (value) {
         switch (data_type) {
             case T_REFERENCE:
-                free_refer(value);
+                free_refer((Refer *)value);
+                break;
+            case T_ROW:
+                free_row((Row *)value);
                 break;
             default:
                 db_free(value);
@@ -28,10 +32,7 @@ void free_key_value(KeyValue *key_value) {
             db_free(key_value->key);
         if (key_value->table_name)
             db_free(key_value->table_name);
-        if (key_value->data_type == T_ROW) 
-            free_row(key_value->value);
-        else
-            free_value(key_value->value, key_value->data_type);
+        free_value(key_value->value, key_value->data_type);
         db_free(key_value);
     } 
 }
@@ -40,6 +41,15 @@ void free_key_value(KeyValue *key_value) {
 void free_block(void *value) {
     if (value)
         db_free(value);
+}
+
+/* Free DataTyepNode. */
+void free_data_type_node(DataTypeNode *data_type_node) {
+    if (data_type_node) {
+        if (data_type_node->table_name)
+            db_free(data_type_node->table_name);
+        db_free(data_type_node);
+    }
 }
 
 /* Free Refer. */
@@ -222,13 +232,18 @@ void free_value_item_node(ValueItemNode *value_item_node) {
             case T_LONG:
             case T_DATE:
                 break;
-            case T_STRING:{
+            case T_STRING:
+            case T_VARCHAR: {
                 if (value_item_node->value.s_value)
                     db_free(value_item_node->value.s_value);
                 break;
             }
             case T_REFERENCE: {
                 free_refer_value(value_item_node->value.r_value);
+                break;
+            }
+            default: {
+                db_log(ERROR, "Not implement data type.");
                 break;
             }
         }
@@ -259,10 +274,35 @@ void free_function_node(FunctionNode *function_node) {
     } 
 }
 
+/* Free ColumnDefOptNode. */
+void free_column_def_opt_node(ColumnDefOptNode *column_def_opt) {
+    if (column_def_opt) {
+        if (column_def_opt->refer_table)
+            db_free(column_def_opt->refer_table);
+        free_value_item_node(column_def_opt->value);
+        free_condition_node(column_def_opt->condition);
+        db_free(column_def_opt);
+    }
+}
+
+/* Free ColumnDefOptNodeList. */
+void free_column_def_opt_list(ColumnDefOptNodeList *column_def_opt_list) {
+    if (column_def_opt_list) {
+        uint32_t i;
+        for (i = 0; i < column_def_opt_list->size; i++) {
+            free_column_def_opt_node(column_def_opt_list->set[i]);
+        }
+        db_free(column_def_opt_list->set);
+        db_free(column_def_opt_list);
+    }
+}
+
 /* Free column def node. */
 void free_column_def_node(ColumnDefNode *column_def_node) {
     if (column_def_node) {
-        free_column_node(column_def_node->column);
+        free_column_def_name(column_def_node->column);
+        free_data_type_node(column_def_node->data_type);
+        free_column_def_opt_list(column_def_node->column_def_opt_list);
         db_free(column_def_node);
     }
 }
@@ -437,18 +477,6 @@ void free_refer_value(ReferValue *refer_value) {
     }
 }
 
-/* Free QueryParam. */
-void free_query_param(QueryParam *query_param) {
-    if(query_param) {
-        free_selection_node(query_param->selection);
-        free_condition_node(query_param->condition_node);
-        if (query_param->table_name)
-            db_free(query_param->table_name);
-        free_limit_node(query_param->limit_node);
-        db_free(query_param);
-    }
-}
-
 /* Free ScalarExpNode. */
 void free_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
     if (scalar_exp_node) {
@@ -481,6 +509,66 @@ void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node) {
         }
         db_free(scalar_exp_set_node->data);
         db_free(scalar_exp_set_node);
+    }
+}
+
+/* Free ColumnDefName. */
+void free_column_def_name(ColumnDefName *column_def_name) {
+    if (column_def_name) {
+        if (column_def_name->column)
+            db_free(column_def_name->column);
+        db_free(column_def_name);
+    }
+}
+
+/* Free ColumnDefNameCommalist. */
+void free_column_def_name_commalist(ColumnDefNameCommalist *commalist) {
+    if (commalist) {
+        uint32_t i;
+        for (i = 0; i < commalist->size; i++) {
+            free_column_def_name(commalist->set[i]);
+        }
+        db_free(commalist);
+    }
+}
+
+/* Free TableContraintDefNode. */
+void free_table_contraint_def_node(TableContraintDefNode *table_contraint) {
+    if (table_contraint) {
+        if (table_contraint->table)
+            db_free(table_contraint->table);
+        free_condition_node(table_contraint->condition);
+        free_column_def_name_commalist(table_contraint->column_commalist);
+        db_free(table_contraint);
+    }
+}
+
+/* Free BaseTableElementNode */
+void free_base_table_element_node(BaseTableElementNode *base_table_element) {
+    if (base_table_element) {
+        switch (base_table_element->type) {
+            case TELE_COLUMN_DEF:
+                free_column_def_node(base_table_element->column_def);
+                break;
+            case TELE_TABLE_CONTRAINT_DEF:
+                free_table_contraint_def_node(base_table_element->table_contraint_def);
+                break;
+            default:
+                db_log(ERROR, "Unknown base type element type.");
+                break;
+        }
+        db_free(base_table_element);
+    }
+}
+
+/* Free BaseTableElementCommalist*/
+void free_base_table_element_commalist(BaseTableElementCommalist *commalist) {
+    if (commalist) {
+        uint32_t i;
+        for (i = 0; i < commalist->size; i++) {
+            free_base_table_element_node(commalist->set[i]);
+        }
+        db_free(commalist);
     }
 }
 
@@ -589,8 +677,7 @@ void free_create_table_node(CreateTableNode *create_table_node) {
     if (create_table_node != NULL) {
         if (create_table_node->table_name)
             db_free(create_table_node->table_name);
-        free_column_def_set_node(create_table_node->column_def_set_node);
-        free_primary_key_node(create_table_node->primary_key_node);
+        free_base_table_element_commalist(create_table_node->base_table_element_commalist);
         db_free(create_table_node);
     }
 }

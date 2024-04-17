@@ -51,6 +51,7 @@ void *copy_value(void *value, DataType data_type) {
         }
         case T_CHAR:
         case T_STRING: 
+        case T_VARCHAR:
             return db_strdup((char *)value);
         case T_REFERENCE: 
             return copy_refer(value);
@@ -256,6 +257,7 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     switch(value_item_node->data_type) {
         case T_CHAR:
         case T_STRING:
+        case T_VARCHAR:
             value_item_node_copy->value.s_value = db_strdup(value_item_node->value.s_value);
             break;
         case T_INT:
@@ -375,6 +377,9 @@ ConditionNode *copy_condition_node(ConditionNode *condition_node) {
         case C_NONE:
             condition_node_copy->predicate = copy_predicate_node(condition_node->predicate);
             break;
+        default:
+            db_log(ERROR, "Unknown conn type");
+            return NULL;
     }
     return condition_node_copy;
 }
@@ -552,8 +557,7 @@ TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node) {
     TableExpNode *table_exp_copy = instance(TableExpNode);
     table_exp_copy->from_clause = copy_from_clause_node(table_exp_node->from_clause);
     table_exp_copy->where_clause = copy_where_clause_node(table_exp_node->where_clause);
-    return table_exp_node;
-        
+    return table_exp_copy;
 }
 
 /* Copy SelectionNode. */
@@ -565,17 +569,6 @@ SelectionNode *copy_selection_node(SelectionNode *selection_node) {
     if (!copy->all_column)
         copy->scalar_exp_set = copy_scalar_exp_set_node(selection_node->scalar_exp_set);
     return copy;
-}
-
-/* Copy query param. */
-QueryParam *copy_query_param(QueryParam *query_param) {
-    if (query_param == NULL)
-        return NULL;
-    QueryParam *query_param_copy = instance(QueryParam);
-    query_param_copy->table_name = db_strdup(query_param->table_name);
-    query_param_copy->condition_node = copy_condition_node(query_param->condition_node); 
-    query_param_copy->selection = copy_selection_node(query_param->selection);
-    return query_param_copy;
 }
 
 /* Copy a dymamic memory block */
