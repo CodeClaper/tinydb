@@ -2,7 +2,7 @@
 
 ## Introduction
 
-TinyDb (can also be called tinydb as well) is a light, statble and effecive object-oriented relational database engine. TinyDb is intended to design and store more intuitive data model. When you use object-oriented language to build program like java, python etc,  the object  data structure in the code and the table structure in the TinyDb database have direct one-to-one mapping relationship. By TinyDb, you can easily save the data in memory to disk without unnecessary data structure conversion as well as reading data from disk.
+TinyDb (can also be called tinydb as well) is a light, statble and effecive object-oriented relational server-side database engine. TinyDb is intended to design and store more intuitive data model. When you use object-oriented language to build program like java, python etc,  the object  data structure in the code and the table structure in the TinyDb database have direct one-to-one mapping relationship. By TinyDb, you can easily save the data in memory to disk without unnecessary data structure conversion as well as reading data from disk.
 
 ## Requirements
 
@@ -106,7 +106,7 @@ make
 - [x] Query special column data using sql
 - [x] Query data under conditions using sql
 - [x] Query data with aggregate function sum, avg, max, min, count
-- [x] Multiple data type, bool, char, int, float, double, string(scalable varchar), date, timestamp and reference
+- [x] Multiple data type, bool, char, int, float, double, varchar string(dynamic scalable string), date, timestamp and reference
 - [x] Data type valid check
 - [x] Implement MVCC, support transaction and support the four types of transaction isolation levels
 - [ ] ACID

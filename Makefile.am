@@ -6,7 +6,7 @@ dist_doc_DATA = README.md
 EXTRA_DIST = config/tinydb.cnf
 
 check-local:
-	cd test/pytest/unit && pytest create_test.py insert_test.py select_test.py drop_test.py
+	pytest -v test/pytest/unit/
 
 clean-local:
 	@rm config.status configure config.log
