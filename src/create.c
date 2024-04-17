@@ -20,7 +20,7 @@
 #include "copy.h"
 #include "free.h"
 #include "log.h"
-#include "ret.h"
+#include "json.h"
 
 /* System reserved columns. */
 MetaColumn SYS_RESERVED_COLUMNS[] = {
