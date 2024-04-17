@@ -54,7 +54,7 @@ static void statement_create_table(Statement *stmt, DBResult *result) {
 static void statement_drop_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == DROP_TABLE_STMT, "System error, drop statement type error.\n");
     char *table_name = stmt->drop_table_node->table_name;
-    if (drop_table(table_name, result)) {
+    if (drop_table(table_name)) {
         result->success = true;
         result->rows = 0;
         result->message = format("Table '%s' droped successfully.", table_name);

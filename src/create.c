@@ -236,7 +236,7 @@ void exec_create_table_statement(CreateTableNode *create_table_node, DBResult *r
         return;
 
     /* Create table. */
-    if (create_table(meta_table, result)) {
+    if (create_table(meta_table)) {
         result->success = true;
         result->rows = 0;
         result->message = format("Table '%s' created successfully.", create_table_node->table_name);

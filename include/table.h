@@ -12,7 +12,7 @@ bool check_table_exist(char *table_name);
 Table *open_table(char *table_name);
 
 /* Create a new table. */
-bool create_table(MetaTable *meta_table, DBResult *result);
+bool create_table(MetaTable *meta_table);
 
 /*Delete an existed table. */
-bool drop_table(char *table_name, DBResult *result);
+bool drop_table(char *table_name);

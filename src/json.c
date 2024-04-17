@@ -1,5 +1,5 @@
 /*
- * =============================================== Result Module ===============================================================
+ * =============================================== Json output Module ===============================================================
  * DBResult is the json format that db finally output, include flows:
  * [success]  Whether execution result is successful or unsuccessful, its value is true or false.
  * [message]  Output message to client.
@@ -30,7 +30,7 @@
 static void handle_dulicate_key(Row *row);
 
 /* Send out row. */
-static void db_send_row(Row *row);
+static void db_send_row_json(Row *row);
 
 /* Generate new db result. */
 DBResult *new_db_result() {
@@ -59,18 +59,18 @@ void add_db_result(DBResultSet *result_set, DBResult *result) {
 }
 
 /* Send out subrow. */
-static void db_send_subrow(Row *subrow) {
+static void db_send_subrow_json(Row *subrow) {
     if (subrow == NULL || row_is_deleted(subrow)) 
         db_send("null");
     else {
         Row *slimrow = copy_row_without_reserved(subrow);
-        db_send_row(slimrow);
+        db_send_row_json(slimrow);
         free_row(slimrow);
     }
 }
 
 /* Send out row. */
-static void db_send_row(Row *row) {
+static void db_send_row_json(Row *row) {
     /* Handler duplacate key. */
     handle_dulicate_key(row);
     db_send("{ ");
@@ -84,14 +84,14 @@ static void db_send_row(Row *row) {
                 Refer *refer = (Refer *)key_value->value;
                 assert_not_null(refer, "Try to get Reference type value fail.\n");
                 Row *subrow = define_row(refer);
-                db_send_subrow(subrow);
+                db_send_subrow_json(subrow);
                 free_row(subrow);
                 break;
             }
             case T_ROW: {
                 db_send("\"%s\": ", key_value->key);
                 Row *subrow = key_value->value;
-                db_send_subrow(subrow);
+                db_send_subrow_json(subrow);
                 break;
             }
             default: {
@@ -136,7 +136,7 @@ static void db_send_select_result(DBResult *result) {
         for(i = 0; i < select_result->row_size; i++) {
             /* Send out row. */
             Row *row = select_result->rows[i];
-            db_send_row(row);
+            db_send_row_json(row);
             if (i < select_result->row_size - 1)
                 db_send(", ");
         }

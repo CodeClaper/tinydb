@@ -562,8 +562,9 @@ static bool check_table_exp(TableExpNode *table_exp, AliasMap alias_map) {
 
 
 /* Check assignment set node */
-static bool check_assignment_set_node(UpdateNode *update_node, Table *table) { 
+static bool check_assignment_set_node(UpdateNode *update_node) { 
 
+    Table *table = open_table(update_node->table_name);
     AssignmentSetNode *assignment_set_node = update_node->assignment_set_node;
     SelectResult *select_result = new_select_result(update_node->table_name);
     ConditionNode *condition_node = get_condition_from_where_clause(update_node->where_clause);
@@ -850,8 +851,8 @@ bool check_update_node(UpdateNode *update_node) {
     alias_map.map[0].alias = update_node->table_name;
 
     Table *table = open_table(update_node->table_name);
-    return table != NULL 
-           && check_assignment_set_node(update_node, table) 
+    return check_table(update_node->table_name)
+           && check_assignment_set_node(update_node) 
            && check_where_clause(update_node->where_clause, alias_map);
 }
 

@@ -77,7 +77,7 @@ bool check_table_exist(char *table_name) {
 }
 
 /* Create a new table. */
-bool create_table(MetaTable *meta_table, DBResult *result) {
+bool create_table(MetaTable *meta_table) {
     if (meta_table == NULL) {
         db_log(ERROR, "Try to create table fail.");
         return false;
@@ -177,7 +177,7 @@ Table *open_table(char *table_name) {
 
 
 /* Drop an existed table. */
-bool drop_table(char *table_name, DBResult *result) {
+bool drop_table(char *table_name) {
     /* Check if exist the table. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
