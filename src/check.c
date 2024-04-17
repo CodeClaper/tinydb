@@ -420,27 +420,6 @@ static bool check_selection(SelectionNode *selection_node, AliasMap alias_map) {
            : check_scalar_exp_set(selection_node->scalar_exp_set, alias_map);
 }
 
-/* Check opr if allowd. */
-static bool check_opr(CompareType compare_type, DataType data_type) {
-    switch (compare_type) {
-        case O_EQ:
-        case O_NE:
-            return true;
-        case O_GE:
-        case O_GT:
-        case O_LT:
-        case O_LE: {
-            if (data_type == T_REFERENCE) {
-                db_log(ERROR, "Reference data type only allowed operated equal or not equal.");
-                return false;
-            }
-            return true;
-        }
-        default:
-            db_log(PANIC, "Unknown opration type.");
-    }
-}
-
 /* Check ComparisonNode value.*/
 static bool check_comparison_value(ScalarExpNode *comparion_value, MetaTable *meta_table, MetaColumn *meta_column) {
     switch (comparion_value->type) {
@@ -463,8 +442,7 @@ static bool check_comparison_node(ComparisonNode *comparison, AliasMap alias_map
     MetaColumn *meta_column = get_meta_column_by_name(current_meta_table, column->column_name);
 
     return check_column_node(comparison->column, current_meta_table) // check select column
-           && check_comparison_value(comparison->value, current_meta_table, meta_column)
-           && check_opr(comparison->type, meta_column->column_type);
+           && check_comparison_value(comparison->value, current_meta_table, meta_column);
 }
 
 /* Check InNode. */
@@ -808,6 +786,29 @@ static bool check_insert_node_for_query_spec(InsertNode *insert_node, QuerySpecN
     return true;
 }
 
+/* Check ValuesOrQuerySpecNode in InsertNode. */
+static bool check_values_or_query_spec(InsertNode *insert_node, ValuesOrQuerySpecNode *values_or_query_spec) {
+    switch (values_or_query_spec->type) {
+        case VQ_VALUES:
+            return check_insert_node_for_values(insert_node, values_or_query_spec->values);
+        case VQ_QUERY_SPEC:
+            return check_insert_node_for_query_spec(insert_node, values_or_query_spec->query_spec);
+        default:
+            db_log(ERROR, "Unknown ValuesOrQuerySpecNode type");
+            return false;
+    }
+}
+
+/* Check table. */
+static bool check_table(char *table_name) {
+    if (check_table_exist(table_name))
+        return true;
+    else {
+        db_log(ERROR, "Table '%s' not exists.", table_name);
+        return false;
+    }
+}
+
 /* Check SelectNode. */
 bool check_select_node(SelectNode *select_node) {
     AliasMap alias_map;
@@ -834,18 +835,11 @@ bool check_select_node(SelectNode *select_node) {
         && check_selection(select_node->selection, alias_map);
 }
 
+
 /* Check insert node. */
 bool check_insert_node(InsertNode *insert_node) {
-    ValuesOrQuerySpecNode *values_or_query_spec = insert_node->values_or_query_spec;
-    switch (values_or_query_spec->type) {
-        case VQ_VALUES:
-            return check_insert_node_for_values(insert_node, values_or_query_spec->values);
-        case VQ_QUERY_SPEC:
-            return check_insert_node_for_query_spec(insert_node, values_or_query_spec->query_spec);
-        default:
-            db_log(ERROR, "Unknown ValuesOrQuerySpecNode type");
-            return false;
-    }
+    return check_table(insert_node->table_name)
+           && check_values_or_query_spec(insert_node, insert_node->values_or_query_spec); 
 }
 
 /* Check for update node. */
@@ -869,7 +863,7 @@ bool check_delete_node(DeleteNode *delete_node) {
     alias_map.map[0].name = delete_node->table_name;
     alias_map.map[0].alias = delete_node->table_name;
 
-    return check_table_exist(delete_node->table_name)
+    return check_table(delete_node->table_name)
         && check_condition_node(delete_node->condition_node, alias_map);
 }
 
