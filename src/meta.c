@@ -215,8 +215,7 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
     uint32_t i;
     for (i = 0; i < column_size; i++) {
         MetaColumn *current = get_meta_column_by_index(root_node, i);
-        meta_table->meta_column[i] = instance(MetaColumn);
-        memcpy(meta_table->meta_column[i], current, sizeof(MetaColumn));
+        meta_table->meta_column[i] = current;
 
         /* Skip to system reserved column. */
         if (!current->sys_reserved)

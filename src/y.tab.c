@@ -460,26 +460,27 @@ enum yysymbol_kind_t
   YYSYMBOL_column_def_name_commalist = 113, /* column_def_name_commalist  */
   YYSYMBOL_column_def_name = 114,          /* column_def_name  */
   YYSYMBOL_data_type = 115,                /* data_type  */
-  YYSYMBOL_column_def_opt_list = 116,      /* column_def_opt_list  */
-  YYSYMBOL_column_def_opt = 117,           /* column_def_opt  */
-  YYSYMBOL_table_contraint_def = 118,      /* table_contraint_def  */
-  YYSYMBOL_column = 119,                   /* column  */
-  YYSYMBOL_value_items = 120,              /* value_items  */
-  YYSYMBOL_value_item = 121,               /* value_item  */
-  YYSYMBOL_REFERVALUE = 122,               /* REFERVALUE  */
-  YYSYMBOL_BOOLVALUE = 123,                /* BOOLVALUE  */
-  YYSYMBOL_assignments = 124,              /* assignments  */
-  YYSYMBOL_assignment = 125,               /* assignment  */
-  YYSYMBOL_condition = 126,                /* condition  */
-  YYSYMBOL_predicate = 127,                /* predicate  */
-  YYSYMBOL_comparison_predicate = 128,     /* comparison_predicate  */
-  YYSYMBOL_like_predicate = 129,           /* like_predicate  */
-  YYSYMBOL_in_predicate = 130,             /* in_predicate  */
-  YYSYMBOL_compare = 131,                  /* compare  */
-  YYSYMBOL_function = 132,                 /* function  */
-  YYSYMBOL_function_value = 133,           /* function_value  */
-  YYSYMBOL_non_all_function_value = 134,   /* non_all_function_value  */
-  YYSYMBOL_end = 135                       /* end  */
+  YYSYMBOL_array_dim_clause = 116,         /* array_dim_clause  */
+  YYSYMBOL_column_def_opt_list = 117,      /* column_def_opt_list  */
+  YYSYMBOL_column_def_opt = 118,           /* column_def_opt  */
+  YYSYMBOL_table_contraint_def = 119,      /* table_contraint_def  */
+  YYSYMBOL_column = 120,                   /* column  */
+  YYSYMBOL_value_items = 121,              /* value_items  */
+  YYSYMBOL_value_item = 122,               /* value_item  */
+  YYSYMBOL_REFERVALUE = 123,               /* REFERVALUE  */
+  YYSYMBOL_BOOLVALUE = 124,                /* BOOLVALUE  */
+  YYSYMBOL_assignments = 125,              /* assignments  */
+  YYSYMBOL_assignment = 126,               /* assignment  */
+  YYSYMBOL_condition = 127,                /* condition  */
+  YYSYMBOL_predicate = 128,                /* predicate  */
+  YYSYMBOL_comparison_predicate = 129,     /* comparison_predicate  */
+  YYSYMBOL_like_predicate = 130,           /* like_predicate  */
+  YYSYMBOL_in_predicate = 131,             /* in_predicate  */
+  YYSYMBOL_compare = 132,                  /* compare  */
+  YYSYMBOL_function = 133,                 /* function  */
+  YYSYMBOL_function_value = 134,           /* function_value  */
+  YYSYMBOL_non_all_function_value = 135,   /* non_all_function_value  */
+  YYSYMBOL_end = 136                       /* end  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -807,16 +808,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  62
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   303
+#define YYLAST   311
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  81
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  55
+#define YYNNTS  56
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  139
+#define YYNRULES  142
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  266
+#define YYNSTATES  271
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   322
@@ -872,20 +873,21 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   160,   160,   165,   172,   178,   184,   190,   197,   204,
-     211,   218,   225,   232,   239,   248,   251,   254,   258,   268,
-     277,   287,   295,   307,   318,   324,   334,   343,   347,   353,
-     360,   368,   378,   381,   389,   395,   402,   408,   415,   424,
-     430,   437,   440,   446,   454,   461,   470,   479,   485,   492,
-     499,   506,   513,   520,   524,   531,   539,   547,   555,   565,
-     571,   578,   584,   591,   598,   620,   630,   636,   643,   651,
-     656,   661,   666,   672,   677,   682,   687,   692,   697,   702,
-     711,   714,   719,   726,   731,   736,   741,   747,   752,   758,
-     766,   772,   778,   785,   793,   800,   808,   816,   823,   829,
-     836,   843,   850,   857,   864,   874,   882,   891,   895,   901,
-     907,   914,   923,   931,   939,   943,   952,   959,   966,   975,
-     985,   994,  1023,  1024,  1025,  1026,  1027,  1028,  1031,  1038,
-    1045,  1052,  1059,  1068,  1075,  1082,  1090,  1097,  1106,  1107
+       0,   161,   161,   166,   173,   179,   185,   191,   198,   205,
+     212,   219,   226,   233,   240,   249,   252,   255,   259,   269,
+     278,   288,   296,   308,   319,   325,   335,   344,   348,   354,
+     361,   369,   379,   382,   390,   396,   403,   409,   416,   425,
+     431,   438,   441,   447,   455,   462,   471,   480,   486,   493,
+     500,   507,   514,   521,   525,   532,   540,   548,   556,   566,
+     572,   579,   585,   592,   599,   621,   632,   638,   645,   653,
+     658,   663,   668,   674,   679,   684,   689,   694,   699,   704,
+     713,   716,   720,   727,   730,   735,   742,   747,   752,   757,
+     763,   768,   774,   782,   788,   794,   801,   809,   816,   824,
+     832,   839,   845,   852,   859,   866,   873,   880,   890,   898,
+     907,   911,   917,   923,   930,   939,   947,   955,   959,   968,
+     975,   982,   991,  1001,  1010,  1039,  1040,  1041,  1042,  1043,
+    1044,  1047,  1054,  1061,  1068,  1075,  1084,  1091,  1098,  1106,
+    1113,  1122,  1123
 };
 #endif
 
@@ -922,11 +924,11 @@ static const char *const yytname[] =
   "scalar_exp_commalist", "scalar_exp", "calculate", "columns",
   "base_table_element_commalist", "base_table_element", "column_def",
   "column_def_name_commalist", "column_def_name", "data_type",
-  "column_def_opt_list", "column_def_opt", "table_contraint_def", "column",
-  "value_items", "value_item", "REFERVALUE", "BOOLVALUE", "assignments",
-  "assignment", "condition", "predicate", "comparison_predicate",
-  "like_predicate", "in_predicate", "compare", "function",
-  "function_value", "non_all_function_value", "end", YY_NULLPTR
+  "array_dim_clause", "column_def_opt_list", "column_def_opt",
+  "table_contraint_def", "column", "value_items", "value_item",
+  "REFERVALUE", "BOOLVALUE", "assignments", "assignment", "condition",
+  "predicate", "comparison_predicate", "like_predicate", "in_predicate",
+  "compare", "function", "function_value", "non_all_function_value", "end", YY_NULLPTR
 };
 
 static const char *
@@ -936,12 +938,12 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-175)
+#define YYPACT_NINF (-183)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-99)
+#define YYTABLE_NINF (-102)
 
 #define yytable_value_is_error(Yyn) \
   0
@@ -950,33 +952,34 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-     253,    -4,    -4,    -4,    19,    52,    44,     2,   -33,    49,
-     -33,     0,   202,  -175,  -175,  -175,  -175,  -175,  -175,  -175,
-    -175,  -175,  -175,  -175,  -175,  -175,   100,  -175,  -175,  -175,
-     -33,   -33,  -175,   124,   115,   117,   122,   150,   172,   175,
-    -175,  -175,   128,  -175,  -175,  -175,   184,    63,   165,  -175,
-    -175,  -175,  -175,  -175,  -175,   -33,  -175,   149,   -33,    -4,
-      -4,    -4,  -175,  -175,  -175,   199,    -4,   138,    -1,   137,
-     120,   120,    33,    33,    33,    27,   154,   124,   154,   -33,
-      -4,   205,   124,   124,   124,   124,   124,   159,    26,   154,
-      10,  -175,  -175,  -175,   116,  -175,  -175,  -175,    50,  -175,
-    -175,   220,   230,  -175,  -175,  -175,   242,   243,   244,    27,
-     174,    35,  -175,  -175,  -175,  -175,   180,   126,  -175,   183,
-    -175,    71,  -175,    27,  -175,  -175,   165,    17,    17,   211,
-     211,  -175,   154,    44,   250,    -4,  -175,   203,    84,  -175,
-      27,  -175,   228,   254,   266,   245,  -175,    18,  -175,  -175,
-     194,  -175,    50,  -175,  -175,  -175,  -175,  -175,  -175,   109,
-    -175,  -175,  -175,  -175,  -175,  -175,   267,    50,   124,    27,
-      27,  -175,  -175,  -175,   -33,   192,  -175,  -175,   195,    32,
-    -175,   184,    50,  -175,    50,   154,    -4,    16,   269,   209,
-      27,   271,    -4,   116,  -175,  -175,  -175,   272,  -175,  -175,
-    -175,  -175,  -175,  -175,  -175,   144,  -175,  -175,    50,  -175,
-     165,   279,  -175,  -175,  -175,    15,   154,  -175,    34,  -175,
-    -175,  -175,  -175,   209,    58,  -175,   151,   209,  -175,  -175,
-     213,   255,  -175,    56,   276,   -33,   240,   144,  -175,    60,
-      -4,  -175,  -175,    64,  -175,   209,  -175,    65,   278,  -175,
-    -175,  -175,    27,  -175,  -175,  -175,  -175,  -175,  -175,  -175,
-     256,  -175,   179,   -33,  -175,  -175
+     258,    -4,    -4,    -4,   -18,    13,    44,    46,     9,    75,
+       9,     2,   229,  -183,  -183,  -183,  -183,  -183,  -183,  -183,
+    -183,  -183,  -183,  -183,  -183,  -183,   111,  -183,  -183,  -183,
+       9,     9,  -183,   119,   104,   115,   125,   140,   156,   169,
+    -183,  -183,    62,  -183,  -183,  -183,   133,    98,   178,  -183,
+    -183,  -183,  -183,  -183,  -183,     9,  -183,   172,     9,    -4,
+      -4,    -4,  -183,  -183,  -183,   186,    -4,   161,    18,   137,
+      73,    73,    23,    23,    23,    -1,   129,   119,   129,     9,
+      -4,   184,   119,   119,   119,   119,   119,   143,    95,   129,
+      10,  -183,  -183,  -183,   163,  -183,  -183,  -183,    30,  -183,
+    -183,   205,   209,  -183,  -183,  -183,   210,   216,   217,    -1,
+     230,   123,  -183,  -183,  -183,  -183,   152,   -40,  -183,   157,
+    -183,    48,  -183,    -1,  -183,  -183,   178,    17,    17,   183,
+     183,  -183,   129,    44,   223,    -4,  -183,   176,    45,  -183,
+      -1,  -183,   207,   228,   242,   220,  -183,    25,  -183,  -183,
+     212,  -183,    30,  -183,  -183,  -183,  -183,  -183,  -183,   128,
+    -183,  -183,  -183,  -183,  -183,  -183,   244,    30,   119,    -1,
+      -1,  -183,  -183,  -183,     9,   168,  -183,  -183,   150,    26,
+    -183,   133,    30,  -183,    30,   129,    -4,    16,   245,   185,
+      -1,   247,    -4,   163,  -183,  -183,  -183,   248,  -183,  -183,
+    -183,  -183,  -183,  -183,  -183,   208,  -183,  -183,    30,  -183,
+     178,   276,  -183,  -183,  -183,    20,   129,  -183,    32,  -183,
+    -183,  -183,  -183,   185,    33,  -183,   206,   185,  -183,  -183,
+     213,   221,   146,    34,    -4,  -183,  -183,    49,  -183,   185,
+    -183,    55,   271,  -183,   253,  -183,   102,   277,     9,   250,
+     222,   170,  -183,  -183,  -183,  -183,  -183,   263,  -183,  -183,
+    -183,  -183,    -1,  -183,  -183,  -183,  -183,     9,   214,  -183,
+    -183
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -986,42 +989,43 @@ static const yytype_uint8 yydefact[] =
 {
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     2,     4,     5,     6,     7,     8,     9,
-      10,    11,    12,    13,    14,   138,     0,    15,    16,    17,
+      10,    11,    12,    13,    14,   141,     0,    15,    16,    17,
        0,     0,    30,     0,     0,     0,     0,     0,     0,     0,
-     107,   108,    94,   100,   103,   102,    32,    29,    47,    49,
-      50,    52,   104,   101,    51,     0,    39,     0,     0,     0,
-       0,     0,     1,     3,   139,     0,     0,     0,     0,    52,
+     110,   111,    97,   103,   106,   105,    32,    29,    47,    49,
+      50,    52,   107,   104,    51,     0,    39,     0,     0,     0,
+       0,     0,     1,     3,   142,     0,     0,     0,     0,    52,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,    41,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    26,    27,    28,     0,    19,    53,   105,     0,   136,
-     137,     0,     0,   135,   133,   134,     0,     0,     0,     0,
-       0,     0,   115,   116,   117,   118,     0,     0,    97,    33,
+       0,    26,    27,    28,     0,    19,    53,   108,     0,   139,
+     140,     0,     0,   138,   136,   137,     0,     0,     0,     0,
+       0,     0,   118,   119,   120,   121,     0,     0,   100,    33,
       34,    36,    20,     0,    31,    42,    48,    55,    56,    57,
-      58,    54,     0,     0,     0,     0,    45,     0,    41,   109,
+      58,    54,     0,     0,     0,     0,    45,     0,    41,   112,
        0,    24,     0,     0,     0,     0,    68,     0,    61,    63,
-       0,    64,     0,    99,   128,   129,   130,   131,   132,     0,
-     122,   123,   124,   125,   126,   127,     0,     0,     0,     0,
-       0,   106,    95,    96,     0,     0,    40,    37,    43,     0,
+       0,    64,     0,   102,   131,   132,   133,   134,   135,     0,
+     125,   126,   127,   128,   129,   130,     0,     0,     0,     0,
+       0,   109,    98,    99,     0,     0,    40,    37,    43,     0,
       59,    32,     0,    21,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,    71,    69,    70,     0,    73,    74,
-      75,    76,    78,    77,    79,    80,    98,   114,     0,   120,
-     119,   112,   113,    35,    38,     0,     0,    46,     0,   111,
-     110,    23,    25,     0,     0,    66,     0,     0,    18,    62,
-       0,     0,    84,     0,     0,     0,     0,    65,    81,     0,
-       0,    60,    44,     0,    90,     0,    93,     0,     0,    85,
-      87,    86,     0,    89,    83,    82,   121,    22,    91,    67,
-       0,    72,     0,     0,    88,    92
+      75,    76,    78,    77,    79,    80,   101,   117,     0,   123,
+     122,   115,   116,    35,    38,     0,     0,    46,     0,   114,
+     113,    23,    25,     0,     0,    66,     0,     0,    18,    62,
+       0,     0,    83,     0,     0,    60,    44,     0,    93,     0,
+      96,     0,     0,    81,     0,    87,     0,     0,     0,     0,
+       0,    65,    84,   124,    22,    94,    67,     0,    72,    88,
+      90,    89,     0,    92,    86,    82,    85,     0,     0,    95,
+      91
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -175,  -175,   277,  -175,  -175,  -175,  -175,  -175,  -175,  -175,
-    -175,  -175,  -175,  -175,   157,   110,  -175,  -175,   119,    -8,
-     121,   156,  -175,    80,  -175,   221,   -28,  -175,  -175,  -175,
-     104,  -175,   -14,   -88,  -175,  -175,    62,  -175,   -60,  -174,
-     -32,  -175,  -175,  -175,   118,   -92,  -175,  -175,  -175,  -175,
-    -175,  -175,   152,   229,     1
+    -183,  -183,   288,  -183,  -183,  -183,  -183,  -183,  -183,  -183,
+    -183,  -183,  -183,  -183,   171,   120,  -183,  -183,   131,    -8,
+     127,   165,  -183,    91,  -183,   231,   -28,  -183,  -183,  -183,
+     114,  -183,  -182,   -88,  -183,  -183,  -183,    58,  -183,   -60,
+    -156,   -32,  -183,  -183,  -183,   126,   -92,  -183,  -183,  -183,
+    -183,  -183,  -183,   149,   239,     1
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
@@ -1030,9 +1034,9 @@ static const yytype_uint8 yydefgoto[] =
        0,    12,    13,    14,    15,    16,    17,    18,    19,    20,
       21,    22,    23,    24,    46,    80,    81,   119,   120,   121,
      177,   124,   125,   135,   136,    47,    48,    49,   179,   147,
-     148,   149,   224,   225,   205,   237,   238,   151,    50,    68,
-      51,    52,    53,   138,   139,   111,   112,   113,   114,   115,
-     168,    54,   106,   101,    27
+     148,   149,   224,   225,   205,   232,   251,   252,   151,    50,
+      68,    51,    52,    53,   138,   139,   111,   112,   113,   114,
+     115,   168,    54,   106,   101,    27
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -1040,72 +1044,74 @@ static const yytype_uint8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
-      57,    69,    59,    28,    29,    67,   150,    25,   218,    97,
+      57,    69,    59,    28,    29,    67,   150,    25,   109,    30,
      100,   100,   105,   105,   105,   110,   116,   159,   118,   169,
-     170,    25,    65,    66,    85,    86,    55,    25,   192,   137,
-      60,   178,   133,   140,   239,   132,   109,    56,   169,   170,
-     103,   134,   215,   133,   242,   171,    30,    88,   187,   110,
-      90,    32,   134,    33,   126,   127,   128,   129,   130,   152,
-      91,    92,    93,   110,    87,   152,   153,    95,   244,    61,
-     256,    58,   180,    98,   258,   260,    26,   211,   212,    31,
+     170,    25,    65,    66,    85,    86,   218,    25,    97,   137,
+     103,   178,    60,   140,    82,   192,   215,   133,   173,   152,
+      31,   237,   236,   238,   253,   241,   134,    88,   187,   110,
+      90,    32,   233,    33,   126,   127,   128,   129,   130,   255,
+      91,    92,    93,   110,    87,   257,   153,    95,   123,    42,
+      55,    61,   180,    39,    40,    41,    26,   211,   212,    56,
      110,   122,    34,    35,    36,    37,    38,    39,    40,    41,
-      26,   141,   193,    39,    40,    41,    26,    42,   226,    39,
-      40,    41,   250,    42,   104,   150,   216,   123,    98,   110,
-     110,    64,   169,   170,    42,    43,    44,    45,   175,   207,
-     206,    43,    44,    45,    70,   137,    71,    43,    44,    45,
-     110,    72,   245,    33,    98,   209,   183,    82,   245,   245,
-     210,   176,   204,    83,    84,    85,    86,   142,    96,   143,
-     206,   144,   219,   145,   169,   170,   241,   259,   185,    73,
-     262,   246,    34,    35,    36,    37,    38,    39,    40,    41,
-      83,    84,    85,    86,    89,   231,   206,   232,   233,   234,
-     235,    74,   169,   170,    75,    87,   146,   221,   222,   264,
-      42,    99,   110,   228,    42,    43,    44,    45,   169,   170,
-      82,   251,    62,    76,   173,    77,    79,    78,    94,   243,
-     236,   -98,    87,   247,     1,     2,     3,     4,     5,     6,
-       7,     8,     9,    10,    42,   107,   108,   253,   123,   131,
-     154,    11,   160,   161,   162,   163,   164,   165,   166,   167,
-     155,   257,   194,   195,   196,   197,   198,   199,   200,   201,
-     202,   203,   156,   157,   158,   265,   172,   174,    87,   182,
-     188,   184,   176,   189,    56,     1,     2,     3,     4,     5,
-       6,     7,     8,     9,    10,   190,   208,   191,   223,   146,
-     227,   230,    11,   170,   248,   252,   254,   249,   261,    63,
-     181,   217,   263,   213,   186,   240,   214,   229,   117,   255,
-     102,     0,     0,   220
+      26,   141,    98,    42,   104,   175,    26,    58,   226,   193,
+     216,    43,    44,    45,   132,   150,    98,   239,    98,   110,
+     110,   152,   133,    70,    42,    43,    44,    45,   176,   185,
+     206,   134,    64,   239,    71,   137,   169,   170,    33,   239,
+     110,   169,   170,   171,    72,   209,   183,    76,   207,    77,
+     210,    78,   204,    42,    99,    39,    40,    41,   260,    73,
+     206,   256,   219,   169,   170,    79,   235,    34,    35,    36,
+      37,    38,    39,    40,    41,    74,    83,    84,    85,    86,
+     268,    96,    82,    43,    44,    45,   206,   244,    75,   245,
+     246,   247,   248,    83,    84,    85,    86,   221,   222,    42,
+      43,    44,    45,   228,   142,    94,   143,    89,   144,    42,
+     145,   244,   110,   245,   246,   247,   248,   123,    87,   169,
+     170,  -101,   249,   131,   261,   154,   240,   169,   170,   155,
+     156,   250,   107,   108,   270,    87,   157,   158,   172,    62,
+      87,   174,   182,   146,   184,   254,   249,   189,   176,   188,
+     263,     1,     2,     3,     4,     5,     6,     7,     8,     9,
+      10,   190,   191,   208,   223,   146,   227,   230,    11,   269,
+     194,   195,   196,   197,   198,   199,   200,   201,   202,   203,
+       1,     2,     3,     4,     5,     6,     7,     8,     9,    10,
+     170,   258,    56,   231,   242,   259,   262,    11,   160,   161,
+     162,   163,   164,   165,   166,   167,   264,   243,   265,   267,
+      63,   217,   214,   186,   181,   213,   234,   229,   117,   266,
+     102,   220
 };
 
 static const yytype_int16 yycheck[] =
 {
-       8,    33,    10,     2,     3,    33,    94,    11,   182,    10,
+       8,    33,    10,     2,     3,    33,    94,    11,     9,    27,
       70,    71,    72,    73,    74,    75,    76,   109,    78,     3,
-       4,    11,    30,    31,     7,     8,    24,    11,    10,    89,
-      30,   123,    17,    23,   208,     9,     9,    70,     3,     4,
-       7,    26,    10,    17,    10,    10,    27,    55,   140,   109,
-      58,     7,    26,     9,    82,    83,    84,    85,    86,     9,
-      59,    60,    61,   123,    47,     9,    98,    66,    10,    69,
-      10,    22,   132,    74,    10,    10,    80,   169,   170,    27,
+       4,    11,    30,    31,     7,     8,   182,    11,    10,    89,
+       7,   123,    30,    23,    74,    10,    10,    17,    78,     9,
+      27,   223,    10,    10,    10,   227,    26,    55,   140,   109,
+      58,     7,   208,     9,    82,    83,    84,    85,    86,    10,
+      59,    60,    61,   123,    47,    10,    98,    66,    23,    70,
+      24,    69,   132,    43,    44,    45,    80,   169,   170,    70,
      140,    80,    38,    39,    40,    41,    42,    43,    44,    45,
-      80,    90,    74,    43,    44,    45,    80,    70,   190,    43,
-      44,    45,    46,    70,    71,   193,    74,    23,    74,   169,
-     170,    11,     3,     4,    70,    71,    72,    73,    47,    10,
-     152,    71,    72,    73,     9,   185,     9,    71,    72,    73,
-     190,     9,    74,     9,    74,   167,   135,    74,    74,    74,
-     168,    70,   150,     5,     6,     7,     8,    31,    10,    33,
-     182,    35,   184,    37,     3,     4,   216,   245,    74,     9,
-     252,    10,    38,    39,    40,    41,    42,    43,    44,    45,
-       5,     6,     7,     8,    25,    31,   208,    33,    34,    35,
-      36,     9,     3,     4,     9,    47,    70,   186,   187,    10,
-      70,    71,   252,   192,    70,    71,    72,    73,     3,     4,
-      74,   233,     0,    75,    78,    77,    22,    79,     9,   223,
-      66,    74,    47,   227,    12,    13,    14,    15,    16,    17,
-      18,    19,    20,    21,    70,    73,    74,   235,    23,    70,
-      10,    29,    58,    59,    60,    61,    62,    63,    64,    65,
-      10,   240,    48,    49,    50,    51,    52,    53,    54,    55,
-      56,    57,    10,    10,    10,   263,    76,    74,    47,     9,
-      32,    58,    70,     9,    70,    12,    13,    14,    15,    16,
-      17,    18,    19,    20,    21,     9,     9,    32,     9,    70,
-       9,     9,    29,     4,    71,     9,    46,    32,    10,    12,
-     133,   181,    36,   174,   138,   215,   175,   193,    77,   237,
-      71,    -1,    -1,   185
+      80,    90,    74,    70,    71,    47,    80,    22,   190,    74,
+      74,    71,    72,    73,     9,   193,    74,    74,    74,   169,
+     170,     9,    17,     9,    70,    71,    72,    73,    70,    74,
+     152,    26,    11,    74,     9,   185,     3,     4,     9,    74,
+     190,     3,     4,    10,     9,   167,   135,    75,    10,    77,
+     168,    79,   150,    70,    71,    43,    44,    45,    46,     9,
+     182,   239,   184,     3,     4,    22,   216,    38,    39,    40,
+      41,    42,    43,    44,    45,     9,     5,     6,     7,     8,
+     262,    10,    74,    71,    72,    73,   208,    31,     9,    33,
+      34,    35,    36,     5,     6,     7,     8,   186,   187,    70,
+      71,    72,    73,   192,    31,     9,    33,    25,    35,    70,
+      37,    31,   262,    33,    34,    35,    36,    23,    47,     3,
+       4,    74,    66,    70,   246,    10,    10,     3,     4,    10,
+      10,    75,    73,    74,    10,    47,    10,    10,    76,     0,
+      47,    74,     9,    70,    58,   234,    66,     9,    70,    32,
+     248,    12,    13,    14,    15,    16,    17,    18,    19,    20,
+      21,     9,    32,     9,     9,    70,     9,     9,    29,   267,
+      48,    49,    50,    51,    52,    53,    54,    55,    56,    57,
+      12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
+       4,    10,    70,    75,    71,    32,     9,    29,    58,    59,
+      60,    61,    62,    63,    64,    65,    46,    76,    76,    36,
+      12,   181,   175,   138,   133,   174,   215,   193,    77,   251,
+      71,   185
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
@@ -1114,31 +1120,32 @@ static const yytype_uint8 yystos[] =
 {
        0,    12,    13,    14,    15,    16,    17,    18,    19,    20,
       21,    29,    82,    83,    84,    85,    86,    87,    88,    89,
-      90,    91,    92,    93,    94,    11,    80,   135,   135,   135,
+      90,    91,    92,    93,    94,    11,    80,   136,   136,   136,
       27,    27,     7,     9,    38,    39,    40,    41,    42,    43,
       44,    45,    70,    71,    72,    73,    95,   106,   107,   108,
-     119,   121,   122,   123,   132,    24,    70,   100,    22,   100,
-      30,    69,     0,    83,    11,   100,   100,   107,   120,   121,
+     120,   122,   123,   124,   133,    24,    70,   100,    22,   100,
+      30,    69,     0,    83,    11,   100,   100,   107,   121,   122,
        9,     9,     9,     9,     9,     9,    75,    77,    79,    22,
       96,    97,    74,     5,     6,     7,     8,    47,   100,    25,
-     100,   135,   135,   135,     9,   135,    10,    10,    74,    71,
-     119,   134,   134,     7,    71,   119,   133,   133,   133,     9,
-     119,   126,   127,   128,   129,   130,   119,   106,   119,    98,
-      99,   100,   135,    23,   102,   103,   107,   107,   107,   107,
-     107,    70,     9,    17,    26,   104,   105,   119,   124,   125,
-      23,   135,    31,    33,    35,    37,    70,   110,   111,   112,
-     114,   118,     9,   121,    10,    10,    10,    10,    10,   126,
-      58,    59,    60,    61,    62,    63,    64,    65,   131,     3,
-       4,    10,    76,    78,    74,    47,    70,   101,   126,   109,
-     119,    95,     9,   135,    58,    74,   102,   126,    32,     9,
+     100,   136,   136,   136,     9,   136,    10,    10,    74,    71,
+     120,   135,   135,     7,    71,   120,   134,   134,   134,     9,
+     120,   127,   128,   129,   130,   131,   120,   106,   120,    98,
+      99,   100,   136,    23,   102,   103,   107,   107,   107,   107,
+     107,    70,     9,    17,    26,   104,   105,   120,   125,   126,
+      23,   136,    31,    33,    35,    37,    70,   110,   111,   112,
+     114,   119,     9,   122,    10,    10,    10,    10,    10,   127,
+      58,    59,    60,    61,    62,    63,    64,    65,   132,     3,
+       4,    10,    76,    78,    74,    47,    70,   101,   127,   109,
+     120,    95,     9,   136,    58,    74,   102,   127,    32,     9,
        9,    32,    10,    74,    48,    49,    50,    51,    52,    53,
-      54,    55,    56,    57,   100,   115,   121,    10,     9,   121,
-     107,   126,   126,    99,   101,    10,    74,    96,   120,   121,
-     125,   135,   135,     9,   113,   114,   126,     9,   135,   111,
-       9,    31,    33,    34,    35,    36,    66,   116,   117,   120,
-     104,   119,    10,   113,    10,    74,    10,   113,    71,    32,
-      46,   121,     9,   100,    46,   117,    10,   135,    10,   114,
-      10,    10,   126,    36,    10,   100
+      54,    55,    56,    57,   100,   115,   122,    10,     9,   122,
+     107,   127,   127,    99,   101,    10,    74,    96,   121,   122,
+     126,   136,   136,     9,   113,   114,   127,     9,   136,   111,
+       9,    75,   116,   121,   104,   120,    10,   113,    10,    74,
+      10,   113,    71,    76,    31,    33,    34,    35,    36,    66,
+      75,   117,   118,    10,   136,    10,   114,    10,    10,    32,
+      46,   122,     9,   100,    46,    76,   118,    36,   127,   100,
+      10
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
@@ -1152,12 +1159,13 @@ static const yytype_uint8 yyr1[] =
      107,   107,   107,   107,   107,   108,   108,   108,   108,   109,
      109,   110,   110,   111,   111,   112,   113,   113,   114,   115,
      115,   115,   115,   115,   115,   115,   115,   115,   115,   115,
-     116,   116,   116,   117,   117,   117,   117,   117,   117,   117,
-     118,   118,   118,   118,   119,   119,   119,   119,   120,   120,
-     121,   121,   121,   121,   121,   122,   122,   123,   123,   124,
-     124,   125,   126,   126,   126,   126,   127,   127,   127,   128,
-     129,   130,   131,   131,   131,   131,   131,   131,   132,   132,
-     132,   132,   132,   133,   133,   133,   134,   134,   135,   135
+     116,   116,   116,   117,   117,   117,   118,   118,   118,   118,
+     118,   118,   118,   119,   119,   119,   119,   120,   120,   120,
+     120,   121,   121,   122,   122,   122,   122,   122,   123,   123,
+     124,   124,   125,   125,   126,   127,   127,   127,   127,   128,
+     128,   128,   129,   130,   131,   132,   132,   132,   132,   132,
+     132,   133,   133,   133,   133,   133,   134,   134,   134,   135,
+     135,   136,   136
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -1169,14 +1177,15 @@ static const yytype_int8 yyr2[] =
        1,     2,     0,     2,     1,     3,     1,     2,     3,     1,
        1,     0,     1,     2,     4,     1,     3,     1,     3,     1,
        1,     1,     1,     3,     3,     3,     3,     3,     3,     1,
-       3,     1,     3,     1,     1,     3,     1,     3,     1,     1,
+       3,     1,     3,     1,     1,     4,     1,     3,     1,     1,
        1,     1,     4,     1,     1,     1,     1,     1,     1,     1,
-       0,     1,     2,     2,     1,     2,     2,     2,     4,     2,
-       4,     5,     7,     4,     1,     4,     4,     3,     1,     3,
-       1,     1,     1,     1,     1,     3,     4,     1,     1,     1,
-       3,     3,     3,     3,     3,     1,     1,     1,     1,     3,
-       3,     5,     1,     1,     1,     1,     1,     1,     4,     4,
-       4,     4,     4,     1,     1,     1,     1,     1,     1,     2
+       0,     2,     3,     0,     1,     2,     2,     1,     2,     2,
+       2,     4,     2,     4,     5,     7,     4,     1,     4,     4,
+       3,     1,     3,     1,     1,     1,     1,     1,     3,     4,
+       1,     1,     1,     3,     3,     3,     3,     3,     1,     1,
+       1,     1,     3,     3,     5,     1,     1,     1,     1,     1,
+       1,     4,     4,     4,     4,     4,     1,     1,     1,     1,
+       1,     1,     2
 };
 
 
@@ -1642,175 +1651,175 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* statements: statement  */
-#line 161 "sql.y"
+#line 162 "sql.y"
         {
             add_statement(states, (yyvsp[0].statement));
             (yyval.statements) = states;
         }
-#line 1651 "y.tab.c"
+#line 1660 "y.tab.c"
     break;
 
   case 3: /* statements: statements statement  */
-#line 166 "sql.y"
+#line 167 "sql.y"
         {
             add_statement((yyvsp[-1].statements), (yyvsp[0].statement));
             (yyval.statements) = (yyvsp[-1].statements);
         }
-#line 1660 "y.tab.c"
+#line 1669 "y.tab.c"
     break;
 
   case 4: /* statement: begin_transaction_statement  */
-#line 173 "sql.y"
+#line 174 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = BEGIN_TRANSACTION_STMT;
             (yyval.statement) = statement;
         }
-#line 1670 "y.tab.c"
+#line 1679 "y.tab.c"
     break;
 
   case 5: /* statement: commit_transaction_statement  */
-#line 179 "sql.y"
+#line 180 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = COMMIT_TRANSACTION_STMT;
             (yyval.statement) = statement;
         }
-#line 1680 "y.tab.c"
+#line 1689 "y.tab.c"
     break;
 
   case 6: /* statement: rollback_transaction_statement  */
-#line 185 "sql.y"
+#line 186 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = ROLLBACK_TRANSACTION_STMT;
             (yyval.statement) = statement;
         }
-#line 1690 "y.tab.c"
+#line 1699 "y.tab.c"
     break;
 
   case 7: /* statement: create_table_statement  */
-#line 191 "sql.y"
+#line 192 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = CREATE_TABLE_STMT;
             statement->create_table_node = (yyvsp[0].create_table_node);
             (yyval.statement) = statement;
         }
-#line 1701 "y.tab.c"
+#line 1710 "y.tab.c"
     break;
 
   case 8: /* statement: drop_table_statement  */
-#line 198 "sql.y"
+#line 199 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = DROP_TABLE_STMT;
             statement->drop_table_node = (yyvsp[0].drop_table_node);
             (yyval.statement) = statement;
         }
-#line 1712 "y.tab.c"
+#line 1721 "y.tab.c"
     break;
 
   case 9: /* statement: select_statement  */
-#line 205 "sql.y"
+#line 206 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = SELECT_STMT;
             statement->select_node = (yyvsp[0].select_node);
             (yyval.statement) = statement;
         }
-#line 1723 "y.tab.c"
+#line 1732 "y.tab.c"
     break;
 
   case 10: /* statement: insert_statement  */
-#line 212 "sql.y"
+#line 213 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = INSERT_STMT;
             statement->insert_node = (yyvsp[0].insert_node);
             (yyval.statement) = statement;
         }
-#line 1734 "y.tab.c"
+#line 1743 "y.tab.c"
     break;
 
   case 11: /* statement: update_statement  */
-#line 219 "sql.y"
+#line 220 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = UPDATE_STMT;
             statement->update_node = (yyvsp[0].update_node);
             (yyval.statement) = statement;
         }
-#line 1745 "y.tab.c"
+#line 1754 "y.tab.c"
     break;
 
   case 12: /* statement: delete_statement  */
-#line 226 "sql.y"
+#line 227 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = DELETE_STMT;
             statement->delete_node = (yyvsp[0].delete_node);
             (yyval.statement) = statement;
         }
-#line 1756 "y.tab.c"
+#line 1765 "y.tab.c"
     break;
 
   case 13: /* statement: describe_statement  */
-#line 233 "sql.y"
+#line 234 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = DESCRIBE_STMT;
             statement->describe_node = (yyvsp[0].describe_node);
             (yyval.statement) = statement;
         }
-#line 1767 "y.tab.c"
+#line 1776 "y.tab.c"
     break;
 
   case 14: /* statement: show_statement  */
-#line 240 "sql.y"
+#line 241 "sql.y"
         {
             Statement *statement = make_statement();
             statement->statement_type = SHOW_STMT;
             statement->show_node = (yyvsp[0].show_node);
             (yyval.statement) = statement;
         }
-#line 1778 "y.tab.c"
+#line 1787 "y.tab.c"
     break;
 
   case 18: /* create_table_statement: CREATE TABLE table '(' base_table_element_commalist ')' end  */
-#line 259 "sql.y"
+#line 260 "sql.y"
         {
             CreateTableNode *create_table_node = make_create_table_node();
             create_table_node->table_name = (yyvsp[-4].strVal);
             create_table_node->base_table_element_commalist = (yyvsp[-2].base_table_element_commalist);
             (yyval.create_table_node) = create_table_node;
         }
-#line 1789 "y.tab.c"
+#line 1798 "y.tab.c"
     break;
 
   case 19: /* drop_table_statement: DROP TABLE table end  */
-#line 269 "sql.y"
+#line 270 "sql.y"
         {
             DropTableNode *drop_table_node = make_drop_table_node();
             drop_table_node->table_name = (yyvsp[-1].strVal);
             (yyval.drop_table_node) = drop_table_node;
         }
-#line 1799 "y.tab.c"
+#line 1808 "y.tab.c"
     break;
 
   case 20: /* select_statement: SELECT selection table_exp end  */
-#line 278 "sql.y"
+#line 279 "sql.y"
         {
             SelectNode *select_node = make_select_node();
             select_node->selection = (yyvsp[-2].selection_node);
             select_node->table_exp = (yyvsp[-1].table_exp_node);
             (yyval.select_node) = select_node;
         }
-#line 1810 "y.tab.c"
+#line 1819 "y.tab.c"
     break;
 
   case 21: /* insert_statement: INSERT INTO table values_or_query_spec end  */
-#line 288 "sql.y"
+#line 289 "sql.y"
         {
             InsertNode *node = make_insert_node();
             node->all_column = true;
@@ -1818,11 +1827,11 @@ yyreduce:
             node->values_or_query_spec = (yyvsp[-1].values_or_query_spec_node);
             (yyval.insert_node) = node;
         }
-#line 1822 "y.tab.c"
+#line 1831 "y.tab.c"
     break;
 
   case 22: /* insert_statement: INSERT INTO table '(' columns ')' values_or_query_spec end  */
-#line 296 "sql.y"
+#line 297 "sql.y"
         {
             InsertNode *node = make_insert_node();
             node->all_column = false;
@@ -1831,11 +1840,11 @@ yyreduce:
             node->values_or_query_spec = (yyvsp[-1].values_or_query_spec_node);
             (yyval.insert_node) = node;
         }
-#line 1835 "y.tab.c"
+#line 1844 "y.tab.c"
     break;
 
   case 23: /* update_statement: UPDATE table SET assignments opt_where_clause end  */
-#line 308 "sql.y"
+#line 309 "sql.y"
         {
             UpdateNode *node = make_update_node();
             node->table_name = (yyvsp[-4].strVal);
@@ -1843,314 +1852,314 @@ yyreduce:
             node->where_clause = (yyvsp[-1].where_clause_node);
             (yyval.update_node) = node;
         }
-#line 1847 "y.tab.c"
+#line 1856 "y.tab.c"
     break;
 
   case 24: /* delete_statement: DELETE FROM table end  */
-#line 319 "sql.y"
+#line 320 "sql.y"
         {
             DeleteNode *node = make_delete_node();
             node->table_name = (yyvsp[-1].strVal);
             (yyval.delete_node) = node;
         }
-#line 1857 "y.tab.c"
+#line 1866 "y.tab.c"
     break;
 
   case 25: /* delete_statement: DELETE FROM table WHERE condition end  */
-#line 325 "sql.y"
+#line 326 "sql.y"
         {
             DeleteNode *node = make_delete_node();
             node->table_name = (yyvsp[-3].strVal);
             node->condition_node = (yyvsp[-1].condition_node);
             (yyval.delete_node) = node;
         }
-#line 1868 "y.tab.c"
+#line 1877 "y.tab.c"
     break;
 
   case 26: /* describe_statement: DESCRIBE table end  */
-#line 335 "sql.y"
+#line 336 "sql.y"
         {
             DescribeNode *node = make_describe_node();
             node->table_name = (yyvsp[-1].strVal);
             (yyval.describe_node) = node;
         }
-#line 1878 "y.tab.c"
+#line 1887 "y.tab.c"
     break;
 
   case 27: /* show_statement: SHOW TABLES end  */
-#line 344 "sql.y"
+#line 345 "sql.y"
         {
             (yyval.show_node) = make_show_node(SHOW_TABLES);
         }
-#line 1886 "y.tab.c"
+#line 1895 "y.tab.c"
     break;
 
   case 28: /* show_statement: SHOW MEMORY end  */
-#line 348 "sql.y"
+#line 349 "sql.y"
         {
             (yyval.show_node) = make_show_node(SHOW_MEMORY);
         }
-#line 1894 "y.tab.c"
+#line 1903 "y.tab.c"
     break;
 
   case 29: /* selection: scalar_exp_commalist  */
-#line 354 "sql.y"
+#line 355 "sql.y"
         {
             SelectionNode *selection_node = make_selection_node();
             selection_node->all_column = false;
             selection_node->scalar_exp_set = (yyvsp[0].scalar_exp_set_node);
             (yyval.selection_node) = selection_node;
         }
-#line 1905 "y.tab.c"
+#line 1914 "y.tab.c"
     break;
 
   case 30: /* selection: '*'  */
-#line 361 "sql.y"
+#line 362 "sql.y"
         {
             SelectionNode *selection_node = make_selection_node();
             selection_node->all_column = true;
             (yyval.selection_node) = selection_node;
         }
-#line 1915 "y.tab.c"
+#line 1924 "y.tab.c"
     break;
 
   case 31: /* table_exp: from_clause opt_where_clause  */
-#line 369 "sql.y"
+#line 370 "sql.y"
         {
             TableExpNode *table_exp = make_table_exp_node();
             table_exp->from_clause = (yyvsp[-1].from_clause_node);
             table_exp->where_clause = (yyvsp[0].where_clause_node);
             (yyval.table_exp_node) = table_exp;
         }
-#line 1926 "y.tab.c"
+#line 1935 "y.tab.c"
     break;
 
   case 32: /* from_clause: %empty  */
-#line 378 "sql.y"
+#line 379 "sql.y"
         {
             (yyval.from_clause_node) = NULL;
         }
-#line 1934 "y.tab.c"
+#line 1943 "y.tab.c"
     break;
 
   case 33: /* from_clause: FROM table_ref_commalist  */
-#line 382 "sql.y"
+#line 383 "sql.y"
         {
             FromClauseNode *from_clause = make_from_clause_node();
             from_clause->from = (yyvsp[0].table_ref_set_node);
             (yyval.from_clause_node) = from_clause;
         }
-#line 1944 "y.tab.c"
+#line 1953 "y.tab.c"
     break;
 
   case 34: /* table_ref_commalist: table_ref  */
-#line 390 "sql.y"
+#line 391 "sql.y"
         {
             TableRefSetNode *table_ref_set = make_table_ref_set_node();
             add_table_ref_to_set(table_ref_set, (yyvsp[0].table_ref_node));
             (yyval.table_ref_set_node) = table_ref_set;
         }
-#line 1954 "y.tab.c"
+#line 1963 "y.tab.c"
     break;
 
   case 35: /* table_ref_commalist: table_ref_commalist ',' table_ref  */
-#line 396 "sql.y"
+#line 397 "sql.y"
         {
             add_table_ref_to_set((yyvsp[-2].table_ref_set_node), (yyvsp[0].table_ref_node));
             (yyval.table_ref_set_node) = (yyvsp[-2].table_ref_set_node);
         }
-#line 1963 "y.tab.c"
+#line 1972 "y.tab.c"
     break;
 
   case 36: /* table_ref: table  */
-#line 403 "sql.y"
+#line 404 "sql.y"
         {
             TableRefNode *table_ref = make_table_ref_node();
             table_ref->table = (yyvsp[0].strVal);
             (yyval.table_ref_node) = table_ref;
         }
-#line 1973 "y.tab.c"
+#line 1982 "y.tab.c"
     break;
 
   case 37: /* table_ref: table range_variable  */
-#line 409 "sql.y"
+#line 410 "sql.y"
         {
             TableRefNode *table_ref = make_table_ref_node();
             table_ref->table = (yyvsp[-1].strVal);
             table_ref->range_variable = (yyvsp[0].strVal);
             (yyval.table_ref_node) = table_ref;
         }
-#line 1984 "y.tab.c"
+#line 1993 "y.tab.c"
     break;
 
   case 38: /* table_ref: table AS range_variable  */
-#line 416 "sql.y"
+#line 417 "sql.y"
         {
             TableRefNode *table_ref = make_table_ref_node();
             table_ref->table = (yyvsp[-2].strVal);
             table_ref->range_variable = (yyvsp[0].strVal);
             (yyval.table_ref_node) = table_ref;
         }
-#line 1995 "y.tab.c"
+#line 2004 "y.tab.c"
     break;
 
   case 39: /* table: IDENTIFIER  */
-#line 425 "sql.y"
+#line 426 "sql.y"
         {
             (yyval.strVal) = (yyvsp[0].strVal);
         }
-#line 2003 "y.tab.c"
+#line 2012 "y.tab.c"
     break;
 
   case 40: /* range_variable: IDENTIFIER  */
-#line 431 "sql.y"
+#line 432 "sql.y"
         {
             (yyval.strVal) = (yyvsp[0].strVal);
         }
-#line 2011 "y.tab.c"
+#line 2020 "y.tab.c"
     break;
 
   case 41: /* opt_where_clause: %empty  */
-#line 437 "sql.y"
+#line 438 "sql.y"
         {
             (yyval.where_clause_node) = NULL;
         }
-#line 2019 "y.tab.c"
+#line 2028 "y.tab.c"
     break;
 
   case 42: /* opt_where_clause: where_clause  */
-#line 441 "sql.y"
+#line 442 "sql.y"
         {
             (yyval.where_clause_node) = (yyvsp[0].where_clause_node);
         }
-#line 2027 "y.tab.c"
+#line 2036 "y.tab.c"
     break;
 
   case 43: /* where_clause: WHERE condition  */
-#line 447 "sql.y"
+#line 448 "sql.y"
         {
             WhereClauseNode *where_clause_node = make_where_clause_node();
             where_clause_node->condition = (yyvsp[0].condition_node);
             (yyval.where_clause_node) = where_clause_node;
         }
-#line 2037 "y.tab.c"
+#line 2046 "y.tab.c"
     break;
 
   case 44: /* values_or_query_spec: VALUES '(' value_items ')'  */
-#line 455 "sql.y"
+#line 456 "sql.y"
         {
             ValuesOrQuerySpecNode *values_or_query_spec = make_values_or_query_spec_node();
             values_or_query_spec->type = VQ_VALUES;
             values_or_query_spec->values = (yyvsp[-1].value_item_set_node);
             (yyval.values_or_query_spec_node) = values_or_query_spec;
         }
-#line 2048 "y.tab.c"
+#line 2057 "y.tab.c"
     break;
 
   case 45: /* values_or_query_spec: query_spec  */
-#line 462 "sql.y"
+#line 463 "sql.y"
         {
             ValuesOrQuerySpecNode *values_or_query_spec = make_values_or_query_spec_node();
             values_or_query_spec->type = VQ_QUERY_SPEC;
             values_or_query_spec->query_spec = (yyvsp[0].query_spec_node);
             (yyval.values_or_query_spec_node) = values_or_query_spec;
         }
-#line 2059 "y.tab.c"
+#line 2068 "y.tab.c"
     break;
 
   case 46: /* query_spec: SELECT selection table_exp  */
-#line 471 "sql.y"
+#line 472 "sql.y"
         {
             QuerySpecNode *query_spec = make_query_spec_node();
             query_spec->selection = (yyvsp[-1].selection_node);
             query_spec->table_exp = (yyvsp[0].table_exp_node);
             (yyval.query_spec_node) = query_spec;
         }
-#line 2070 "y.tab.c"
+#line 2079 "y.tab.c"
     break;
 
   case 47: /* scalar_exp_commalist: scalar_exp  */
-#line 480 "sql.y"
+#line 481 "sql.y"
         {
             ScalarExpSetNode *scalar_exp_set_node = make_scalar_exp_set_node();
             add_scalar_exp_node(scalar_exp_set_node, (yyvsp[0].scalar_exp_node));
             (yyval.scalar_exp_set_node) = scalar_exp_set_node;
         }
-#line 2080 "y.tab.c"
+#line 2089 "y.tab.c"
     break;
 
   case 48: /* scalar_exp_commalist: scalar_exp_commalist ',' scalar_exp  */
-#line 486 "sql.y"
+#line 487 "sql.y"
         {
             add_scalar_exp_node((yyvsp[-2].scalar_exp_set_node), (yyvsp[0].scalar_exp_node));
             (yyval.scalar_exp_set_node) = (yyvsp[-2].scalar_exp_set_node);
         }
-#line 2089 "y.tab.c"
+#line 2098 "y.tab.c"
     break;
 
   case 49: /* scalar_exp: calculate  */
-#line 493 "sql.y"
+#line 494 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_CALCULATE;
             scalar_exp_node->calculate = (yyvsp[0].calculate_node);
             (yyval.scalar_exp_node) = scalar_exp_node;
         }
-#line 2100 "y.tab.c"
+#line 2109 "y.tab.c"
     break;
 
   case 50: /* scalar_exp: column  */
-#line 500 "sql.y"
+#line 501 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_COLUMN;
             scalar_exp_node->column = (yyvsp[0].column_node);
             (yyval.scalar_exp_node) = scalar_exp_node;
         }
-#line 2111 "y.tab.c"
+#line 2120 "y.tab.c"
     break;
 
   case 51: /* scalar_exp: function  */
-#line 507 "sql.y"
+#line 508 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_FUNCTION;
             scalar_exp_node->function = (yyvsp[0].function_node);
             (yyval.scalar_exp_node) = scalar_exp_node;
         }
-#line 2122 "y.tab.c"
+#line 2131 "y.tab.c"
     break;
 
   case 52: /* scalar_exp: value_item  */
-#line 514 "sql.y"
+#line 515 "sql.y"
         {
             ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
             scalar_exp_node->type = SCALAR_VALUE;
             scalar_exp_node->value = (yyvsp[0].value_item_node);
             (yyval.scalar_exp_node) = scalar_exp_node;
         }
-#line 2133 "y.tab.c"
+#line 2142 "y.tab.c"
     break;
 
   case 53: /* scalar_exp: '(' scalar_exp ')'  */
-#line 521 "sql.y"
+#line 522 "sql.y"
         {
             (yyval.scalar_exp_node) = (yyvsp[-1].scalar_exp_node);
-        }
-#line 2141 "y.tab.c"
-    break;
-
-  case 54: /* scalar_exp: scalar_exp AS IDENTIFIER  */
-#line 525 "sql.y"
-        {
-            (yyvsp[-2].scalar_exp_node)->alias = (yyvsp[0].strVal);
-            (yyval.scalar_exp_node) = (yyvsp[-2].scalar_exp_node);
         }
 #line 2150 "y.tab.c"
     break;
 
+  case 54: /* scalar_exp: scalar_exp AS IDENTIFIER  */
+#line 526 "sql.y"
+        {
+            (yyvsp[-2].scalar_exp_node)->alias = (yyvsp[0].strVal);
+            (yyval.scalar_exp_node) = (yyvsp[-2].scalar_exp_node);
+        }
+#line 2159 "y.tab.c"
+    break;
+
   case 55: /* calculate: scalar_exp '+' scalar_exp  */
-#line 532 "sql.y"
+#line 533 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_ADD;
@@ -2158,11 +2167,11 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 2162 "y.tab.c"
+#line 2171 "y.tab.c"
     break;
 
   case 56: /* calculate: scalar_exp '-' scalar_exp  */
-#line 540 "sql.y"
+#line 541 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_SUB;
@@ -2170,11 +2179,11 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 2174 "y.tab.c"
+#line 2183 "y.tab.c"
     break;
 
   case 57: /* calculate: scalar_exp '*' scalar_exp  */
-#line 548 "sql.y"
+#line 549 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_MUL;
@@ -2182,11 +2191,11 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 2186 "y.tab.c"
+#line 2195 "y.tab.c"
     break;
 
   case 58: /* calculate: scalar_exp '/' scalar_exp  */
-#line 556 "sql.y"
+#line 557 "sql.y"
         {
             CalculateNode *calculate_node = make_calculate_node();
             calculate_node->type = CAL_DIV;
@@ -2194,357 +2203,382 @@ yyreduce:
             calculate_node->right = (yyvsp[0].scalar_exp_node);
             (yyval.calculate_node) = calculate_node;
         }
-#line 2198 "y.tab.c"
+#line 2207 "y.tab.c"
     break;
 
   case 59: /* columns: column  */
-#line 566 "sql.y"
+#line 567 "sql.y"
         {
             ColumnSetNode *column_set_node = make_column_set_node();
             add_column_to_set(column_set_node, (yyvsp[0].column_node));
             (yyval.column_set_node) = column_set_node;
         }
-#line 2208 "y.tab.c"
+#line 2217 "y.tab.c"
     break;
 
   case 60: /* columns: columns ',' column  */
-#line 572 "sql.y"
+#line 573 "sql.y"
         {
             (yyval.column_set_node) = (yyvsp[-2].column_set_node);
             add_column_to_set((yyval.column_set_node), (yyvsp[0].column_node));
         }
-#line 2217 "y.tab.c"
+#line 2226 "y.tab.c"
     break;
 
   case 61: /* base_table_element_commalist: base_table_element  */
-#line 579 "sql.y"
+#line 580 "sql.y"
         {
             BaseTableElementCommalist *base_table_element_commalist = make_base_table_element_commalist();
             add_base_table_element_to_set(base_table_element_commalist, (yyvsp[0].base_table_element));
             (yyval.base_table_element_commalist) = base_table_element_commalist;
         }
-#line 2227 "y.tab.c"
+#line 2236 "y.tab.c"
     break;
 
   case 62: /* base_table_element_commalist: base_table_element_commalist ',' base_table_element  */
-#line 585 "sql.y"
+#line 586 "sql.y"
         {
             add_base_table_element_to_set((yyvsp[-2].base_table_element_commalist), (yyvsp[0].base_table_element));
             (yyval.base_table_element_commalist) = (yyvsp[-2].base_table_element_commalist);
         }
-#line 2236 "y.tab.c"
+#line 2245 "y.tab.c"
     break;
 
   case 63: /* base_table_element: column_def  */
-#line 592 "sql.y"
+#line 593 "sql.y"
         {
             (yyval.base_table_element) = make_base_table_element_node();
             (yyval.base_table_element)->column_def = (yyvsp[0].column_def_node);
             (yyval.base_table_element)->table_contraint_def = NULL;
             (yyval.base_table_element)->type = TELE_COLUMN_DEF;
         }
-#line 2247 "y.tab.c"
+#line 2256 "y.tab.c"
     break;
 
   case 64: /* base_table_element: table_contraint_def  */
-#line 599 "sql.y"
+#line 600 "sql.y"
         {
             (yyval.base_table_element) = make_base_table_element_node();
             (yyval.base_table_element)->column_def = NULL;
             (yyval.base_table_element)->table_contraint_def = (yyvsp[0].table_contraint_def);
             (yyval.base_table_element)->type = TELE_TABLE_CONTRAINT_DEF;
         }
-#line 2258 "y.tab.c"
+#line 2267 "y.tab.c"
     break;
 
-  case 65: /* column_def: column_def_name data_type column_def_opt_list  */
-#line 621 "sql.y"
+  case 65: /* column_def: column_def_name data_type array_dim_clause column_def_opt_list  */
+#line 622 "sql.y"
         {
             ColumnDefNode *column_def = make_column_def_node();
-            column_def->column = (yyvsp[-2].column_def_name);
-            column_def->data_type = (yyvsp[-1].data_type_node);
+            column_def->column = (yyvsp[-3].column_def_name);
+            column_def->data_type = (yyvsp[-2].data_type_node);
+            column_def->array_dim = (yyvsp[-1].intVal);
             column_def->column_def_opt_list = (yyvsp[0].column_def_opt_list);
             (yyval.column_def_node) = column_def;
         }
-#line 2270 "y.tab.c"
+#line 2280 "y.tab.c"
     break;
 
   case 66: /* column_def_name_commalist: column_def_name  */
-#line 631 "sql.y"
+#line 633 "sql.y"
         {
             ColumnDefNameCommalist *list = make_column_def_name_list();
             add_column_def_name_to_set(list, (yyvsp[0].column_def_name));
             (yyval.column_def_name_commalist) = list;
         }
-#line 2280 "y.tab.c"
+#line 2290 "y.tab.c"
     break;
 
   case 67: /* column_def_name_commalist: column_def_name_commalist ',' column_def_name  */
-#line 637 "sql.y"
+#line 639 "sql.y"
         {
             add_column_def_name_to_set((yyvsp[-2].column_def_name_commalist), (yyvsp[0].column_def_name));
             (yyval.column_def_name_commalist) = (yyvsp[-2].column_def_name_commalist);
         }
-#line 2289 "y.tab.c"
+#line 2299 "y.tab.c"
     break;
 
   case 68: /* column_def_name: IDENTIFIER  */
-#line 644 "sql.y"
+#line 646 "sql.y"
         {
             ColumnDefName *column_def_name = make_column_def_name();
             column_def_name->column = (yyvsp[0].strVal);
             (yyval.column_def_name) = column_def_name;
         }
-#line 2299 "y.tab.c"
+#line 2309 "y.tab.c"
     break;
 
   case 69: /* data_type: INT  */
-#line 652 "sql.y"
+#line 654 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_INT; 
         }
-#line 2308 "y.tab.c"
+#line 2318 "y.tab.c"
     break;
 
   case 70: /* data_type: LONG  */
-#line 657 "sql.y"
+#line 659 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_LONG;  
         }
-#line 2317 "y.tab.c"
+#line 2327 "y.tab.c"
     break;
 
   case 71: /* data_type: CHAR  */
-#line 662 "sql.y"
+#line 664 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_CHAR; 
         }
-#line 2326 "y.tab.c"
+#line 2336 "y.tab.c"
     break;
 
   case 72: /* data_type: VARCHAR '(' INTVALUE ')'  */
-#line 667 "sql.y"
+#line 669 "sql.y"
         {
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_VARCHAR; 
             (yyval.data_type_node)->len = (yyvsp[-1].intVal); 
         }
-#line 2336 "y.tab.c"
+#line 2346 "y.tab.c"
     break;
 
   case 73: /* data_type: STRING  */
-#line 673 "sql.y"
+#line 675 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_STRING; 
         }
-#line 2345 "y.tab.c"
+#line 2355 "y.tab.c"
     break;
 
   case 74: /* data_type: BOOL  */
-#line 678 "sql.y"
+#line 680 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_BOOL; 
         }
-#line 2354 "y.tab.c"
+#line 2364 "y.tab.c"
     break;
 
   case 75: /* data_type: FLOAT  */
-#line 683 "sql.y"
+#line 685 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_FLOAT; 
         }
-#line 2363 "y.tab.c"
+#line 2373 "y.tab.c"
     break;
 
   case 76: /* data_type: DOUBLE  */
-#line 688 "sql.y"
+#line 690 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_DOUBLE; 
         }
-#line 2372 "y.tab.c"
+#line 2382 "y.tab.c"
     break;
 
   case 77: /* data_type: TIMESTAMP  */
-#line 693 "sql.y"
+#line 695 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_TIMESTAMP; 
         }
-#line 2381 "y.tab.c"
+#line 2391 "y.tab.c"
     break;
 
   case 78: /* data_type: DATE  */
-#line 698 "sql.y"
+#line 700 "sql.y"
         { 
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_DATE; 
         }
-#line 2390 "y.tab.c"
+#line 2400 "y.tab.c"
     break;
 
   case 79: /* data_type: table  */
-#line 703 "sql.y"
+#line 705 "sql.y"
         {
             (yyval.data_type_node) = make_data_type_node();
             (yyval.data_type_node)->type = T_REFERENCE;
             (yyval.data_type_node)->table_name = (yyvsp[0].strVal);
         }
-#line 2400 "y.tab.c"
+#line 2410 "y.tab.c"
     break;
 
-  case 80: /* column_def_opt_list: %empty  */
-#line 711 "sql.y"
+  case 80: /* array_dim_clause: %empty  */
+#line 713 "sql.y"
         {
-            (yyval.column_def_opt_list) = NULL;
+            (yyval.intVal) = 0;
         }
-#line 2408 "y.tab.c"
+#line 2418 "y.tab.c"
     break;
 
-  case 81: /* column_def_opt_list: column_def_opt  */
-#line 715 "sql.y"
+  case 81: /* array_dim_clause: '[' ']'  */
+#line 717 "sql.y"
         {
-            (yyval.column_def_opt_list) = make_column_def_opt_list();
-            add_column_def_opt_to_set((yyval.column_def_opt_list), (yyvsp[0].column_def_opt));
-        }
-#line 2417 "y.tab.c"
-    break;
-
-  case 82: /* column_def_opt_list: column_def_opt_list column_def_opt  */
-#line 720 "sql.y"
-        {
-            add_column_def_opt_to_set((yyvsp[-1].column_def_opt_list), (yyvsp[0].column_def_opt));
-            (yyval.column_def_opt_list) = (yyvsp[-1].column_def_opt_list);
+            (yyval.intVal) = 1;
         }
 #line 2426 "y.tab.c"
     break;
 
-  case 83: /* column_def_opt: NOT NULLX  */
+  case 82: /* array_dim_clause: array_dim_clause '[' ']'  */
+#line 721 "sql.y"
+        {
+            (yyval.intVal)++;
+        }
+#line 2434 "y.tab.c"
+    break;
+
+  case 83: /* column_def_opt_list: %empty  */
 #line 727 "sql.y"
+        {
+            (yyval.column_def_opt_list) = NULL;
+        }
+#line 2442 "y.tab.c"
+    break;
+
+  case 84: /* column_def_opt_list: column_def_opt  */
+#line 731 "sql.y"
+        {
+            (yyval.column_def_opt_list) = make_column_def_opt_list();
+            add_column_def_opt_to_set((yyval.column_def_opt_list), (yyvsp[0].column_def_opt));
+        }
+#line 2451 "y.tab.c"
+    break;
+
+  case 85: /* column_def_opt_list: column_def_opt_list column_def_opt  */
+#line 736 "sql.y"
+        {
+            add_column_def_opt_to_set((yyvsp[-1].column_def_opt_list), (yyvsp[0].column_def_opt));
+            (yyval.column_def_opt_list) = (yyvsp[-1].column_def_opt_list);
+        }
+#line 2460 "y.tab.c"
+    break;
+
+  case 86: /* column_def_opt: NOT NULLX  */
+#line 743 "sql.y"
         {
             (yyval.column_def_opt) = make_column_def_opt_node();
             (yyval.column_def_opt)->opt_type = OPT_NOT_NULL; 
         }
-#line 2435 "y.tab.c"
+#line 2469 "y.tab.c"
     break;
 
-  case 84: /* column_def_opt: UNIQUE  */
-#line 732 "sql.y"
+  case 87: /* column_def_opt: UNIQUE  */
+#line 748 "sql.y"
         {
             (yyval.column_def_opt) = make_column_def_opt_node();
             (yyval.column_def_opt)->opt_type = OPT_UNIQUE; 
         }
-#line 2444 "y.tab.c"
+#line 2478 "y.tab.c"
     break;
 
-  case 85: /* column_def_opt: PRIMARY KEY  */
-#line 737 "sql.y"
+  case 88: /* column_def_opt: PRIMARY KEY  */
+#line 753 "sql.y"
         {
             (yyval.column_def_opt) = make_column_def_opt_node();
             (yyval.column_def_opt)->opt_type = OPT_PRIMARY_KEY; 
         }
-#line 2453 "y.tab.c"
+#line 2487 "y.tab.c"
     break;
 
-  case 86: /* column_def_opt: DEFAULT value_item  */
-#line 742 "sql.y"
+  case 89: /* column_def_opt: DEFAULT value_item  */
+#line 758 "sql.y"
         {
             (yyval.column_def_opt) = make_column_def_opt_node();
             (yyval.column_def_opt)->opt_type = OPT_DEFAULT_VALUE;
             (yyval.column_def_opt)->value = (yyvsp[0].value_item_node);
         }
-#line 2463 "y.tab.c"
+#line 2497 "y.tab.c"
     break;
 
-  case 87: /* column_def_opt: DEFAULT NULLX  */
-#line 748 "sql.y"
+  case 90: /* column_def_opt: DEFAULT NULLX  */
+#line 764 "sql.y"
         {
             (yyval.column_def_opt) = make_column_def_opt_node();
             (yyval.column_def_opt)->opt_type = OPT_DEFAULT_NULL;
         }
-#line 2472 "y.tab.c"
+#line 2506 "y.tab.c"
     break;
 
-  case 88: /* column_def_opt: CHECK '(' condition ')'  */
-#line 753 "sql.y"
+  case 91: /* column_def_opt: CHECK '(' condition ')'  */
+#line 769 "sql.y"
         {
             (yyval.column_def_opt) = make_column_def_opt_node();
             (yyval.column_def_opt)->opt_type = OPT_CHECK_CONDITION;
             (yyval.column_def_opt)->condition = (yyvsp[-1].condition_node);
         }
-#line 2482 "y.tab.c"
+#line 2516 "y.tab.c"
     break;
 
-  case 89: /* column_def_opt: REFERENCES table  */
-#line 759 "sql.y"
+  case 92: /* column_def_opt: REFERENCES table  */
+#line 775 "sql.y"
         {
             (yyval.column_def_opt) = make_column_def_opt_node();
             (yyval.column_def_opt)->opt_type = OPT_REFERENECS;
             (yyval.column_def_opt)->refer_table = (yyvsp[0].strVal);
         }
-#line 2492 "y.tab.c"
+#line 2526 "y.tab.c"
     break;
 
-  case 90: /* table_contraint_def: UNIQUE '(' column_def_name_commalist ')'  */
-#line 767 "sql.y"
+  case 93: /* table_contraint_def: UNIQUE '(' column_def_name_commalist ')'  */
+#line 783 "sql.y"
         {
             (yyval.table_contraint_def) = make_table_contraint_def_node();
             (yyval.table_contraint_def)->type = TCONTRAINT_UNIQUE;
             (yyval.table_contraint_def)->column_commalist = (yyvsp[-1].column_def_name_commalist);
         }
-#line 2502 "y.tab.c"
+#line 2536 "y.tab.c"
     break;
 
-  case 91: /* table_contraint_def: PRIMARY KEY '(' column_def_name_commalist ')'  */
-#line 773 "sql.y"
+  case 94: /* table_contraint_def: PRIMARY KEY '(' column_def_name_commalist ')'  */
+#line 789 "sql.y"
         {
             (yyval.table_contraint_def) = make_table_contraint_def_node();
             (yyval.table_contraint_def)->type = TCONTRAINT_PRIMARY_KEY;
             (yyval.table_contraint_def)->column_commalist = (yyvsp[-1].column_def_name_commalist);
         }
-#line 2512 "y.tab.c"
+#line 2546 "y.tab.c"
     break;
 
-  case 92: /* table_contraint_def: FOREIGN KEY '(' column_def_name_commalist ')' REFERENCES table  */
-#line 779 "sql.y"
+  case 95: /* table_contraint_def: FOREIGN KEY '(' column_def_name_commalist ')' REFERENCES table  */
+#line 795 "sql.y"
         {
             (yyval.table_contraint_def) = make_table_contraint_def_node();
             (yyval.table_contraint_def)->type = TCONTRAINT_FOREIGN_KEY;
             (yyval.table_contraint_def)->column_commalist = (yyvsp[-3].column_def_name_commalist);
             (yyval.table_contraint_def)->table = (yyvsp[0].strVal);
         }
-#line 2523 "y.tab.c"
+#line 2557 "y.tab.c"
     break;
 
-  case 93: /* table_contraint_def: CHECK '(' condition ')'  */
-#line 786 "sql.y"
+  case 96: /* table_contraint_def: CHECK '(' condition ')'  */
+#line 802 "sql.y"
         {
             (yyval.table_contraint_def) = make_table_contraint_def_node();
             (yyval.table_contraint_def)->type = TCONTRAINT_CHECK;
             (yyval.table_contraint_def)->condition = (yyvsp[-1].condition_node);
         }
-#line 2533 "y.tab.c"
+#line 2567 "y.tab.c"
     break;
 
-  case 94: /* column: IDENTIFIER  */
-#line 794 "sql.y"
+  case 97: /* column: IDENTIFIER  */
+#line 810 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = (yyvsp[0].strVal);
             column_node->has_sub_column = false;
             (yyval.column_node) = column_node;
         }
-#line 2544 "y.tab.c"
+#line 2578 "y.tab.c"
     break;
 
-  case 95: /* column: IDENTIFIER '[' column ']'  */
-#line 801 "sql.y"
+  case 98: /* column: IDENTIFIER '[' column ']'  */
+#line 817 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = (yyvsp[-3].strVal);
@@ -2552,11 +2586,11 @@ yyreduce:
             column_node->has_sub_column = true;
             (yyval.column_node) = column_node;
         }
-#line 2556 "y.tab.c"
+#line 2590 "y.tab.c"
     break;
 
-  case 96: /* column: IDENTIFIER '{' scalar_exp_commalist '}'  */
-#line 809 "sql.y"
+  case 99: /* column: IDENTIFIER '{' scalar_exp_commalist '}'  */
+#line 825 "sql.y"
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = (yyvsp[-3].strVal);
@@ -2564,162 +2598,162 @@ yyreduce:
             column_node->has_sub_column = true;
             (yyval.column_node) = column_node;
         }
-#line 2568 "y.tab.c"
+#line 2602 "y.tab.c"
     break;
 
-  case 97: /* column: IDENTIFIER '.' column  */
-#line 817 "sql.y"
+  case 100: /* column: IDENTIFIER '.' column  */
+#line 833 "sql.y"
         {
             (yyval.column_node) = (yyvsp[0].column_node);
             (yyval.column_node)->range_variable = (yyvsp[-2].strVal);
         }
-#line 2577 "y.tab.c"
+#line 2611 "y.tab.c"
     break;
 
-  case 98: /* value_items: value_item  */
-#line 824 "sql.y"
+  case 101: /* value_items: value_item  */
+#line 840 "sql.y"
         {
             ValueItemSetNode *node = make_value_item_set_node();
             add_value_item(node, (yyvsp[0].value_item_node));
             (yyval.value_item_set_node) = node;
         }
-#line 2587 "y.tab.c"
+#line 2621 "y.tab.c"
     break;
 
-  case 99: /* value_items: value_items ',' value_item  */
-#line 830 "sql.y"
+  case 102: /* value_items: value_items ',' value_item  */
+#line 846 "sql.y"
         {
             (yyval.value_item_set_node) = (yyvsp[-2].value_item_set_node);
             add_value_item((yyval.value_item_set_node), (yyvsp[0].value_item_node));
         }
-#line 2596 "y.tab.c"
+#line 2630 "y.tab.c"
     break;
 
-  case 100: /* value_item: INTVALUE  */
-#line 837 "sql.y"
+  case 103: /* value_item: INTVALUE  */
+#line 853 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->value.i_value = (yyvsp[0].intVal);
             node->data_type = T_INT;
             (yyval.value_item_node) = node;
         }
-#line 2607 "y.tab.c"
+#line 2641 "y.tab.c"
     break;
 
-  case 101: /* value_item: BOOLVALUE  */
-#line 844 "sql.y"
+  case 104: /* value_item: BOOLVALUE  */
+#line 860 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->value.b_value = (yyvsp[0].boolVal);
             node->data_type = T_BOOL;
             (yyval.value_item_node) = node;
         }
-#line 2618 "y.tab.c"
+#line 2652 "y.tab.c"
     break;
 
-  case 102: /* value_item: STRINGVALUE  */
-#line 851 "sql.y"
+  case 105: /* value_item: STRINGVALUE  */
+#line 867 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->value.s_value = (yyvsp[0].strVal);
             node->data_type = T_STRING;
             (yyval.value_item_node) = node;
         }
-#line 2629 "y.tab.c"
+#line 2663 "y.tab.c"
     break;
 
-  case 103: /* value_item: FLOATVALUE  */
-#line 858 "sql.y"
+  case 106: /* value_item: FLOATVALUE  */
+#line 874 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->value.f_value = (yyvsp[0].floatVal);
             node->data_type = T_FLOAT;
             (yyval.value_item_node) = node;
         }
-#line 2640 "y.tab.c"
+#line 2674 "y.tab.c"
     break;
 
-  case 104: /* value_item: REFERVALUE  */
-#line 865 "sql.y"
+  case 107: /* value_item: REFERVALUE  */
+#line 881 "sql.y"
         {
             ValueItemNode *node = make_value_item_node();
             node->value.r_value = (yyvsp[0].referVal);
             node->data_type = T_REFERENCE;
             (yyval.value_item_node) = node;
         }
-#line 2651 "y.tab.c"
+#line 2685 "y.tab.c"
     break;
 
-  case 105: /* REFERVALUE: '(' value_items ')'  */
-#line 875 "sql.y"
+  case 108: /* REFERVALUE: '(' value_items ')'  */
+#line 891 "sql.y"
         {
             ReferValue *refer = make_refer_value();
             refer->type = DIRECTLY;
             refer->nest_value_item_set = (yyvsp[-1].value_item_set_node);
             (yyval.referVal) = refer;
         }
-#line 2662 "y.tab.c"
+#line 2696 "y.tab.c"
     break;
 
-  case 106: /* REFERVALUE: REF '(' condition ')'  */
-#line 883 "sql.y"
+  case 109: /* REFERVALUE: REF '(' condition ')'  */
+#line 899 "sql.y"
         {
             ReferValue *refer = make_refer_value();
             refer->type = INDIRECTLY;
             refer->condition = (yyvsp[-1].condition_node);
             (yyval.referVal) = refer;
         }
-#line 2673 "y.tab.c"
+#line 2707 "y.tab.c"
     break;
 
-  case 107: /* BOOLVALUE: TRUE  */
-#line 892 "sql.y"
+  case 110: /* BOOLVALUE: TRUE  */
+#line 908 "sql.y"
         {
             (yyval.boolVal) = true;
         }
-#line 2681 "y.tab.c"
+#line 2715 "y.tab.c"
     break;
 
-  case 108: /* BOOLVALUE: FALSE  */
-#line 896 "sql.y"
+  case 111: /* BOOLVALUE: FALSE  */
+#line 912 "sql.y"
         {
             (yyval.boolVal) = false;
         }
-#line 2689 "y.tab.c"
+#line 2723 "y.tab.c"
     break;
 
-  case 109: /* assignments: assignment  */
-#line 902 "sql.y"
+  case 112: /* assignments: assignment  */
+#line 918 "sql.y"
         {
             AssignmentSetNode *node = make_assignment_set_node();
             add_assignment_to_set(node, (yyvsp[0].assignment_node));
             (yyval.assignment_set_node) = node;
         }
-#line 2699 "y.tab.c"
+#line 2733 "y.tab.c"
     break;
 
-  case 110: /* assignments: assignments ',' assignment  */
-#line 908 "sql.y"
+  case 113: /* assignments: assignments ',' assignment  */
+#line 924 "sql.y"
         {
             add_assignment_to_set((yyvsp[-2].assignment_set_node), (yyvsp[0].assignment_node));
             (yyval.assignment_set_node) = (yyvsp[-2].assignment_set_node);
         }
-#line 2708 "y.tab.c"
+#line 2742 "y.tab.c"
     break;
 
-  case 111: /* assignment: column EQ value_item  */
-#line 915 "sql.y"
+  case 114: /* assignment: column EQ value_item  */
+#line 931 "sql.y"
         {
             AssignmentNode *node = make_assignment_node();
             node->column = (yyvsp[-2].column_node);
             node->value = (yyvsp[0].value_item_node);
             (yyval.assignment_node) = node;
         }
-#line 2719 "y.tab.c"
+#line 2753 "y.tab.c"
     break;
 
-  case 112: /* condition: condition OR condition  */
-#line 924 "sql.y"
+  case 115: /* condition: condition OR condition  */
+#line 940 "sql.y"
         {
             ConditionNode *condition = make_condition_node();
             condition->conn_type = C_OR;
@@ -2727,11 +2761,11 @@ yyreduce:
             condition->right = (yyvsp[0].condition_node);
             (yyval.condition_node) = condition;
         }
-#line 2731 "y.tab.c"
+#line 2765 "y.tab.c"
     break;
 
-  case 113: /* condition: condition AND condition  */
-#line 932 "sql.y"
+  case 116: /* condition: condition AND condition  */
+#line 948 "sql.y"
         {
             ConditionNode *condition = make_condition_node();
             condition->conn_type = C_AND;
@@ -2739,63 +2773,63 @@ yyreduce:
             condition->right = (yyvsp[0].condition_node);
             (yyval.condition_node) = condition;
         }
-#line 2743 "y.tab.c"
+#line 2777 "y.tab.c"
     break;
 
-  case 114: /* condition: '(' condition ')'  */
-#line 940 "sql.y"
+  case 117: /* condition: '(' condition ')'  */
+#line 956 "sql.y"
         {
             (yyval.condition_node) = (yyvsp[-1].condition_node);
         }
-#line 2751 "y.tab.c"
+#line 2785 "y.tab.c"
     break;
 
-  case 115: /* condition: predicate  */
-#line 944 "sql.y"
+  case 118: /* condition: predicate  */
+#line 960 "sql.y"
         {
             ConditionNode *condition = make_condition_node();
             condition->conn_type = C_NONE;
             condition->predicate = (yyvsp[0].predicate_node);
             (yyval.condition_node) = condition;
         }
-#line 2762 "y.tab.c"
+#line 2796 "y.tab.c"
     break;
 
-  case 116: /* predicate: comparison_predicate  */
-#line 953 "sql.y"
+  case 119: /* predicate: comparison_predicate  */
+#line 969 "sql.y"
         {
             PredicateNode *predicate = make_predicate_node();
             predicate->type = PRE_COMPARISON;
             predicate->comparison = (yyvsp[0].comparison_node);
             (yyval.predicate_node) = predicate;
         }
-#line 2773 "y.tab.c"
+#line 2807 "y.tab.c"
     break;
 
-  case 117: /* predicate: like_predicate  */
-#line 960 "sql.y"
+  case 120: /* predicate: like_predicate  */
+#line 976 "sql.y"
         {
             PredicateNode *predicate = make_predicate_node();
             predicate->type = PRE_LIKE;
             predicate->like = (yyvsp[0].like_node);
             (yyval.predicate_node) = predicate;
         }
-#line 2784 "y.tab.c"
+#line 2818 "y.tab.c"
     break;
 
-  case 118: /* predicate: in_predicate  */
-#line 967 "sql.y"
+  case 121: /* predicate: in_predicate  */
+#line 983 "sql.y"
         {
             PredicateNode *predicate = make_predicate_node();
             predicate->type = PRE_IN;
             predicate->in = (yyvsp[0].in_node);
             (yyval.predicate_node) = predicate;
         }
-#line 2795 "y.tab.c"
+#line 2829 "y.tab.c"
     break;
 
-  case 119: /* comparison_predicate: column compare scalar_exp  */
-#line 976 "sql.y"
+  case 122: /* comparison_predicate: column compare scalar_exp  */
+#line 992 "sql.y"
         {
             ComparisonNode *comparison_node = make_comparison_node();
             comparison_node->column = (yyvsp[-2].column_node);
@@ -2803,178 +2837,178 @@ yyreduce:
             comparison_node->value = (yyvsp[0].scalar_exp_node);
             (yyval.comparison_node) = comparison_node;
         }
-#line 2807 "y.tab.c"
+#line 2841 "y.tab.c"
     break;
 
-  case 120: /* like_predicate: column LIKE value_item  */
-#line 986 "sql.y"
+  case 123: /* like_predicate: column LIKE value_item  */
+#line 1002 "sql.y"
         {
             LikeNode *like_node = make_like_node();
             like_node->column = (yyvsp[-2].column_node);
             like_node->value = (yyvsp[0].value_item_node);
             (yyval.like_node) = like_node;
         }
-#line 2818 "y.tab.c"
+#line 2852 "y.tab.c"
     break;
 
-  case 121: /* in_predicate: column IN '(' value_items ')'  */
-#line 995 "sql.y"
+  case 124: /* in_predicate: column IN '(' value_items ')'  */
+#line 1011 "sql.y"
         {
             InNode *in_node = make_in_node();
             in_node->column = (yyvsp[-4].column_node);
             in_node->value_set = (yyvsp[-1].value_item_set_node);
             (yyval.in_node) = in_node;
         }
-#line 2829 "y.tab.c"
+#line 2863 "y.tab.c"
     break;
 
-  case 122: /* compare: EQ  */
-#line 1023 "sql.y"
+  case 125: /* compare: EQ  */
+#line 1039 "sql.y"
             { (yyval.compare_type) = O_EQ; }
-#line 2835 "y.tab.c"
+#line 2869 "y.tab.c"
     break;
 
-  case 123: /* compare: NE  */
-#line 1024 "sql.y"
+  case 126: /* compare: NE  */
+#line 1040 "sql.y"
             { (yyval.compare_type) = O_NE; }
-#line 2841 "y.tab.c"
+#line 2875 "y.tab.c"
     break;
 
-  case 124: /* compare: GT  */
-#line 1025 "sql.y"
+  case 127: /* compare: GT  */
+#line 1041 "sql.y"
             { (yyval.compare_type) = O_GT; }
-#line 2847 "y.tab.c"
+#line 2881 "y.tab.c"
     break;
 
-  case 125: /* compare: GE  */
-#line 1026 "sql.y"
+  case 128: /* compare: GE  */
+#line 1042 "sql.y"
             { (yyval.compare_type) = O_GE; }
-#line 2853 "y.tab.c"
+#line 2887 "y.tab.c"
     break;
 
-  case 126: /* compare: LT  */
-#line 1027 "sql.y"
+  case 129: /* compare: LT  */
+#line 1043 "sql.y"
             { (yyval.compare_type) = O_LT; }
-#line 2859 "y.tab.c"
+#line 2893 "y.tab.c"
     break;
 
-  case 127: /* compare: LE  */
-#line 1028 "sql.y"
+  case 130: /* compare: LE  */
+#line 1044 "sql.y"
             { (yyval.compare_type) = O_LE; }
-#line 2865 "y.tab.c"
+#line 2899 "y.tab.c"
     break;
 
-  case 128: /* function: MAX '(' non_all_function_value ')'  */
-#line 1032 "sql.y"
+  case 131: /* function: MAX '(' non_all_function_value ')'  */
+#line 1048 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_MAX;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2876 "y.tab.c"
+#line 2910 "y.tab.c"
     break;
 
-  case 129: /* function: MIN '(' non_all_function_value ')'  */
-#line 1039 "sql.y"
+  case 132: /* function: MIN '(' non_all_function_value ')'  */
+#line 1055 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_MIN;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2887 "y.tab.c"
+#line 2921 "y.tab.c"
     break;
 
-  case 130: /* function: COUNT '(' function_value ')'  */
-#line 1046 "sql.y"
+  case 133: /* function: COUNT '(' function_value ')'  */
+#line 1062 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_COUNT;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2898 "y.tab.c"
+#line 2932 "y.tab.c"
     break;
 
-  case 131: /* function: SUM '(' function_value ')'  */
-#line 1053 "sql.y"
+  case 134: /* function: SUM '(' function_value ')'  */
+#line 1069 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_SUM;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2909 "y.tab.c"
+#line 2943 "y.tab.c"
     break;
 
-  case 132: /* function: AVG '(' function_value ')'  */
-#line 1060 "sql.y"
+  case 135: /* function: AVG '(' function_value ')'  */
+#line 1076 "sql.y"
         {
             FunctionNode *function_node = make_function_node();        
             function_node->type = F_AVG;
             function_node->value = (yyvsp[-1].function_value_node);
             (yyval.function_node) = function_node;
         }
-#line 2920 "y.tab.c"
+#line 2954 "y.tab.c"
     break;
 
-  case 133: /* function_value: INTVALUE  */
-#line 1069 "sql.y"
+  case 136: /* function_value: INTVALUE  */
+#line 1085 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->i_value = (yyvsp[0].intVal);
             node->value_type = V_INT;
             (yyval.function_value_node) = node;
         }
-#line 2931 "y.tab.c"
+#line 2965 "y.tab.c"
     break;
 
-  case 134: /* function_value: column  */
-#line 1076 "sql.y"
+  case 137: /* function_value: column  */
+#line 1092 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->column = (yyvsp[0].column_node);
             node->value_type = V_COLUMN;
             (yyval.function_value_node) = node;
         }
-#line 2942 "y.tab.c"
+#line 2976 "y.tab.c"
     break;
 
-  case 135: /* function_value: '*'  */
-#line 1083 "sql.y"
+  case 138: /* function_value: '*'  */
+#line 1099 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->value_type = V_ALL;
             (yyval.function_value_node) = node;
         }
-#line 2952 "y.tab.c"
+#line 2986 "y.tab.c"
     break;
 
-  case 136: /* non_all_function_value: INTVALUE  */
-#line 1091 "sql.y"
+  case 139: /* non_all_function_value: INTVALUE  */
+#line 1107 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->i_value = (yyvsp[0].intVal);
             node->value_type = V_INT;
             (yyval.function_value_node) = node;
         }
-#line 2963 "y.tab.c"
+#line 2997 "y.tab.c"
     break;
 
-  case 137: /* non_all_function_value: column  */
-#line 1098 "sql.y"
+  case 140: /* non_all_function_value: column  */
+#line 1114 "sql.y"
         {
             FunctionValueNode *node = make_function_value_node();
             node->column = (yyvsp[0].column_node);
             node->value_type = V_COLUMN;
             (yyval.function_value_node) = node;
         }
-#line 2974 "y.tab.c"
+#line 3008 "y.tab.c"
     break;
 
 
-#line 2978 "y.tab.c"
+#line 3012 "y.tab.c"
 
       default: break;
     }
@@ -3167,5 +3201,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 1109 "sql.y"
+#line 1125 "sql.y"
 

@@ -165,6 +165,10 @@ MetaColumn *copy_meta_column(MetaColumn *meta_column) {
     meta_column_copy->column_type = meta_column->column_type;
     meta_column_copy->column_length = meta_column->column_length;
     meta_column_copy->sys_reserved = meta_column->sys_reserved;
+    meta_column_copy->not_null = meta_column->not_null;
+    meta_column_copy->is_unique = meta_column->is_unique;
+    meta_column_copy->array_dim = meta_column->array_dim;
+    meta_column_copy->array_num = meta_column->array_num;
     strcpy(meta_column_copy->column_name, meta_column->column_name);
     strcpy(meta_column_copy->table_name, meta_column->table_name);
 
@@ -182,7 +186,7 @@ MetaTable *copy_meta_table(MetaTable *meta_table) {
     copy->all_column_size = meta_table->all_column_size;
     copy->meta_column = db_malloc(sizeof(MetaColumn *) * copy->all_column_size, "pointer");
 
-    int i;
+    uint32_t i;
     for (i = 0; i < meta_table->all_column_size; i++) {
         copy->meta_column[i] = copy_meta_column(meta_table->meta_column[i]);
     }

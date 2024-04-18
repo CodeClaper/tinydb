@@ -24,9 +24,9 @@
 
 /* System reserved columns. */
 MetaColumn SYS_RESERVED_COLUMNS[] = {
-    { SYS_RESERVED_ID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true },
-    { CREATED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true },
-    { EXPIRED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true }
+    { SYS_RESERVED_ID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true, 0, 0 },
+    { CREATED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true, 0, 0 },
+    { EXPIRED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true, 0, 0 }
 }; 
 
 /* System reserved columns length. */
@@ -98,6 +98,8 @@ MetaColumn *combine_user_meta_column(ColumnDefNode *column_def, char *table_name
     meta_column->column_type = column_def->data_type->type;
     meta_column->sys_reserved = false;
     meta_column->column_length = calc_column_len(column_def->data_type);
+    meta_column->array_dim = column_def->array_dim;
+    meta_column->array_num = column_def->array_dim * ARRAY_FLARE_FACTOR;
 
     /* Special handling Reference. */
     if (column_def->data_type->type == T_REFERENCE) {

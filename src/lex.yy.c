@@ -351,8 +351,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 72
-#define YY_END_OF_BUFFER 73
+#define YY_NUM_RULES 73
+#define YY_END_OF_BUFFER 74
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -362,33 +362,33 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[245] =
     {   0,
-        0,    0,   73,   72,   70,   69,   72,   72,   47,   47,
-       47,   63,   50,   48,   49,   62,   62,   62,   62,   62,
-       62,   62,   62,   62,   62,   62,   62,   62,   62,   62,
-       62,   62,   62,   62,   51,    0,   68,   67,    0,   66,
-       65,   63,   53,   52,   62,   62,   19,   62,   62,   62,
-       62,   62,   62,   62,   62,   62,   62,   62,   62,   62,
-       62,   15,   62,   62,   62,   62,   62,   62,   62,   62,
-       21,   62,   62,   62,   62,   62,   62,   62,   62,   62,
-       62,   62,   62,   62,   62,   62,    0,   71,   65,   20,
-       58,   62,   62,   62,   62,   62,   62,   62,   62,   62,
+        0,    0,   74,   73,   71,   70,   73,   73,   48,   48,
+       48,   64,   51,   49,   50,   63,   63,   63,   63,   63,
+       63,   63,   63,   63,   63,   63,   63,   63,   63,   63,
+       63,   63,   63,   63,   52,    0,   69,   68,    0,   67,
+       66,   64,   54,   53,   63,   63,   20,   63,   63,   63,
+       63,   63,   63,   63,   63,   63,   63,   63,   63,   63,
+       63,   16,   63,   63,   63,   63,   63,   63,   63,   63,
+       22,   63,   63,   63,   63,   63,   63,   63,   63,   63,
+       63,   63,   63,   63,   63,   63,    0,   72,   66,   21,
+       59,   63,   63,   63,   63,   63,   63,   63,   63,   63,
 
-       62,   62,   62,   62,   62,   62,   62,   62,   62,   62,
-       33,   27,   62,   62,   62,   54,   62,   55,   22,   62,
-       62,   59,   62,   62,   24,   62,   62,   56,   62,   62,
-       62,   62,   62,   62,   62,   62,   62,   62,   41,   35,
-       62,   62,   62,   62,   62,   40,   62,   62,   62,   62,
-        5,   62,   62,   62,   11,   62,   23,   14,   62,   34,
-       62,   43,   62,   62,   62,   62,   17,   62,   62,   62,
-       62,   60,   62,   62,   62,   62,   62,    1,   31,   62,
-       62,   57,   62,   62,   62,   62,   62,   61,   37,   62,
-       62,   16,   62,   62,   62,   62,   62,   62,   62,   12,
+       63,   63,   63,   63,   63,   63,   63,   63,   63,   63,
+       34,   28,   63,   63,   63,   55,   63,   56,   23,   63,
+       63,   60,   63,   63,   25,   63,   63,   57,   63,   63,
+       63,   63,   63,   63,   63,   63,   63,   63,   42,   36,
+       63,   63,   63,   63,   63,   41,   63,   63,   10,   63,
+        5,   63,   63,   63,   12,   63,   24,   15,   63,   35,
+       63,   44,   63,   63,   63,   63,   18,   63,   63,   63,
+       63,   61,   63,   63,   63,   63,   63,    1,   32,   63,
+       63,   58,   63,   63,   63,   63,   63,   62,   38,   63,
+       63,   17,   63,   63,   63,   63,   63,   63,   63,   13,
 
-       62,   62,   62,   62,   62,   13,    2,   46,    4,   62,
-        9,   62,   38,   62,    7,   45,   62,   62,   62,    6,
-       39,   44,   18,   62,   28,    8,   25,   62,   29,   62,
-       32,   26,   62,   62,   62,   36,   10,   62,    3,   62,
-       62,   42,   30,    0
+       63,   63,   63,   63,   63,   14,    2,   47,    4,   63,
+        9,   63,   39,   63,    7,   46,   63,   63,   63,    6,
+       40,   45,   19,   63,   29,    8,   26,   63,   30,   63,
+       33,   27,   63,   63,   63,   37,   11,   63,    3,   63,
+       63,   43,   31,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -987,315 +987,320 @@ return DESCRIBE;
 case 11:
 YY_RULE_SETUP
 #line 32 "sql.l"
-return FROM;
+return DESCRIBE;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 33 "sql.l"
-return TABLE;
+return FROM;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 34 "sql.l"
-return WHERE;
+return TABLE;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 35 "sql.l"
-return LIKE;
+return WHERE;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 36 "sql.l"
-return IN;
+return LIKE;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 37 "sql.l"
-return LIMIT;
+return IN;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 38 "sql.l"
-return SHOW;
+return LIMIT;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 39 "sql.l"
-return TABLES;
+return SHOW;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 40 "sql.l"
-return AS;
+return TABLES;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 41 "sql.l"
-return AND;
+return AS;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
 #line 42 "sql.l"
-return OR;
+return AND;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 43 "sql.l"
-return NOT;
+return OR;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 44 "sql.l"
-return INTO;
+return NOT;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 45 "sql.l"
-return SET;
+return INTO;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 46 "sql.l"
-return VALUES;
+return SET;
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
 #line 47 "sql.l"
-return PRIMARY;
+return VALUES;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
 #line 48 "sql.l"
-return KEY;
+return PRIMARY;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
 #line 49 "sql.l"
-return UNIQUE;
+return KEY;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
 #line 50 "sql.l"
-return DEFAULT;
+return UNIQUE;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 51 "sql.l"
-return REFERENCES;
+return DEFAULT;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 52 "sql.l"
-return CHECK;
+return REFERENCES;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 53 "sql.l"
-return FOREIGN;
+return CHECK;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
 #line 54 "sql.l"
-return INT;
+return FOREIGN;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
 #line 55 "sql.l"
-return LONG;
+return INT;
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
 #line 56 "sql.l"
-return CHAR;
+return LONG;
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
 #line 57 "sql.l"
-return VARCHAR;
+return CHAR;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
 #line 58 "sql.l"
-return FLOAT;
+return VARCHAR;
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
 #line 59 "sql.l"
-return DOUBLE;
+return FLOAT;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
 #line 60 "sql.l"
-return STRING;
+return DOUBLE;
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
 #line 61 "sql.l"
-return DATE;
+return STRING;
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
 #line 62 "sql.l"
-return BOOL;
+return DATE;
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
 #line 63 "sql.l"
-return TIMESTAMP;
+return BOOL;
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
 #line 64 "sql.l"
-return NULLX;
+return TIMESTAMP;
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
 #line 65 "sql.l"
-return SYSTEM;
+return NULLX;
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
 #line 66 "sql.l"
-return MEMORY;
+return SYSTEM;
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
 #line 67 "sql.l"
-return CONFIG;
+return MEMORY;
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
 #line 68 "sql.l"
-return yytext[0];
+return CONFIG;
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
 #line 69 "sql.l"
-return EQ;
+return yytext[0];
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
 #line 70 "sql.l"
-return GT;
+return EQ;
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
 #line 71 "sql.l"
-return LT;
+return GT;
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
 #line 72 "sql.l"
-return NE;
+return LT;
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
 #line 73 "sql.l"
-return GE;
+return NE;
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
 #line 74 "sql.l"
-return LE;
+return GE;
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
 #line 75 "sql.l"
-return MAX;
+return LE;
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
 #line 76 "sql.l"
-return MIN;
+return MAX;
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
 #line 77 "sql.l"
-return SUM;
+return MIN;
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 78 "sql.l"
-return COUNT;
+return SUM;
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
 #line 79 "sql.l"
-return AVG;
+return COUNT;
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
 #line 80 "sql.l"
-return REF;
+return AVG;
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
 #line 81 "sql.l"
-return TRUE;
+return REF;
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
 #line 82 "sql.l"
-return FALSE;
+return TRUE;
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
 #line 83 "sql.l"
-{ yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
+return FALSE;
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
 #line 84 "sql.l"
-{ yylval.intVal = atoi(yytext); return INTVALUE;}
+{ yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
 	YY_BREAK
 case 64:
-#line 86 "sql.l"
+YY_RULE_SETUP
+#line 85 "sql.l"
+{ yylval.intVal = atoi(yytext); return INTVALUE;}
+	YY_BREAK
 case 65:
 #line 87 "sql.l"
 case 66:
-YY_RULE_SETUP
-#line 87 "sql.l"
-{ yylval.floatVal = atof(yytext); return FLOATVALUE; }
-	YY_BREAK
+#line 88 "sql.l"
 case 67:
 YY_RULE_SETUP
 #line 88 "sql.l"
-{ if (strcmp(yytext, "''") == 0) { yylval.strVal = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.strVal =  strdup(str);} return STRINGVALUE;} 
+{ yylval.floatVal = atof(yytext); return FLOATVALUE; }
 	YY_BREAK
 case 68:
-*yy_cp = (yy_hold_char); /* undo effects of setting up yytext */
-(yy_c_buf_p) = yy_cp -= 1;
-YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
 #line 89 "sql.l"
-{ yyerror("Unterminated string");  return YYerror;}
+{ if (strcmp(yytext, "''") == 0) { yylval.strVal = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.strVal =  strdup(str);} return STRINGVALUE;} 
 	YY_BREAK
 case 69:
-/* rule 69 can match eol */
-YY_RULE_SETUP
-#line 90 "sql.l"
-{ lineno++; return NL;}
-	YY_BREAK
-case 70:
-YY_RULE_SETUP
-#line 91 "sql.l"
-/* igonore space */
-	YY_BREAK
-case 71:
 *yy_cp = (yy_hold_char); /* undo effects of setting up yytext */
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
+#line 90 "sql.l"
+{ yyerror("Unterminated string");  return YYerror;}
+	YY_BREAK
+case 70:
+/* rule 70 can match eol */
+YY_RULE_SETUP
+#line 91 "sql.l"
+{ lineno++; return NL;}
+	YY_BREAK
+case 71:
+YY_RULE_SETUP
 #line 92 "sql.l"
-;	        /* comment */
+/* igonore space */
 	YY_BREAK
 case 72:
+*yy_cp = (yy_hold_char); /* undo effects of setting up yytext */
+(yy_c_buf_p) = yy_cp -= 1;
+YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
 #line 93 "sql.l"
+;	        /* comment */
+	YY_BREAK
+case 73:
+YY_RULE_SETUP
+#line 94 "sql.l"
 ECHO;
 	YY_BREAK
-#line 1299 "lex.yy.c"
+#line 1304 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2300,7 +2305,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 93 "sql.l"
+#line 94 "sql.l"
 
 
 int yyerror(const char *s) {

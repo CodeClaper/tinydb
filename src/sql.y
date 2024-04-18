@@ -130,6 +130,7 @@ int yylex();
 %type <assignment_node> assignment
 %type <assignment_set_node> assignments
 %type <data_type_node> data_type
+%type <intVal> array_dim_clause
 %type <compare_type> compare
 %type <function_value_node> function_value
 %type <function_value_node> non_all_function_value
@@ -617,12 +618,13 @@ column_defs:
         }
     ;
 column_def:
-    column_def_name data_type column_def_opt_list
+    column_def_name data_type array_dim_clause column_def_opt_list
         {
             ColumnDefNode *column_def = make_column_def_node();
             column_def->column = $1;
             column_def->data_type = $2;
-            column_def->column_def_opt_list = $3;
+            column_def->array_dim = $3;
+            column_def->column_def_opt_list = $4;
             $$ = column_def;
         }
     ;
@@ -704,6 +706,20 @@ data_type:
             $$ = make_data_type_node();
             $$->type = T_REFERENCE;
             $$->table_name = $1;
+        }
+    ;
+array_dim_clause:
+    /* empty */
+        {
+            $$ = 0;
+        }
+    | '[' ']'
+        {
+            $$ = 1;
+        }
+    | array_dim_clause '[' ']'
+        {
+            $$++;
         }
     ;
 column_def_opt_list:

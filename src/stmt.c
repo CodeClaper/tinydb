@@ -100,7 +100,14 @@ static void statement_delete(Statement *statement, DBResult *result) {
 /*Describe Statement*/
 static void statement_describe(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == DESCRIBE_STMT, "System error, describe statement type error.\n"); 
-    exec_describe_statement(statement->describe_node, result);
+    MapList *map_list = exec_describe_statement(statement->describe_node);
+    if (map_list) {
+        /* Success resule. */
+        result->success = true;
+        result->data = map_list;
+        result->message = db_strdup("Describe executed successfully.");
+        db_log(SUCCESS, "Describe executed successfully.");
+    }
 }
 
 /*Show tables Statment*/

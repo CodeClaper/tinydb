@@ -24,6 +24,8 @@
 
 #define MENTRY_STYPE_LENGTH 48
 
+#define ARRAY_FLARE_FACTOR 10
+
 #define SYS_RESERVED_ID_COLUMN_NAME  "sys_id"
 #define CREATED_XID_COLUMN_NAME  "created_xid"
 #define EXPIRED_XID_COLUMN_NAME  "expired_xid"
@@ -287,9 +289,10 @@ typedef struct ColumnDefNameCommalist {
 
 /* ColumnDefNode */
 typedef struct ColumnDefNode { 
-    ColumnDefName *column;
-    DataTypeNode *data_type;
-    ColumnDefOptNodeList *column_def_opt_list;
+    ColumnDefName *column;                       /* Column defination name. */
+    DataTypeNode *data_type;                     /* Column defination data type. */ 
+    uint32_t array_dim;                          /* Array dimension, default zero if not arrary. */ 
+    ColumnDefOptNodeList *column_def_opt_list;   /* Column defination operation list. */
 } ColumnDefNode;
 
 /* ColumnDefSetNode */
@@ -535,14 +538,16 @@ typedef struct Pager {
 
 /* MetaColumn */
 typedef struct MetaColumn {
-    char column_name[MAX_COLUMN_NAME_LEN];
-    DataType column_type;
-    char table_name[MAX_TABLE_NAME_LEN];
-    uint32_t column_length;
-    bool is_primary;
-    bool not_null;
-    bool is_unique;
-    bool sys_reserved; /* System reserved column, only visible for system. */
+    char column_name[MAX_COLUMN_NAME_LEN];  /* Column Name. */
+    DataType column_type;                   /* Column data type. */
+    char table_name[MAX_TABLE_NAME_LEN];    /* Owned table Name */
+    uint32_t column_length;                 /* Column data length. Not allowed exceed the length limit. */
+    bool is_primary;                        /* Primary-key column. */
+    bool not_null;                          /* Not-null column. */
+    bool is_unique;                         /* Unique column. */
+    bool sys_reserved;                      /* System reserved column, only visible for system. */
+    uint32_t array_dim;                     /* Array dimension. Default zero if not array. */
+    uint32_t array_num;                     /* Array num. (array_num = array_dim * n) */
 } MetaColumn;
 
 /* MetaTable */

@@ -28,6 +28,7 @@ SELECT                  return SELECT;
 INSERT                  return INSERT;
 UPDATE                  return UPDATE;
 DELETE                  return DELETE;
+DESC                    return DESCRIBE;
 DESCRIBE                return DESCRIBE;
 FROM                    return FROM;
 TABLE                   return TABLE;

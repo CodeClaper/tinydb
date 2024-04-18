@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -85,41 +86,45 @@ bool create_table(MetaTable *meta_table) {
     char *file_path = table_file_path(meta_table->table_name);
     if (table_file_exist(file_path)) {
         db_log(ERROR, "Table '%s' already exists. \n", meta_table->table_name);
+        db_free(file_path);
         return false;
     }
     int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (descr == -1) {
         db_log(ERROR, "Open database file '%s' fail.\n", file_path);
+        db_free(file_path);
         return false;
     }
     void *root_node = db_malloc(PAGE_SIZE, "pointer");
 
-    /* initialize root node */
+    /* Initialize root node */
     initial_leaf_node(root_node, true);
 
-    /* set meta column */
+    /* Set meta column */
     set_column_size(root_node, meta_table->all_column_size);
     
-    /* assignment */
-    int i;
+    /* Serialize */
+    uint32_t i;
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = (MetaColumn *)(meta_table->meta_column[i]);
         void *destination = serialize_meta_column(meta_column);
         set_meta_column(root_node, destination, i);
     }
 
-    /* flush to disk. */
+    /* Flush to disk. */
     lseek(descr, 0, SEEK_SET);
     ssize_t w_size = write(descr, root_node, PAGE_SIZE);
     if (w_size == -1) {
         db_log(ERROR, "Write table meta info error and errno %d.\n", errno);
+        db_free(file_path);
+        db_free(root_node);
         return false;
     }
     
-    /* close desription. */
+    /* Close desription. */
     close(descr);
 
-    /* free memory*/
+    /* Free memory. */
     db_free(file_path);
     db_free(root_node);
 
