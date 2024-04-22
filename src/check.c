@@ -40,25 +40,27 @@ static ConditionNode *get_condition_from_where_clause(WhereClauseNode *where_cla
 static void *get_value_from_value_item(ValueItemNode *value_item) {
     switch (value_item->data_type) {
         case T_BOOL:
-            return &value_item->value.b_value;
+            return &value_item->value.boolVal;
         case T_CHAR:
-            return value_item->value.s_value;
+            return value_item->value.strVal;
         case T_INT:
-            return &value_item->value.i_value;
+            return &value_item->value.intVal;
         case T_LONG:
-            return &value_item->value.i_value;
+            return &value_item->value.intVal;
         case T_FLOAT:
-            return &value_item->value.f_value;
+            return &value_item->value.floatVal;
         case T_DOUBLE:
-            return &value_item->value.d_value;
+            return &value_item->value.doubleVal;
         case T_STRING:
-            return value_item->value.s_value;
+            return value_item->value.strVal;
         case T_DATE:
-            return value_item->value.s_value;
+            return value_item->value.strVal;
         case T_TIMESTAMP:
-            return value_item->value.s_value;
+            return value_item->value.strVal;
         case T_REFERENCE:
-            return value_item->value.r_value;
+            return value_item->value.refVal;
+        case T_ARRAY:
+            return value_item->value.arrayVal;
         default:
             db_log(ERROR, "Not support data type");
     }
@@ -221,45 +223,53 @@ static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap ali
 }
 
 /* Check if type convert pass. */
-static bool if_convert_type(DataType source, DataType target, char *column_name, char *table_name) {
-    bool flag;
-    switch(source) {
+static bool check_data_type(DataType column_type, DataType value_type, char *column_name, char *table_name) {
+    if (value_type == T_ARRAY)
+        return true;
+    bool flag = false;
+    switch(column_type) {
         case T_BOOL:
-            flag = target == T_BOOL;
+            flag = value_type == T_BOOL;
             break;
         case T_INT:
-            flag = target == T_INT;
+            flag = value_type == T_INT;
             break;
         case T_LONG:
-            flag = target == T_INT || target == T_LONG;
+            flag = value_type == T_INT || value_type == T_LONG;
             break;
         case T_FLOAT:
-            flag = target == T_INT || target == T_FLOAT;
+            flag = value_type == T_INT || value_type == T_FLOAT;
             break;
         case T_DOUBLE:
-            flag = target == T_INT || target == T_DOUBLE;
+            flag = value_type == T_INT || value_type == T_DOUBLE;
             break;
         case T_CHAR:
-            flag = target == T_CHAR || target == T_VARCHAR ||target == T_STRING;
+            flag = value_type == T_CHAR || value_type == T_VARCHAR ||value_type == T_STRING;
             break;
         case T_STRING:
         case T_VARCHAR:
-            flag = target == T_CHAR || target == T_VARCHAR || target == T_STRING;
+            flag = value_type == T_CHAR || value_type == T_VARCHAR || value_type == T_STRING;
             break;
         case T_TIMESTAMP:
-            flag = target == T_TIMESTAMP || target == T_STRING;
+            flag = value_type == T_TIMESTAMP || value_type == T_STRING;
             break;
         case T_DATE:
-            flag = target == T_DATE || target == T_STRING;
+            flag = value_type == T_DATE || value_type == T_STRING;
             break;
         case T_REFERENCE:
             /* For Reference, it`s complicate, user can pass a refer or subrow column, 
              * to be simple, just make flag true. */
             flag = true;
             break;
+        case T_ARRAY:
+            return true;
     }
     if (!flag)
-       db_log(ERROR, "Can`t convert data type [%s] to [%s] for column '%s' in table '%s'", DATA_TYPE_NAMES[target], DATA_TYPE_NAMES[source], column_name, table_name);
+       db_log(ERROR, "Can`t convert data type [%s] to [%s] for column '%s' in table '%s'", 
+              DATA_TYPE_NAMES[column_type], 
+              DATA_TYPE_NAMES[value_type], 
+              column_name, 
+              table_name);
     return flag;
 }
 
@@ -342,7 +352,7 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (streq(meta_column->column_name, column_name) 
-            && if_convert_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name)
+            && check_data_type(meta_column->column_type, value_item_node->data_type, column_name, meta_table->table_name)
             && check_value_valid(meta_column, value_item_node))
             return true;
     }
@@ -424,7 +434,7 @@ static bool check_selection(SelectionNode *selection_node, AliasMap alias_map) {
 static bool check_comparison_value(ScalarExpNode *comparion_value, MetaTable *meta_table, MetaColumn *meta_column) {
     switch (comparion_value->type) {
         case SCALAR_VALUE:
-            return if_convert_type(meta_column->column_type, comparion_value->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
+            return check_data_type(meta_column->column_type, comparion_value->value->data_type, meta_column->column_name, meta_table->table_name) // check column type
                    && check_value_valid(meta_column, comparion_value->value); // check if value valid
         case SCALAR_COLUMN:
         case SCALAR_FUNCTION:
@@ -590,7 +600,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
 
         /* Check column, check type, check if value valid. */
         if (!check_column_node(column_node, table->meta_table) 
-            || !if_convert_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name) 
+            || !check_data_type(meta_column->column_type, value_node->data_type, meta_column->column_name, table->meta_table->table_name) 
             || !check_value_valid(meta_column, value_node)) {
             free_select_result(select_result);
             return false;
@@ -731,7 +741,7 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
             /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
+            if (!check_data_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
                 return false;
             if (!check_value_valid(meta_column, value_item_node))
                 return false;
@@ -750,7 +760,7 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
             ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             /* Check data type. */
-            if (!if_convert_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
+            if (!check_data_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
                 return false;
             /* Check value valid. */
             if (!check_value_valid(meta_column, value_item_node)) 

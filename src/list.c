@@ -1,4 +1,12 @@
+/* =======================================List Modele============================================
+ * List module supports api portals for multiple values.
+ * We don`t limit data type of set, the set is set of pointer. 
+ * so the destroy function will not free them.
+ * ==============================================================================================
+ * */
+
 #include <string.h>
+#include <time.h>
 #include "data.h"
 #include "mmu.h"
 
@@ -38,11 +46,24 @@ int append_at(List *list, void *item, int index) {
 }
 
 /* Destroy list. 
- * Note: it will not free the items which left to free by origin.
+ * Note: it will not free set items which are left to be freed by origin.
  */
 void destroy_list(List *list) {
     if (list) {
         db_free(list->set);
         db_free(list);
     }
+}
+
+/*Deplicate list.
+ *Note: it will not duplicate set items.
+ * */
+List *duplicate_list(List *list) {
+    if (!list)
+        return NULL;
+    List *list_dup = instance(List);
+    list_dup->size = list->size;
+    list_dup->set = db_malloc(sizeof(void *) * list_dup->size, "pointer");
+    memcpy(list_dup->set, list->set, sizeof(void *) * list_dup->size);
+    return list_dup;
 }

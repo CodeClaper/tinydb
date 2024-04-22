@@ -61,6 +61,9 @@ void set_meta_column(void *root_node, void *destination, uint32_t index);
 /* Get meta column size. */
 uint32_t get_root_node_meta_column_size();
 
+/* Get array number. */
+uint32_t get_array_number(void *destination);
+
 /* Initialize leaf node. */
 void initial_leaf_node(void *leaf_node, bool is_root);
 

@@ -35,8 +35,11 @@ MetaColumn SYS_RESERVED_COLUMNS[] = {
 /* Calculate meta column length. 
  * If define data len, use defined data length, note that, T_STRING & T_VARCHAR data length will add 1 for '0' as end.
  * Otherwise, use system default data length.
+ * Note: when array cap more than zere, it means column is array, 
+ * column length = data type length * array cap + reserved array number length (sizeof(uint32_t));
  * */
-static uint32_t calc_column_len(DataTypeNode *data_type) {
+uint32_t calc_column_len(ColumnDefNode *column_def, uint32_t array_cap) {
+    DataTypeNode *data_type = column_def->data_type;
     uint32_t column_length = 0;
     switch (data_type->type) {
         case T_VARCHAR: {
@@ -56,7 +59,10 @@ static uint32_t calc_column_len(DataTypeNode *data_type) {
             break;
         }
     }
-    return column_length;
+    /* If type is array, single data type length multiply by array cap. */
+    return array_cap == 0 
+        ? column_length 
+        : column_length * array_cap + sizeof(uint32_t);
 }
 
 /* Column Operation. */
@@ -97,9 +103,9 @@ MetaColumn *combine_user_meta_column(ColumnDefNode *column_def, char *table_name
     meta_column->not_null = false;
     meta_column->column_type = column_def->data_type->type;
     meta_column->sys_reserved = false;
-    meta_column->column_length = calc_column_len(column_def->data_type);
     meta_column->array_dim = column_def->array_dim;
-    meta_column->array_num = column_def->array_dim * ARRAY_FLARE_FACTOR;
+    meta_column->array_cap = column_def->array_dim * ARRAY_FLARE_FACTOR;
+    meta_column->column_length = calc_column_len(column_def, meta_column->array_cap);
 
     /* Special handling Reference. */
     if (column_def->data_type->type == T_REFERENCE) {

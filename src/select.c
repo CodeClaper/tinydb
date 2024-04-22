@@ -34,6 +34,7 @@
 #include "refer.h"
 #include "utils.h"
 #include "json.h"
+#include "list.h"
 
 /* Maximum number of rows fetched at once.*/
 #define MAX_FETCH_ROWS 100 
@@ -87,109 +88,6 @@ static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     return off_set;
 }
 
-/* Get value from value item node. */
-void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column) {
-    /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
-     * So we must use meta column data type to define which data type of the value. */
-    switch (meta_column->column_type) { 
-        case T_CHAR: {
-            switch (value_item_node->data_type) {
-                case T_STRING:
-                case T_VARCHAR:
-                    value_item_node->data_type = T_CHAR;
-                    return value_item_node->value.s_value;
-                default:
-                    db_log(PANIC, "Data type error.");
-            }
-            break;
-        }
-        case T_STRING:
-        case T_VARCHAR:
-            return value_item_node->value.s_value;
-        case T_INT:
-        case T_LONG:
-            return &value_item_node->value.i_value;
-        case T_BOOL:
-            return &value_item_node->value.b_value;
-        case T_FLOAT: {
-            switch (value_item_node->data_type) {
-                case T_INT:
-                    value_item_node->value.f_value = value_item_node->value.i_value;
-                    value_item_node->data_type = T_FLOAT;
-                case T_FLOAT:
-                    return &value_item_node->value.f_value;
-                default:
-                    db_log(PANIC, "Data type error.");
-            }
-            break;
-        }
-        case T_DOUBLE: {
-            switch (value_item_node->data_type) {
-                case T_INT:
-                    value_item_node->value.d_value = value_item_node->value.i_value;
-                    value_item_node->data_type = T_DOUBLE;
-                case T_FLOAT:
-                    value_item_node->value.d_value = value_item_node->value.f_value;
-                    value_item_node->data_type = T_DOUBLE;
-                case T_DOUBLE:
-                    return &value_item_node->value.d_value;
-                default:
-                    db_log(PANIC, "Data type error.");
-            }
-            break;
-        }
-        case T_TIMESTAMP: {
-            switch (value_item_node->data_type) {
-                case T_STRING: 
-                case T_VARCHAR: {
-                    struct tm *tmp_time = instance(struct tm);
-                    strptime(value_item_node->value.s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
-                    value_item_node->value.t_value = mktime(tmp_time);
-                    value_item_node->data_type = T_TIMESTAMP;
-                    db_free(tmp_time);
-                }
-                case T_TIMESTAMP:
-                    return &value_item_node->value.t_value;
-                default:
-                    db_log(PANIC, "Data type error.");
-            }
-            break;
-        }
-        case T_DATE: {
-            switch (value_item_node->data_type) {
-                case T_STRING: 
-                case T_VARCHAR: {
-                    struct tm *tmp_time = instance(struct tm);
-                    strptime(value_item_node->value.s_value, "%Y-%m-%d", tmp_time);
-                    tmp_time->tm_sec = 0;
-                    tmp_time->tm_min = 0;
-                    tmp_time->tm_hour = 0;
-                    value_item_node->value.t_value = mktime(tmp_time);
-                    value_item_node->data_type = T_DATE;
-                    db_free(tmp_time);
-                }
-                case T_DATE:
-                    return &value_item_node->value.t_value;
-                default:
-                    db_log(PANIC, "Data type error.");
-             }
-             break;
-        }
-        case T_REFERENCE: {
-            switch (value_item_node->value.r_value->type) {
-                case DIRECTLY:
-                    db_log(WARN, "Not support directly fetch refer when query.");
-                    return make_null_refer();
-                case INDIRECTLY: 
-                    return fetch_refer(meta_column, value_item_node->value.r_value->condition);
-            }
-            break;
-        }
-        default:
-            db_log(PANIC, "Not implement yet.");
-    }
-    return NULL;
-}
 
 /* Check if include internal comparison predicate for Value type. */
 static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
@@ -580,11 +478,38 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
     }
 }
 
-/* Generate select row. */
-static Row *generate_row(void *destinct, MetaTable *meta_table) {
+/* Get row array value. 
+ * Return data as list.
+ * */
+static List *get_row_array_value(void *destination, MetaColumn *meta_column) {
+    uint32_t array_num = get_array_number(destination);
+    List *list = create_list(meta_column->column_type);
+    size_t array_num_size = sizeof(uint32_t);
+    uint32_t span = (meta_column->column_length - sizeof(uint32_t)) / meta_column->array_cap;
+    uint32_t i;
+    for (i = 0; i < array_num; i++) {
+        void *value = (destination + array_num_size + i * span);
+        append_list(list, value);
+    }
+    return list;
+}
 
-    /* Define row data. */
+/* Assignment row value. */
+static void *assign_row_value(void *destination, MetaColumn *meta_column) {
+    return meta_column->array_dim ==  0
+            /* For non-array data. */
+            ? copy_value(destination, meta_column->column_type) 
+            /* For array data. */
+            : get_row_array_value(destination, meta_column); 
+}
+
+/* Generate select row. */
+static Row *generate_row(void *destination, MetaTable *meta_table) {
+
+    /* Instance new row. */
     Row *row = instance(Row);
+
+    /* Base info. */
     row->column_len = meta_table->all_column_size;
     row->table_name = db_strdup(meta_table->table_name);
     row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
@@ -600,14 +525,15 @@ static Row *generate_row(void *destinct, MetaTable *meta_table) {
         /* Generate a key value pair. */
         KeyValue *key_value = instance(KeyValue);
         key_value->key = db_strdup(meta_column->column_name);
-        key_value->value = copy_value(destinct + offset, meta_column->column_type);
         key_value->data_type = meta_column->column_type;
+        key_value->is_array = meta_column->array_dim > 0;
+        key_value->value = assign_row_value(destination + offset, meta_column);
         key_value->table_name = db_strdup(meta_table->table_name);
-
         row->data[i] = key_value;
-
+        
+        /* Assign primary key. */
         if (meta_column->is_primary)
-            row->key = copy_value(destinct + offset, meta_column->column_type);
+            row->key = copy_value(destination + offset, meta_column->column_type);
     }
 
     return row;
@@ -1181,7 +1107,8 @@ static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNod
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
 
-        if (streq(column->column_name, key_value->key) && (table_name == NULL || streq(table_name, key_value->table_name))) {
+        if (streq(column->column_name, key_value->key) 
+            && (table_name == NULL || streq(table_name, key_value->table_name))) {
             /* Reference type and query sub column. */
             if (key_value->data_type == T_REFERENCE) {
                 Refer *refer = (Refer *)key_value->value;
@@ -1869,14 +1796,14 @@ static KeyValue *query_function_calculate_column_value(CalculateNode *calculate,
 
 /* Query column value. */
 static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *select_result) {
+    Table *table = open_table(select_result->table_name);
     switch (scalar_exp->type) {
         case SCALAR_COLUMN: {
             ColumnNode *column = scalar_exp->column;
+            MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
             if (select_result->row_size == 0) {
-                Table *table = open_table(select_result->table_name);
                 KeyValue *key_value = instance(KeyValue);
                 key_value->key = db_strdup(column->column_name);
-                MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
                 key_value->value = NULL;
                 key_value->data_type = meta_column->column_type;
                 return key_value;
@@ -1966,10 +1893,13 @@ static KeyValue *query_value_item(ValueItemNode *value_item, Row *row) {
     switch (value_item->data_type) {
         case T_CHAR:
         case T_STRING:
-            value = copy_value(value_item->value.s_value, value_item->data_type);
+            value = copy_value(value_item->value.strVal, value_item->data_type);
             break;
         case T_REFERENCE:
-            value = copy_value(value_item->value.r_value, value_item->data_type);
+            value = copy_value(value_item->value.refVal, value_item->data_type);
+            break;
+        case T_ARRAY:
+            value = copy_value(value_item->value.arrayVal, value_item->data_type);
             break;
         default:
             value = copy_value(&value_item->value, value_item->data_type);
@@ -2047,7 +1977,7 @@ static bool is_function_scalar_exp(ScalarExpNode *scalar_exp) {
 
 /* Check if exists function type scalar exp. */
 static bool exists_function_scalar_exp(ScalarExpSetNode *scalar_exp_set) {
-    int i;
+    uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
         /* Check self if SCALAR_FUNCTION. */
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
@@ -2099,7 +2029,9 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
         SelectResult *current_result = new_select_result(table_ref->table);
 
         /* If use not define tale alias name, use table name as range variable automatically. */
-        current_result->range_variable = table_ref->range_variable ? db_strdup(table_ref->range_variable) : db_strdup(table_ref->table);
+        current_result->range_variable = table_ref->range_variable 
+                                        ? db_strdup(table_ref->range_variable) 
+                                        : db_strdup(table_ref->table);
         current_result->derived = result;
         current_result->last_derived = (i == table_ref_set->size - 1);
 
@@ -2130,8 +2062,12 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
     result->rows = select_result->row_size;
     result->data = select_result;
     result->success = true;
-    result->message = format("Query %d rows data from table '%s' successfully.", result->rows, select_result->table_name);
+    result->message = format("Query %d rows data from table '%s' successfully.", 
+                             result->rows, 
+                             select_result->table_name);
 
     /* Make up success result. */
-    db_log(SUCCESS, "Query %d rows data from table '%s' successfully.", result->rows, select_result->table_name);
+    db_log(SUCCESS, "Query %d rows data from table '%s' successfully.", 
+           result->rows, 
+           select_result->table_name);
 }

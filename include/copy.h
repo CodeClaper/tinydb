@@ -7,6 +7,9 @@ void *copy_value(void *value, DataType data_type);
 /* Copy Key value pair. */
 KeyValue *copy_key_value(KeyValue *key_value);
 
+/* Copy ArrayValue. */
+ArrayValue *copy_array_value(ArrayValue *array_value);
+
 /* Copy refer. */
 Refer *copy_refer(Refer *refer);
 

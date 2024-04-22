@@ -20,6 +20,7 @@ int yylex();
    bool                         boolVal;
    char                         *keyword;
    ReferValue                   *referVal;
+   ArrayValue                   *arrayVal;
    CompareType                  compare_type;
    DataTypeNode                 *data_type_node;
    ColumnDefName                *column_def_name;
@@ -103,6 +104,7 @@ int yylex();
 %token <strVal> STRINGVALUE
 %type <boolVal> BOOLVALUE
 %type <referVal> REFERVALUE
+%type <arrayVal> ARRAYVALUE
 %type <strVal> table
 %type <strVal> range_variable
 %type <scalar_exp_node> scalar_exp
@@ -852,36 +854,43 @@ value_item:
     INTVALUE
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.i_value = $1;
+            node->value.intVal = $1;
             node->data_type = T_INT;
             $$ = node;
         }
     | BOOLVALUE
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.b_value = $1;
+            node->value.boolVal = $1;
             node->data_type = T_BOOL;
             $$ = node;
         }
     | STRINGVALUE 
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.s_value = $1;
+            node->value.strVal = $1;
             node->data_type = T_STRING;
             $$ = node;
         }
     | FLOATVALUE 
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.f_value = $1;
+            node->value.floatVal = $1;
             node->data_type = T_FLOAT;
             $$ = node;
         }
     | REFERVALUE
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.r_value = $1;
+            node->value.refVal = $1;
             node->data_type = T_REFERENCE;
+            $$ = node;
+        }
+    | ARRAYVALUE
+        {
+            ValueItemNode *node = make_value_item_node();
+            node->value.arrayVal = $1;
+            node->data_type = T_ARRAY;
             $$ = node;
         }
     ;
@@ -911,6 +920,13 @@ BOOLVALUE:
     | FALSE
         {
             $$ = false;
+        }
+    ;
+ARRAYVALUE:
+    '[' value_items ']'
+        {
+            $$ = make_array_value();
+            $$->value = $2;
         }
     ;
 assignments:

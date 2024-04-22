@@ -1,10 +1,13 @@
 #include "data.h"
 
 /*Get key value pair string. */
-char *get_key_value_pair_str(char *key, void *value, DataType data_type);
+char *json_key_value(KeyValue *key_value);
 
 /* Default data length. */
 uint32_t default_data_len(DataType column_type);
+
+/* Get value from value item node. */
+void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column);
 
 /* Calculate the length of table row. */
 uint32_t calc_table_row_length(Table *table);

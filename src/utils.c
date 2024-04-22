@@ -1,9 +1,11 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/socket.h>
+#include <time.h>
 #include "utils.h"
 #include "mmu.h"
 
@@ -151,6 +153,51 @@ bool streq_or_null(char *str1, char *str2) {
  * */
 bool strempty(char *str) {
     return str == NULL || strlen(str) == 0;
+}
+
+/* Convert int32 to string. */
+char *itos(int32_t val) {
+    char *str = db_malloc(MAX_INT_STR_LENGTH, "string");
+    sprintf(str, "%d", val);
+    return str;
+}
+
+/* Convert long to string. */
+char *ltos(int64_t val) {
+    char *str = db_malloc(MAX_LONG_STR_LENGTH, "string");
+    sprintf(str, "%ld", val);
+    return str;
+}
+
+/* Covnert bool to string. */
+char *btos(bool val) {
+    char *str = db_malloc(MAX_BOOL_STR_LENGTH, "string");
+    sprintf(str, val ? "true" : "false");
+    return str;
+}
+
+/* Convert float to string. */
+char *ftos(float val) {
+    char *str = db_malloc(MAX_FLOAT_STR_LENGTH, "string");
+    sprintf(str, "%f", val);
+    return str;
+}
+
+/* Convert float to string. */
+char *dtos(double val) {
+    char *str = db_malloc(MAX_DOUBLE_STR_LENGTH, "string");
+    sprintf(str, "%lf", val);
+    return str;
+}
+
+/* Convert time to string. */
+char *ttos(time_t val, char *frmt) {
+    char temp[90];
+    char *str = db_malloc(MAX_TIMESTAMP_STR_LENGTH, "string");
+    struct tm *tmp_time = localtime(&val);
+    strftime(temp, sizeof(temp), frmt, tmp_time);
+    sprintf(str, "%s", temp);
+    return str;
 }
 
 

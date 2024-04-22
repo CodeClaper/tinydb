@@ -86,7 +86,16 @@ FALSE                   return FALSE;
 [0-9]+	|
 [0-9]+"."[0-9]* |
 "."[0-9]*	            { yylval.floatVal = atof(yytext); return FLOATVALUE; }
-'[^'\n]*'	            { if (strcmp(yytext, "''") == 0) { yylval.strVal = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.strVal =  strdup(str);} return STRINGVALUE;} 
+'[^'\n]*'	            { if (strcmp(yytext, "''") == 0) 
+                          { 
+                              yylval.strVal = db_strdup(" ");
+                          } else 
+                          {
+                              char *str = strtok(yytext, "\'");  
+                              yylval.strVal =  strdup(str);
+                          } 
+                          return STRINGVALUE;
+                        } 
 '[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
 [ \t]                   /* igonore space */

@@ -21,3 +21,9 @@ int append_at(List *list, void *item, int index);
 
 /* Destroy list. */
 void destroy_list(List *list);
+
+
+/*Deplicate list.
+ *Note: it will not duplicate set items.
+ * */
+List *duplicate_list(List *list);

@@ -1266,25 +1266,34 @@ YY_RULE_SETUP
 case 68:
 YY_RULE_SETUP
 #line 89 "sql.l"
-{ if (strcmp(yytext, "''") == 0) { yylval.strVal = db_strdup(" ");} else {char *str = strtok(yytext, "\'");  yylval.strVal =  strdup(str);} return STRINGVALUE;} 
+{ if (strcmp(yytext, "''") == 0) 
+                          { 
+                              yylval.strVal = db_strdup(" ");
+                          } else 
+                          {
+                              char *str = strtok(yytext, "\'");  
+                              yylval.strVal =  strdup(str);
+                          } 
+                          return STRINGVALUE;
+                        } 
 	YY_BREAK
 case 69:
 *yy_cp = (yy_hold_char); /* undo effects of setting up yytext */
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 90 "sql.l"
+#line 99 "sql.l"
 { yyerror("Unterminated string");  return YYerror;}
 	YY_BREAK
 case 70:
 /* rule 70 can match eol */
 YY_RULE_SETUP
-#line 91 "sql.l"
+#line 100 "sql.l"
 { lineno++; return NL;}
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 92 "sql.l"
+#line 101 "sql.l"
 /* igonore space */
 	YY_BREAK
 case 72:
@@ -1292,15 +1301,15 @@ case 72:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 93 "sql.l"
+#line 102 "sql.l"
 ;	        /* comment */
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 94 "sql.l"
+#line 103 "sql.l"
 ECHO;
 	YY_BREAK
-#line 1304 "lex.yy.c"
+#line 1313 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2305,7 +2314,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 94 "sql.l"
+#line 103 "sql.l"
 
 
 int yyerror(const char *s) {

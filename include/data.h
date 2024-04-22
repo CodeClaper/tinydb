@@ -26,6 +26,14 @@
 
 #define ARRAY_FLARE_FACTOR 10
 
+#define MAX_BOOL_STR_LENGTH 10
+#define MAX_INT_STR_LENGTH 20
+#define MAX_LONG_STR_LENGTH 30
+#define MAX_FLOAT_STR_LENGTH 50
+#define MAX_DOUBLE_STR_LENGTH 100
+#define MAX_DATE_STR_LENGTH 30
+#define MAX_TIMESTAMP_STR_LENGTH 30
+
 #define SYS_RESERVED_ID_COLUMN_NAME  "sys_id"
 #define CREATED_XID_COLUMN_NAME  "created_xid"
 #define EXPIRED_XID_COLUMN_NAME  "expired_xid"
@@ -36,10 +44,10 @@
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE } CompareType;
 
 /* DataType */
-typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_VARCHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE, T_ROW } DataType;
+typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_VARCHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE, T_ROW, T_ARRAY } DataType;
 
 /* DataTypeNames */
-static char *DATA_TYPE_NAMES[] = {"unknown", "bool",  "char", "varchar", "int", "long", "double", "float", "string", "date", "timestamp",  "reference"};
+static char *DATA_TYPE_NAMES[] = {"unknown", "bool",  "char", "varchar", "int", "long", "double", "float", "string", "date", "timestamp",  "reference", "array" };
 
 /* FunctionType */
 typedef enum { F_COUNT, F_MAX, F_MIN, F_SUM, F_AVG } FunctionType;
@@ -323,7 +331,7 @@ typedef struct {
 typedef enum ReferFetchType {
     DIRECTLY = 1,
     INDIRECTLY
-}ReferFetchType;
+} ReferFetchType;
 
 /* ReferValue */
 typedef struct ReferValue {
@@ -336,24 +344,31 @@ typedef struct ReferValue {
     };
 } ReferValue;
 
+/* ArrayValue. */
+typedef struct ArrayValue {
+    struct ValueItemSetNode *value;
+} ArrayValue;
+
 /* ValueItemNode */
 typedef struct ValueItemNode {
     DataType data_type;
     union {
         /* T_INT, T_LONG */
-        int64_t i_value;
+        int64_t intVal;
         /* T_BOOL */
-        bool b_value;
+        bool boolVal;
         /* T_CHAR, T_STRING */
-        char *s_value;
+        char *strVal;
         /* T_FLOAT */
-        float f_value;
+        float floatVal;
         /* T_DOUBLE */
-        double d_value;
+        double doubleVal;
         /* T_TIMESTAMP, T_DATE */
-        time_t t_value;
+        time_t timeVal;
         /* T_REFERENCE */
-        ReferValue *r_value;
+        ReferValue *refVal;
+        /* T_ARRAY*/
+        ArrayValue *arrayVal;
     } value;
 } ValueItemNode;
 
@@ -547,7 +562,7 @@ typedef struct MetaColumn {
     bool is_unique;                         /* Unique column. */
     bool sys_reserved;                      /* System reserved column, only visible for system. */
     uint32_t array_dim;                     /* Array dimension. Default zero if not array. */
-    uint32_t array_num;                     /* Array num. (array_num = array_dim * n) */
+    uint32_t array_cap;                     /* Array capacity. (array_cap = array_dim * n) */
 } MetaColumn;
 
 /* MetaTable */
@@ -603,6 +618,7 @@ typedef struct KeyValue {
     char *key;
     void *value;
     DataType data_type;
+    bool is_array;
     char *table_name;
 } KeyValue;
 

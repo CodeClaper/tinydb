@@ -156,8 +156,11 @@ Table *open_table(char *table_name) {
     /* Combine table. */
     Table *table = instance(Table);
     Pager *pager = open_pager(file_path);
-    if (pager == NULL) 
+    if (pager == NULL) {
+        free_table(table);
+        db_free(file_path);
         return NULL;
+    }
     table->pager = pager;
 
     /* Define root page is first page. */
@@ -191,8 +194,10 @@ bool drop_table(char *table_name) {
         return false;
     }
     /* Check if allowed to drop the table. */
-    if (!check_drop_table(table_name))
+    if (!check_drop_table(table_name)) {
+        db_free(file_path);
         return false;
+    }
 
     /* Disk remove. */
     if (remove(file_path) == 0) {

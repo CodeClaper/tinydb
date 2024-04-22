@@ -35,6 +35,10 @@
 #include "compare.h"
 #include "log.h"
 #include "index.h"
+#include "utils.h"
+
+/* Assign value to row destination.  */
+static void assign_row_value(void *destination, void *value, MetaColumn *meta_column);
 
 /* If obsolute node. */
 bool is_obsolute_node(void *node) {
@@ -1219,7 +1223,7 @@ MetaColumn *deserialize_meta_column(void *destination) {
     meta_column->is_unique = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE);
     meta_column->not_null = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE);
     meta_column->array_dim = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE);
-    meta_column->array_num = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE);
+    meta_column->array_cap = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE);
     return meta_column;
 }
 
@@ -1236,20 +1240,64 @@ void *serialize_meta_column(MetaColumn *meta_column) {
     *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE) = meta_column->is_unique;  
     *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE) = meta_column->not_null;  
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE) = meta_column->array_dim;  
-    *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE) = meta_column->array_num;  
+    *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE) = meta_column->array_cap;  
     return destination;
 }
 
-/* Get row value. */
-static void *get_row_value(Row *row, MetaColumn *meta_column) {
+/* Assign array number. */
+void assign_array_number(void *destination, uint32_t array_num) {
+    memcpy(destination, &array_num, sizeof(uint32_t));
+}
+
+/* Get array number. */
+uint32_t get_array_number(void *destination) {
+    return *(uint32_t *)destination;
+}
+
+
+/* Get row value. 
+ * Return NULL if not found.
+ * */
+static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
     char *column_name = meta_column->column_name;
     uint32_t i;
-    for(i = 0; i < row->column_len; i++) {
-        if (strcmp(column_name, row->data[i]->key) == 0)
+    for (i = 0; i < row->column_len; i++) {
+        if (streq(column_name, row->data[i]->key))
            return row->data[i]->value;
     }
-    db_log(PANIC, "Inner error, unknown column '%s'.", column_name);
     return NULL;
+}
+
+/* Serialize array value. 
+ * Note: for array value cell, we will reserve 4 (sizeof(uint32_t)) bytes length for store array number.
+ * */
+static void assign_row_array_value(void *destination, ValueItemSetNode *value_item_set, MetaColumn *meta_column) {
+    /* User insert arrary values number integer multiple of array dim. */
+    Assert(value_item_set->num % meta_column->array_dim == 0);
+
+    /* Assign array number. */
+    assign_array_number(destination, value_item_set->num);
+
+    size_t array_num_size = sizeof(uint32_t);
+    /* span: every value in array data lenght. */
+    uint32_t span = (meta_column->column_length - array_num_size) / meta_column->array_cap;
+
+    uint32_t i;
+    for (i = 0; i < value_item_set->num; i++) {
+        ValueItemNode *value_item = value_item_set->value_item_node[i];
+        void *value = get_value_from_value_item_node(value_item, meta_column);
+        memcpy((destination + array_num_size + span * i), value, span);        
+    }
+}
+
+/* Assign value to row destination.  */
+static void assign_row_value(void *destination, void *value, MetaColumn *meta_column) {
+    /* If not array value, assign value to destination, 
+     * if array value, assign values one by one. */
+    if (meta_column->array_dim == 0) 
+        memcpy(destination, value, meta_column->column_length);
+    else 
+        assign_row_array_value(destination, ((ArrayValue *) value)->value, meta_column);
 }
 
 /* Serialize row data */
@@ -1258,10 +1306,12 @@ void *serialize_row_data(Row *row, Table *table) {
     void *destination = db_malloc(row_length, "pointer");
     MetaTable *meta_table = table->meta_table;
     uint32_t i, offset = 0;
-    for(i = 0; i < meta_table->all_column_size; i++) {
+    for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
-        void *value = get_row_value(row, meta_column);
-        memcpy(destination + offset, value, meta_column->column_length);
+        void *value = get_value_from_row(row, meta_column);
+        assert_not_null(value, "Inner error, unknown column '%s'.", meta_column->column_name);
+        /* Assign row value to destination. */
+        assign_row_value(destination + offset, value, meta_column);
         offset += meta_column->column_length;
     }
     return destination;

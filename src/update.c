@@ -38,43 +38,43 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
             switch(value_item->data_type) {
                 case T_BOOL: {
                     key_value->value = instance(bool);
-                    memcpy(key_value->value, &value_item->value.b_value, sizeof(bool));
+                    memcpy(key_value->value, &value_item->value.boolVal, sizeof(bool));
                     break;
                 }
                 case T_INT: {
                     key_value->value = instance(int32_t);
-                    memcpy(key_value->value, &value_item->value.i_value, sizeof(int32_t));
+                    memcpy(key_value->value, &value_item->value.intVal, sizeof(int32_t));
                     break;
                 }
                 case T_LONG: {
                     key_value->value = instance(int64_t);
-                    memcpy(key_value->value, &value_item->value.i_value, sizeof(int64_t));
+                    memcpy(key_value->value, &value_item->value.intVal, sizeof(int64_t));
                     break;
                 }
                 case T_FLOAT: {
                     key_value->value = instance(float);
-                    memcpy(key_value->value, &value_item->value.f_value, sizeof(float));
+                    memcpy(key_value->value, &value_item->value.floatVal, sizeof(float));
                     break;
                 }
                 case T_DOUBLE: {
                     key_value->value = instance(double);
-                    memcpy(key_value->value, &value_item->value.d_value, sizeof(double));
+                    memcpy(key_value->value, &value_item->value.doubleVal, sizeof(double));
                     break;
                 }
                 case T_TIMESTAMP: 
                 case T_DATE: {
                     key_value->value = instance(time_t);
-                    memcpy(key_value->value, &value_item->value.t_value, sizeof(time_t));
+                    memcpy(key_value->value, &value_item->value.timeVal, sizeof(time_t));
                     break;
                 }
                 case T_CHAR:
                 case T_STRING: 
                 case T_VARCHAR: {
-                    key_value->value = db_strdup(value_item->value.s_value);
+                    key_value->value = db_strdup(value_item->value.strVal);
                     break;
                 }
                 case T_REFERENCE: {
-                    ReferValue *refer_value = value_item->value.r_value;
+                    ReferValue *refer_value = value_item->value.refVal;
                     Table *table = open_table(row->table_name);
                     MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
                     switch (refer_value->type) {

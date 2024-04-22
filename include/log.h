@@ -1,5 +1,6 @@
 #include "data.h"
 
+#define panic(...) (db_log(PANIC, __VA_ARGS__))
 
 /* Initialise Log */
 void init_log();

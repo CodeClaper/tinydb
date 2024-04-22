@@ -69,6 +69,34 @@ static void db_send_subrow_json(Row *subrow) {
     }
 }
 
+/* Send out keyvalue. */
+static void db_send_key_value_json(KeyValue *key_value) {
+    switch (key_value->data_type) {
+        /* Specially deal with T_REFERENCE data. */
+        case T_REFERENCE: {
+            db_send("\"%s\": ", key_value->key);
+            Refer *refer = (Refer *)key_value->value;
+            assert_not_null(refer, "Try to get Reference type value fail.\n");
+            Row *subrow = define_row(refer);
+            db_send_subrow_json(subrow);
+            free_row(subrow);
+            break;
+        }
+        case T_ROW: {
+            db_send("\"%s\": ", key_value->key);
+            Row *subrow = key_value->value;
+            db_send_subrow_json(subrow);
+            break;
+        }
+        default: {
+            char *key_value_json = json_key_value(key_value);
+            db_send(key_value_json);
+            db_free(key_value_json);
+            break;
+        }
+    }
+}
+
 /* Send out row. */
 static void db_send_row_json(Row *row) {
     /* Handler duplacate key. */
@@ -77,31 +105,7 @@ static void db_send_row_json(Row *row) {
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
-        switch (key_value->data_type) {
-            /* Specially deal with T_REFERENCE data. */
-            case T_REFERENCE: {
-                db_send("\"%s\": ", key_value->key);
-                Refer *refer = (Refer *)key_value->value;
-                assert_not_null(refer, "Try to get Reference type value fail.\n");
-                Row *subrow = define_row(refer);
-                db_send_subrow_json(subrow);
-                free_row(subrow);
-                break;
-            }
-            case T_ROW: {
-                db_send("\"%s\": ", key_value->key);
-                Row *subrow = key_value->value;
-                db_send_subrow_json(subrow);
-                break;
-            }
-            default: {
-                char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
-                db_send(key_value_pair);
-                db_free(key_value_pair);
-                break;
-            }
-        }
-
+        db_send_key_value_json(key_value);
         /* split with ',' */
         if (i < row->column_len - 1) 
             db_send(", ");
@@ -115,9 +119,9 @@ static void db_send_map(Map *map) {
     int i = 0;
     for(i =0; i <map->size; i++) {
         KeyValue *key_value = map->body[i];
-        char *key_value_pair = get_key_value_pair_str(key_value->key, key_value->value, key_value->data_type);
-        db_send(key_value_pair);
-        db_free(key_value_pair);
+        char *key_value_json = json_key_value(key_value);
+        db_send(key_value_json);
+        db_free(key_value_json);
         /* split with ',' */
         if (i < map->size - 1) 
             db_send(", ");
@@ -127,12 +131,14 @@ static void db_send_map(Map *map) {
 
 /* Send out db select execution result. */
 static void db_send_select_result(DBResult *result) {
-    db_send("{ \"success\": %s, \"message\": \"%s\"", result->success ? "true" : "false", result->success ? result->message : get_log_msg());
+    db_send("{ \"success\": %s, \"message\": \"%s\"", 
+            result->success ? "true" : "false", 
+            result->success ? result->message : get_log_msg());
     if (result->success) {
         db_send(", \"data\": ");
         SelectResult *select_result = result->data;
         db_send("[");
-        int i;
+        uint32_t i;
         for(i = 0; i < select_result->row_size; i++) {
             /* Send out row. */
             Row *row = select_result->rows[i];
@@ -149,19 +155,25 @@ static void db_send_select_result(DBResult *result) {
 /* Send out db none data result. */
 static void db_send_nondata_rows_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf }\n", 
-             result->success ? "true" : "false", result->success ? result->message : get_log_msg(), result->rows, result->duration);
+            result->success ? "true" : "false", 
+            result->success ? result->message : get_log_msg(), result->rows, 
+            result->duration);
 }
 
 /* Send out db none data result. */
 static void db_send_nondata_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"duration\": %lf }", 
-            result->success ? "true" : "false", result->success? result->message : get_log_msg(), result->duration);
+            result->success ? "true" : "false", 
+            result->success? result->message : get_log_msg(), 
+            result->duration);
 }
 
 /* Send out db show tables result. */
 static void db_send_map_list(DBResult *result) {
     MapList *map_list = (MapList *)result->data;
-    db_send("{ \"success\": %s, \"message\": \"%s\" ", result->success ? "true" : "false", result->success ? result->message : get_log_msg());
+    db_send("{ \"success\": %s, \"message\": \"%s\" ", 
+            result->success ? "true" : "false", 
+            result->success ? result->message : get_log_msg());
     if (result->success) {
         db_send(", \"data\": ");
         db_send("[");

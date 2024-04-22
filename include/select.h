@@ -18,8 +18,6 @@ Row *define_row(Refer *refer);
 /* Query with condition. */
 void query_with_condition(ConditionNode *condition, SelectResult *select_result, ROW_HANDLER row_handler, void *arg);
 
-/* Get value from value item node. */
-void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column);
 
 /* Execute select statement. */
 void exec_select_statement(SelectNode *select_node, DBResult *result);

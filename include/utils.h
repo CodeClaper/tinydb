@@ -44,5 +44,24 @@ bool streq_or_null(char *str1, char *str2);
  * */
 bool strempty(char *str);
 
+
+/* Convert int32 to string. */
+char *itos(int32_t val);
+
+/* Convert long to string. */
+char *ltos(int64_t val);
+
+/* Covnert bool to string. */
+char *btos(bool val);
+
+/* Convert float to string. */
+char *ftos(float val);
+
+/* Convert float to string. */
+char *dtos(double val);
+
+/* Convert time to string. */
+char *ttos(time_t val, char *frmt);
+
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);

@@ -33,27 +33,31 @@
 #include "timer.h"
 #include "xlog.h"
 #include "log.h"
+#include "utils.h"
 #include "json.h"
 
 /* Make a fake SelectItemsNode. */
 static SelectItemsNode *fake_select_all_items_node();
 
 /* Get the index of column in the insert node. */
-static int get_column_index(InsertNode *insert_node, char *column_name) {
+static int get_column_index(ColumnSetNode *column_set, char *column_name) {
     int i;
-    for (i = 0; i <insert_node->columns_set_node->size; i++) {
-        ColumnNode *column_node = insert_node->columns_set_node->columns[i];
-        if (strcmp(column_node->column_name, column_name) == 0)
+    for (i = 0; i < column_set->size; i++) {
+        ColumnNode *column_node = column_set->columns[i];
+        if (streq(column_node->column_name, column_name))
             return i;
     }
     return -1;
 }
 
 /* Get value in insert node to assign column at index. */
-static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColumn *meta_column) {
+static void *get_insert_value(ValueItemSetNode *value_item_set, uint32_t index, MetaColumn *meta_column) {
 
     /* Get value item node at index. */
-    ValueItemNode* value_item_node = insert_node->values_or_query_spec->values->value_item_node[index];
+    ValueItemNode* value_item_node = value_item_set->value_item_node[index];
+
+    if (value_item_node->data_type == T_ARRAY)
+        return copy_array_value(value_item_node->value.arrayVal);
 
     /* Different data type column, has diffrenet way to get value.
      * Data type CHAR, STRING, DATE, TIMESTAMP both use '%s' format to pass value.
@@ -62,21 +66,21 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_CHAR:
         case T_STRING:
         case T_VARCHAR:
-            return copy_value(value_item_node->value.s_value, meta_column->column_type);
+            return copy_value(value_item_node->value.strVal, meta_column->column_type);
         case T_INT:
         case T_LONG:
-            return copy_value(&value_item_node->value.i_value, meta_column->column_type);
+            return copy_value(&value_item_node->value.intVal, meta_column->column_type);
         case T_BOOL:
-            return copy_value(&value_item_node->value.b_value, meta_column->column_type);
+            return copy_value(&value_item_node->value.boolVal, meta_column->column_type);
         case T_DOUBLE: {
             switch(value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->value.d_value = (double)value_item_node->value.i_value;
+                    value_item_node->value.doubleVal = (double)value_item_node->value.intVal;
                 case T_FLOAT:
-                    value_item_node->value.d_value = (double)value_item_node->value.f_value;
+                    value_item_node->value.doubleVal = (double)value_item_node->value.floatVal;
                 case T_DOUBLE:
                     value_item_node->data_type = T_DOUBLE;
-                    return copy_value(&value_item_node->value.d_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.doubleVal, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -85,10 +89,10 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
         case T_FLOAT: {
             switch(value_item_node->data_type) {
                 case T_INT:
-                    value_item_node->value.f_value = (float) value_item_node->value.i_value;
+                    value_item_node->value.floatVal = (float) value_item_node->value.intVal;
                 case T_FLOAT:
                     value_item_node->data_type = T_FLOAT;
-                    return copy_value(&value_item_node->value.f_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.floatVal, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -98,16 +102,16 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             switch(value_item_node->data_type) {
                 case T_STRING: {
                     struct tm *tmp_time = db_malloc(sizeof(struct tm), "tm");
-                    strptime(value_item_node->value.s_value, "%Y-%m-%d", tmp_time);
+                    strptime(value_item_node->value.strVal, "%Y-%m-%d", tmp_time);
                     tmp_time->tm_sec = 0;
                     tmp_time->tm_min = 0;
                     tmp_time->tm_hour = 0;
                     value_item_node->data_type = T_DATE;
-                    value_item_node->value.t_value = mktime(tmp_time);
+                    value_item_node->value.timeVal = mktime(tmp_time);
                     db_free(tmp_time);
                 }
                 case T_DATE:
-                    return copy_value(&value_item_node->value.t_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.timeVal, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
@@ -117,31 +121,34 @@ static void *get_column_value(InsertNode *insert_node, uint32_t index, MetaColum
             switch(value_item_node->data_type) {
                 case T_STRING: {
                     struct tm *tmp_time = db_malloc(sizeof(struct tm), "tm");
-                    strptime(value_item_node->value.s_value, "%Y-%m-%d %H:%M:%S", tmp_time);
+                    strptime(value_item_node->value.strVal, "%Y-%m-%d %H:%M:%S", tmp_time);
                     value_item_node->data_type = T_TIMESTAMP;
-                    value_item_node->value.t_value = mktime(tmp_time);
+                    value_item_node->value.timeVal = mktime(tmp_time);
                     db_free(tmp_time);
                 }
                 case T_TIMESTAMP:
-                    return copy_value(&value_item_node->value.t_value, meta_column->column_type);
+                    return copy_value(&value_item_node->value.timeVal, meta_column->column_type);
                 default:
                     db_log(PANIC, "Data type error.");
             }
             break;
         }
         case T_REFERENCE: {
-            switch (value_item_node->value.r_value->type) {
+            switch (value_item_node->value.refVal->type) {
                 case DIRECTLY: {
-                    InsertNode *insert_node = fake_insert_node(meta_column->table_name, value_item_node->value.r_value->nest_value_item_set);
+                    InsertNode *insert_node = fake_insert_node(meta_column->table_name, value_item_node->value.refVal->nest_value_item_set);
                     Refer *refer = insert_for_values(insert_node);
                     free_insert_node(insert_node);
                     return refer;
                 }
                 case INDIRECTLY: {
-                    return fetch_refer(meta_column, value_item_node->value.r_value->condition);
+                    return fetch_refer(meta_column, value_item_node->value.refVal->condition);
                 }
             }
             break;
+        }
+        default: {
+            panic("Unknown data type.");
         }
     }
 }
@@ -189,6 +196,11 @@ static void make_up_sys_id(Row *row) {
 /* Generate insert row. */
 static Row *generate_insert_row(InsertNode *insert_node) {
 
+    /* Check only for VQ_VALUES. */
+    Assert(insert_node->values_or_query_spec->type == VQ_VALUES);
+    ValueItemSetNode *value_set = insert_node->values_or_query_spec->values;
+
+    /* Instance row. */
     Row *row = instance(Row);
 
     /* Table and MetaTable. */
@@ -220,10 +232,10 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         key_value->data_type = meta_column->column_type;
 
         if (insert_node->all_column)
-            key_value->value = get_column_value(insert_node, i, meta_column);
+            key_value->value = get_insert_value(value_set, i, meta_column);
         else {
-            int index = get_column_index(insert_node, key_value->key);          
-            key_value->value = get_column_value(insert_node, index, meta_column);
+            int index = get_column_index(insert_node->columns_set_node, key_value->key);          
+            key_value->value = get_insert_value(value_set, index, meta_column);
         }
 
         /* Value of KeyValue may be null when it is Refer. */
@@ -309,11 +321,13 @@ Refer *insert_for_values(InsertNode *insert_node) {
         db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
         return NULL;
     }
-
+    
+    /* Generate insert row. */
     Row *row = generate_insert_row(insert_node);
     if (!row) 
         return NULL;
-
+    
+    /* Do insert. */
     Refer *refer = insert_one_row(table, row);
 
     free_row(row);

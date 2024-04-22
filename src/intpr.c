@@ -76,6 +76,12 @@ void add_column_to_set(ColumnSetNode *column_set_node, ColumnNode *column_node) 
     column_set_node->size++;
 }
 
+/* Make a ArrayValue. */
+ArrayValue *make_array_value() {
+    ArrayValue *array_value = instance(ArrayValue);
+    return array_value;
+}
+
 /* Make a ReferValue. */
 ReferValue *make_refer_value() {
     ReferValue *refer_value = instance(ReferValue);

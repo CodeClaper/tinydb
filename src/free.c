@@ -7,6 +7,7 @@
 #include "index.h"
 #include "log.h"
 #include "xlog.h"
+#include "list.h"
 
 /* Free value */
 void free_value(void *value, DataType data_type) {
@@ -32,7 +33,10 @@ void free_key_value(KeyValue *key_value) {
             db_free(key_value->key);
         if (key_value->table_name)
             db_free(key_value->table_name);
-        free_value(key_value->value, key_value->data_type);
+        if (key_value->is_array)
+            destroy_list(key_value->value);
+        else
+            free_value(key_value->value, key_value->data_type);
         db_free(key_value);
     } 
 }
@@ -234,12 +238,16 @@ void free_value_item_node(ValueItemNode *value_item_node) {
                 break;
             case T_STRING:
             case T_VARCHAR: {
-                if (value_item_node->value.s_value)
-                    db_free(value_item_node->value.s_value);
+                if (value_item_node->value.strVal)
+                    db_free(value_item_node->value.strVal);
                 break;
             }
             case T_REFERENCE: {
-                free_refer_value(value_item_node->value.r_value);
+                free_refer_value(value_item_node->value.refVal);
+                break;
+            }
+            case T_ARRAY: {
+                free_array_value(value_item_node->value.arrayVal);
                 break;
             }
             default: {
@@ -474,6 +482,14 @@ void free_refer_value(ReferValue *refer_value) {
                 free_condition_node(refer_value->condition);
                 break;
         }
+    }
+}
+
+/* Free ArrayValue. */
+void free_array_value(ArrayValue *array_value) {
+    if (array_value) {
+        free_value_item_set_node(array_value->value);
+        db_free(array_value);
     }
 }
 
