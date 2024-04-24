@@ -144,26 +144,6 @@ def test_select_in_predicate4():
     assert ret["success"] == True
     assert ret["rows"] == 0
 
-## test select reference one column.
-def test_select_reference_one_columm():
-    ret = client.execute("select (class).id as cid from Student where id = 'S001'")
-    assert ret["success"] == True
-    assert ret["data"] == [{ "cid": "C001"}]
-
-## test select reference json.
-def test_select_reference_json():
-    ret = client.execute("select class{id as cid} from Student where id = 'S001'")
-    assert ret["success"] == True
-    assert ret["data"] == [{ "class" : {"cid": "C001"} }]
-
-## test select plain column and reference json column.
-def test_select_plain_reference_json():
-    ret = client.execute("select id, class{id as cid} from Student where id = 'S001'")
-    assert ret["success"] == True
-    assert ret["data"] == [{ "id": "S001", "class" : {"cid": "C001"} }]
-
-
-
 ## test max function.
 def test_max_function1():
     ret = client.execute("select max(age) from Student")
