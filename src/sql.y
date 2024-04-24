@@ -73,6 +73,7 @@ int yylex();
 %left '+' '-'
 %left '*' '/'  
 %left '(' ')'
+%left '[' ']'
 
 %token NL
 %token <keyword> BEGINN COMMIT ROLLBACK
@@ -813,11 +814,11 @@ column:
             column_node->has_sub_column = false;
             $$ = column_node;
         }
-    | IDENTIFIER '[' column ']'
+    | '(' IDENTIFIER ')' '.'  column 
         {
             ColumnNode *column_node = make_column_node();
-            column_node->column_name = $1;
-            column_node->sub_column = $3;
+            column_node->column_name = $2;
+            column_node->sub_column = $5;
             column_node->has_sub_column = true;
             $$ = column_node;
         }

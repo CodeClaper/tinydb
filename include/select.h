@@ -12,8 +12,15 @@ void count_row(Row *row, SelectResult *select_result, Table *table, void *arg);
 /* Select row data. */
 void select_row(Row *row, SelectResult *select_result, Table *table, void *arg);
 
-/* Define row by refer. */
+/* Define row by refer. 
+ * Return row not matter if it is deleted.
+ * */
 Row *define_row(Refer *refer);
+
+/* Define row by refer. 
+ * Return undelted row, return NULL if deleted.
+ * */
+Row *define_visible_row(Refer *refer);
 
 /* Query with condition. */
 void query_with_condition(ConditionNode *condition, SelectResult *select_result, ROW_HANDLER row_handler, void *arg);

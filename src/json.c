@@ -34,9 +34,6 @@ static void handle_dulicate_key(Row *row);
 /* Send out row. */
 static void json_row(Row *row);
 
-/* Send out subrow. */
-static void json_subrow(Row *subrow);
-
 
 /* Generate new db result. */
 DBResult *new_db_result() {
@@ -185,8 +182,8 @@ static void json_array_key_value(KeyValue *key_value) {
             uint32_t i;
             for (i = 0; i < array_value->size; i++) {
                 Refer *refer = (Refer *)array_value->set[i];
-                Row *subrow = define_row(refer);
-                json_subrow(subrow);
+                Row *subrow = define_visible_row(refer);
+                json_row(subrow);
                 if (i < array_value->size - 1)
                     db_send(",");
                 free_row(subrow);
@@ -254,15 +251,15 @@ static void json_single_key_value(KeyValue *key_value) {
             db_send("\"%s\": ", key);
             Refer *refer = (Refer *)key_value->value;
             assert_not_null(refer, "Try to get Reference type value fail.\n");
-            Row *subrow = define_row(refer);
-            json_subrow(subrow);
+            Row *subrow = define_visible_row(refer);
+            json_row(subrow);
             free_row(subrow);
             break;
         }
         case T_ROW: {
             db_send("\"%s\": ", key);
-            Row *subrow = key_value->value;
-            json_subrow(subrow);
+            Row *subrow = (Row *)key_value->value;
+            json_row(subrow);
             break;
         }
         default:
@@ -278,31 +275,24 @@ static void json_key_value(KeyValue *key_value) {
         json_single_key_value(key_value);
 }
 
-/* Send out subrow. */
-static void json_subrow(Row *subrow) {
-    if (subrow == NULL || row_is_deleted(subrow)) 
-        db_send("null");
-    else {
-        Row *slimrow = copy_row_without_reserved(subrow);
-        json_row(slimrow);
-        free_row(slimrow);
-    }
-}
-
 /* Send out row. */
 static void json_row(Row *row) {
-    /* Handler duplacate key. */
-    handle_dulicate_key(row);
-    db_send("{ ");
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
-        json_key_value(key_value);
-        /* split with ',' */
-        if (i < row->column_len - 1) 
-            db_send(", ");
+    if (!row) 
+        db_send("null");
+    else {
+        /* Handler duplacate key. */
+        handle_dulicate_key(row);
+        db_send("{ ");
+        uint32_t i;
+        for (i = 0; i < row->column_len; i++) {
+            KeyValue *key_value = row->data[i];
+            json_key_value(key_value);
+            /* split with ',' */
+            if (i < row->column_len - 1) 
+                db_send(", ");
+        }
+        db_send(" }");
     }
-    db_send(" }");
 }
 
 /* Send out map result. */

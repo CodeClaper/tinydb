@@ -312,9 +312,10 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
 
                 /* Get subrow, and recursion. */
                 Refer *refer = key_value->value;
-                Row *sub_row = define_row(refer);
-                return check_row_predicate(select_result, sub_row, column->sub_column, comparison); 
-
+                Row *sub_row = define_visible_row(refer);
+                bool ret = check_row_predicate(select_result, sub_row, column->sub_column, comparison); 
+                free_row(sub_row);
+                return ret;
             } else if (column->has_sub_column && column->scalar_exp_set) {
                 db_log(ERROR, "Not support support sub column for pridicate.");
                 return false;
@@ -545,7 +546,9 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
     return row;
 }
 
-/* Define row by refer. */
+/* Define row by refer. 
+ * Return row not matter if it is deleted.
+ * */
 Row *define_row(Refer *refer) {
 
     Assert(refer);
@@ -569,6 +572,20 @@ Row *define_row(Refer *refer) {
     void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
 
     return generate_row(destinct, table->meta_table);
+}
+
+/* Define row by refer. 
+ * Return undelted, filtered row, return NULL if deleted.
+ * */
+Row *define_visible_row(Refer *refer) {
+    Row *row = define_row(refer);
+    if (row_is_deleted(row)) 
+        return NULL;
+    else {
+        Row *filter_row = copy_row_without_reserved(row);
+        free_row(row);
+        return filter_row;
+    }
 }
 
 /* Merge tow row into new one. */
@@ -1106,6 +1123,9 @@ static KeyValue *new_key_value(char *key, void *value, DataType data_type) {
 /* Query column value. */
 static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row) {
 
+    if (!row)
+        return NULL;
+
     /* Get table name via alias name. */
     char *table_name = search_table_via_alias(select_result, column->range_variable);
     if (column->range_variable && table_name == NULL) {
@@ -1116,26 +1136,28 @@ static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNod
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
-
         if (streq(column->column_name, key_value->key) 
             && (table_name == NULL || streq(table_name, key_value->table_name))) {
-            /* Reference type and query sub column. */
-            if (key_value->data_type == T_REFERENCE) {
-                Refer *refer = (Refer *)key_value->value;
-                Row *sub_row = define_row(refer);
-                if (column->has_sub_column && column->sub_column)
-                    return query_plain_column_value(select_result, column->sub_column, sub_row);
-                else if (column->has_sub_column && column->scalar_exp_set) {
-                    Row *filter_sub_row = query_plain_row_selection(select_result, column->scalar_exp_set, sub_row);
-                    return new_key_value(db_strdup(column->column_name), filter_sub_row, T_ROW);
-                } else if (!column->has_sub_column) {
-                    return new_key_value(db_strdup(column->column_name), sub_row, T_ROW);
+                /* Reference type and query sub column. */
+                if (key_value->data_type == T_REFERENCE) {
+                    Refer *refer = (Refer *)key_value->value;
+                    Row *sub_row = define_visible_row(refer);
+                    if (column->has_sub_column && column->sub_column) {
+                        KeyValue *sub_key_value = query_plain_column_value(select_result, column->sub_column, sub_row);
+                        free_row(sub_row);
+                        return sub_key_value;
+                    } else if (column->has_sub_column && column->scalar_exp_set) {
+                        Row *filtered_subrow = query_plain_row_selection(select_result, column->scalar_exp_set, sub_row);
+                        free_row(sub_row);
+                        return new_key_value(db_strdup(column->column_name), filtered_subrow, T_ROW);
+                    } else if (!column->has_sub_column) {
+                        return new_key_value(db_strdup(column->column_name), sub_row, T_ROW);
+                    }
                 }
-            }
-            else if (column->has_sub_column) 
-                db_log(ERROR, "Column '%s' is not Reference type, no sub column found.", column->column_name);
-            else
-                return copy_key_value(key_value);
+                else if (column->has_sub_column) 
+                    db_log(ERROR, "Column '%s' is not Reference type, no sub column found.", column->column_name);
+                else
+                    return copy_key_value(key_value);
         }
     }
     db_log(ERROR, "Not found column '%s'. ", column->column_name);
@@ -1933,6 +1955,9 @@ static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *sca
 /* Query a Row of Selection,
  * Actually, the Selection is all-column. */
 static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetNode *scalar_exp_set, Row *row) {
+
+    if (!row) 
+        return NULL;
     
     Table *table = open_table(row->table_name);
     MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
@@ -1948,6 +1973,7 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
         KeyValue *key_value = query_row_value(select_result, scalar_exp, row);
         if (scalar_exp->alias) {
+            /* Rename as alias. */
             free_value(key_value->key, T_STRING);
             key_value->key = db_strdup(scalar_exp->alias);
         }
