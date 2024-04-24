@@ -205,7 +205,6 @@ union YYSTYPE
    bool                         boolVal;
    char                         *keyword;
    ReferValue                   *referVal;
-   ArrayValue                   *arrayVal;
    CompareType                  compare_type;
    DataTypeNode                 *data_type_node;
    ColumnDefName                *column_def_name;
@@ -253,7 +252,7 @@ union YYSTYPE
    Statement                    *statement;
    Statements                   *statements;
 
-#line 257 "y.tab.h"
+#line 256 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

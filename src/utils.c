@@ -109,7 +109,8 @@ char *replace(char *str, char *old_str, char *new_str) {
 
 /* Check if empty string. */
 bool is_empty(char *s) {
-    if (s == NULL) return true;
+    if (s == NULL) 
+        return true;
     size_t size = strlen(s);
     if (size == 0)
         return true;

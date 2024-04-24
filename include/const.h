@@ -44,6 +44,7 @@
 //LEAF NODE BODY LAYOUT
 // #define LEAF_NODE_CELL_KEY_SIZE = sizeof(uint32_t);
 #define LEAF_NODE_CELL_OFFSET  LEAF_NODE_HEAD_SIZE
+#define LEAF_NODE_ARRAY_NUM_SIZE sizeof(uint32_t)
 
 //INTERNAL NODE HEAD LAYOUT
 #define KEYS_NUM_SIZE  sizeof(uint32_t)

@@ -9,6 +9,7 @@
 #include "copy.h"
 #include "free.h"
 #include "trans.h"
+#include "utils.h"
 #include "asserts.h"
 #include "spinlock.h"
 
@@ -42,10 +43,11 @@ Table *find_table_buffer(char *table_name) {
         int32_t i;
         for (i = 0; i < buffer->size; i++) {
             TableBufferEntry *entry = buffer->buffer[i];
-            if (strcmp(table_name, entry->table->meta_table->table_name) == 0 
-                && entry->xid == trans->xid && entry->tid == trans->tid) {
-                spin_lock_release(&lock);
-                return entry->table;
+            if (streq(table_name, entry->table->meta_table->table_name) 
+                && entry->xid == trans->xid 
+                && entry->tid == trans->tid) {
+                    spin_lock_release(&lock);
+                    return entry->table;
             }  
         }
     }
@@ -58,6 +60,7 @@ Table *find_table_buffer(char *table_name) {
     } 
 
     spin_lock_release(&lock);
+
     return cache_table;
 }
 
@@ -68,7 +71,7 @@ static bool save_or_update_table_buffer(Table *table) {
 
     /* Try to get current transaction. */
     TransactionHandle *trans = find_transaction();
-    if (trans == NULL) 
+    if (!trans) 
         return false;
 
     /* Generate TableBufferEntry. */

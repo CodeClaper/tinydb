@@ -1246,7 +1246,7 @@ void *serialize_meta_column(MetaColumn *meta_column) {
 
 /* Assign array number. */
 void assign_array_number(void *destination, uint32_t array_num) {
-    memcpy(destination, &array_num, sizeof(uint32_t));
+    memcpy(destination, &array_num, LEAF_NODE_ARRAY_NUM_SIZE);
 }
 
 /* Get array number. */
@@ -1254,6 +1254,10 @@ uint32_t get_array_number(void *destination) {
     return *(uint32_t *)destination;
 }
 
+/* Get array value. */
+void *get_array_value(void *destination, uint32_t i, uint32_t span) {
+    return (destination + LEAF_NODE_ARRAY_NUM_SIZE + span * i);
+}
 
 /* Get row value. 
  * Return NULL if not found.
@@ -1269,24 +1273,22 @@ static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
 }
 
 /* Serialize array value. 
- * Note: for array value cell, we will reserve 4 (sizeof(uint32_t)) bytes length for store array number.
+ * Note: for array value cell, we will reserve LEAF_NODE_ARRAY_NUM_SIZE bytes length for store array number.
  * */
-static void assign_row_array_value(void *destination, ValueItemSetNode *value_item_set, MetaColumn *meta_column) {
+static void assign_row_array_value(void *destination, ArrayValue *array_value, MetaColumn *meta_column) {
     /* User insert arrary values number integer multiple of array dim. */
-    Assert(value_item_set->num % meta_column->array_dim == 0);
+    Assert(array_value->size % meta_column->array_dim == 0);
 
     /* Assign array number. */
-    assign_array_number(destination, value_item_set->num);
+    assign_array_number(destination, array_value->size);
 
-    size_t array_num_size = sizeof(uint32_t);
     /* span: every value in array data lenght. */
-    uint32_t span = (meta_column->column_length - array_num_size) / meta_column->array_cap;
+    uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE) / meta_column->array_cap;
 
     uint32_t i;
-    for (i = 0; i < value_item_set->num; i++) {
-        ValueItemNode *value_item = value_item_set->value_item_node[i];
-        void *value = get_value_from_value_item_node(value_item, meta_column);
-        memcpy((destination + array_num_size + span * i), value, span);        
+    for (i = 0; i < array_value->size; i++) {
+        void *value = array_value->set[i];
+        memcpy((destination + LEAF_NODE_ARRAY_NUM_SIZE + span * i), value, span);        
     }
 }
 
@@ -1297,7 +1299,7 @@ static void assign_row_value(void *destination, void *value, MetaColumn *meta_co
     if (meta_column->array_dim == 0) 
         memcpy(destination, value, meta_column->column_length);
     else 
-        assign_row_array_value(destination, ((ArrayValue *) value)->value, meta_column);
+        assign_row_array_value(destination, value, meta_column);
 }
 
 /* Serialize row data */

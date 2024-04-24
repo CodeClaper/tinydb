@@ -38,6 +38,9 @@ static ConditionNode *get_condition_from_where_clause(WhereClauseNode *where_cla
 /* Get value from ValueItemNode. 
  * Notice, CHAR, DATE, TIMESTAMP use '%s' format to pass value. */
 static void *get_value_from_value_item(ValueItemNode *value_item) {
+    if (value_item->is_array)
+        return value_item->value_set;
+
     switch (value_item->data_type) {
         case T_BOOL:
             return &value_item->value.boolVal;
@@ -59,8 +62,6 @@ static void *get_value_from_value_item(ValueItemNode *value_item) {
             return value_item->value.strVal;
         case T_REFERENCE:
             return value_item->value.refVal;
-        case T_ARRAY:
-            return value_item->value.arrayVal;
         default:
             db_log(ERROR, "Not support data type");
     }
@@ -224,8 +225,6 @@ static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap ali
 
 /* Check if type convert pass. */
 static bool check_data_type(DataType column_type, DataType value_type, char *column_name, char *table_name) {
-    if (value_type == T_ARRAY)
-        return true;
     bool flag = false;
     switch(column_type) {
         case T_BOOL:
@@ -261,13 +260,11 @@ static bool check_data_type(DataType column_type, DataType value_type, char *col
              * to be simple, just make flag true. */
             flag = true;
             break;
-        case T_ARRAY:
-            return true;
     }
     if (!flag)
        db_log(ERROR, "Can`t convert data type [%s] to [%s] for column '%s' in table '%s'", 
-              DATA_TYPE_NAMES[column_type], 
               DATA_TYPE_NAMES[value_type], 
+              DATA_TYPE_NAMES[column_type], 
               column_name, 
               table_name);
     return flag;
@@ -294,12 +291,16 @@ static bool check_value_valid(MetaColumn *meta_column, ValueItemNode *value_item
                 db_log(ERROR, "Try to convert value '%s' to char value type fail.", (char *) value);
             return len == 1;
         }
+        case T_VARCHAR:
         case T_STRING: {
             if (value == NULL)
                 return false;
             size_t size = strlen(value);
             if (size > meta_column->column_length)
-                db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'. ", size, meta_column->column_length - 1, meta_column->column_name);
+                db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'. ", 
+                       size, 
+                       meta_column->column_length - 1, 
+                       meta_column->column_name);
             return size <= meta_column->column_length;
         }
         case T_TIMESTAMP: {   
@@ -718,6 +719,30 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
     return true;
 }
 
+
+/* Check Insert value. */
+static bool check_insert_value(ValueItemNode *value_item_node, MetaColumn *meta_column, char *table_name) {
+
+    if (value_item_node->is_array) {
+        /* For array value, meta column array_dim is more than zero. */
+        Assert(meta_column->array_dim > 0);
+        ValueItemSetNode *value_set = value_item_node->value_set;
+        uint32_t i;
+        for (i = 0; i < value_set->num; i++) {
+            ValueItemNode *sub_value = value_set->value_item_node[i];
+            if (!check_insert_value(sub_value, meta_column, table_name))
+                return false;
+        }
+    } else {
+        /* Check data type. */
+        if (!check_data_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, table_name))  
+            return false;
+        if (!check_value_valid(meta_column, value_item_node))
+            return false;
+    }
+}
+
+
 /* Check InsertNode for VALUES. */
 static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNode *value_item_set_node) {
     /* Check table exist.*/
@@ -732,7 +757,9 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
         
         /* Check column number equals the insert values number. */
         if (meta_table->column_size != value_item_set_node->num) {
-            db_log(ERROR, "Column count doesn`t match value count: %d != %d.", meta_table->column_size, value_item_set_node->num);
+            db_log(ERROR, "Column count doesn`t match value count: %d != %d.", 
+                   meta_table->column_size, 
+                   value_item_set_node->num);
             return false;
         }
 
@@ -740,10 +767,7 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
         for (i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
             ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
-            /* Check data type. */
-            if (!check_data_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name))  
-                return false;
-            if (!check_value_valid(meta_column, value_item_node))
+            if (check_insert_value(value_item_node, meta_column, meta_table->table_name))
                 return false;
         }
     } else {
@@ -759,11 +783,7 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
             ColumnNode *column_node = insert_node->columns_set_node->columns[i];
             ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
-            /* Check data type. */
-            if (!check_data_type(meta_column->column_type, value_item_node->data_type, meta_column->column_name, meta_table->table_name)) 
-                return false;
-            /* Check value valid. */
-            if (!check_value_valid(meta_column, value_item_node)) 
+            if (check_insert_value(value_item_node, meta_column, meta_table->table_name))
                 return false;
         }
     }

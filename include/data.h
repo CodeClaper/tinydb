@@ -26,6 +26,7 @@
 
 #define ARRAY_FLARE_FACTOR 10
 
+#define SYMBOL_LENGTH 11
 #define MAX_BOOL_STR_LENGTH 10
 #define MAX_INT_STR_LENGTH 20
 #define MAX_LONG_STR_LENGTH 30
@@ -44,7 +45,7 @@
 typedef enum { O_EQ, O_NE, O_GT, O_GE, O_LT, O_LE } CompareType;
 
 /* DataType */
-typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_VARCHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE, T_ROW, T_ARRAY } DataType;
+typedef enum DataType {T_UNKNOWN, T_BOOL, T_CHAR, T_VARCHAR, T_INT, T_LONG, T_DOUBLE, T_FLOAT, T_STRING, T_DATE, T_TIMESTAMP, T_REFERENCE, T_ROW } DataType;
 
 /* DataTypeNames */
 static char *DATA_TYPE_NAMES[] = {"unknown", "bool",  "char", "varchar", "int", "long", "double", "float", "string", "date", "timestamp",  "reference", "array" };
@@ -346,11 +347,14 @@ typedef struct ReferValue {
 
 /* ArrayValue. */
 typedef struct ArrayValue {
-    struct ValueItemSetNode *value;
+    uint32_t size;
+    DataType type;
+    void **set;
 } ArrayValue;
 
 /* ValueItemNode */
 typedef struct ValueItemNode {
+    bool is_array;
     DataType data_type;
     union {
         /* T_INT, T_LONG */
@@ -367,9 +371,8 @@ typedef struct ValueItemNode {
         time_t timeVal;
         /* T_REFERENCE */
         ReferValue *refVal;
-        /* T_ARRAY*/
-        ArrayValue *arrayVal;
     } value;
+    struct ValueItemSetNode *value_set;
 } ValueItemNode;
 
 /* ValueItemSetNode */
@@ -618,8 +621,8 @@ typedef struct KeyValue {
     char *key;
     void *value;
     DataType data_type;
-    bool is_array;
     char *table_name;
+    bool is_array;
 } KeyValue;
 
 /* Map */

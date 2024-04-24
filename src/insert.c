@@ -50,14 +50,186 @@ static int get_column_index(ColumnSetNode *column_set, char *column_name) {
     return -1;
 }
 
-/* Get value in insert node to assign column at index. */
-static void *get_insert_value(ValueItemSetNode *value_item_set, uint32_t index, MetaColumn *meta_column) {
+/* Get insert array value.
+ * Return ArrayValue.
+ * */
+static ArrayValue *get_insert_array_value(ValueItemNode *value_item_node, MetaColumn *meta_column) {
 
-    /* Get value item node at index. */
-    ValueItemNode* value_item_node = value_item_set->value_item_node[index];
+    ValueItemSetNode *value_set_node = value_item_node->value_set;
 
-    if (value_item_node->data_type == T_ARRAY)
-        return copy_array_value(value_item_node->value.arrayVal);
+    ArrayValue *array_value = instance(ArrayValue);
+    array_value->size = value_set_node->num;
+    array_value->type = meta_column->column_type;
+    array_value->set = db_malloc(sizeof(void *) * array_value->size, "pointer");
+
+
+    /* Different data type column, has diffrenet way to get value.
+     * Data type CHAR, STRING, DATE, TIMESTAMP both use '%s' format to pass value.
+     * And int value may be also FLOAT or DOUBLE. Column meta info helps to define the real data type. */
+    switch(meta_column->column_type) {
+        case T_CHAR:
+        case T_STRING:
+        case T_VARCHAR: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                void *value = copy_value(current->value.strVal, meta_column->column_type);
+                array_value->set[i] = value;
+            }
+            break;
+        } 
+        case T_INT:
+        case T_LONG: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                void *value = copy_value(&current->value.intVal, meta_column->column_type);
+                array_value->set[i] = value;
+            }
+            break;
+        }
+        case T_BOOL: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                void *value = copy_value(&current->value.boolVal, meta_column->column_type);
+                array_value->set[i] = value;
+            }
+            break;
+        }
+        case T_DOUBLE: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                switch(current->data_type) {
+                    case T_INT: {
+                        void *value = copy_value(&current->value.intVal, meta_column->column_type);
+                        array_value->set[i] = value;
+                        break;
+                    }
+                    case T_FLOAT: {
+                        void *value = copy_value(&current->value.floatVal, meta_column->column_type);
+                        array_value->set[i] = value;
+                        break;
+                    }
+                    case T_DOUBLE: {
+                        void *value = copy_value(&current->value.doubleVal, meta_column->column_type);
+                        array_value->set[i] = value;
+                        break;
+                    }
+                    default:
+                        db_log(PANIC, "Data type error.");
+                }
+            }
+            break;
+        }
+        case T_FLOAT: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                switch(current->data_type) {
+                    case T_INT: {
+                        void *value = copy_value(&current->value.intVal, meta_column->column_type);
+                        array_value->set[i] = value;
+                        break;
+                    }
+                    case T_FLOAT: {
+                        void *value = copy_value(&current->value.floatVal, meta_column->column_type);
+                        array_value->set[i] = value;
+                        break;
+                    }
+                    default:
+                        db_log(PANIC, "Data type error.");
+                }
+            }
+            break;
+        }
+        case T_DATE: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                switch(current->data_type) {
+                    case T_STRING: {
+                        struct tm *tmp_time = db_malloc(sizeof(struct tm), "tm");
+                        strptime(current->value.strVal, "%Y-%m-%d", tmp_time);
+                        tmp_time->tm_sec = 0;
+                        tmp_time->tm_min = 0;
+                        tmp_time->tm_hour = 0;
+                        time_t time = mktime(tmp_time);
+                        void *value = copy_value(&time, meta_column->column_type);
+                        array_value->set[i] = value;
+                        db_free(tmp_time);
+                        break;
+                    }
+                    case T_DATE: {
+                        void *value = copy_value(&current->value.timeVal, meta_column->column_type);
+                        array_value->set[i] = value;
+                        break;
+                    }
+                    default:
+                        db_log(PANIC, "Data type error.");
+                }
+            }
+            break;
+        }
+        case T_TIMESTAMP: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                switch(current->data_type) {
+                    case T_STRING: {
+                        struct tm *tmp_time = db_malloc(sizeof(struct tm), "tm");
+                        strptime(current->value.strVal, "%Y-%m-%d %H:%M:%S", tmp_time);
+                        time_t time = mktime(tmp_time);
+                        void *value = copy_value(&time, meta_column->column_type);
+                        array_value->set[i] = value;
+                        db_free(tmp_time);
+                        break;
+                    }
+                    case T_TIMESTAMP: {
+                        void *value = copy_value(&current->value.timeVal, meta_column->column_type);
+                        array_value->set[i] = value;
+                        break;
+                    }
+                    default:
+                        db_log(PANIC, "Data type error.");
+                }
+            }
+            break;
+        }
+        case T_REFERENCE: {
+            uint32_t i;
+            for (i = 0; i < value_set_node->num; i++) {
+                ValueItemNode *current = value_set_node->value_item_node[i];
+                switch (current->value.refVal->type) {
+                    case DIRECTLY: {
+                        InsertNode *insert_node = fake_insert_node(meta_column->table_name, current->value.refVal->nest_value_item_set);
+                        Refer *refer = insert_for_values(insert_node);
+                        array_value->set[i] = refer;
+                        free_insert_node(insert_node);
+                        break;
+                    }
+                    case INDIRECTLY: {
+                        Refer *refer = fetch_refer(meta_column, current->value.refVal->condition);
+                        array_value->set[i] = refer;
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        default: {
+            panic("Unknown data type.");
+        }
+    }
+
+    return array_value;
+}
+
+/* Get Insert single value. 
+ * Return single value and data type according to data type.
+ * */
+static void *get_insert_single_value(ValueItemNode *value_item_node, MetaColumn *meta_column) {
 
     /* Different data type column, has diffrenet way to get value.
      * Data type CHAR, STRING, DATE, TIMESTAMP both use '%s' format to pass value.
@@ -151,6 +323,18 @@ static void *get_insert_value(ValueItemSetNode *value_item_set, uint32_t index, 
             panic("Unknown data type.");
         }
     }
+
+}
+
+/* Get value in insert node to assign column at index. */
+static void *get_insert_value(ValueItemSetNode *value_item_set, uint32_t index, MetaColumn *meta_column) {
+
+    /* Get value item node at index. */
+    ValueItemNode* value_item_node = value_item_set->value_item_node[index];
+
+    return value_item_node->is_array 
+        ? get_insert_array_value(value_item_node, meta_column)
+        : get_insert_single_value(value_item_node, meta_column);
 }
 
 /* Fake ValuesOrQuerySpecNode for VALUES type. */
@@ -379,6 +563,16 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
     return refer_set;
 }
 
+/* Combine ReferSet with single refer. */
+ReferSet *combine_single_refer_set(Refer *refer) {
+    Assert(refer);
+    ReferSet *refer_set = instance(ReferSet);
+    refer_set->size = 1;
+    refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
+    refer_set->set[0] = refer;
+    return refer_set;
+}
+
 /* Execute insert statement. 
  * Return ReferSet if it excutes successfully,
  * otherwise, return NULL.
@@ -394,12 +588,9 @@ ReferSet *exec_insert_statement(InsertNode *insert_node) {
     switch (values_or_query_spec->type) {
         case VQ_VALUES: {
             Refer *refer = insert_for_values(insert_node);
-            if (!refer) return NULL;
-            ReferSet *refer_set = instance(ReferSet);
-            refer_set->size = 1;
-            refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
-            refer_set->set[0] = refer;
-            return refer_set;
+            return refer 
+                ? combine_single_refer_set(refer)
+                : NULL;
         }
         case VQ_QUERY_SPEC: {
             /* For query spec, there is no refer. 

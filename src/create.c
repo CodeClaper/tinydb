@@ -9,6 +9,7 @@
 #include <string.h>
 #include "create.h"
 #include "data.h"
+#include "const.h"
 #include "common.h"
 #include "table.h"
 #include "mmu.h"
@@ -62,7 +63,7 @@ uint32_t calc_column_len(ColumnDefNode *column_def, uint32_t array_cap) {
     /* If type is array, single data type length multiply by array cap. */
     return array_cap == 0 
         ? column_length 
-        : column_length * array_cap + sizeof(uint32_t);
+        : column_length * array_cap + LEAF_NODE_ARRAY_NUM_SIZE;
 }
 
 /* Column Operation. */

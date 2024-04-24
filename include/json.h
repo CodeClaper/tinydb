@@ -9,8 +9,5 @@ DBResultSet *new_db_result_set();
 /* Add db result to set. */
 void add_db_result(DBResultSet *result_set, DBResult *result);
 
-/* Send out db execution result. */
-void db_send_result(DBResult *result);
-
 /* Send out db execution result set. */
-void db_send_result_set(DBResultSet *result_set);
+void json_result_set(DBResultSet *result_set);

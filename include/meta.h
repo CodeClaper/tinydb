@@ -1,8 +1,5 @@
 #include "data.h"
 
-/*Get key value pair string. */
-char *json_key_value(KeyValue *key_value);
-
 /* Default data length. */
 uint32_t default_data_len(DataType column_type);
 

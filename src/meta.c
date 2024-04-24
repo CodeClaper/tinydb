@@ -24,7 +24,6 @@
 #define DEFAULT_TIMESTAMP_LENGTH    20
 #define DEFAULT_REFERENCE_LENGTH    48
 
-#define SYMBOL_LENGTH 11
 
 /* Column type length */
 uint32_t default_data_len(DataType column_type) {
@@ -58,6 +57,10 @@ uint32_t default_data_len(DataType column_type) {
 
 /* Get value from value item node. */
 void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column) {
+    /* For array, return value set. */
+    if (value_item_node->is_array)
+        return value_item_node->value_set;
+
     /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
      * So we must use meta column data type to define which data type of the value. */
     switch (meta_column->column_type) {
@@ -154,251 +157,12 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
             }
             break;
         }
-        case T_ARRAY:
-            return value_item_node->value.arrayVal;
         default:
             db_log(PANIC, "Not implement yet.");
     }
     return NULL;
 }
 
-/* Generate array-value key value json. */
-static char *array_json_key_value(KeyValue *key_value) {
-    Assert(key_value->is_array);
-    char *key = key_value->key;
-    List *list = (List *)key_value->value;
-    switch(key_value->data_type) {
-        case T_BOOL: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + MAX_BOOL_STR_LENGTH * list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                bool value = *(bool *)list->set[i];
-                strcat(s, value ? "true" : "false");
-                if (i < list->size - 1)
-                    s = strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_INT: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + MAX_INT_STR_LENGTH * list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                int32_t value = *(int32_t *)list->set[i];
-                strcat(s, itos(value));
-                if (i < list->size - 1)
-                    strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_LONG: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + MAX_LONG_STR_LENGTH * list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                int64_t value = *(int64_t *)list->set[i];
-                strcat(s, ltos(value));
-                if (i < list->size - 1)
-                    strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_CHAR: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                char *value = (char *)list->set[i];
-                strcat(s, &value[0]);
-                if (i < list->size - 1)
-                    strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_STRING:
-        case T_VARCHAR: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                char *value = (char *)list->set[i];
-                size_t len = strlen(value);
-                max_size = max_size + len;
-                s = db_realloc(s, max_size);
-                strcat(s, value);
-                if (i < list->size - 1)
-                    strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_FLOAT: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + MAX_FLOAT_STR_LENGTH * list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                float value = *(float *)list->set[i];
-                strcat(s, ftos(value));
-                if (i < list->size - 1)
-                     strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_DOUBLE: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + MAX_DOUBLE_STR_LENGTH * list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                double value = *(double *)list->set[i];
-                strcat(s, dtos(value));
-                if (i < list->size - 1)
-                    strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_TIMESTAMP: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + MAX_TIMESTAMP_STR_LENGTH * list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                time_t value = *(time_t *)list->set[i];
-                strcat(s, ttos(value, "%Y-%m-%d %H:%M:%S"));
-                if (i < list->size - 1)
-                    strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        case T_DATE: {
-            size_t max_size = strlen(key) + SYMBOL_LENGTH + MAX_TIMESTAMP_STR_LENGTH * list->size;
-            char *s = db_malloc(max_size, "string");
-            sprintf(s, "\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < list->size; i++) {
-                time_t value = *(time_t *)list->set[i];
-                strcat(s, ttos(value, "%Y-%m-%d"));
-                if (i < list->size - 1)
-                    strcat(s, ",");
-            }
-            strcat(s, "]");
-            return s;
-        }
-        default:
-            db_log(PANIC, "Not support data type at <json_key_value>");
-    }
-}
-
-/* Generate single-value key value json. */
-static char *single_json_key_value(KeyValue *key_value) {
-    Assert(!key_value->is_array);
-    char *key = key_value->key;
-    void *value = key_value->value;
-    switch(key_value->data_type) {
-        case T_BOOL: {
-            uint32_t len = strlen(key) + MAX_BOOL_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, "string");
-            sprintf(s, "\"%s\": %s", key, value && (*(bool *)value) ? "true" : "false");
-            return s;
-        }
-        case T_INT: {
-            uint32_t len = strlen(key) + MAX_INT_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, "string");
-            sprintf(s, "\"%s\": %d", key, value ? *(int32_t *)value : 0);
-            return s;
-        }
-        case T_LONG: {
-            uint32_t len = strlen(key) + MAX_LONG_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, "string");
-            sprintf(s, "\"%s\": %" PRIu64, key, value ? *(int64_t *)value : 0);
-            return s;
-        }
-        case T_CHAR: {
-            uint32_t len = strlen(key) + SYMBOL_LENGTH; /*len = key len + symbol len + value len.*/ 
-            char *s = db_malloc(len, "string");
-            sprintf(s, "\"%s\": \"%s\"", key, value ? (char *)value: "null");
-            return s;
-        }
-        case T_STRING:
-        case T_VARCHAR: {
-            if (value) {
-                uint32_t len = strlen(key) + SYMBOL_LENGTH + strlen(value); /*len = key len + symbol len + value len.*/
-                char *s = db_malloc(len, "string");
-                sprintf(s, "\"%s\": \"%s\"", key, (char *)value);
-                return s;
-            } else {
-                uint32_t len = strlen(key) + SYMBOL_LENGTH ; /*len = key len + symbol len + value len.*/
-                char *s = db_malloc(len, "string");
-                sprintf(s, "\"%s\": \"%s\"", key, "null");
-                return s;
-            }
-        }
-        case T_FLOAT: {
-            uint32_t len = strlen(key) + MAX_FLOAT_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, "string");
-            sprintf(s, "\"%s\": %f", key, value ? *(float *)value : 0);
-            return s;
-        }
-        case T_DOUBLE: {
-            uint32_t len = strlen(key) + MAX_DOUBLE_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, "string");
-            sprintf(s, "\"%s\": %lf", key, value ? *(double *)value : 0);
-            return s;
-        }
-        case T_TIMESTAMP: {
-            char temp[90];
-            uint32_t len = strlen(key) + MAX_TIMESTAMP_STR_LENGTH; /*len = key len + symbol len + value len.*/
-            char *s = db_malloc(len, "string");
-            if (value) {
-                time_t t = *(time_t *)value;
-                struct tm *tmp_time = localtime(&t);
-                strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
-                sprintf(s, "\"%s\": \"%s\"", key, temp);
-            } else {
-                sprintf(s, "\"%s\": \"%s\"", key, "null");
-            }
-            return s;
-        }
-        case T_DATE: {
-            char temp[90];
-            uint32_t len = strlen(key) + MAX_TIMESTAMP_STR_LENGTH; /*len =key len + symbol len + value len*/
-            char *s = db_malloc(len, "string");
-            if (value) {
-                time_t t = *(time_t *)value;
-                struct tm *tmp_time = localtime(&t);
-                strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
-                sprintf(s, "\"%s\": \"%s\"", key, temp);
-            } else {
-                sprintf(s, "\"%s\": \"%s\"", key, "null");
-            }
-            return s;
-        }
-        default:
-            db_log(PANIC, "Not support data type at <json_key_value>");
-    }
-    return NULL;
-}
-
-/* Get key value pair string. */
-char *json_key_value(KeyValue *key_value) {
-    return key_value->is_array
-        ? array_json_key_value(key_value)
-        : single_json_key_value(key_value);
-}
 
 /* Calculate the length of table row. */
 uint32_t calc_table_row_length(Table *table) {
@@ -412,11 +176,12 @@ uint32_t calc_table_row_length(Table *table) {
 }
 
 /* Calculate primary key lenght. 
+ * Return primary-key column length.
  * Panic if not found. */
 uint32_t calc_primary_key_length(Table *table) {
     uint32_t i;
     for (i = 0; i < table->meta_table->all_column_size; i++) {
-       MetaColumn *meta_column = (table->meta_table->meta_column[i]);
+       MetaColumn *meta_column = table->meta_table->meta_column[i];
        if (meta_column->is_primary)
            return meta_column->column_length;
     }

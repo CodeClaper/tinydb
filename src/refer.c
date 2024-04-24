@@ -187,7 +187,8 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
 /* Check if refer null. 
  * If page number is -1 and cell number is -1, it means refer null. */
 bool refer_null(Refer *refer) {
-    return refer->page_num == -1 && refer->cell_num == -1;
+    return refer->page_num == -1 
+        && refer->cell_num == -1;
 }
 
 /* Make a NULL Refer. */

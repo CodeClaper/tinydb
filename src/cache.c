@@ -58,7 +58,7 @@ Table *find_table_cache(char *table_name) {
 
 /* Remove table cache. */
 void *remove_table_cache(char *table_name) {
-    int i, j;
+    uint32_t i, j;
     for(i = 0; i < cache->size; i++) {
         Table *current = cache->table_list[i];
         if (strcmp(current->meta_table->table_name, table_name) == 0) {
@@ -85,11 +85,11 @@ bool sync_page(char *table_name, uint32_t page_num, void *page) {
         Table *cur_table = *(cache->table_list + i);
         if (streq(cur_table->meta_table->table_name, table_name)) {
             void *old_page = cur_table->pager->pages[page_num];
-            /* Notice: must copy the page, because the page will be freed at <remove_table_buffer>*/
+            /* Notice: must copy the page, 
+             * because the page will be freed at <remove_table_buffer>*/
             cur_table->pager->pages[page_num] = copy_block(page, PAGE_SIZE);
             if (old_page != page)
                 free_block(old_page);
-
             spin_lock_release(&slock);
             return true;
         }
@@ -104,12 +104,11 @@ bool sync_page_size(char *table_name, uint32_t page_size) {
 
     spin_lock_acquire(&slock);
 
-    int i;
+    uint32_t i;
     for (i = 0; i < cache->size; i++) {
         Table *cur_table = *(cache->table_list + i);
-        if (strcmp(cur_table->meta_table->table_name, table_name) == 0) {
+        if (streq(cur_table->meta_table->table_name, table_name)) {
             cur_table->pager->size = page_size;
-
             spin_lock_release(&slock);
             return true;
         }

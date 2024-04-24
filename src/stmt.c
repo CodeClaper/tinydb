@@ -158,7 +158,6 @@ static void exec_statement(Statement *statement, DBResult *result) {
                 statement_drop_table(statement, result);
                 break;
         }
-
     } 
 
     /* Calulate duration. */
@@ -187,9 +186,9 @@ void execute(char *sql) {
     clock_t start, end;
     start = clock();
     DBResultSet *result_set = new_db_result_set();
+    Statements *statements = NULL;
     /* Check empty sql. */
     if (!is_empty(sql)) {
-        Statements *statements = NULL;
         /* Catch Error. */
         if (setjmp(errEnv) == 0) {
             statements = parse(sql);
@@ -223,12 +222,14 @@ void execute(char *sql) {
                 db_log(INFO, "Duration: %lfs", last_result->duration);
             }
         }
-        /* Free memory. */
-        free_statements(statements);
     } 
 
-    db_send_result_set(result_set);
+    json_result_set(result_set);
 
+    /* Free statements.*/
+    free_statements(statements);
+
+    /* Free result_set. */
     free_db_result_set(result_set);
 
     /* Free buffer. */

@@ -35,6 +35,7 @@
 #include "utils.h"
 #include "json.h"
 #include "list.h"
+#include "const.h"
 
 /* Maximum number of rows fetched at once.*/
 #define MAX_FETCH_ROWS 100 
@@ -92,9 +93,9 @@ static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
 /* Check if include internal comparison predicate for Value type. */
 static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
     void *target_key = get_value_from_value_item_node(value_item, meta_column);
-
     if (target_key == NULL)
         return true;
+
     DataType data_type = meta_column->column_type;
 
     bool result = false;
@@ -135,7 +136,7 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
     if (column->range_variable) {
         char *table_mame = search_table_via_alias(select_result, column->range_variable);
 
-        if (select_result->last_derived && table_mame == NULL) {
+        if (select_result->last_derived && !table_mame) {
             db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
             return false;
         }
@@ -183,9 +184,11 @@ static bool include_logic_internal_node(SelectResult *select_result, void *min_k
     /* For logic condition node, check left node and right node. */
     switch(condition_node->conn_type) {
         case C_AND:
-           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) && include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
+           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) 
+                && include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
         case C_OR:
-           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) || include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
+           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) 
+                || include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
         case C_NONE:
             db_log(PANIC, "System logic error.");
     } 
@@ -479,19 +482,22 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
 }
 
 /* Get row array value. 
- * Return data as list.
+ * Return ArrayValue.
  * */
-static List *get_row_array_value(void *destination, MetaColumn *meta_column) {
+static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_column) {
     uint32_t array_num = get_array_number(destination);
-    List *list = create_list(meta_column->column_type);
-    size_t array_num_size = sizeof(uint32_t);
-    uint32_t span = (meta_column->column_length - sizeof(uint32_t)) / meta_column->array_cap;
+    ArrayValue *array_value = instance(ArrayValue);
+    array_value->size = array_num;
+    array_value->type = meta_column->column_type;
+    array_value->set = db_malloc(sizeof(void *) * array_value->size, "pointer");
+
+    uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE) / meta_column->array_cap;
     uint32_t i;
     for (i = 0; i < array_num; i++) {
-        void *value = (destination + array_num_size + i * span);
-        append_list(list, value);
+        void *value = get_array_value(destination, i, span);
+        array_value->set[i] = copy_value(value, meta_column->column_type);
     }
-    return list;
+    return array_value;
 }
 
 /* Assignment row value. */
@@ -542,6 +548,8 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
 /* Define row by refer. */
 Row *define_row(Refer *refer) {
 
+    Assert(refer);
+
     /* Check table exists. */
     Table *table = open_table(refer->table_name);
     if (table == NULL) 
@@ -553,8 +561,10 @@ Row *define_row(Refer *refer) {
 
     /* Data */
     uint32_t key_len, value_len;
+
     value_len = calc_table_row_length(table);
     key_len = calc_primary_key_length(table);
+
     void *leaf_node = get_page(table->meta_table->table_name, table->pager, refer->page_num);
     void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
 
@@ -1897,9 +1907,6 @@ static KeyValue *query_value_item(ValueItemNode *value_item, Row *row) {
             break;
         case T_REFERENCE:
             value = copy_value(value_item->value.refVal, value_item->data_type);
-            break;
-        case T_ARRAY:
-            value = copy_value(value_item->value.arrayVal, value_item->data_type);
             break;
         default:
             value = copy_value(&value_item->value, value_item->data_type);

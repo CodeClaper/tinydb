@@ -20,7 +20,6 @@ int yylex();
    bool                         boolVal;
    char                         *keyword;
    ReferValue                   *referVal;
-   ArrayValue                   *arrayVal;
    CompareType                  compare_type;
    DataTypeNode                 *data_type_node;
    ColumnDefName                *column_def_name;
@@ -104,7 +103,6 @@ int yylex();
 %token <strVal> STRINGVALUE
 %type <boolVal> BOOLVALUE
 %type <referVal> REFERVALUE
-%type <arrayVal> ARRAYVALUE
 %type <strVal> table
 %type <strVal> range_variable
 %type <scalar_exp_node> scalar_exp
@@ -856,6 +854,7 @@ value_item:
             ValueItemNode *node = make_value_item_node();
             node->value.intVal = $1;
             node->data_type = T_INT;
+            node->is_array = false;
             $$ = node;
         }
     | BOOLVALUE
@@ -863,6 +862,7 @@ value_item:
             ValueItemNode *node = make_value_item_node();
             node->value.boolVal = $1;
             node->data_type = T_BOOL;
+            node->is_array = false;
             $$ = node;
         }
     | STRINGVALUE 
@@ -870,6 +870,7 @@ value_item:
             ValueItemNode *node = make_value_item_node();
             node->value.strVal = $1;
             node->data_type = T_STRING;
+            node->is_array = false;
             $$ = node;
         }
     | FLOATVALUE 
@@ -877,6 +878,7 @@ value_item:
             ValueItemNode *node = make_value_item_node();
             node->value.floatVal = $1;
             node->data_type = T_FLOAT;
+            node->is_array = false;
             $$ = node;
         }
     | REFERVALUE
@@ -884,13 +886,14 @@ value_item:
             ValueItemNode *node = make_value_item_node();
             node->value.refVal = $1;
             node->data_type = T_REFERENCE;
+            node->is_array = false;
             $$ = node;
         }
-    | ARRAYVALUE
+    | '[' value_items ']'
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.arrayVal = $1;
-            node->data_type = T_ARRAY;
+            node->value_set = $2;
+            node->is_array = true;
             $$ = node;
         }
     ;
@@ -920,13 +923,6 @@ BOOLVALUE:
     | FALSE
         {
             $$ = false;
-        }
-    ;
-ARRAYVALUE:
-    '[' value_items ']'
-        {
-            $$ = make_array_value();
-            $$->value = $2;
         }
     ;
 assignments:

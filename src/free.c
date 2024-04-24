@@ -7,7 +7,6 @@
 #include "index.h"
 #include "log.h"
 #include "xlog.h"
-#include "list.h"
 
 /* Free value */
 void free_value(void *value, DataType data_type) {
@@ -34,7 +33,7 @@ void free_key_value(KeyValue *key_value) {
         if (key_value->table_name)
             db_free(key_value->table_name);
         if (key_value->is_array)
-            destroy_list(key_value->value);
+            free_array_value(key_value->value);
         else
             free_value(key_value->value, key_value->data_type);
         db_free(key_value);
@@ -226,33 +225,33 @@ void free_cursor(Cursor *cursor) {
 /* Free value item node. */
 void free_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node) {
-        switch(value_item_node->data_type) {
-            case T_INT:
-            case T_BOOL:
-            case T_CHAR:
-            case T_FLOAT:
-            case T_DOUBLE:
-            case T_TIMESTAMP:
-            case T_LONG:
-            case T_DATE:
-                break;
-            case T_STRING:
-            case T_VARCHAR: {
-                if (value_item_node->value.strVal)
-                    db_free(value_item_node->value.strVal);
-                break;
-            }
-            case T_REFERENCE: {
-                free_refer_value(value_item_node->value.refVal);
-                break;
-            }
-            case T_ARRAY: {
-                free_array_value(value_item_node->value.arrayVal);
-                break;
-            }
-            default: {
-                db_log(ERROR, "Not implement data type.");
-                break;
+        if (value_item_node->is_array)
+            free_value_item_set_node(value_item_node->value_set);
+        else {
+            switch(value_item_node->data_type) {
+                case T_INT:
+                case T_BOOL:
+                case T_CHAR:
+                case T_FLOAT:
+                case T_DOUBLE:
+                case T_TIMESTAMP:
+                case T_LONG:
+                case T_DATE:
+                    break;
+                case T_STRING:
+                case T_VARCHAR: {
+                    if (value_item_node->value.strVal)
+                        db_free(value_item_node->value.strVal);
+                    break;
+                }
+                case T_REFERENCE: {
+                    free_refer_value(value_item_node->value.refVal);
+                    break;
+                }
+                default: {
+                    db_log(ERROR, "Not implement data type.");
+                    break;
+                }
             }
         }
         db_free(value_item_node);
@@ -488,7 +487,13 @@ void free_refer_value(ReferValue *refer_value) {
 /* Free ArrayValue. */
 void free_array_value(ArrayValue *array_value) {
     if (array_value) {
-        free_value_item_set_node(array_value->value);
+        if (array_value->set) {
+            uint32_t i;
+            for (i = 0; i < array_value->size; i++) {
+                free_value(array_value->set[i], array_value->type);
+            }
+            db_free(array_value->set);
+        }
         db_free(array_value);
     }
 }

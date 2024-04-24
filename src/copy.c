@@ -17,7 +17,7 @@
 
 /* Copy value. */
 void *copy_value(void *value, DataType data_type) {
-    if (value == NULL)
+    if (!value)
         return NULL;
 
     switch (data_type) {
@@ -58,8 +58,6 @@ void *copy_value(void *value, DataType data_type) {
             return db_strdup((char *)value);
         case T_REFERENCE: 
             return copy_refer(value);
-        case T_ARRAY:
-            return copy_array_value(value);
         default:
             db_log(PANIC, "Not supported data type occurs at <copy_value>.");
     }    
@@ -74,12 +72,13 @@ KeyValue *copy_key_value(KeyValue *key_value) {
     KeyValue *key_value_copy = instance(KeyValue);
 
     key_value_copy->key = db_strdup(key_value->key);
-    /* Meta column may be null, in fact, key aggregate function, key is min, max, sum, avg ect. there is no meta column. */
+    /* Meta column may be null, in fact, for key aggregate function, 
+     * key is min, max, sum, avg ect. there is no meta column. */
     key_value_copy->data_type = key_value->data_type;
     key_value_copy->is_array = key_value->is_array;
     /* Single and array data have difference way to deal. */
     if (key_value_copy->is_array)
-        key_value_copy->value = duplicate_list(key_value->value);
+        key_value_copy->value = copy_array_value(key_value->value);
     else
         key_value_copy->value = copy_value(key_value->value, key_value->data_type);
     key_value_copy->table_name = db_strdup(key_value->table_name);
@@ -252,38 +251,41 @@ ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
 
 /* Copy value item node. */
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
- if (value_item_node == NULL)
+    if (value_item_node == NULL)
         return NULL;
     ValueItemNode *value_item_node_copy = instance(ValueItemNode);
-    value_item_node_copy->data_type = value_item_node->data_type;
-    switch(value_item_node->data_type) {
-        case T_CHAR:
-        case T_STRING:
-        case T_VARCHAR:
-            value_item_node_copy->value.strVal = db_strdup(value_item_node->value.strVal);
-            break;
-        case T_INT:
-        case T_LONG:
-            value_item_node_copy->value.intVal = value_item_node->value.intVal;
-            break;
-        case T_BOOL:
-            value_item_node_copy->value.boolVal = value_item_node->value.boolVal;
-            break;
-        case T_FLOAT:
-            value_item_node_copy->value.floatVal = value_item_node->value.floatVal;
-            break;
-        case T_DOUBLE:
-            value_item_node_copy->value.doubleVal = value_item_node->value.doubleVal;
-            break;
-        case T_TIMESTAMP:
-        case T_DATE:
-            value_item_node_copy->value.timeVal = value_item_node->value.timeVal;
-            break;
-        case T_REFERENCE: 
-            value_item_node_copy->value.refVal = copy_refer_value(value_item_node->value.refVal);
-            break;
-        case T_ARRAY:
-            value_item_node_copy->value.arrayVal = copy_array_value(value_item_node->value.arrayVal);
+    value_item_node_copy->is_array = value_item_node->is_array;
+    if (value_item_node_copy->is_array) 
+        value_item_node_copy->value_set = copy_value_item_set_node(value_item_node->value_set);
+    else {
+        value_item_node_copy->data_type = value_item_node->data_type;
+        switch(value_item_node->data_type) {
+            case T_CHAR:
+            case T_STRING:
+            case T_VARCHAR:
+                value_item_node_copy->value.strVal = db_strdup(value_item_node->value.strVal);
+                break;
+            case T_INT:
+            case T_LONG:
+                value_item_node_copy->value.intVal = value_item_node->value.intVal;
+                break;
+            case T_BOOL:
+                value_item_node_copy->value.boolVal = value_item_node->value.boolVal;
+                break;
+            case T_FLOAT:
+                value_item_node_copy->value.floatVal = value_item_node->value.floatVal;
+                break;
+            case T_DOUBLE:
+                value_item_node_copy->value.doubleVal = value_item_node->value.doubleVal;
+                break;
+            case T_TIMESTAMP:
+            case T_DATE:
+                value_item_node_copy->value.timeVal = value_item_node->value.timeVal;
+                break;
+            case T_REFERENCE: 
+                value_item_node_copy->value.refVal = copy_refer_value(value_item_node->value.refVal);
+                break;
+        }
     }
 
     return value_item_node_copy;
@@ -451,9 +453,15 @@ ReferValue *copy_refer_value(ReferValue *refer_value) {
 ArrayValue *copy_array_value(ArrayValue *array_value) {
     if (!array_value) 
         return NULL;
-    ArrayValue *array_value_copy = instance(ArrayValue);
-    array_value_copy->value = copy_value_item_set_node(array_value->value);
-    return array_value_copy;
+    ArrayValue *array_value_dup = instance(ArrayValue);
+    array_value_dup->size = array_value->size;
+    array_value_dup->type = array_value->type;
+    array_value_dup->set = db_malloc(sizeof(void *) * array_value_dup->size, "pointer");
+    uint32_t i;
+    for (i = 0; i < array_value_dup->size; i++) {
+        array_value_dup->set[i] = copy_value(array_value->set[i], array_value_dup->type);
+    }
+    return array_value_dup;
 }
 
 /* Copy select items node. */
