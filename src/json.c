@@ -199,76 +199,82 @@ static void json_array_key_value(KeyValue *key_value) {
 /* Generate single-value key value json. */
 static void json_single_key_value(KeyValue *key_value) {
     Assert(!key_value->is_array);
+
     char *key = key_value->key;
     void *value = key_value->value;
-    switch(key_value->data_type) {
-        case T_BOOL: 
-            db_send("\"%s\": %s", key, value && (*(bool *)value) ? "true" : "false");
-            break;
-        case T_INT: 
-            db_send("\"%s\": %d", key, value ? *(int32_t *)value : 0);
-            break;
-        case T_LONG: 
-            db_send("\"%s\": %" PRIu64, key, value ? *(int64_t *)value : 0);
-            break;
-        case T_CHAR: 
-        case T_STRING:
-        case T_VARCHAR: 
-            db_send("\"%s\": \"%s\"", key, value ? (char *)value: "null");
-            break;
-        case T_FLOAT: 
-            db_send("\"%s\": %f", key, value ? *(float *)value : 0);
-            break;
-        case T_DOUBLE: 
-            db_send("\"%s\": %lf", key, value ? *(double *)value : 0);
-            break;
-        case T_TIMESTAMP: {
-            char temp[90];
-            if (value) {
-                time_t t = *(time_t *)value;
-                struct tm *tmp_time = localtime(&t);
-                strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
-                db_send("\"%s\": \"%s\"", key, temp);
-            } else {
-                db_send("\"%s\": \"%s\"", key, "null");
+    if (!value)
+        db_send("\"%s\": %s", key, "null");
+    else {
+        switch(key_value->data_type) {
+            case T_BOOL: 
+                db_send("\"%s\": %s", key, value && (*(bool *)value) ? "true" : "false");
+                break;
+            case T_INT: 
+                db_send("\"%s\": %d", key, value ? *(int32_t *)value : 0);
+                break;
+            case T_LONG: 
+                db_send("\"%s\": %" PRIu64, key, value ? *(int64_t *)value : 0);
+                break;
+            case T_CHAR: 
+            case T_STRING:
+            case T_VARCHAR: 
+                db_send("\"%s\": \"%s\"", key, value ? (char *)value: "null");
+                break;
+            case T_FLOAT: 
+                db_send("\"%s\": %f", key, value ? *(float *)value : 0);
+                break;
+            case T_DOUBLE: 
+                db_send("\"%s\": %lf", key, value ? *(double *)value : 0);
+                break;
+            case T_TIMESTAMP: {
+                char temp[90];
+                if (value) {
+                    time_t t = *(time_t *)value;
+                    struct tm *tmp_time = localtime(&t);
+                    strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
+                    db_send("\"%s\": \"%s\"", key, temp);
+                } else {
+                    db_send("\"%s\": \"%s\"", key, "null");
+                }
+                break;
             }
-            break;
-        }
-        case T_DATE: {
-            char temp[90];
-            if (value) {
-                time_t t = *(time_t *)value;
-                struct tm *tmp_time = localtime(&t);
-                strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
-                db_send("\"%s\": \"%s\"", key, temp);
-            } else {
-                db_send("\"%s\": \"%s\"", key, "null");
+            case T_DATE: {
+                char temp[90];
+                if (value) {
+                    time_t t = *(time_t *)value;
+                    struct tm *tmp_time = localtime(&t);
+                    strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
+                    db_send("\"%s\": \"%s\"", key, temp);
+                } else {
+                    db_send("\"%s\": \"%s\"", key, "null");
+                }
+                break;
             }
-            break;
+            /* Specially deal with T_REFERENCE data. */
+            case T_REFERENCE: {
+                db_send("\"%s\": ", key);
+                Refer *refer = (Refer *)key_value->value;
+                assert_not_null(refer, "Try to get Reference type value fail.\n");
+                Row *subrow = define_visible_row(refer);
+                json_row(subrow);
+                free_row(subrow);
+                break;
+            }
+            case T_ROW: {
+                db_send("\"%s\": ", key);
+                Row *subrow = (Row *)key_value->value;
+                json_row(subrow);
+                break;
+            }
+            default:
+                db_log(PANIC, "Not support data type at <json_key_value>");
         }
-        /* Specially deal with T_REFERENCE data. */
-        case T_REFERENCE: {
-            db_send("\"%s\": ", key);
-            Refer *refer = (Refer *)key_value->value;
-            assert_not_null(refer, "Try to get Reference type value fail.\n");
-            Row *subrow = define_visible_row(refer);
-            json_row(subrow);
-            free_row(subrow);
-            break;
-        }
-        case T_ROW: {
-            db_send("\"%s\": ", key);
-            Row *subrow = (Row *)key_value->value;
-            json_row(subrow);
-            break;
-        }
-        default:
-            db_log(PANIC, "Not support data type at <json_key_value>");
     }
 }
 
 /* Get key value pair string. */
 static void json_key_value(KeyValue *key_value) {
+    Assert(key_value);
     if (key_value->is_array)
         json_array_key_value(key_value);
     else
@@ -376,6 +382,8 @@ static void handle_dulicate_key(Row *row) {
         KeyValue *first = row->data[i];
         for (j = i + 1; j < row->column_len; j++) {
             KeyValue *second = row->data[j];
+            if (!first || !second)
+                continue;
             if (streq(second->key, first->key)) {
                 db_free(second->key);
                 second->key = format("%s(%d)", first->key, ++times);

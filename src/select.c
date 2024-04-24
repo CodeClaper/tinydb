@@ -1124,7 +1124,7 @@ static KeyValue *new_key_value(char *key, void *value, DataType data_type) {
 static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row) {
 
     if (!row)
-        return NULL;
+        return new_key_value(db_strdup(column->column_name), NULL, T_ROW);
 
     /* Get table name via alias name. */
     char *table_name = search_table_via_alias(select_result, column->range_variable);
