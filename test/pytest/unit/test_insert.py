@@ -34,7 +34,7 @@ def test_insert_with_direct_reference():
 
 ## test select after insert directg reference.
 def test_select_after_insert_direct_reference():
-    sql = "select student[id] from Parent where id = 'P001';"
+    sql = "select (student).id from Parent where id = 'P001';"
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["data"][0] == { "id": "S003" }
@@ -48,7 +48,7 @@ def test_insert_with_indirect_reference():
 
 ## test select after insert indirectg reference.
 def test_select_after_insert_indirect_reference():
-    sql = "select student[id] from Parent where id = 'P002';"
+    sql = "select (student).id from Parent where id = 'P002';"
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["data"][0] == { "id": "S001" }
@@ -120,7 +120,7 @@ def test_insert_table_without_primary_key():
 
 ## query after insert table without user-level priamry key
 def test_select_table_without_primary_key():
-    sql = "select * from Circle where r > 20 and p[x] > 70;"
+    sql = "select * from Circle where r > 20 and (p).x > 70;"
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["data"] == [

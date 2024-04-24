@@ -84,7 +84,7 @@ def test_loop_update():
 
 ## test update with complex condition.
 def test_update_with_complex_condition():
-    sql = "update B set name = 'bingo' where age > 13 or a[id] = '1' or name like '%02'";
+    sql = "update B set name = 'bingo' where age > 13 or (a).id = '1' or name like '%02'";
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["rows"] == 2
@@ -98,7 +98,7 @@ def test_update_indirect_reference_column():
 
 ## test select after update indirect reference column.
 def test_select_after_update_indirect_reference():
-    sql = "select count(1) from B where a[id] = '3';"
+    sql = "select count(1) from B where (a).id = '3';"
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["data"][0] == { "count": 2 }
