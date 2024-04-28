@@ -57,6 +57,12 @@ def test_max_subcolumn():
     assert ret["success"] == True
     assert ret["data"] == [{ "max": "C004" }]
 
+## test min for subcolumn
+def test_min_subcolumn():
+    ret = client.execute("select min((class).studentNum) from Student")
+    assert ret["success"] == True
+    assert ret["data"] == [{ "min": 30 }]
+
 ## test count subcolumn.
 def test_count_subcolumn():
     ret = client.execute("select count((class).id) from Student;")
@@ -69,12 +75,37 @@ def test_sum_subcolumn():
     assert ret["success"] == True
     assert ret["data"] == [{ "totalStudentNum": 267 }]
 
-## test sum subcolumn.
+## test avg subcolumn.
 def test_avg_subcolumn():
     ret = client.execute("select avg((class).studentNum) as avgStudentNum from Student;")
     assert ret["success"] == True
     assert ret["data"] == [{ "avgStudentNum": 33.375 }]
 
+## test max reference.
+def test_max_reference():
+    ret = client.execute("select max(class) from Student;")
+    assert ret["success"] == False
+
+## test count reference.
+def test_count_reference():
+    ret = client.execute("select count(class) from Student;")
+    assert ret["success"] == True
+    assert ret["data"] == [{ "count": 8 }]
+
+## test avg reference.
+def test_avg_reference():
+    ret = client.execute("select avg(class) from Student;")
+    assert ret["success"] == False
+
+## test update refer.
+def test_update_refer():
+    ret1 = client.execute("select * from Student");
+    assert ret1["success"] == True
+    ret2 = client.execute("insert into Class values ('01', 'West', 28)");
+    assert ret2["success"] == True
+    ret3 = client.execute("select * from Student");
+    assert ret3["success"] == True
+    assert ret1["data"] == ret3["data"]
 
 ## test delete reference.
 def test_delete_reference():

@@ -267,8 +267,7 @@ def test_calculate_selection_add3():
 ## test calculate selection
 def test_calculate_selection_sub1():
     ret = client.execute("select sum(age) - sum(class) from Student")
-    assert ret["success"] == True
-    assert ret["data"][0] == { "sub": 89 }
+    assert ret["success"] == False
 
 ## test calculate selection
 def test_calculate_selection_sub2():
