@@ -5,7 +5,7 @@ client = TinyDbClient("127.0.0.1", 4083)
 
 ## create mock tables;
 def test_create_mock_table():
-    sql = "create table Class (id string primary key, location string);\n" \
+    sql = "create table Class (id string primary key, location string, studentNum int);\n" \
           "create table Student (id string primary key, name string, age int, birth date, class Class);\n"  
     ret = client.execute(sql)
     assert ret[0]["success"] == True
@@ -13,10 +13,10 @@ def test_create_mock_table():
 
 ## insert mock data. 
 def test_insert_mock_data():
-    sql = "insert into Class values('C001', 'Northwest corner ');\n" \
-          "insert into Class values('C002', 'Middle');\n" \
-          "insert into Class values('C003', 'South side');\n" \
-          "insert into Class values('C004', 'East side');\n" \
+    sql = "insert into Class values('C001', 'Northwest corner', 32);\n" \
+          "insert into Class values('C002', 'Middle', 36);\n" \
+          "insert into Class values('C003', 'South side', 30);\n" \
+          "insert into Class values('C004', 'East side', 35);\n" \
           "insert into Student values('S001', 'kail', 10, '2014-10-03', ref(id = 'C001'));\n" \
           "insert into Student values('S002', 'sun', 11, '2013-11-20', ref(id = 'C001'));\n" \
           "insert into Student values('S003', 'ben', 12, '2012-04-23', ref(id = 'C002'));\n" \
@@ -56,6 +56,24 @@ def test_max_subcolumn():
     ret = client.execute("select max((class).id) from Student")
     assert ret["success"] == True
     assert ret["data"] == [{ "max": "C004" }]
+
+## test count subcolumn.
+def test_count_subcolumn():
+    ret = client.execute("select count((class).id) from Student;")
+    assert ret["success"] == True
+    assert ret["data"] == [{ "count": 8 }]
+
+## test sum subcolumn.
+def test_sum_subcolumn():
+    ret = client.execute("select sum((class).studentNum) as totalStudentNum from Student;")
+    assert ret["success"] == True
+    assert ret["data"] == [{ "totalStudentNum": 267 }]
+
+## test sum subcolumn.
+def test_avg_subcolumn():
+    ret = client.execute("select avg((class).studentNum) as avgStudentNum from Student;")
+    assert ret["success"] == True
+    assert ret["data"] == [{ "avgStudentNum": 33.375 }]
 
 
 ## test delete reference.
