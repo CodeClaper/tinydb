@@ -77,6 +77,12 @@ static Row *generate_row(void *destinct, MetaTable *meta_table);
  * */
 static char *search_table_via_alias(SelectResult *select_result, char *range_variable);
 
+/* Query column value. */
+static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row);
+
+/* Generate new KeyValue instance. */
+static KeyValue *new_key_value(char *key, void *value, DataType data_type);
+
 /* Calulate offset of every column in cell. */
 static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     uint32_t i, off_set = 0;
@@ -807,7 +813,7 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
 /* Get KeyValue from a Row by column name.
  * Return NULL if not found KeyValue match the column name. */
 static KeyValue *get_key_value_from_row(Row *row, char *column_name) {
-    int i;
+    uint32_t i;
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         if (streq(column_name, key_value->key))
@@ -817,280 +823,207 @@ static KeyValue *get_key_value_from_row(Row *row, char *column_name) {
 }
 
 /* Calulate column sum value. */
-static void calc_column_sum_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
-    Table *table = open_table(select_result->table_name);
-    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
+static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_result) {
     
-    assert_not_null(meta_column, "Sysmte Logic Error, in <calc_coluymn_sum_value>");
-
     double sum = 0;
-    switch (meta_column->column_type) {
-        case T_INT: {
-            int i ;
-            for (i = 0; i < select_result->row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+    uint32_t i ;
+    for (i = 0; i < select_result->row_size; i++) {
+        Row *row = select_result->rows[i];
+        KeyValue *key_value = query_plain_column_value(select_result, column, row);
+        switch (key_value->data_type) {
+            case T_INT: {
                 sum += *(int32_t *)key_value->value;
+                break;
             }
-            break;
-        }
-        case T_LONG: {
-            int i ;
-            for (i = 0; i < select_result->row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+            case T_LONG: {
                 sum += *(int64_t *)key_value->value;
+                break;
             }
-            break;
-        }
-        case T_FLOAT: {
-            int i ;
-            for (i = 0; i < select_result->row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+            case T_FLOAT: {
                 sum += *(float *)key_value->value;
+                break;
             }
-            break;
-        }
-        case T_DOUBLE: {
-            int i ;
-            for (i = 0; i < select_result->row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+            case T_DOUBLE: {
                 sum += *(double *)key_value->value;
+                break;
             }
-            break;
+            case T_REFERENCE: {
+                db_log(ERROR, "Reference type not used for sum function.");
+                break;
+            }
+            default: {
+                sum += 0;
+                break;
+            }
         }
-        default: {
-            sum = 0;
-            break;
-        }
-
     }
 
-    key_value->value = copy_value(&sum, T_DOUBLE);
-    key_value->data_type = T_DOUBLE;
+    return new_key_value(db_strdup("sum"), 
+                         copy_value(&sum, T_DOUBLE), 
+                         T_DOUBLE);
 }
 
 
 /* Calulate column avg value. */
-static void calc_column_avg_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
-    Table *table = open_table(select_result->table_name);
-    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
-    int row_size = select_result->row_size;
-
+static KeyValue *calc_column_avg_value(ColumnNode *column, SelectResult *select_result) {
+    double sum = 0;
     double avg = 0;
-    switch (meta_column->column_type) {
-        case T_INT: {
-            double sum = 0;
-            int i ;
-            for (i = 0; i < row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+    uint32_t i;
+    for (i = 0; i < select_result->row_size; i++) {
+        Row *row = select_result->rows[i];
+        KeyValue *key_value = query_plain_column_value(select_result, column, row);
+        switch (key_value->data_type) {
+            case T_INT: {
                 sum += *(int32_t *)key_value->value;
+                break;
             }
-            avg = sum / row_size;
-            break;
-        }
-        case T_LONG: {
-            double sum = 0;
-            int i ;
-            for (i = 0; i < row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+            case T_LONG: {
                 sum += *(int64_t *)key_value->value;
+                break;
             }
-            avg = sum / row_size;
-            break;
-        }
-        case T_FLOAT: {
-            double sum = 0;
-            int i ;
-            for (i = 0; i < select_result->row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+            case T_FLOAT: {
                 sum += *(float *)key_value->value;
+                break;
             }
-            avg = sum / row_size;
-            break;
-        }
-        case T_DOUBLE: {
-            double sum = 0;
-            int i ;
-            for (i = 0; i < select_result->row_size; i++) {
-                Row *row = select_result->rows[i];
-                KeyValue *key_value = get_key_value_from_row(row, column->column_name);
-                assert_not_null(key_value, "Not found column '%s' in table '%s' row. ", column->column_name, table->meta_table->table_name);
+            case T_DOUBLE: {
                 sum += *(double *)key_value->value;
+                break;
             }
-            avg = sum / row_size;
-            break;
-        }
-        default: {
-            avg = 0;
-            break;
+            case T_REFERENCE: {
+                db_log(ERROR, "Reference type not used for sum function.");
+                break;
+            }
+            default: {
+                sum += 0;
+                break;
+            }
         }
     }
+    avg = sum / select_result->row_size;
 
-    key_value->data_type = T_DOUBLE;
-    key_value->value = copy_value(&avg, T_DOUBLE);
+    return new_key_value(db_strdup("avg"), 
+                         copy_value(&avg, T_DOUBLE), 
+                         T_DOUBLE);
 }
 
 
 /* Calulate column max value.*/
-static void calc_column_max_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
-    Table *table = open_table(select_result->table_name);
-    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
-
+static KeyValue *calc_column_max_value(ColumnNode *column, SelectResult *select_result) {
     void *max_value = NULL;
-    int i;
+    DataType data_type;
+    uint32_t i;
     for (i = 0; i < select_result->row_size; i++) {
         Row *row = select_result->rows[i];
-        KeyValue *current = get_key_value_from_row(row, column->column_name);
+        KeyValue *current = query_plain_column_value(select_result, column, row);
         void *current_value = current->value;
-        if (max_value == NULL || greater(current_value, max_value, meta_column->column_type)) {
+        if (!max_value || greater(current_value, max_value, current->data_type)) {
             max_value = current_value;
+            data_type = current->data_type;
         }
     }
 
-    key_value->value = copy_value(max_value, meta_column->column_type);
-    key_value->data_type = meta_column->column_type;
-
+    return new_key_value(db_strdup("max"), 
+                         copy_value(max_value, data_type), 
+                         data_type);
 }
 
 /* Calulate column max value.*/
-static void calc_column_min_value(KeyValue *key_value, ColumnNode *column, SelectResult *select_result) {
-    Table *table = open_table(select_result->table_name);
-    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
-
+static KeyValue *calc_column_min_value(ColumnNode *column, SelectResult *select_result) {
     void *min_value = NULL;
-    int i;
+    DataType data_type;
+    uint32_t i;
     for (i = 0; i < select_result->row_size; i++) {
         Row *row = select_result->rows[i];
-        KeyValue *current = get_key_value_from_row(row, column->column_name);
+        KeyValue *current = query_plain_column_value(select_result, column, row);
         void *current_value = current->value;
-        if (min_value == NULL || less(current_value, min_value, meta_column->column_type)) {
+        if (min_value == NULL || less(current_value, min_value, current->data_type)) {
+            data_type = current->data_type;
             min_value = current_value;
         }
     }
 
-    key_value->value = copy_value(min_value, meta_column->column_type);
-    key_value->data_type = meta_column->column_type;
-
+    return new_key_value(db_strdup("min"), 
+                         copy_value(min_value, data_type), 
+                         data_type);
 }
 
 
 /* Query count function. */
-static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *selct_result) {
-    KeyValue *key_value = instance(KeyValue);
-    key_value->key = db_strdup("count");
-    key_value->data_type = T_INT;
-    key_value->value = copy_value(&selct_result->row_size, T_INT);
-    return key_value;
+static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *select_result) {
+    uint32_t row_size = select_result->row_size;
+    return new_key_value(db_strdup("count"), 
+                         copy_value(&row_size, T_INT), 
+                         T_INT);
 }
 
 /* Query sum function. */
 static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = instance(KeyValue);
-    key_value->key = db_strdup("sum");
-
     switch (value->value_type) {
-        case V_COLUMN: {
-            calc_column_sum_value(key_value, value->column, select_result);
-            break;
-        }
+        case V_COLUMN: 
+            return calc_column_sum_value(value->column, select_result);
         case V_INT: {
             double sum = value->i_value * select_result->row_size;
-            key_value->value = copy_value(&sum, T_DOUBLE);
-            key_value->data_type = T_DOUBLE;
-            break;
+            return new_key_value(db_strdup("sum"), 
+                                 copy_value(&sum, T_DOUBLE), 
+                                 T_DOUBLE);
         }
         case V_ALL: {
             db_log(ERROR, "Sum function not support '*'");
             break;
         }
     }
-
-    return key_value;
 }
 
 /* Query avg function. */
 KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = instance(KeyValue);
-    key_value->key = db_strdup("avg");
 
     switch (value->value_type) {
-        case V_COLUMN: {
-            calc_column_avg_value(key_value, value->column, select_result);
-            break;
-        }
-        case V_INT: {
-            double sum = value->i_value;
-            key_value->value = copy_value(&sum, T_DOUBLE);
-            key_value->data_type = T_DOUBLE;
-            break;
-        }
+        case V_COLUMN:
+            return calc_column_avg_value(value->column, select_result);
+        case V_INT: 
+            return new_key_value(db_strdup("avg"), 
+                                 copy_value(&value->i_value, T_DOUBLE), 
+                                 T_DOUBLE);
         case V_ALL: {
             db_log(ERROR, "Avg function not support '*'");
             break;
         }
     }
-
-    return key_value;
 }
 
 /* Query max function. */
 KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = instance(KeyValue);
-    key_value->key = db_strdup("max");
 
     switch (value->value_type) {
-        case V_COLUMN: {
-            calc_column_max_value(key_value, value->column, select_result);
-            break;
-        }
-        case V_INT: {
-            key_value->value = copy_value(&value->i_value, T_INT);
-            key_value->data_type = T_INT;
-            break;
-        }
+        case V_COLUMN: 
+            return calc_column_max_value(value->column, select_result);
+        case V_INT: 
+            return new_key_value(db_strdup("max"), 
+                                 copy_value(&value->i_value, T_INT), 
+                                 T_INT);
         case V_ALL: {
-            db_log(ERROR, "Max function not support '*'");
-            break;
+            db_log(ERROR, "Max function not support '*'.");
+            return NULL;
         }
     }
-    return key_value;
 } 
 
 
 /* Query min function. */
 KeyValue *query_min_function(FunctionValueNode *value, SelectResult *select_result) {
-    KeyValue *key_value = instance(KeyValue);
-    key_value->key = db_strdup("min");
 
     switch (value->value_type) {
-        case V_COLUMN: {
-            calc_column_min_value(key_value, value->column, select_result);
-            break;
-        }
-        case V_INT: {
-            key_value->value = copy_value(&value->i_value, T_INT);
-            key_value->data_type = T_INT;
-            break;
-        }
+        case V_COLUMN:
+            return calc_column_min_value(value->column, select_result);
+        case V_INT: 
+            return new_key_value(db_strdup("min"), 
+                                 copy_value(&value->i_value, T_INT), 
+                                 T_INT);
         case V_ALL: {
             db_log(PANIC, "Min function not support '*'");
             break;
         }
     }
-    return key_value;
 } 
 
 /* Query scalar function */
@@ -1870,7 +1803,8 @@ static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResul
     row->column_len = scalar_exp_set->size;
     row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
 
-    for (uint32_t i = 0; i < scalar_exp_set->size; i++) {
+    uint32_t i;
+    for (i = 0; i < scalar_exp_set->size; i++) {
         ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
         KeyValue *key_value = query_function_value(scalar_exp, select_result);        
         if (scalar_exp->alias) {
