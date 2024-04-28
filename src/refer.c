@@ -259,18 +259,47 @@ bool cursor_equals(Cursor *cursor1, Cursor * cursor2) {
             && cursor1->cell_num == cursor2->cell_num;
 }
 
+/* Update single key value refer. */
+static bool update_single_key_value_refer(KeyValue *key_value, ReferUpdateEntity *refer_update_entity) {
+    if (refer_equals(key_value->value, refer_update_entity->old_refer)) {
+        free_refer(key_value->value);
+        key_value->value = copy_refer(refer_update_entity->new_refer);
+        return true;
+    }
+    return false;
+}
+
+/* Update array key value refer. */
+static bool update_array_key_value_refer(KeyValue *key_value, ReferUpdateEntity *refer_update_entity) {
+    ArrayValue *array_value = (ArrayValue *)key_value->value;
+    bool flag = false;
+    uint32_t i;
+    for (i = 0; i < array_value->size; i++) {
+        if (refer_equals(array_value->set[i], refer_update_entity->old_refer)) {
+            free_refer(array_value->set[i]);
+            array_value->set[i] = copy_refer(refer_update_entity->new_refer);
+            flag = true;
+        }
+    }
+    return flag;
+}
+
 /* Update row key value. */
 static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cursor, ReferUpdateEntity *refer_update_entity) {
     
     bool flag = false;
-    for (uint32_t i = 0; i < row->column_len; i++) {
+    uint32_t i;
+    for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         if (key_value->data_type == T_REFERENCE 
-            && streq(key_value->key, meta_column->column_name)
-            && refer_equals(key_value->value, refer_update_entity->old_refer)) {
-                /* Check if refer equals. */
-                key_value->value = copy_refer(refer_update_entity->new_refer);
-                flag = true;
+            && streq(key_value->key, meta_column->column_name)) {
+                if (key_value->is_array) {
+                    if (update_array_key_value_refer(key_value, refer_update_entity))
+                        flag = true;
+                } else {
+                    if (update_single_key_value_refer(key_value, refer_update_entity))
+                        flag = true;
+                }
         }
     }
     if (flag)
@@ -292,11 +321,12 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
     /* MetaTable */
     MetaTable *meta_table = table->meta_table;
 
-    for (uint32_t i = 0; i < meta_table->column_size; i++) {
+    uint32_t i;
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (meta_column->column_type == T_REFERENCE && strcmp(meta_column->table_name, refer_update_entity->old_refer->table_name) == 0) {
-            update_key_value_refer(row, meta_column, cursor, refer_update_entity);
-        }
+        if (meta_column->column_type == T_REFERENCE 
+            && streq(meta_column->table_name, refer_update_entity->old_refer->table_name)) 
+                update_key_value_refer(row, meta_column, cursor, refer_update_entity);
     }
 }
 

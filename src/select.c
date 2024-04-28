@@ -291,7 +291,6 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         if (streq(key_value->key, column->column_name)) {
-            
             /* If exists range variable, check if equals. */
             if (column->range_variable) {
                 char *table_name = search_table_via_alias(select_result, column->range_variable);
@@ -536,12 +535,12 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
         uint32_t offset = calc_offset(meta_table, meta_column->column_name);
         
         /* Generate a key value pair. */
-        KeyValue *key_value = instance(KeyValue);
-        key_value->key = db_strdup(meta_column->column_name);
-        key_value->data_type = meta_column->column_type;
+        KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name),
+                                            assign_row_value(destination + offset, meta_column),
+                                            meta_column->column_type);
         key_value->is_array = meta_column->array_dim > 0;
-        key_value->value = assign_row_value(destination + offset, meta_column);
         key_value->table_name = db_strdup(meta_table->table_name);
+
         row->data[i] = key_value;
         
         /* Assign primary key. */
@@ -810,18 +809,6 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
     select_result->rows[select_result->row_size++] = copy_row_without_reserved(row);
 }
 
-/* Get KeyValue from a Row by column name.
- * Return NULL if not found KeyValue match the column name. */
-static KeyValue *get_key_value_from_row(Row *row, char *column_name) {
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
-        if (streq(column_name, key_value->key))
-            return key_value;
-    }
-    return NULL;
-}
-
 /* Calulate column sum value. */
 static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_result) {
     
@@ -847,7 +834,8 @@ static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_
                 sum += *(double *)key_value->value;
                 break;
             }
-            case T_REFERENCE: {
+            case T_REFERENCE: 
+            case T_ROW: {
                 db_log(ERROR, "Reference type not used for sum function.");
                 break;
             }
@@ -889,8 +877,9 @@ static KeyValue *calc_column_avg_value(ColumnNode *column, SelectResult *select_
                 sum += *(double *)key_value->value;
                 break;
             }
-            case T_REFERENCE: {
-                db_log(ERROR, "Reference type not used for sum function.");
+            case T_REFERENCE: 
+            case T_ROW: {
+                db_log(ERROR, "Reference type not used for avg function.");
                 break;
             }
             default: {
@@ -1050,6 +1039,7 @@ static KeyValue *new_key_value(char *key, void *value, DataType data_type) {
     key_value->key = key;
     key_value->value = value;
     key_value->data_type = data_type;
+    key_value->is_array = false;
     return key_value;
 }
 
