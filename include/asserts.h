@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdlib.h>
 
 #ifdef DEBUG
 #include "assert.h"
@@ -6,6 +7,14 @@
 #else
 #define Assert(condition) ((void)true)
 #endif
+
+#define UNEXPECTED_VALUE(EXPR) do {                    \
+    fprintf(stderr,                                    \
+      "%s:%d: %lld: unexpected value for " #EXPR "\n", \
+      __FILE__, __LINE__, (long long)(EXPR)            \
+    );                                                 \
+    abort();                                           \
+  } while (0)
 
 /* Assert condition is true. */
 void assert_true(bool condition, char *format, ...);

@@ -222,37 +222,35 @@ void free_cursor(Cursor *cursor) {
     }
 } 
 
+/* Free AtomNode. */
+void free_atom_node(AtomNode *atom_node) {
+    if (atom_node) {
+        switch (atom_node->type) {
+            case A_STRING:
+                db_free(atom_node->value.strval);
+                break;
+            case A_REFERENCE:
+                free_refer_value(atom_node->value.referval);
+                break;
+            default:
+                break;
+        }
+        db_free(atom_node);
+    }
+}
+
 /* Free value item node. */
 void free_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node) {
-        if (value_item_node->is_array)
-            free_value_item_set_node(value_item_node->value_set);
-        else {
-            switch(value_item_node->data_type) {
-                case T_INT:
-                case T_BOOL:
-                case T_CHAR:
-                case T_FLOAT:
-                case T_DOUBLE:
-                case T_TIMESTAMP:
-                case T_LONG:
-                case T_DATE:
-                    break;
-                case T_STRING:
-                case T_VARCHAR: {
-                    if (value_item_node->value.strVal)
-                        db_free(value_item_node->value.strVal);
-                    break;
-                }
-                case T_REFERENCE: {
-                    free_refer_value(value_item_node->value.refVal);
-                    break;
-                }
-                default: {
-                    db_log(ERROR, "Not implement data type.");
-                    break;
-                }
-            }
+        switch (value_item_node->type) {
+            V_ATOM:
+                free_atom_node(value_item_node->value.atom);
+                break;
+            V_ARRAY:
+                free_value_item_set_node(value_item_node->value.value_set);
+                break;
+            V_NULL:
+                break;
         }
         db_free(value_item_node);
     }
@@ -331,7 +329,7 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
     if (value_item_set_node) {
         uint32_t i;
         for (i = 0; i < value_item_set_node->num; i++) {
-            free_value_item_node(*(value_item_set_node->value_item_node + i));
+            free_value_item_node(value_item_set_node->value_item_node[i]);
         }
         db_free(value_item_set_node->value_item_node);
         db_free(value_item_set_node);

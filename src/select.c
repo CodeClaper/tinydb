@@ -84,9 +84,6 @@ static char *search_table_via_alias(SelectResult *select_result, char *range_var
 /* Query column value. */
 static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row);
 
-/* Generate new KeyValue instance. */
-static KeyValue *new_key_value(char *key, void *value, DataType data_type);
-
 /* Calulate offset of every column in cell. */
 static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     uint32_t i, off_set = 0;
@@ -99,11 +96,52 @@ static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     return off_set;
 }
 
+/* Generate new KeyValue instance. */
+static KeyValue *new_key_value(char *key, void *value, DataType data_type) {
+    KeyValue *key_value = instance(KeyValue);
+    key_value->key = key;
+    key_value->value = value;
+    key_value->data_type = data_type;
+    key_value->is_array = false;
+    return key_value;
+}
+
+/* Generate new row instance. */
+static Row *new_row(void *key, char *table_name, uint32_t column_len) {
+    Row *row = instance(Row);
+    row->key = key;
+    row->table_name = table_name;
+    row->column_len = column_len;
+    row->data = db_malloc(sizeof(KeyValue *) * column_len, "pointer");
+    return row;
+}
+
+/* Generate new ArrayValue instance. */
+static ArrayValue *new_array_value(DataType data_type, uint32_t size) {
+    ArrayValue *array_value = instance(ArrayValue);
+    array_value->type = data_type;
+    array_value->size = size;
+    array_value->set = db_malloc(sizeof(void *) * size, "pointer");
+    return array_value;
+}
+
+/* Generate new select result structure. */
+SelectResult *new_select_result(char *table_name) {
+    SelectResult *select_result = instance(SelectResult);
+    select_result->row_size = 0;
+    select_result->row_index = 0;
+    select_result->table_name = table_name ? db_strdup(table_name) : NULL;
+    select_result->range_variable = NULL;
+    select_result->rows = db_malloc(0, "pointer");
+    select_result->derived = NULL;
+    select_result->last_derived = false;
+    return select_result;
+}
 
 /* Check if include internal comparison predicate for Value type. */
 static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
     void *target_key = get_value_from_value_item_node(value_item, meta_column);
-    if (target_key == NULL)
+    if (!target_key)
         return true;
 
     DataType data_type = meta_column->column_type;
@@ -132,8 +170,7 @@ static bool include_internal_comparison_predicate_value(SelectResult *select_res
             db_log(PANIC, "Unknown compare type.");
     }
 
-    if (meta_column->column_type == T_REFERENCE)
-        free_refer((Refer *) target_key);
+    free_value(target_key, data_type);
 
     return result;
 }
@@ -211,7 +248,7 @@ static bool include_exec_internal_node(SelectResult *select_result, void *min_ke
     
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node->predicate, meta_table);
 
-    /* Skipped the internal node must satisfy tow factors: 
+    /* Skipped the internal node must satisfy flowing factors: 
      * (1) Current condition is current table columns.
      * (2) It is primary key
      * (3) not satisfied internal node condition. 
@@ -281,10 +318,7 @@ static bool check_row_predicate_value(SelectResult *select_result, void *value, 
     bool ret = false;
     void *target = get_value_from_value_item_node(value_item, meta_column);
     ret = eval(type, value, target, meta_column->column_type);
-    /* Reference data is allocated, so free it. */
-    if (meta_column->column_type == T_REFERENCE)
-        free_refer(target);
-
+    free_value(target, meta_column->column_type);
     return ret;
 }
 
@@ -349,7 +383,8 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
         }
     }
 
-    /* When column skip test, it may exists in other tables when multi-table query. */
+    /* When column skip test, 
+     * it may exists in other tables when multi-table query. */
     return true;
 }
 
@@ -362,12 +397,11 @@ static bool include_leaf_comparison_predicate(SelectResult *select_result, Row *
 /* Check if include in value item set. */
 static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void *value, MetaColumn *meta_column) {
     bool ret = false;
-    for (uint32_t i = 0; i < value_item_set_node->num; i++) {
+    uint32_t i;
+    for (i = 0; i < value_item_set_node->num; i++) {
         void *target = get_value_from_value_item_node(value_item_set_node->value_item_node[i], meta_column);
         ret = equal(value, target, meta_column->column_type);
-        /* Reference data is allocated, so free it. */
-        if (meta_column->column_type == T_REFERENCE)
-            free_refer(target);
+        free_value(target, meta_column->column_type);
         if (ret)
             break;
     }
@@ -381,7 +415,7 @@ static bool include_leaf_in_predicate(Row *row, InNode *in_node) {
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
         /* Define the column. */
-        if (strcmp(key_value->key, in_node->column->column_name) == 0) {
+        if (streq(key_value->key, in_node->column->column_name)) {
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table , key_value->key);
             return check_in_value_item_set(in_node->value_set, key_value->value, meta_column);
         }
@@ -391,8 +425,8 @@ static bool include_leaf_in_predicate(Row *row, InNode *in_node) {
 
 /* Check if satisfy like string value. */
 static bool check_like_string_value(char *value, char *target) {
-    int value_len = strlen(value);
-    int target_len = strlen(target);
+    size_t value_len = strlen(value);
+    size_t target_len = strlen(target);
     if (value_len == 0 || target_len == 0)
         return false;
 
@@ -411,7 +445,7 @@ static bool check_like_string_value(char *value, char *target) {
         return startwith(value, str_dup);
     } 
     else 
-        return strcmp(value, target) == 0;
+        return streq(value, target);
 }
 
 
@@ -427,10 +461,7 @@ static bool include_leaf_like_predicate(Row *row, LikeNode *like_node) {
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
             void *target_value = get_value_from_value_item_node(like_node->value, meta_column);
             ret = check_like_string_value(key_value->value, target_value);
-
-            /* Reference data is allocated, so free it. */
-            if (meta_column->column_type == T_REFERENCE)
-                free_refer(target_value);
+            free_value(target_value, meta_column->column_type);
             break;
         }
     }
@@ -495,11 +526,11 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
  * Return ArrayValue.
  * */
 static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_column) {
+
     uint32_t array_num = get_array_number(destination);
-    ArrayValue *array_value = instance(ArrayValue);
-    array_value->size = array_num;
-    array_value->type = meta_column->column_type;
-    array_value->set = db_malloc(sizeof(void *) * array_value->size, "pointer");
+
+    /* Generate ArrayValue instance. */
+    ArrayValue *array_value = new_array_value(meta_column->column_type, array_num);
 
     uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE) / meta_column->array_cap;
     uint32_t i;
@@ -523,12 +554,9 @@ static void *assign_row_value(void *destination, MetaColumn *meta_column) {
 static Row *generate_row(void *destination, MetaTable *meta_table) {
 
     /* Instance new row. */
-    Row *row = instance(Row);
-
-    /* Base info. */
-    row->column_len = meta_table->all_column_size;
-    row->table_name = db_strdup(meta_table->table_name);
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
+    Row *row = new_row(NULL, 
+                       db_strdup(meta_table->table_name), 
+                       meta_table->all_column_size);
 
     /* Assignment row data. */
     uint32_t i;
@@ -564,7 +592,7 @@ Row *define_row(Refer *refer) {
 
     /* Check table exists. */
     Table *table = open_table(refer->table_name);
-    if (table == NULL) 
+    if (!table)
         return NULL;
 
     /* Check if refer null. */
@@ -768,18 +796,6 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     free_block(internal_node_snapshot);
 }
 
-/* Generate new select result structure. */
-SelectResult *new_select_result(char *table_name) {
-    SelectResult *select_result = instance(SelectResult);
-    select_result->row_size = 0;
-    select_result->row_index = 0;
-    select_result->table_name = table_name ? db_strdup(table_name) : NULL;
-    select_result->range_variable = NULL;
-    select_result->rows = db_malloc(0, "pointer");
-    select_result->derived = NULL;
-    select_result->last_derived = false;
-    return select_result;
-}
 
 /* Query with condition. */
 void query_with_condition(ConditionNode *condition, SelectResult *select_result, ROW_HANDLER row_handler, void *arg) {
@@ -1040,15 +1056,6 @@ static KeyValue *query_function_column_value(FunctionNode *function, SelectResul
     }
 }
 
-/* Generate new KeyValue instance. */
-static KeyValue *new_key_value(char *key, void *value, DataType data_type) {
-    KeyValue *key_value = instance(KeyValue);
-    key_value->key = key;
-    key_value->value = value;
-    key_value->data_type = data_type;
-    key_value->is_array = false;
-    return key_value;
-}
 
 /* Query column value. */
 static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row) {
@@ -1746,15 +1753,11 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
         case SCALAR_COLUMN: {
             ColumnNode *column = scalar_exp->column;
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
-            if (select_result->row_size == 0) {
-                KeyValue *key_value = instance(KeyValue);
-                key_value->key = db_strdup(column->column_name);
-                key_value->value = NULL;
-                key_value->data_type = meta_column->column_type;
-                return key_value;
-            }
-            /* Default, when query function and column data, column only return first data. */
-            return query_plain_column_value(select_result, column, select_result->rows[0]);
+            if (select_result->row_size == 0)
+                return new_key_value(db_strdup(column->column_name), NULL, meta_column->column_type);
+            else
+                /* Default, when query function and column data, column only return first data. */
+                return query_plain_column_value(select_result, column, select_result->rows[0]);
         }
         case SCALAR_FUNCTION:
             return query_function_column_value(scalar_exp->function, select_result);
@@ -1762,14 +1765,10 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
             return query_function_calculate_column_value(scalar_exp->calculate, select_result);
         case SCALAR_VALUE: {
             ValueItemNode *value = scalar_exp->value;
-            if (select_result->row_size == 0) {
-                KeyValue *key_value = instance(KeyValue);
-                key_value->key = db_strdup("value");
-                key_value->value = NULL;
-                key_value->data_type = value->data_type;
-                return key_value;
-            }
-            return query_value_item(value, select_result->rows[0]);
+            if (select_result->row_size == 0) 
+                return new_key_value(db_strdup("value"), NULL, convert_data_type(value->value.atom->type));
+            else
+                return query_value_item(value, select_result->rows[0]);
         }
         default:
             db_log(PANIC, "Unknown scalar type");
@@ -1778,10 +1777,8 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
 
 /* Query function data. */
 static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
-    Row *row = instance(Row);
-    row->table_name = db_strdup(select_result->table_name);
-    row->column_len = scalar_exp_set->size;
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
+
+    Row *row = new_row(NULL, db_strdup(select_result->table_name), scalar_exp_set->size);
 
     uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
@@ -1835,21 +1832,30 @@ static KeyValue *query_all_columns_calculate_column_value(SelectResult *select_r
 
 /* Query value item in scalar_exp. */
 static KeyValue *query_value_item(ValueItemNode *value_item, Row *row) {
-    void *value = NULL;
-    switch (value_item->data_type) {
-        case T_CHAR:
-        case T_STRING:
-            value = copy_value(value_item->value.strVal, value_item->data_type);
-            break;
-        case T_REFERENCE:
-            value = copy_value(value_item->value.refVal, value_item->data_type);
-            break;
-        default:
-            value = copy_value(&value_item->value, value_item->data_type);
-            break;
+    Assert(value_item->type == V_ATOM);
+    AtomNode *atom_node = value_item->value.atom;
+    switch (atom_node->type) {
+        case A_INT:
+            return new_key_value(db_strdup("value"), 
+                                 copy_value(&atom_node->value.intval, T_LONG), 
+                                 T_LONG);
+        case A_BOOL:
+            return new_key_value(db_strdup("value"), 
+                                 copy_value(&atom_node->value.boolval, T_BOOL), 
+                                 T_BOOL);
+        case A_FLOAT:
+            return new_key_value(db_strdup("value"), 
+                                 copy_value(&atom_node->value.boolval, T_DOUBLE), 
+                                 T_DOUBLE);
+        case A_STRING:
+            return new_key_value(db_strdup("value"), 
+                                 copy_value(atom_node->value.strval, T_STRING), 
+                                 T_STRING);
+        case A_REFERENCE:
+            return new_key_value(db_strdup("value"), 
+                                 make_null_refer(),
+                                 T_STRING);
     }
-    assert_not_null(value, "System error occurs at <query_value_item>");
-    return new_key_value(db_strdup("value"), value, value_item->data_type);
 }
 
 /* Query row value. */
@@ -1867,7 +1873,7 @@ static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *sca
 }
 
 /* Query a Row of Selection,
- * Actually, the Selection is all-column. */
+ * Actually, the Selection is pure-column scalars. */
 static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetNode *scalar_exp_set, Row *row) {
 
     if (!row) 
@@ -1876,11 +1882,9 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
     Table *table = open_table(row->table_name);
     MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
 
-    Row *new_row = instance(Row);
-    new_row->key = copy_value(row->key, key_meta_column->column_type);
-    new_row->table_name = db_strdup(row->table_name);
-    new_row->column_len = scalar_exp_set->size;
-    new_row->data = db_malloc(sizeof(KeyValue *) * new_row->column_len, "pointer");
+    Row *sub_row = new_row(copy_value(row->key, key_meta_column->column_type), 
+                            db_strdup(row->table_name), 
+                            scalar_exp_set->size);
 
     uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
@@ -1891,9 +1895,9 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
             free_value(key_value->key, T_STRING);
             key_value->key = db_strdup(scalar_exp->alias);
         }
-        new_row->data[i] = key_value;
+        sub_row->data[i] = key_value;
     }
-    return new_row;
+    return sub_row;
 }
 
 /* Query all columns data. */

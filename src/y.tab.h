@@ -201,7 +201,7 @@ union YYSTYPE
 
    char                         *strVal;
    int64_t                      intVal;
-   float                        floatVal;
+   double                       floatVal;
    bool                         boolVal;
    char                         *keyword;
    ReferValue                   *referVal;
@@ -218,6 +218,7 @@ union YYSTYPE
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
    ColumnSetNode                *column_set_node;
+   AtomNode                     *atom_node;
    ValueItemNode                *value_item_node;
    ValueItemSetNode             *value_item_set_node;
    SelectionNode                *selection_node;
@@ -252,7 +253,7 @@ union YYSTYPE
    Statement                    *statement;
    Statements                   *statements;
 
-#line 256 "y.tab.h"
+#line 257 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

@@ -105,6 +105,9 @@ ArrayValue *make_array_value();
 /* Make a ReferValue. */
 ReferValue *make_refer_value();
 
+/* Make a AtomNode. */
+AtomNode *make_atom_node();
+
 /* make a value item node. */
 ValueItemNode *make_value_item_node();
 

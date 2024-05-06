@@ -249,61 +249,71 @@ ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
     return column_set_node_copy;
 }
 
+/* Copy AtomNode. */
+AtomNode *copy_atom_node(AtomNode *atom_node) {
+    if (!atom_node)
+        return NULL;
+    AtomNode *atom_node_dup = instance(AtomNode);
+    atom_node_dup->type = atom_node->type;
+    switch (atom_node_dup->type) {
+        case A_INT:
+            atom_node_dup->value.intval = atom_node->value.intval;
+            break;
+        case A_BOOL:
+            atom_node_dup->value.boolval = atom_node->value.boolval;
+            break;
+        case A_FLOAT:
+            atom_node_dup->value.floatval = atom_node->value.floatval;
+            break;
+        case A_STRING:
+            atom_node_dup->value.strval = db_strdup(atom_node->value.strval);
+            break;
+        case A_REFERENCE:
+            atom_node_dup->value.referval = copy_refer_value(atom_node->value.referval);
+            break;
+        default:
+            UNEXPECTED_VALUE(atom_node_dup->type);
+    }
+    
+    return atom_node_dup;
+}
+
 /* Copy value item node. */
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node == NULL)
         return NULL;
-    ValueItemNode *value_item_node_copy = instance(ValueItemNode);
-    value_item_node_copy->is_array = value_item_node->is_array;
-    if (value_item_node_copy->is_array) 
-        value_item_node_copy->value_set = copy_value_item_set_node(value_item_node->value_set);
-    else {
-        value_item_node_copy->data_type = value_item_node->data_type;
-        switch(value_item_node->data_type) {
-            case T_CHAR:
-            case T_STRING:
-            case T_VARCHAR:
-                value_item_node_copy->value.strVal = db_strdup(value_item_node->value.strVal);
-                break;
-            case T_INT:
-            case T_LONG:
-                value_item_node_copy->value.intVal = value_item_node->value.intVal;
-                break;
-            case T_BOOL:
-                value_item_node_copy->value.boolVal = value_item_node->value.boolVal;
-                break;
-            case T_FLOAT:
-                value_item_node_copy->value.floatVal = value_item_node->value.floatVal;
-                break;
-            case T_DOUBLE:
-                value_item_node_copy->value.doubleVal = value_item_node->value.doubleVal;
-                break;
-            case T_TIMESTAMP:
-            case T_DATE:
-                value_item_node_copy->value.timeVal = value_item_node->value.timeVal;
-                break;
-            case T_REFERENCE: 
-                value_item_node_copy->value.refVal = copy_refer_value(value_item_node->value.refVal);
-                break;
+    ValueItemNode *value_item_node_dup = instance(ValueItemNode);
+    value_item_node_dup->type = value_item_node->type;
+    switch (value_item_node_dup->type) {
+        case V_ATOM: {
+            value_item_node_dup->value.atom = copy_atom_node(value_item_node->value.atom);
+            break;
         }
+        case V_ARRAY: {
+            value_item_node_dup->value.value_set = copy_value_item_set_node(value_item_node->value.value_set);
+            break;
+        }
+        case V_NULL:
+            break;
+        default:
+            UNEXPECTED_VALUE(value_item_node_dup->type);
     }
-
-    return value_item_node_copy;
+    return value_item_node_dup;
 }
 
 /* Copy ValueItemSetNode. */
 ValueItemSetNode *copy_value_item_set_node(ValueItemSetNode *value_item_set_node) {
-    if (value_item_set_node == NULL)
+    if (!value_item_set_node)
         return NULL;
-    ValueItemSetNode *copy = instance(ValueItemSetNode);
-    copy->num = value_item_set_node->num;
-    copy->value_item_node = db_malloc(sizeof(ValueItemNode *) * value_item_set_node->num, "pointer");
+    ValueItemSetNode *value_set_dup = instance(ValueItemSetNode);
+    value_set_dup->num = value_item_set_node->num;
+    value_set_dup->value_item_node = db_malloc(sizeof(ValueItemNode *) * value_item_set_node->num, "pointer");
 
     uint32_t i;
     for (i = 0; i < value_item_set_node->num; i++) {
-        copy->value_item_node[i] = copy_value_item_node(value_item_set_node->value_item_node[i]);
+        value_set_dup->value_item_node[i] = copy_value_item_node(value_item_set_node->value_item_node[i]);
     }
-    return copy;
+    return value_set_dup;
 }
 
 /*Copy function value node. */
@@ -345,7 +355,6 @@ CalculateNode *copy_calculate_node(CalculateNode *calculate_node) {
 
     return copy;
 }
-
 
 PredicateNode *copy_predicate_node(PredicateNode *predicate_node) {
     if (predicate_node == NULL)

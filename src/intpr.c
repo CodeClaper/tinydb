@@ -88,6 +88,12 @@ ReferValue *make_refer_value() {
     return refer_value;
 }
 
+/* Make a AtomNode. */
+AtomNode *make_atom_node() {
+    AtomNode *atom_node = instance(AtomNode);
+    return atom_node;
+}
+
 /* make a value item node. */
 ValueItemNode *make_value_item_node() {
     ValueItemNode *value_item_node = instance(ValueItemNode);

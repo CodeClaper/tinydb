@@ -16,7 +16,7 @@ int yylex();
 {
    char                         *strVal;
    int64_t                      intVal;
-   float                        floatVal;
+   double                       floatVal;
    bool                         boolVal;
    char                         *keyword;
    ReferValue                   *referVal;
@@ -33,6 +33,7 @@ int yylex();
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
    ColumnSetNode                *column_set_node;
+   AtomNode                     *atom_node;
    ValueItemNode                *value_item_node;
    ValueItemSetNode             *value_item_set_node;
    SelectionNode                *selection_node;
@@ -111,6 +112,7 @@ int yylex();
 %type <selection_node> selection
 %type <column_node> column
 %type <column_set_node> columns 
+%type <atom_node> atom
 %type <value_item_node> value_item
 %type <value_item_set_node> value_items
 %type <column_def_name> column_def_name
@@ -850,51 +852,61 @@ value_items:
         }
     ;
 value_item:
-    INTVALUE
+    atom
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.intVal = $1;
-            node->data_type = T_INT;
-            node->is_array = false;
+            node->type = V_ATOM;
+            node->value.atom = $1;
             $$ = node;
         }
-    | BOOLVALUE
+    | NULLX
         {
             ValueItemNode *node = make_value_item_node();
-            node->value.boolVal = $1;
-            node->data_type = T_BOOL;
-            node->is_array = false;
-            $$ = node;
-        }
-    | STRINGVALUE 
-        {
-            ValueItemNode *node = make_value_item_node();
-            node->value.strVal = $1;
-            node->data_type = T_STRING;
-            node->is_array = false;
-            $$ = node;
-        }
-    | FLOATVALUE 
-        {
-            ValueItemNode *node = make_value_item_node();
-            node->value.floatVal = $1;
-            node->data_type = T_FLOAT;
-            node->is_array = false;
-            $$ = node;
-        }
-    | REFERVALUE
-        {
-            ValueItemNode *node = make_value_item_node();
-            node->value.refVal = $1;
-            node->data_type = T_REFERENCE;
-            node->is_array = false;
+            node->type = V_NULL;
             $$ = node;
         }
     | '[' value_items ']'
         {
             ValueItemNode *node = make_value_item_node();
-            node->value_set = $2;
-            node->is_array = true;
+            node->type = V_ARRAY;
+            node->value.value_set = $2;
+            $$ = node;
+        }
+    ;
+atom:
+    INTVALUE
+        {
+            AtomNode *node = make_atom_node();
+            node->value.intval = $1;
+            node->type = A_INT;
+            $$ = node;
+        }
+    | BOOLVALUE
+        {
+            AtomNode *node = make_atom_node();
+            node->value.boolval = $1;
+            node->type = A_BOOL;
+            $$ = node;
+        }
+    | STRINGVALUE 
+        {
+            AtomNode *node = make_atom_node();
+            node->value.strval = $1;
+            node->type = A_STRING;
+            $$ = node;
+        }
+    | FLOATVALUE 
+        {
+            AtomNode *node = make_atom_node();
+            node->value.floatval = $1;
+            node->type = A_FLOAT;
+            $$ = node;
+        }
+    | REFERVALUE
+        {
+            AtomNode *node = make_atom_node();
+            node->value.referval = $1;
+            node->type = A_REFERENCE;
             $$ = node;
         }
     ;

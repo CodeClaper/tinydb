@@ -3,6 +3,12 @@
 /* Default data length. */
 uint32_t default_data_len(DataType column_type);
 
+/* Convert AtomType to DataType. */
+DataType convert_data_type(AtomType atom_type);
+
+/* Assign value from ValueItemNode. */
+void *assign_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column);
+
 /* Get value from value item node. */
 void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column);
 

@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#define _XOPEN_SOURCE
+#define __USE_XOPEN
+#include <time.h>
 #include "update.h"
 #include "mmu.h"
 #include "data.h"
@@ -25,8 +28,9 @@
 #include "json.h"
 #include "log.h"
 
+
 /* Update cell */
-static void update_cell(Row *row, AssignmentNode *assign_node) {
+static void update_cell(Row *row, AssignmentNode *assign_node, MetaColumn *meta_column) {
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {
         KeyValue *key_value = row->data[i];
@@ -34,66 +38,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node) {
             ValueItemNode *value_item = assign_node->value;
             /* Free old value. */
             free_value(key_value->value, key_value->data_type);
-            /* Assign new value. */
-            switch(value_item->data_type) {
-                case T_BOOL: {
-                    key_value->value = instance(bool);
-                    memcpy(key_value->value, &value_item->value.boolVal, sizeof(bool));
-                    break;
-                }
-                case T_INT: {
-                    key_value->value = instance(int32_t);
-                    memcpy(key_value->value, &value_item->value.intVal, sizeof(int32_t));
-                    break;
-                }
-                case T_LONG: {
-                    key_value->value = instance(int64_t);
-                    memcpy(key_value->value, &value_item->value.intVal, sizeof(int64_t));
-                    break;
-                }
-                case T_FLOAT: {
-                    key_value->value = instance(float);
-                    memcpy(key_value->value, &value_item->value.floatVal, sizeof(float));
-                    break;
-                }
-                case T_DOUBLE: {
-                    key_value->value = instance(double);
-                    memcpy(key_value->value, &value_item->value.doubleVal, sizeof(double));
-                    break;
-                }
-                case T_TIMESTAMP: 
-                case T_DATE: {
-                    key_value->value = instance(time_t);
-                    memcpy(key_value->value, &value_item->value.timeVal, sizeof(time_t));
-                    break;
-                }
-                case T_CHAR:
-                case T_STRING: 
-                case T_VARCHAR: {
-                    key_value->value = db_strdup(value_item->value.strVal);
-                    break;
-                }
-                case T_REFERENCE: {
-                    ReferValue *refer_value = value_item->value.refVal;
-                    Table *table = open_table(row->table_name);
-                    MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
-                    switch (refer_value->type) {
-                        case DIRECTLY: {
-                            InsertNode *insert_node = fake_insert_node(meta_column->table_name, refer_value->nest_value_item_set);
-                            Refer *refer = insert_for_values(insert_node);
-                            free_insert_node(insert_node);
-                            key_value->value = refer;
-                            break;
-                        }
-                        case INDIRECTLY: {
-                            Refer *refer = fetch_refer(meta_column, refer_value->condition);
-                            key_value->value = refer;
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }    
+            key_value->value = assign_value_from_value_item_node(value_item, meta_column);
         }
     } 
 }
@@ -163,7 +108,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     for (i = 0; i < assignment_set_node->num; i++) {
         AssignmentNode *assign_node = *(assignment_set_node->assignment_node + i);
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
-        update_cell(row, assign_node);
+        update_cell(row, assign_node, meta_column);
         if (meta_column->is_primary) { 
             /* If primary key changed, reassign new value. */
             new_key = get_value_from_value_item_node(assign_node->value, meta_column);

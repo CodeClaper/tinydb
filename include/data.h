@@ -352,27 +352,41 @@ typedef struct ArrayValue {
     void **set;
 } ArrayValue;
 
-/* ValueItemNode */
-typedef struct ValueItemNode {
-    bool is_array;
-    DataType data_type;
+/* AtomType. */
+typedef enum AtomType {
+    A_INT,
+    A_BOOL,
+    A_STRING,
+    A_FLOAT,
+    A_REFERENCE
+} AtomType;
+
+/* AtomNode. */
+typedef struct AtomNode {
+    AtomType type;
     union {
-        /* T_INT, T_LONG */
-        int64_t intVal;
-        /* T_BOOL */
-        bool boolVal;
-        /* T_CHAR, T_STRING */
-        char *strVal;
-        /* T_FLOAT */
-        float floatVal;
-        /* T_DOUBLE */
-        double doubleVal;
-        /* T_TIMESTAMP, T_DATE */
-        time_t timeVal;
-        /* T_REFERENCE */
-        ReferValue *refVal;
+        int64_t intval;
+        bool boolval;
+        char *strval;
+        double floatval;
+        ReferValue *referval;
     } value;
-    struct ValueItemSetNode *value_set;
+} AtomNode;
+
+/* ValueItemType. */
+typedef enum ValueItemType {
+    V_ATOM,
+    V_NULL,
+    V_ARRAY
+} ValueItemType;
+
+/* ValueItemNode. */
+typedef struct ValueItemNode {
+    ValueItemType type;
+    union {
+        AtomNode *atom;
+        struct ValueItemSetNode *value_set;
+    } value;
 } ValueItemNode;
 
 /* ValueItemSetNode */
@@ -640,8 +654,8 @@ typedef struct MapList {
 typedef struct Row {
     void *key;
     char *table_name;
-    KeyValue **data;
     uint32_t column_len;
+    KeyValue **data;
 } Row;
 
 /* SelectResult */
