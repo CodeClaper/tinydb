@@ -22,7 +22,6 @@
 #include "pager.h"
 #include "log.h"
 #include "index.h"
-#include "json.h"
 #include "check.h"
 
 /* Get table list. */
