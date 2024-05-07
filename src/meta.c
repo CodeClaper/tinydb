@@ -28,6 +28,9 @@
 #define DEFAULT_TIMESTAMP_LENGTH    20
 #define DEFAULT_REFERENCE_LENGTH    48
 
+/* DataTypeNames */
+static char *DATA_TYPE_NAMES[] = 
+    {"unknown", "bool",  "char", "varchar", "int", "long", "double", "float", "string", "date", "timestamp",  "reference", "array" };
 
 /* Column type length */
 uint32_t default_data_len(DataType column_type) {
@@ -55,7 +58,8 @@ uint32_t default_data_len(DataType column_type) {
         case T_REFERENCE:
             return DEFAULT_REFERENCE_LENGTH;
         default:
-            db_log(PANIC, "Unknown column type");
+            UNEXPECTED_VALUE("Unknown column type");
+            return -1;
   }
 }
 
@@ -75,6 +79,11 @@ DataType convert_data_type(AtomType atom_type) {
         default:
             UNEXPECTED_VALUE(atom_type);
     }
+}
+
+/* Data type name. */
+char *data_type_name(DataType data_type) {
+    return DATA_TYPE_NAMES[data_type];
 }
 
 /* Assign value from atom*/
@@ -101,6 +110,11 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
                     break;
                 case A_FLOAT:
                     val = (float)atom_node->value.floatval;
+                    break;
+                default:
+                    db_log(ERROR, "Can`t convert to data type [%s] for column '%s'", 
+                           convert_data_type(atom_node->type), 
+                           meta_column->column_name);
                     break;
             }
             return copy_value(&val, meta_column->column_type);
@@ -228,6 +242,11 @@ static void *get_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column) {
                     break;
                 case A_FLOAT:
                     val = (float)atom_node->value.floatval;
+                    break;
+                default:
+                    db_log(ERROR, "Can`t convert to data type [%s] for column '%s'", 
+                           convert_data_type(atom_node->type), 
+                           meta_column->column_name);
                     break;
             }
             return copy_value(&val, meta_column->column_type);

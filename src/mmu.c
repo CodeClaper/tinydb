@@ -40,7 +40,6 @@
 
 
 static MHashTable *mtable;
-static uint32_t max_value;
 static pthread_mutex_t mutex;
 
 static uint32_t hash_code(void *ptr) {
@@ -82,7 +81,8 @@ void init_mem() {
 
 /* Expand capacity of HashTable. */
 static void expand_capacity() {
-    uint32_t new_cap, old_cap, i;
+
+    uint32_t new_cap, old_cap;
     old_cap = mtable->capacity;
     /* Already max capacity, not allow to expand. */
     if (old_cap >= MAXIMUM_CAPACITY)
@@ -91,6 +91,8 @@ static void expand_capacity() {
     new_cap = new_cap < MAXIMUM_CAPACITY ? new_cap : MAXIMUM_CAPACITY; /* Avoid to exceed the max 32_bit integer. */
     MEntry **old_list = mtable->entry_list;
     MEntry **new_list = sys_malloc(sizeof(void *) * new_cap);
+
+    uint32_t i;
     for (i = 0; i < old_cap; i++) {
         MEntry *current = old_list[i];
         if (current) {
@@ -138,7 +140,8 @@ static void expand_capacity() {
 
 /* Shrink capacity of HashTable. */
 static void shrink_capacity() {
-    uint32_t new_cap, old_cap, i;
+
+    uint32_t new_cap, old_cap;
     old_cap = mtable->capacity;
     if (old_cap <= MININUM_CAPACITY)
         return; // already min capacity, not allow to shrink.
@@ -146,6 +149,8 @@ static void shrink_capacity() {
     new_cap = new_cap < MININUM_CAPACITY ? MININUM_CAPACITY : new_cap;
     MEntry **old_list = mtable->entry_list;
     MEntry **new_list = sys_malloc(sizeof(void *) * (new_cap));
+
+    uint32_t i;
     for (i = 0; i < mtable->capacity; i++) {
         MEntry *current = old_list[i];
         if (current) {
@@ -263,7 +268,7 @@ static MEntry *search_entry(void *ptr) {
 static void register_entry(void *ptr, size_t size, char *stype) {
     /* Check repeated register. */
     assert_null(search_entry(ptr), 
-        "System error, pointer [%p] data type [%s] already registered.\n", ptr, stype); 
+        "System error, pointer [%p] data type [%s] already registered.", ptr, stype); 
 
     MEntry *entry = sys_malloc(sizeof(MEntry));
     entry->ptr = ptr;
@@ -277,7 +282,7 @@ static void register_entry(void *ptr, size_t size, char *stype) {
 static void change_entry(void *old_ptr, void* new_ptr, size_t resize, char *stype) {
     if (old_ptr == new_ptr) {
         MEntry *entry = search_entry(old_ptr);
-        assert_not_null(entry, "System error, try to find MEntry fail.\n");
+        assert_not_null(entry, "System error, try to find MEntry fail.");
         entry->ptr = new_ptr;
         entry->size = resize;
     } else {
@@ -310,7 +315,7 @@ void *sys_realloc(void *ptr, size_t size) {
 
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype) {
-    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.\n");
+    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.");
 
     void *ret = malloc(size);
     assert_not_null(ret, "Not enough memory to allocate.");
@@ -324,7 +329,7 @@ void *db_malloc(size_t size, char *stype) {
 
 /* Database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
-    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.\n");
+    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.");
 
 #ifdef DEBUG
     MEntry *entry = search_entry(ptr);
@@ -357,7 +362,7 @@ void *db_realloc(void *ptr, size_t size) {
 /* Database level db_strdup. */
 char *db_strdup(char *str) {
     char *ret = strdup(str);
-    assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.\n");
+    assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.");
 
 #ifdef DEBUG
     register_entry(ret, strlen(str), str);

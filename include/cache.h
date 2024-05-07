@@ -11,7 +11,7 @@ void save_or_update_table_cache(Table *table);
 Table *find_table_cache(char *table_name);
 
 /* Remove table cache. */
-void *remove_table_cache(char *table_name);
+void remove_table_cache(char *table_name);
 
 /* Synchronous page data. */
 bool sync_page(char *table_name, uint32_t page_num, void *page);

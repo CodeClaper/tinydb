@@ -60,11 +60,12 @@ static void db_run() {
     int client_secket = -1;
     struct sockaddr_in *client_name = sys_malloc(sizeof(struct sockaddr_in));
     socklen_t client_name_len = sizeof(*client_name);
-    pthread_t new_thread, gc_thread;
+    pthread_t new_thread;
     server_socket = startup(conf->port);
     db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
 
     /* start gc */
+    /* pthread_t gc_thread */
     /*if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)*/
         /*db_log(PANIC, "Create new thread fail.");*/
 

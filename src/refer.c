@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
 #include "refer.h"
 #include "data.h"
 #include "table.h"
@@ -127,11 +129,15 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
     uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
     void *child_node = get_page(table->meta_table->table_name, table->pager, child_page_num);
     
-    switch(get_node_type(child_node)) {
+    NodeType node_type = get_node_type(child_node);
+    switch(node_type) {
         case LEAF_NODE:
             return define_cursor_leaf_node(table, child_node, child_page_num, key);
         case INTERNAL_NODE:
             return define_cursor_internal_node(table, child_node, key);
+        default:
+            UNEXPECTED_VALUE(node_type);
+            return NULL;
     }
 }
 
@@ -139,13 +145,15 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 Cursor *define_cursor(Table *table, void *key) {
     assert_not_null(key, "Input key can`t be NULL");
     void *root_node = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
-    switch(get_node_type(root_node)) {
+    NodeType node_type = get_node_type(root_node);
+    switch(node_type) {
         case LEAF_NODE:
             return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
         case INTERNAL_NODE:
             return define_cursor_internal_node(table, root_node, key);
         default:
-            db_log(PANIC, "Unknown node type occured in <define_cursor>.");
+            UNEXPECTED_VALUE(node_type);
+            return NULL;
     }
 }
 
@@ -161,8 +169,6 @@ Refer *define_refer(Row *row) {
 /* Fetch Refer. 
  * If found no one or many one, return NULL.  */
 Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
-
-    Table *table = open_table(meta_column->table_name);
 
     /* Make a new SelectResult. */
     SelectResult *select_result = new_select_result(meta_column->table_name);
@@ -204,6 +210,7 @@ ReferUpdateEntity *new_refer_update_entity(Refer *old_refer, Refer *new_refer) {
     ReferUpdateEntity *refer_update_entity = instance(ReferUpdateEntity);
     refer_update_entity->old_refer = old_refer;
     refer_update_entity->new_refer = new_refer;
+    return refer_update_entity;
 }
 
 /* Convert to refer from cursor. */
@@ -336,8 +343,6 @@ static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update
     /* Skip update locked refer. */
     if (include_update_refer_lock(refer_update_entity->old_refer))
         return;
-
-    Table *table = open_table(table_name);
 
     /* Query with condition, and delete satisfied condition row. */
     SelectResult *select_result = new_select_result(table_name);

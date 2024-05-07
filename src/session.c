@@ -94,7 +94,6 @@ bool db_send(const char *format, ...) {
     assert_true(strlen(format) < SPOOL_SIZE, "Overflow");
 
     va_list ap;
-    size_t size ;
     ssize_t r = -1, s = 0;
     Session *session;
     char rbuff[3], sbuff[SPOOL_SIZE];

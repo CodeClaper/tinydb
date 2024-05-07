@@ -58,8 +58,10 @@ void *copy_value(void *value, DataType data_type) {
             return db_strdup((char *)value);
         case T_REFERENCE: 
             return copy_refer(value);
-        default:
-            db_log(PANIC, "Not supported data type occurs at <copy_value>.");
+        default: {
+            UNEXPECTED_VALUE("Not supported data type occurs at <copy_value>.");
+            return NULL;
+        }
     }    
 }
 

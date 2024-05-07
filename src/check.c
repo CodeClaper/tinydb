@@ -51,7 +51,8 @@ static void *get_value_from_atom(AtomNode *atom_node) {
         case A_REFERENCE:
             return atom_node->value.referval;
         default:
-            db_log(ERROR, "Unknown atom type.");
+            UNEXPECTED_VALUE(atom_node->type);
+            return NULL;
     } 
 }
 
@@ -86,8 +87,8 @@ static bool include_column_for_query_spece(MetaColumn *meta_column, QuerySpecNod
         if (meta_column->column_type != target_meta_column->column_type) {
             db_log(ERROR, "Column '%s' data type is %s, but support data type %s in query spec.", 
                    meta_column->column_name,
-                   DATA_TYPE_NAMES[meta_column->column_type],
-                   DATA_TYPE_NAMES[target_meta_column->column_type]);
+                   data_type_name(meta_column->column_type),
+                   data_type_name(target_meta_column->column_type));
             return false;
         }
         return true;
@@ -113,8 +114,8 @@ static bool include_column_for_query_spece(MetaColumn *meta_column, QuerySpecNod
         if (meta_column->column_type != target_meta_column->column_type) {
             db_log(ERROR, "Column '%s' data type is %s, but support data type %s in query spec.", 
                    meta_column->column_name,
-                   DATA_TYPE_NAMES[meta_column->column_type],
-                   DATA_TYPE_NAMES[target_meta_column->column_type]);
+                   data_type_name(meta_column->column_type),
+                   data_type_name(target_meta_column->column_type));
             return false;
         }
         return true;
@@ -254,8 +255,8 @@ static bool check_value_data_type(DataType column_type, AtomNode *atom_node,
             UNEXPECTED_VALUE(column_type);
     }
     db_log(ERROR, "Can`t convert data [%s] to [%s] for column '%s' in table '%s'", 
-           DATA_TYPE_NAMES[convert_data_type(atom_node->type)],
-           DATA_TYPE_NAMES[column_type], 
+           data_type_name(convert_data_type(atom_node->type)),
+           data_type_name(column_type), 
            column_name, 
            table_name);
     return false;
@@ -335,8 +336,10 @@ static bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
 
             return exe_result == REG_NOERROR;
         }
-        default:
-            db_log(PANIC, "Not implement yet.");
+        default: {
+            UNEXPECTED_VALUE("Not implement yet.");
+            return false;
+        }
     }
 }
 
@@ -391,6 +394,10 @@ static bool check_function_node(FunctionNode *function, AliasMap alias_map) {
             MetaTable *meta_table = confirm_meta_table_via_column(column, alias_map);
             return check_column_node(column, meta_table); 
         }
+        default: {
+            UNEXPECTED_VALUE(value_node->value_type);
+            return false;
+        }
     }
 }
 
@@ -414,8 +421,10 @@ static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map) {
             return check_calculate_node(scalar_exp->calculate, alias_map);
         case SCALAR_VALUE:
             return true;
-        default:
-            db_log(PANIC, "Unknown Scalar Express type.");
+        default: {
+            UNEXPECTED_VALUE("Unknown Scalar Express type.");
+            return false;
+        }
     }
 }
 
@@ -447,6 +456,10 @@ static bool check_comparison_value(ScalarExpNode *comparion_value, MetaTable *me
         case SCALAR_FUNCTION:
         case SCALAR_CALCULATE:
             return true;
+        default: {
+            UNEXPECTED_VALUE(comparion_value->type);
+            return false;
+        }
     }
 }
 
@@ -503,13 +516,18 @@ static bool check_predicate_node(PredicateNode *predicate_node, AliasMap alias_m
             return check_in_node(predicate_node->in, alias_map);
         case PRE_LIKE:
             return check_like_node(predicate_node->like, alias_map);
+        default:
+            UNEXPECTED_VALUE(predicate_node->type);
+            return false;
     }
 }
 
 /* Check condition node. */
 static bool check_condition_node(ConditionNode *condition_node, AliasMap alias_entry) {
-    if (condition_node == NULL)
+
+    if (!condition_node)
         return true;
+
     switch(condition_node->conn_type) {
         case C_AND:
         case C_OR:
@@ -517,6 +535,9 @@ static bool check_condition_node(ConditionNode *condition_node, AliasMap alias_e
                 && check_condition_node(condition_node->right, alias_entry);
         case C_NONE: 
             return check_predicate_node(condition_node->predicate, alias_entry);
+        default:
+            UNEXPECTED_VALUE(condition_node->conn_type);
+            return false;
     }
 }
 
@@ -609,6 +630,8 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
         if (!(check_column_node(column_node, table->meta_table) 
             && check_value_item_node(table->meta_table, meta_column->column_name, value_node))) {
                 free_select_result(select_result);
+                if (change_priamry)
+                    free_value(new_key, primary_meta_column->column_type);
                 return false;
         }
     }
@@ -617,6 +640,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
         if (select_result->row_size > 1) {
             select_result->row_size = 0;
             free_select_result(select_result);
+            free_value(new_key, primary_meta_column->column_type);
             db_log(ERROR, "Duplicate key not allowd. ");
             return false;
         }
@@ -635,6 +659,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
                     select_result->row_size = 0;
                     free_select_result(select_result);
                     db_log(ERROR, "Key '%s' already exists, not allowd duplicate key. ", get_key_str(new_key, primary_meta_column->column_type));
+                    free_value(new_key, primary_meta_column->column_type);
                     return false;
             }
         }
@@ -642,6 +667,8 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
 
     select_result->row_size = 0;
     free_select_result(select_result);
+    if (change_priamry)
+        free_value(new_key, primary_meta_column->column_type);
     return true;
 }
 
@@ -680,10 +707,11 @@ static bool check_if_contain_primary_key(ColumnDefOptNodeList *column_def_opt_li
 
 /* Check if exists duplicate column name. */
 static bool check_table_element_commalist(BaseTableElementCommalist *base_table_element_commalist) {
+
     List *list = create_list();
 
-    uint32_t i, j;
     bool primary_key_flag = false;
+    uint32_t i;
     for (i = 0; i < base_table_element_commalist->size; i++) {
         BaseTableElementNode *base_table_element = base_table_element_commalist->set[i];
         switch (base_table_element->type) {
@@ -691,7 +719,8 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
                 ColumnDefNode *current_column_def = base_table_element->column_def;
                 if (check_if_column_already_exists(list, current_column_def)) {
                     destroy_list(list);
-                    db_log(ERROR, "Column def '%s' already exists, not allowd duplicate defination.", current_column_def->column->column);
+                    db_log(ERROR, "Column def '%s' already exists, not allowd duplicate defination.", 
+                           current_column_def->column->column);
                     return false;
                 }
                 if (check_if_contain_primary_key(current_column_def->column_def_opt_list)) {
@@ -701,7 +730,7 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
                     } else
                         primary_key_flag = true;
                 }
-                int index = append_list(list, current_column_def);
+                append_list(list, current_column_def);
                 break;
             }
             case TELE_TABLE_CONTRAINT_DEF: {
@@ -757,7 +786,7 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
 
         /* Check column number equals the insert values number. */
         if (insert_node->columns_set_node->size != value_item_set_node->num) {
-            db_log(ERROR, "Column count doesn`t match value count\n");
+            db_log(ERROR, "Column count doesn`t match value count.");
             return false;
         }
 
@@ -863,7 +892,6 @@ bool check_update_node(UpdateNode *update_node) {
     alias_map.map[0].name = update_node->table_name;
     alias_map.map[0].alias = update_node->table_name;
 
-    Table *table = open_table(update_node->table_name);
     return check_table(update_node->table_name)
            && check_assignment_set_node(update_node) 
            && check_where_clause(update_node->where_clause, alias_map);

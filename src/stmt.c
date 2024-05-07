@@ -157,6 +157,9 @@ static void exec_statement(Statement *statement, DBResult *result) {
             case DROP_TABLE_STMT:
                 statement_drop_table(statement, result);
                 break;
+            default:
+                UNEXPECTED_VALUE(statement->statement_type);
+                break;
         }
     } 
 

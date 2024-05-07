@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "index.h"
 #include "mmu.h"
 #include "pager.h"
@@ -44,7 +45,12 @@ char *get_key_str(void *key, DataType data_type) {
             return (char *)key;
         case T_INT: {
             char *str = db_malloc(50, "string");
-            sprintf(str, "%d", *(uint32_t *)key);
+            sprintf(str, "%d", *(int32_t *)key);
+            return str;
+        }
+        case T_LONG: {
+            char *str = db_malloc(100, "string");
+            sprintf(str, "%ld", *(int64_t *)key);
             return str;
         }
         case T_DOUBLE: {
@@ -57,9 +63,20 @@ char *get_key_str(void *key, DataType data_type) {
             sprintf(str, "%f", *(float *)key);
             return str;
         }
-        case T_DATE:
-        case T_TIMESTAMP:
-            db_log(PANIC, "Not allowed data type as primary key.");
+        case T_DATE: {
+            char *str = db_malloc(30, "string");
+            struct tm *tmp_time = localtime(key);
+            strftime(str, strlen(str), "%Y-%m-%d", tmp_time);
+            return str;
+        }
+        case T_TIMESTAMP: {
+            char *str = db_malloc(40, "string");
+            struct tm *tmp_time = localtime(key);
+            strftime(str, strlen(str), "%Y-%m-%d %H:%M:%S", tmp_time);
+            return str;
+        } default: {
+            db_log(ERROR, "Not allowed data type as primary key.");
+            return NULL;
+        }
     }
-    return NULL;
 }

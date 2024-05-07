@@ -167,7 +167,8 @@ static bool include_internal_comparison_predicate_value(SelectResult *select_res
             result = greater(target_key, min_key, data_type);
             break;
         default:
-            db_log(PANIC, "Unknown compare type.");
+            UNEXPECTED_VALUE("Unknown compare type.");
+            break;
     }
 
     free_value(target_key, data_type);
@@ -208,7 +209,8 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
         case SCALAR_CALCULATE:
             return true;
         default:
-            db_log(PANIC, "Not support comparison value type.");
+            UNEXPECTED_VALUE("Not support comparison value type.");
+            return false;
     }
 }
 
@@ -222,6 +224,9 @@ static bool include_internal_predicate(SelectResult *select_result, void *min_ke
         case PRE_IN:
         case PRE_LIKE:
             return true;
+        default:
+            UNEXPECTED_VALUE(predicate->type);
+            return false;
     }
 }
 
@@ -238,6 +243,10 @@ static bool include_logic_internal_node(SelectResult *select_result, void *min_k
                 || include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
         case C_NONE:
             db_log(PANIC, "System logic error.");
+            return false;
+        default:
+            UNEXPECTED_VALUE(condition_node->conn_type);
+            return false;
     } 
 }
 
@@ -272,6 +281,9 @@ static bool include_internal_node(SelectResult *select_result, void *min_key, vo
             return include_logic_internal_node(select_result, min_key, max_key, condition_node, meta_table);
         case C_NONE:
             return include_exec_internal_node(select_result, min_key, max_key, condition_node, meta_table);
+        default:
+            UNEXPECTED_VALUE(condition_node->conn_type);
+            return false;
     }
 }
 
@@ -286,6 +298,10 @@ static bool include_logic_leaf_node(SelectResult *select_result, Row *row, Condi
                 || include_leaf_node(select_result, row, condition_node->right);
         case C_NONE:
             db_log(PANIC, "System Logic Error");
+            return false;
+        default:
+            UNEXPECTED_VALUE(condition_node->conn_type);
+            return false;
     } 
 }
 
@@ -376,7 +392,8 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
                         db_log(ERROR, "Not support calcuation comparison value.");
                         return false;
                     default:
-                        db_log(PANIC, "Unknown Scalar type.");
+                        UNEXPECTED_VALUE(comparison_value->type);
+                        return false;
                 }
             }
 
@@ -486,6 +503,9 @@ static bool include_exec_leaf_node(SelectResult *select_result, Row *row, Condit
             return include_leaf_in_predicate(row, predicate->in);
         case PRE_LIKE:
             return include_leaf_like_predicate(row, predicate->like);
+        default:
+            UNEXPECTED_VALUE(predicate->type);
+            return false;
     }
 
 }
@@ -503,6 +523,9 @@ static bool include_leaf_node(SelectResult *select_result, Row *row, ConditionNo
             return include_logic_leaf_node(select_result, row, condition_node);
         case C_NONE:
             return include_exec_leaf_node(select_result, row, condition_node);
+        default:
+            UNEXPECTED_VALUE(condition_node->conn_type);
+            return false;
     }
 }
 
@@ -518,7 +541,8 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
         case PRE_IN:
             return get_meta_column_by_name(meta_table, predicate->in->column->column_name);
         default:
-            db_log(ERROR, "Unknown predicate type.");
+            UNEXPECTED_VALUE(predicate->type);
+            return NULL;
     }
 }
 
@@ -783,12 +807,16 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     
     /* Fetch right child. */
     void *right_child = get_page(table->meta_table->table_name, table->pager, right_child_page_num);
-    switch (get_node_type(right_child)) {
+    NodeType node_type = get_node_type(right_child);
+    switch (node_type) {
         case LEAF_NODE:
             select_from_leaf_node(select_result, condition, right_child_page_num, table, row_handler, arg);
             break;
         case INTERNAL_NODE:
             select_from_internal_node(select_result, condition, right_child_page_num, table, row_handler, arg);
+            break;
+        default:
+            UNEXPECTED_VALUE(node_type);
             break;
     }
 
@@ -981,7 +1009,11 @@ static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *sele
         }
         case V_ALL: {
             db_log(ERROR, "Sum function not support '*'");
-            break;
+            return NULL;
+        }
+        default: {
+            UNEXPECTED_VALUE(value->value_type);
+            return NULL;
         }
     }
 }
@@ -996,10 +1028,12 @@ KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_resu
             return new_key_value(db_strdup(AVG_NAME), 
                                  copy_value(&value->i_value, T_DOUBLE), 
                                  T_DOUBLE);
-        case V_ALL: {
+        case V_ALL: 
             db_log(ERROR, "Avg function not support '*'");
-            break;
-        }
+            return NULL;
+        default:
+            UNEXPECTED_VALUE(value->value_type);
+            return NULL;
     }
 }
 
@@ -1013,10 +1047,12 @@ KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_resu
             return new_key_value(db_strdup(MAX_NAME), 
                                  copy_value(&value->i_value, T_INT), 
                                  T_INT);
-        case V_ALL: {
+        case V_ALL: 
             db_log(ERROR, "Max function not support '*'.");
             return NULL;
-        }
+        default:
+            UNEXPECTED_VALUE(value->value_type);
+            return NULL;
     }
 } 
 
@@ -1031,10 +1067,12 @@ KeyValue *query_min_function(FunctionValueNode *value, SelectResult *select_resu
             return new_key_value(db_strdup(MIN_NAME), 
                                  copy_value(&value->i_value, T_INT), 
                                  T_INT);
-        case V_ALL: {
+        case V_ALL: 
             db_log(PANIC, "Min function not support '*'");
-            break;
-        }
+            return NULL;
+        default:
+            UNEXPECTED_VALUE(value->value_type);
+            return NULL;
     }
 } 
 
@@ -1052,7 +1090,8 @@ static KeyValue *query_function_column_value(FunctionNode *function, SelectResul
         case F_MIN:
             return query_min_function(function->value, select_result);
         default:
-            db_log(ERROR, "Not implement function yet.");
+            UNEXPECTED_VALUE("Not implement function yet.");
+            return NULL;
     }
 }
 
@@ -1589,7 +1628,7 @@ static KeyValue *calulate_division(KeyValue *left, KeyValue *right) {
                                          T_DOUBLE);
                 }
                 case T_DOUBLE: {
-                    double mul = (double)(*(int32_t *)left->value) / *(double *)right->value;
+                    double div = (double)(*(int32_t *)left->value) / *(double *)right->value;
                     return new_key_value(db_strdup(DIV_NAME), 
                                          copy_value(&div, T_DOUBLE), 
                                          T_DOUBLE);
@@ -1770,8 +1809,10 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
             else
                 return query_value_item(value, select_result->rows[0]);
         }
-        default:
-            db_log(PANIC, "Unknown scalar type");
+        default: {
+            UNEXPECTED_VALUE("Unknown scalar type");
+            return NULL;
+        }
     } 
 }
 
@@ -1855,6 +1896,9 @@ static KeyValue *query_value_item(ValueItemNode *value_item, Row *row) {
             return new_key_value(db_strdup("value"), 
                                  make_null_refer(),
                                  T_STRING);
+        default:
+            UNEXPECTED_VALUE(atom_node->type);
+            return NULL;
     }
 }
 
@@ -1869,6 +1913,10 @@ static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *sca
             return query_value_item(scalar_exp->value, row);
         case SCALAR_FUNCTION:
             db_log(PANIC, "System logic error at <query_row_value>");
+            return NULL;
+        default:
+            UNEXPECTED_VALUE(scalar_exp->type);
+            return NULL;
     }
 }
 
@@ -1923,6 +1971,9 @@ static bool is_function_scalar_exp(ScalarExpNode *scalar_exp) {
         case SCALAR_CALCULATE:
             return is_function_scalar_exp(scalar_exp->calculate->left) 
                 || is_function_scalar_exp(scalar_exp->calculate->right);
+        default:
+            UNEXPECTED_VALUE(scalar_exp->type);
+            return false;
     }
 }
 

@@ -23,6 +23,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/types.h>
+#include <time.h>
 #include "ltree.h"
 #include "mmu.h"
 #include "free.h"
@@ -328,19 +329,21 @@ uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t k
         void *index_key = get_internal_node_key(node, index, key_len);
         /* Notice: Greate Equal opreator is really import for store data, 
          * when keep the prince: always keep visible row lie at the forefront of same key cells. */
-        if (greater_equal(index_key, key, key_data_type)) {
+        if (greater_equal(index_key, key, key_data_type)) 
             max_index = index;
-        } else {
+        else 
             min_index = index + 1;
-        }
     }
-    if (min_index > keys_num) {
-        db_log(PANIC, "Tried to access child_num %d > num_keys %d. ", min_index, keys_num);
-    } else if (min_index == keys_num) {
+    if (min_index > keys_num) 
+        db_log(PANIC, "Tried to access child_num %d > num_keys %d.", 
+               min_index, 
+               keys_num);
+    else if (min_index == keys_num) 
         return get_internal_node_right_child(node);
-    } else {
+    else 
         return get_internal_node_child(node, min_index, key_len);
-    } 
+    
+    return -1;
 }
 
 /* Get leaf node cell index, 
@@ -383,7 +386,7 @@ void set_meta_column(void *root_node, void *destination, uint32_t index) {
  * For leaf node, the max key child is the last child; For internal node, the max child exists in the right child.
  * */
 static void *get_max_key(Table *table, void *node, uint32_t key_len, uint32_t value_len) {
-    switch(get_node_type(node)) {
+    switch (get_node_type(node)) {
         case INTERNAL_NODE: {
             uint32_t right_child_page_num = get_internal_node_right_child(node);
             void *right_node = get_page(table->meta_table->table_name, table->pager, right_child_page_num);
@@ -391,6 +394,9 @@ static void *get_max_key(Table *table, void *node, uint32_t key_len, uint32_t va
         }
         case LEAF_NODE:
             return get_leaf_node_cell_key(node, get_leaf_node_cell_num(node) - 1,  key_len, value_len);
+        default:
+            UNEXPECTED_VALUE(get_node_type(node));
+            return NULL;
     }
 }
 
@@ -543,13 +549,18 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num, ui
      * and copy old root data to the new one. 
      * */
     void *left_child = get_page(table->meta_table->table_name, table->pager, next_unused_page_num);
-    switch(get_node_type(root)) {
+
+    NodeType node_type = get_node_type(root);
+    switch(node_type) {
         case LEAF_NODE:
             copy_root_to_leaf_node(table, next_unused_page_num, key_len, value_len);
             break;
         case INTERNAL_NODE:
             copy_root_to_internal_node(root, left_child, key_len);
             redefine_parent(table, next_unused_page_num);
+            break;
+        default:
+            UNEXPECTED_VALUE(node_type);
             break;
     }
 
@@ -1035,7 +1046,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
             /* Check if current internal node is root, absolutely, root node has no parent node. */
             if (!is_root_node(internal_node)) {
                 uint32_t parent_page = get_parent_pointer(internal_node);
-                void *parent_internal_node = get_page(table->meta_table->table_name, table->pager, parent_page);
+                // void *parent_internal_node = get_page(table->meta_table->table_name, table->pager, parent_page);
 
                 /* Check if the last one cell in ther internal node. 
                  * If no, we need to replace key with previous key.
@@ -1173,8 +1184,10 @@ void root_fall_back_root_node(Table *table) {
     /* Only deal with internal node. Leaf not root does not need to fall back. */
     if (get_node_type(root) == INTERNAL_NODE) {
         void *replace_node = get_replaced_child_node(table, root);
-        if (root == replace_node) return;
-        switch(get_node_type(replace_node)) {
+        if (root == replace_node) 
+            return;
+        NodeType node_type = get_node_type(replace_node);
+        switch (node_type) {
             case LEAF_NODE: {
                 set_node_type(root, LEAF_NODE);
                 uint32_t cells_num = get_leaf_node_cell_num(replace_node); 
@@ -1205,6 +1218,11 @@ void root_fall_back_root_node(Table *table) {
                 set_internal_node_right_child(root, right_child_page_num);
                 void *right_child = get_page(table->meta_table->table_name, table->pager, right_child_page_num);
                 set_parent_pointer(right_child, table->root_page_num);
+                break;
+            }
+            default: {
+                UNEXPECTED_VALUE(node_type);
+                break;
             }
         }
     }

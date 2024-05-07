@@ -36,9 +36,6 @@
 #include "utils.h"
 #include "json.h"
 
-/* Make a fake SelectItemsNode. */
-static SelectItemsNode *fake_select_all_items_node();
-
 /* Get the index of column in the insert node. */
 static int get_column_index(ColumnSetNode *column_set, char *column_name) {
     int i;
@@ -165,6 +162,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
 
 /* Convert to insert row. */
 static Row *convert_insert_row(Row *row, Table *table) {
+
     Row *insert_row = instance(Row);
 
     insert_row->table_name = db_strdup(table->meta_table->table_name);

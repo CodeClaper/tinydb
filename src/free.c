@@ -1,12 +1,14 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "free.h"
 #include "mmu.h"
 #include "refer.h"
+#include "asserts.h"
 #include "table.h"
 #include "index.h"
-#include "log.h"
 #include "xlog.h"
+#include "log.h"
 
 /* Free value */
 void free_value(void *value, DataType data_type) {
@@ -243,13 +245,16 @@ void free_atom_node(AtomNode *atom_node) {
 void free_value_item_node(ValueItemNode *value_item_node) {
     if (value_item_node) {
         switch (value_item_node->type) {
-            V_ATOM:
+            case V_ATOM:
                 free_atom_node(value_item_node->value.atom);
                 break;
-            V_ARRAY:
+            case V_ARRAY:
                 free_value_item_set_node(value_item_node->value.value_set);
                 break;
-            V_NULL:
+            case V_NULL:
+                break;
+            default:
+                UNEXPECTED_VALUE(value_item_node->type);
                 break;
         }
         db_free(value_item_node);
@@ -265,6 +270,9 @@ void free_function_value_node(FunctionValueNode *function_value_node) {
                 break;
            case V_COLUMN:
                 free_column_node(function_value_node->column);
+                break;
+           default:
+                UNEXPECTED_VALUE(function_value_node->value_type);
                 break;
         }
         db_free(function_value_node);
@@ -355,6 +363,9 @@ void free_values_or_query_spec_node(ValuesOrQuerySpecNode *value_or_query_spec_n
             case VQ_QUERY_SPEC:
                 free_query_spec_node(value_or_query_spec_node->query_spec);
                 break;
+            default:
+                UNEXPECTED_VALUE(value_or_query_spec_node->type);
+                break;
         }
         db_free(value_or_query_spec_node);
     }
@@ -379,6 +390,9 @@ void free_select_items_node(SelectItemsNode *select_items_node) {
                 free_column_set_node(select_items_node->column_set_node);
                 break;
             case SELECT_ALL:
+                break;
+            default:
+                UNEXPECTED_VALUE(select_items_node->type);
                 break;
         }
         db_free(select_items_node);
@@ -439,6 +453,9 @@ void free_predicate_node(PredicateNode *predicate_node) {
             case PRE_LIKE:
                 free_like_node(predicate_node->like);
                 break;
+            default:
+                UNEXPECTED_VALUE(predicate_node->type);
+                break;
         }
         db_free(predicate_node);
     }
@@ -455,6 +472,9 @@ void free_condition_node(ConditionNode *condition_node) {
                 break;
             case C_NONE:
                 free_predicate_node(condition_node->predicate);
+                break;
+            default:
+                UNEXPECTED_VALUE(condition_node->conn_type);
                 break;
         }
         db_free(condition_node);
@@ -727,9 +747,10 @@ void free_show_tables_node(ShowNode *show_node) {
 
 /* Free ASTNode. */
 void free_statement(Statement *statement) {
-    switch(statement->statement_type) {
+    switch (statement->statement_type) {
         case BEGIN_TRANSACTION_STMT:
         case COMMIT_TRANSACTION_STMT:
+        case ROLLBACK_TRANSACTION_STMT:
             break;
         case SELECT_STMT:
             free_select_node(statement->select_node);
@@ -755,6 +776,9 @@ void free_statement(Statement *statement) {
         case SHOW_STMT:
             free_show_tables_node(statement->show_node);
             break;
+        default:
+            UNEXPECTED_VALUE(statement->statement_type);
+            break;
     }
     db_free(statement);
 }
@@ -763,7 +787,7 @@ void free_statement(Statement *statement) {
 void free_statements(Statements *statements) {
     if (statements) {
         uint32_t i;
-        for (uint32_t i = 0; i < statements->size; i++) {
+        for (i = 0; i < statements->size; i++) {
             free_statement(statements->list[i]);
         }
         db_free(statements->list);

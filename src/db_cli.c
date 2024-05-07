@@ -157,7 +157,6 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Bad command line arguement.");
         exit(1);
     }
-    pthread_t new_thread;
     struct sockaddr_in *address = gen_address(argc, argv);
     
     int sock_fd = try_connect(address);

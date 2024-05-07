@@ -96,9 +96,6 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     /* For update row funciton, the arg is AssignmentSetNode data type arguement. */
     AssignmentSetNode *assignment_set_node = (AssignmentSetNode *) arg;
 
-    uint32_t value_len = calc_table_row_length(table);
-    uint32_t key_len = calc_primary_key_length(table);
-
     /* Use old primary key as default. */
     void *old_key = row->key;
     void *new_key = old_key;
@@ -111,12 +108,12 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
         update_cell(row, assign_node, meta_column);
         if (meta_column->is_primary) { 
             /* If primary key changed, reassign new value. */
+            free_value(old_key, meta_column->column_type);
             new_key = get_value_from_value_item_node(assign_node->value, meta_column);
         }
     }
    
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    row->key = copy_value(new_key, primary_meta_column->column_type);
+    row->key = new_key;
     
     /* Insert row for update. */
     insert_row_for_update(row, table);

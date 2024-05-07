@@ -145,7 +145,6 @@ char *get_log_msg() {
 /* Get system time by format. */
 static char* get_sys_time(char *format) {
     time_t t_now;
-    struct tm *tm_now;
     time(&t_now);
     return format_time(format, t_now);
 }
