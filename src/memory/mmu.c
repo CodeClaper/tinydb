@@ -68,8 +68,8 @@ static uint32_t get_index(void *ptr, uint32_t capacity) {
     return hash_code(ptr) % capacity;
 }
 
-/* Initialise mem */
-void init_mem() {
+/* Initialise mu */
+void init_mmu() {
     /* Initialise table. */
     mtable = sys_malloc(sizeof(MHashTable));
     mtable->capacity = MININUM_CAPACITY; 
@@ -268,8 +268,8 @@ static MEntry *search_entry(void *ptr) {
 static void register_entry(void *ptr, size_t size, char *stype) {
     /* Check repeated register. */
     assert_null(search_entry(ptr), 
-        "System error, pointer [%p] data type [%s] already registered.", ptr, stype); 
-
+                "System error, pointer [%p] data type [%s] already registered.", 
+                ptr, stype); 
     MEntry *entry = sys_malloc(sizeof(MEntry));
     entry->ptr = ptr;
     entry->size = size;
@@ -315,8 +315,6 @@ void *sys_realloc(void *ptr, size_t size) {
 
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype) {
-    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.");
-
     void *ret = malloc(size);
     assert_not_null(ret, "Not enough memory to allocate.");
     memset(ret, 0, size);
@@ -329,14 +327,12 @@ void *db_malloc(size_t size, char *stype) {
 
 /* Database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
-    assert_true(size <= MAX_ALLOCATE_SIZE, "Exceeded the max allocate size.");
 
 #ifdef DEBUG
     MEntry *entry = search_entry(ptr);
     if (ptr == NULL)
         assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
 #endif
-
 
     /* When size is zero, realloc return null, which is not we need. */
     if (size == 0) {

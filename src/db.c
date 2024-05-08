@@ -10,6 +10,7 @@
 #include "data.h"
 #include "defs.h"
 #include "mmu.h"
+#include "mem.h"
 #include "rwlock.h"
 #include "trans.h"
 #include "xlog.h"
@@ -33,6 +34,8 @@ jmp_buf errEnv; /* jmp_buf for error. */
 /* DB Start. */
 static void db_start() {
     /* Initialise memory manager unit. */
+    init_mmu();
+    /* Initialise memory manger. */
     init_mem();
     /* Initialise log. */
     init_log();

@@ -1,6 +1,4 @@
 
-BUILT_SOURCES = ../include/common/data.h
-
 SUBDIRS = backend common lock memory parser storage trans utils
 
 includedir = $(top_srcdir)/include
@@ -13,8 +11,6 @@ else
 AM_CFLAGS = -O2 -I$(includedir)/common -I$(includedir)/lock -I$(includedir)/memory -I$(includedir)/parser\
 			-I$(includedir)/backend -I$(includedir)/storage -I$(includedir)/trans -I$(includedir)/utils
 endif
-
-LDADD = -lpthread -lm
 
 bin_PROGRAMS = tinydb \
 			   tinydb_cli

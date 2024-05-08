@@ -8,6 +8,7 @@
 #define __USE_XOPEN
 #include <time.h>
 #include "meta.h"
+#include "data.h"
 #include "mmu.h"
 #include "copy.h"
 #include "free.h"

@@ -3,7 +3,7 @@
 #define instance(_type_)  ((_type_ *) db_malloc(sizeof(_type_), #_type_))
 
 /* Initialise mem */
-void init_mem();
+void init_mmu();
 
 /* System level mallocate */
 void *sys_malloc(size_t size);

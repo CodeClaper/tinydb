@@ -339,7 +339,7 @@ static void json_select_result(DBResult *result) {
 
 /* Send out db none data result. */
 static void json_nondata_rows_result(DBResult *result) {
-    db_send("{ \"success\": %s, \"message\": \"%s\", \"rows\": %d,\"duration\": %lf }\n", 
+    db_send("{ \"success\": %s, \"message\": \"%s\", \"rows\": %d, \"duration\": %lf }", 
             result->success ? "true" : "false", 
             result->success ? result->message : get_log_msg(), result->rows, 
             result->duration);

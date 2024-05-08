@@ -26,7 +26,8 @@ char *read_conf(char *title, char *key) {
     char *p;
     bool inBlock = false;
     while(!feof(file)) {
-        fgets(buff, BUFF_SIZE, file);
+        char *ret = fgets(buff, BUFF_SIZE, file);
+        assert_not_null(ret, "Read conf file error.");
         char *line = trim(buff);
         /* Check if commenter line. */
         if (startwith(line, "//") || startwith(line, "#"))
