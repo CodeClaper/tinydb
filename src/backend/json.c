@@ -66,7 +66,7 @@ static void json_array_key_value(KeyValue *key_value) {
     Assert(key_value->is_array);
     char *key = key_value->key;
     ArrayValue *array_value = (ArrayValue *)key_value->value;
-    switch(key_value->data_type) {
+    switch (key_value->data_type) {
         case T_BOOL: {
             db_send("\"%s\": [", key);
             uint32_t i;
@@ -198,6 +198,7 @@ static void json_array_key_value(KeyValue *key_value) {
 
 /* Generate single-value key value json. */
 static void json_single_key_value(KeyValue *key_value) {
+
     Assert(!key_value->is_array);
 
     char *key = key_value->key;

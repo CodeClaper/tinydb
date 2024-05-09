@@ -683,6 +683,7 @@ static bool check_duplicate_table(char *table_name) {
 
 /* Check if column already exists. */
 static bool check_if_column_already_exists(List *list, ColumnDefNode *column_def) {
+
     uint32_t i;
     for (i = 0; i < list->size; i++) {
         ColumnDefNode *current_column_def = (ColumnDefNode *)list->set[i];
@@ -805,10 +806,12 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
 
 /* Check InsertNode for QUERY_SPEC. */
 static bool check_insert_node_for_query_spec(InsertNode *insert_node, QuerySpecNode *query_spec) {
+
     /* Check table exist.*/
     Table *table = open_table(insert_node->table_name);
     if (table == NULL)
         return false;
+
     if (insert_node->all_column) {
         MetaTable *meta_table = table->meta_table;
         uint32_t i;
@@ -831,6 +834,7 @@ static bool check_insert_node_for_query_spec(InsertNode *insert_node, QuerySpecN
 
 /* Check ValuesOrQuerySpecNode in InsertNode. */
 static bool check_values_or_query_spec(InsertNode *insert_node, ValuesOrQuerySpecNode *values_or_query_spec) {
+
     switch (values_or_query_spec->type) {
         case VQ_VALUES:
             return check_insert_node_for_values(insert_node, values_or_query_spec->values);
@@ -840,6 +844,7 @@ static bool check_values_or_query_spec(InsertNode *insert_node, ValuesOrQuerySpe
             db_log(ERROR, "Unknown ValuesOrQuerySpecNode type");
             return false;
     }
+
 }
 
 /* Check table. */

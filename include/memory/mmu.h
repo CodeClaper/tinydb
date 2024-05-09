@@ -11,6 +11,9 @@ void *sys_malloc(size_t size);
 /* System level reallocate. */
 void *sys_realloc(void *ptr, size_t size);
 
+/* System level free. */
+void sys_free(void *ptr);
+
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype);
 

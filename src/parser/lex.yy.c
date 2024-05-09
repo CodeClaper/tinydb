@@ -1272,7 +1272,7 @@ YY_RULE_SETUP
                           } else 
                           {
                               char *str = strtok(yytext, "\'");  
-                              yylval.strVal =  strdup(str);
+                              yylval.strVal = db_strdup(str);
                           } 
                           return STRINGVALUE;
                         } 

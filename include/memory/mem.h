@@ -13,8 +13,15 @@ typedef struct MemAllocator {
     pthread_t tid;
     void *block;
     uint32_t cursor;
+    struct AllocEntry *alloc_entry;
     struct FreeEntry *free_table;
 } MemAllocator;
+
+typedef struct AllocEntry {
+    void *ptr;
+    uint32_t size;
+    struct AllocEntry *next;
+} AllocEntry;
 
 typedef struct FreeEntry {
     void *ptr;
@@ -29,8 +36,12 @@ void init_mem();
 /* Allocate memory. */
 void *alloc_mem(size_t size);
 
+/* Free memory. */
+void free_mem(void *ptr);
+
 /* Reallocate memory. */
 void *realloc_mem(void *ptr, size_t size);
 
-/* Free memory. */
-void free_mem(void *ptr);
+/* Mem strdup. */
+char *strdup_mem(char *str);
+
