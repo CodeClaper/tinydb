@@ -313,6 +313,11 @@ void *sys_realloc(void *ptr, size_t size) {
     return ret;
 }
 
+/* System level free. */
+void sys_free(void *ptr) {
+    free(ptr);
+}
+
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype) {
     void *ret = malloc(size);
