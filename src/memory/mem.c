@@ -8,6 +8,8 @@
 #include <time.h>
 #include "mem.h"
 
+static AllocEntry *find_alloc_entry(MemAllocator *allocator, void *ptr);
+
 static MemManager *mem_manager;
 
 /* Mem Init. */
@@ -28,6 +30,22 @@ static MemAllocator *find_allocator() {
         MemAllocator *current = mem_manager->array[i];
         if (current && current->tid == pthread_id)
             return current;
+    }
+    return NULL;
+}
+
+/* Borrow MemAllocator.
+ * 'Borrow' means current thread not found pointer in its allocator 
+ * and borrow others thread allocator to access the pointer.
+ * */
+static MemAllocator *borrow_allocator(void *ptr) {
+    pthread_t pthread_id = pthread_self();
+    uint32_t i;
+    for (i = 0; i < mem_manager->size; i++) {
+        MemAllocator *current = mem_manager->array[i];
+        if (current && current->tid != pthread_id 
+            && find_alloc_entry(current, ptr))
+                return current;
     }
     return NULL;
 }
@@ -93,6 +111,7 @@ static MemAllocator *generate_allocator() {
         abort();
     }
     allocator->tid = pthread_self();
+    allocator->alloc_entry = NULL;
     allocator->free_table = NULL;
     /* Register to Memory manager. */
     register_allocator(allocator);
@@ -180,12 +199,12 @@ static void *alloc_in_free_table(MemAllocator *allocator, size_t size) {
 
 /* Allocate memory in it`s block. */
 static void *alloc_in_block(MemAllocator *allocator, size_t size) {
-    void *ptr = allocator->block + allocator->cursor;
-    allocator->cursor += size;
-    if (allocator->cursor > BLOCK_SIZE) {
+    if (allocator->cursor + size > BLOCK_SIZE) {
         fprintf(stderr, "Exceed the bound of memory allocator.");
         abort();
     }
+    void *ptr = allocator->block + allocator->cursor;
+    allocator->cursor += size;
     return ptr;
 }
 
@@ -194,8 +213,9 @@ static void *alloc_in_block(MemAllocator *allocator, size_t size) {
  * If free table allocating fail, allocate in block.
  * */
 static void *alloc(MemAllocator *allocator, size_t size) {
-    if (size == 0)
-        return NULL;
+    
+    /* At least one length size. */
+    size = size < 1 ? 1 : size;
 
     void *reuse_ptr = alloc_in_free_table(allocator, size);
     void *ptr = (reuse_ptr)
@@ -225,8 +245,10 @@ void *alloc_mem(size_t size) {
 /* Free memory. */
 void free_mem(void *ptr) {
     
-    if (ptr == NULL)
-        return;
+    if (ptr == NULL) {
+        fprintf(stderr, "Try to free a NULL pointer.");
+        abort();
+    }
 
     MemAllocator *allocator = find_allocator();
     if (!allocator) {
@@ -235,6 +257,14 @@ void free_mem(void *ptr) {
     }
 
     AllocEntry *alloc_entry = find_alloc_entry(allocator, ptr);
+    if (!alloc_entry) {
+        
+        /* Borrow allocator to find pointer. */
+        allocator = borrow_allocator(ptr);
+        if (allocator)
+            alloc_entry = find_alloc_entry(allocator, ptr);
+    }
+
     if (!alloc_entry) {
         fprintf(stderr, "Try to free pointer '%p' which not found alloc entry.", ptr);
         abort();
@@ -252,8 +282,6 @@ void free_mem(void *ptr) {
 
 /* Reallocate memory. */
 void *realloc_mem(void *ptr, size_t size) {
-    if (size == 0)
-        return NULL;
 
     if (ptr == NULL)
         return alloc_mem(size);
@@ -266,12 +294,23 @@ void *realloc_mem(void *ptr, size_t size) {
 
     AllocEntry *alloc_entry = find_alloc_entry(allocator, ptr);
     if (!alloc_entry) {
-        fprintf(stderr, "Try to realloc pointer '%p' which not found alloc entry.", ptr);
+        
+        /* Borrow allocator to find pointer. */
+        allocator = borrow_allocator(ptr);
+        if (allocator)
+            alloc_entry = find_alloc_entry(allocator, ptr);
+    }
+
+    if (!alloc_entry) {
+        fprintf(stderr, "Try to free pointer '%p' which not found alloc entry.", ptr);
         abort();
     }
 
-    void *new_ptr = alloc_mem(size);
+    /* Allocate new memory and copy old one. */
+    void *new_ptr = alloc(allocator, size);
     memcpy(new_ptr, ptr, alloc_entry->size);
+    
+    /* Free old memory. */
     free_mem(ptr);
 
     return new_ptr;

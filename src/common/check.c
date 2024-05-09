@@ -181,7 +181,7 @@ static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap ali
 
         if (column->range_variable && 
             (streq(column->range_variable, alias_entry.name) || streq(column->range_variable, alias_entry.alias))) 
-            current_meta_table = meta_table;
+                current_meta_table = meta_table;
 
         if (column->range_variable == NULL) {
             for (j = 0; j < meta_table->column_size; j++) {

@@ -92,9 +92,8 @@ static bool save_or_update_table_buffer(Table *table) {
 bool remove_table_buffer() {
     /* Try to get current transaction. */
     TransactionHandle *trans = find_transaction();
-    if (trans == NULL) {
+    if (trans == NULL) 
         return false;
-    }
 
     spin_lock_acquire(&lock);
 
@@ -102,7 +101,6 @@ bool remove_table_buffer() {
     for (i = 0; i < buffer->size; i++) {
         TableBufferEntry *entry = buffer->buffer[i];
         if (entry->xid == trans->xid && entry->tid == trans->tid) {
-
             /* Right move forwar to cover left space. */
             for (j = i; j < buffer->size - 1; j++) {
                 memcpy(buffer->buffer + j, buffer->buffer + j + 1, sizeof(TableBufferEntry *));
@@ -119,4 +117,30 @@ bool remove_table_buffer() {
     
     spin_lock_release(&lock);
     return true;
+}
+
+/* Clear table buffer. */
+void clear_table_buffer(char *table_name) {
+
+    spin_lock_acquire(&lock);
+
+    int32_t i, j;
+    for (i = 0; i < buffer->size; i++) {
+        TableBufferEntry *entry = buffer->buffer[i];
+        if (streq(table_name, entry->table->meta_table->table_name)) {
+            /* Right move forwar to cover left space. */
+            for (j = i; j < buffer->size - 1; j++) {
+                memcpy(buffer->buffer + j, buffer->buffer + j + 1, sizeof(TableBufferEntry *));
+            }
+            memset(buffer->buffer + buffer->size - 1, 0, sizeof(TableBufferEntry *));
+            buffer->size--;
+            buffer->buffer = db_realloc(buffer->buffer, sizeof(TableBufferEntry *) * buffer->size);
+            free_table_buffer_entry(entry);
+
+            /* Restart loop check. */
+            i = 0;
+        }  
+    }
+    
+    spin_lock_release(&lock);
 }

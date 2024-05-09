@@ -96,7 +96,7 @@ void free_row(Row *row) {
         /* free row data. */
         if (row->data) {
             uint32_t i;
-            for(i = 0; i < row->column_len; i++) {
+            for (i = 0; i < row->column_len; i++) {
                 free_key_value(row->data[i]);
             }
             db_free(row->data);

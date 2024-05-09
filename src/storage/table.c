@@ -201,8 +201,10 @@ bool drop_table(char *table_name) {
     /* Disk remove. */
     if (remove(file_path) == 0) {
         db_free(file_path);
-        /* Remove table cache. */
-        remove_table_cache(table_name);
+        /* Clear table cache. */
+        clear_table_cache(table_name);
+        /* Clear table buffer. */
+        clear_table_buffer(table_name);
         return true;
     }
 

@@ -56,8 +56,8 @@ Table *find_table_cache(char *table_name) {
     return NULL;
 }
 
-/* Remove table cache. */
-void remove_table_cache(char *table_name) {
+/* Clear table cache. */
+void clear_table_cache(char *table_name) {
     uint32_t i, j;
     for (i = 0; i < cache->size; i++) {
         Table *current = cache->table_list[i];

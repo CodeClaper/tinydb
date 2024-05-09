@@ -1776,6 +1776,9 @@ static KeyValue *query_function_calculate_column_value(CalculateNode *calculate,
         case CAL_DIV:
             result = calulate_division(left, right);
             break;
+        default:
+            UNEXPECTED_VALUE(calculate->type);
+            break;
     }
 
     free_key_value(left);
@@ -1833,7 +1836,8 @@ static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResul
     }
 
     /* Free old rows memory. */
-    for (uint32_t j = 0; j <select_result->row_size; j++) {
+    uint32_t j;
+    for (j = 0; j <select_result->row_size; j++) {
         free_row(select_result->rows[j]);
     }
 
