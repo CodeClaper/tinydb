@@ -6,7 +6,7 @@ check_PROGRAMS = gtest
 gtest_LDADD = -lgtest_main -lgtest
 gtest_SOURCES = main.cpp spinlock_test.cpp
 gtest_LDFLAGS = -pthread
-gtest_CPPFLAGS = -w -I/usr/src/googletest/googletest/include -I/usr/src/googletest/googletest -I$(top_srcdir)/src -pthread
+gtest_CPPFLAGS = -w -I/usr/src/googletest/googletest/include -I/usr/src/googletest/googletest -I$(top_srcdir)/include/lock -I$(top_srcdir)/include/common -pthread
 
 
 

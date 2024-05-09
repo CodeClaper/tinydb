@@ -11,17 +11,17 @@ def test_create_table():
 
 ## test create already exist table.
 def test_create_already_exist_table():
-    ret = client.execute("create table A (id varchar(32), name varchar(16), age int, address varchar(48), primary key(id))")
+    ret = client.execute("create table A (id varchar(32), name varchar(16), age int, address varchar(48), primary key(id));")
     assert ret["success"] == False
 
 ## test create already exist table.
 def test_create_table_lack_primary_key():
-    ret = client.execute("create table A (id varchar(32), name varchar(16), age int, address varchar(48);")
+    ret = client.execute("create table A (id varchar(32), name varchar(16), age int, address varchar(48));")
     assert ret["success"] == False
 
 ## test create already exist table.
 def test_create_table_unknown_data_type():
-    ret = client.execute("create table A (id varchar(32), name varchar(16), age int, address text, primary key(id);")
+    ret = client.execute("create table A (id varchar(32), name varchar(16), age int, address text, primary key(id));")
     assert ret["success"] == False
 
 ## test create test without user-level primary key
