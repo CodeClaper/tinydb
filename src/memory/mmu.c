@@ -27,6 +27,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "mmu.h"
+#include "mem.h"
 #include "asserts.h"
 #include "log.h"
 #include "data.h"
@@ -320,66 +321,35 @@ void sys_free(void *ptr) {
 
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype) {
-    void *ret = malloc(size);
+    void *ret = mmalloc(size);
     assert_not_null(ret, "Not enough memory to allocate.");
     memset(ret, 0, size);
-#ifdef DEBUG
-    register_entry(ret, size, stype);
-#endif
-
     return ret;
 }
 
 /* Database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
 
-#ifdef DEBUG
-    MEntry *entry = search_entry(ptr);
-    if (ptr == NULL)
-        assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
-#endif
-
-    /* When size is zero, realloc return null, which is not we need. */
-    if (size == 0) {
-        db_free(ptr);
-#ifdef DEBUG
-        return db_malloc(size, entry->stype);
-#else
+    if (size == 0)
         return db_malloc(size, "pointer");
-#endif
-    }
 
-    void *ret = realloc(ptr, size);
+    void *ret = mrealloc(ptr, size);
     if (ret == NULL)
         assert_not_null(ret, "Not enough memory to rallocate at <db_realloc>.");
-
-#ifdef DEBUG
-    change_entry(ptr, ret, size, entry->stype);
-#endif
-
     return ret;
 }
 
 /* Database level db_strdup. */
 char *db_strdup(char *str) {
-    char *ret = strdup(str);
+    char *ret = mstrdup(str);
     assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.");
-
-#ifdef DEBUG
-    register_entry(ret, strlen(str), str);
-#endif
-
     return ret;
 }
 
 /* Database level mememory free. */
 void db_free(void *ptr) {
     if (ptr)
-#ifdef DEBUG
-        remove_entry(ptr, false);
-#else
-        free(ptr);
-#endif
+        mfree(ptr);
 }
 
 /* Databese level mememory size. */

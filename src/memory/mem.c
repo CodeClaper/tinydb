@@ -20,7 +20,7 @@ void init_mem() {
     memset(mem_manager->array, 0, sizeof(MemAllocator *) * mem_manager->size);
 }
 
-/* Find MemAllocator. 
+/* Find Exclusive MemAllocator. 
  * Return allocator or NULL if not found.
  * */
 static MemAllocator *find_allocator() {
@@ -34,21 +34,6 @@ static MemAllocator *find_allocator() {
     return NULL;
 }
 
-/* Borrow MemAllocator.
- * 'Borrow' means current thread not found pointer in its allocator 
- * and borrow others thread allocator to access the pointer.
- * */
-static MemAllocator *borrow_allocator(void *ptr) {
-    pthread_t pthread_id = pthread_self();
-    uint32_t i;
-    for (i = 0; i < mem_manager->size; i++) {
-        MemAllocator *current = mem_manager->array[i];
-        if (current && current->tid != pthread_id 
-            && find_alloc_entry(current, ptr))
-                return current;
-    }
-    return NULL;
-}
 
 /* Find AllocEntry.
  * Return AllocEntry or NULL if not found.
@@ -63,7 +48,9 @@ static AllocEntry *find_alloc_entry(MemAllocator *allocator, void *ptr) {
     return NULL;
 }
 
-/* Register allocator to Memory Manager. */
+/* Register exclusive allocator to Memory Manager. 
+ * The first position reserved for shared allocator.
+ * */
 static void register_allocator(MemAllocator *allocator) {
     uint32_t i;
     for (i = 0; i < mem_manager->size; i++) {
@@ -113,8 +100,7 @@ static MemAllocator *generate_allocator() {
     allocator->tid = pthread_self();
     allocator->alloc_entry = NULL;
     allocator->free_table = NULL;
-    /* Register to Memory manager. */
-    register_allocator(allocator);
+
     return allocator;
 }
 
@@ -148,9 +134,6 @@ static void destroy_alloc_entry(MemAllocator *allocator, void *ptr) {
             if (current->ptr == ptr) {
                 pres->next = current->next;
                 free(current);
-                /* Just found one and break. 
-                 * Beacuse, there are many pointers which size is zero, 
-                 * so these pointers have same pointer address. */
                 break;
             }
         }
@@ -169,9 +152,6 @@ static void destroy_free_entry(MemAllocator *allocator, void *ptr) {
             if (current->ptr == ptr) {
                 pres->next = current->next;
                 free(current);
-                /* Just found one and break. 
-                 * Beacuse, there are many pointers which size is zero, 
-                 * so these pointers have same pointer address. */
                 break;
             }
         }
@@ -183,7 +163,7 @@ static void *alloc_in_free_table(MemAllocator *allocator, size_t size) {
 
     FreeEntry *free_entry = allocator->free_table;
     while (free_entry) {
-        /* Check if FreeTable has enough sapce. */
+        /* If FreeEntry has enough sapce, reuse it. */
         if (free_entry->size >= size) {
             void *ptr = free_entry->ptr;
             free_entry->size -= size;
@@ -214,36 +194,42 @@ static void *alloc_in_block(MemAllocator *allocator, size_t size) {
  * */
 static void *alloc(MemAllocator *allocator, size_t size) {
     
-    /* At least one length size. */
-    size = size < 1 ? 1 : size;
+    /* Because when size is zero, 
+     * allocator maybe generate same address pointer.
+     * To avoid it, size is assigned at least.
+     * */
+    size = size == 0 ? 1 : size;
 
     void *reuse_ptr = alloc_in_free_table(allocator, size);
     void *ptr = (reuse_ptr)
                 ? reuse_ptr
                 : alloc_in_block(allocator, size);
 
-    /* Genrate AllocEntry and register to allocator. */
+    /* Generate AllocEntry and register it to allocator. */
     AllocEntry *alloc_entry = generate_alloc_entry(ptr, size);
     register_alloc_entry(allocator, alloc_entry);
+
     return ptr;
 }
 
-/* Allocate memory. */
-void *alloc_mem(size_t size) {
+/* Exclusive allocate memory. */
+void *mmalloc(size_t size) {
+
+    MemAllocator *allocator = find_allocator();
+
+    if (!allocator)
+        return malloc(size);
 
     if (size > BLOCK_SIZE) {
         fprintf(stderr, "Too large memory to allocate");
         abort();
     }
 
-    MemAllocator *allocator = find_allocator();
-    return (allocator) 
-        ? alloc(allocator, size)
-        : alloc(generate_allocator(), size);
+    return alloc(allocator, size);
 }
 
 /* Free memory. */
-void free_mem(void *ptr) {
+void mfree(void *ptr) {
     
     if (ptr == NULL) {
         fprintf(stderr, "Try to free a NULL pointer.");
@@ -251,26 +237,16 @@ void free_mem(void *ptr) {
     }
 
     MemAllocator *allocator = find_allocator();
-    if (!allocator) {
-        fprintf(stderr, "Try to free pointer '%p' which not found allocator.", ptr);
-        abort();
-    }
 
+    if (!allocator)
+        return free(ptr);
+
+    /* It means allocate happened before start allocator.*/
     AllocEntry *alloc_entry = find_alloc_entry(allocator, ptr);
-    if (!alloc_entry) {
-        
-        /* Borrow allocator to find pointer. */
-        allocator = borrow_allocator(ptr);
-        if (allocator)
-            alloc_entry = find_alloc_entry(allocator, ptr);
-    }
-
-    if (!alloc_entry) {
-        fprintf(stderr, "Try to free pointer '%p' which not found alloc entry.", ptr);
-        abort();
-    }
+    if (!alloc_entry) 
+        return free(ptr);
     
-    /* Genrate FreeEntry and register to FreeTable. */
+    /* Generate FreeEntry and register to FreeTable. */
     FreeEntry *free_entry = generate_free_entry(ptr, alloc_entry->size);
     register_free_entry(allocator, free_entry);
 
@@ -281,47 +257,69 @@ void free_mem(void *ptr) {
 }
 
 /* Reallocate memory. */
-void *realloc_mem(void *ptr, size_t size) {
-
-    if (ptr == NULL)
-        return alloc_mem(size);
+void *mrealloc(void *ptr, size_t size) {
 
     MemAllocator *allocator = find_allocator();
-    if (!allocator) {
-        fprintf(stderr, "Try to realloc pointer '%p' which not found allocator.", ptr);
-        abort();
-    }
+    if (!allocator) 
+        return realloc(ptr, size);
+
+    if (!ptr)
+        return mmalloc(size);
 
     AllocEntry *alloc_entry = find_alloc_entry(allocator, ptr);
-    if (!alloc_entry) {
-        
-        /* Borrow allocator to find pointer. */
-        allocator = borrow_allocator(ptr);
-        if (allocator)
-            alloc_entry = find_alloc_entry(allocator, ptr);
-    }
 
-    if (!alloc_entry) {
-        fprintf(stderr, "Try to free pointer '%p' which not found alloc entry.", ptr);
-        abort();
-    }
+    /* It means allocate happened before start allocator.*/
+    if (!alloc_entry) 
+        return realloc(ptr, size);
 
     /* Allocate new memory and copy old one. */
     void *new_ptr = alloc(allocator, size);
+    
+    /* Memory copy. */
     memcpy(new_ptr, ptr, alloc_entry->size);
     
     /* Free old memory. */
-    free_mem(ptr);
+    mfree(ptr);
 
     return new_ptr;
 }
 
 /* Mem strdup. */
-char *strdup_mem(char *str) {
+char *mstrdup(char *str) {
+
+    MemAllocator *allocator = find_allocator();
+    if (!allocator) 
+        return strdup(str);
+
     size_t size = strlen(str);
-    char *new_str = alloc_mem(size + 1);
+    char *new_str = mmalloc(size + 1);
     memcpy(new_str, str, size);
     return new_str;
 }
+
+void start_allocator() {
+    if (find_allocator() != NULL) {
+        fprintf(stderr, "Repeated start allocator");
+        abort();
+    }
+
+    register_allocator(generate_allocator());
+}
+
+/* Destroy exclusive allocator. */
+void end_allocator() {
+
+    pthread_t pthread_id = pthread_self();
+    uint32_t i;
+    for (i = 0; i < mem_manager->size; i++) {
+        MemAllocator *current = mem_manager->array[i];
+        if (current && current->tid == pthread_id) {
+            free(current->block);
+            free(current);
+            mem_manager->array[i] = NULL;
+        }
+    }
+    
+}   
 
 

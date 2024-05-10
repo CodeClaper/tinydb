@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <sched.h>
 #include <stdint.h>
 
 #define BLOCK_SIZE 1 << 26 /* 16 MB as block size. */
@@ -34,14 +35,19 @@ typedef struct FreeEntry {
 void init_mem();
 
 /* Allocate memory. */
-void *alloc_mem(size_t size);
+void *mmalloc(size_t size);
 
 /* Free memory. */
-void free_mem(void *ptr);
+void mfree(void *ptr);
 
 /* Reallocate memory. */
-void *realloc_mem(void *ptr, size_t size);
+void *mrealloc(void *ptr, size_t size);
 
 /* Mem strdup. */
-char *strdup_mem(char *str);
+char *mstrdup(char *str);
 
+/* Start allocator. */
+void start_allocator();
+
+/* End allocator. */
+void end_allocator();

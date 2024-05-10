@@ -22,6 +22,7 @@
 #include "index.h"
 #include "log.h"
 #include "mmu.h"
+#include "mem.h"
 #include "meta.h"
 #include "ltree.h"
 #include "compare.h"
@@ -2076,4 +2077,6 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
     db_log(SUCCESS, "Query %d rows data from table '%s' successfully.", 
            result->rows, 
            select_result->table_name);
+
+    end_allocator();
 }

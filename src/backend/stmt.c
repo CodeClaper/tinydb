@@ -5,6 +5,7 @@
 #include "stmt.h"
 #include "defs.h"
 #include "mmu.h"
+#include "mem.h"
 #include "common.h"
 #include "asserts.h"
 #include "parser.h"
@@ -190,6 +191,7 @@ void execute(char *sql) {
     start = clock();
     DBResultSet *result_set = new_db_result_set();
     Statements *statements = NULL;
+
     /* Check empty sql. */
     if (!is_empty(sql)) {
         /* Catch Error. */
@@ -240,4 +242,5 @@ void execute(char *sql) {
 
     /* Commit transction manually. */
     auto_commit_transaction();
+
 }
