@@ -135,10 +135,6 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
         key_value->data_type = meta_column->column_type;
         key_value->value = get_insert_value(value_set, i, meta_column);
 
-        /* Value of KeyValue may be null when it is Refer. */
-        if (key_value->data_type == T_REFERENCE && key_value->value == NULL)
-            return NULL;
-        
         /* Check if primary key column. */
         if (meta_column->is_primary) 
             row->key = copy_value(key_value->value, key_value->data_type);
@@ -291,9 +287,8 @@ Refer *insert_for_values(InsertNode *insert_node) {
     
     /* Generate insert row. */
     Row *row = generate_insert_row(insert_node);
-    if (!row) 
-        return NULL;
-    
+    Assert(row);
+
     /* Do insert. */
     Refer *refer = insert_one_row(table, row);
 
