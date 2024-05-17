@@ -66,133 +66,137 @@ static void json_array_key_value(KeyValue *key_value) {
     Assert(key_value->is_array);
     char *key = key_value->key;
     ArrayValue *array_value = (ArrayValue *)key_value->value;
-    switch (key_value->data_type) {
-        case T_BOOL: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                bool value = *(bool *)array_value->set[i];
-                db_send(value ? "true" : "false");
-                if (i < array_value->size - 1)
-                    db_send( ",");
+    if (!array_value)
+        db_send("\"%s\": %s", key, "null");
+    else {
+        switch (key_value->data_type) {
+            case T_BOOL: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    bool value = *(bool *)array_value->set[i];
+                    db_send(value ? "true" : "false");
+                    if (i < array_value->size - 1)
+                        db_send( ",");
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_INT: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                int32_t value = *(int32_t *)array_value->set[i];
-                char *strVal = itos(value);
-                db_send(strVal);
-                if (i < array_value->size - 1)
-                    db_send(",");
-                db_free(strVal);
+            case T_INT: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    int32_t value = *(int32_t *)array_value->set[i];
+                    char *strVal = itos(value);
+                    db_send(strVal);
+                    if (i < array_value->size - 1)
+                        db_send(",");
+                    db_free(strVal);
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_LONG: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                int64_t value = *(int64_t *)array_value->set[i];
-                char *strVal = ltos(value);
-                db_send(strVal);
-                if (i < array_value->size - 1)
-                    db_send(",");
-                db_free(strVal);
+            case T_LONG: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    int64_t value = *(int64_t *)array_value->set[i];
+                    char *strVal = ltos(value);
+                    db_send(strVal);
+                    if (i < array_value->size - 1)
+                        db_send(",");
+                    db_free(strVal);
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_STRING:
-        case T_VARCHAR:
-        case T_CHAR: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                char *value = (char *)array_value->set[i];
-                db_send("\"%s\"", value);
-                if (i < array_value->size - 1)
-                    db_send(",");
+            case T_STRING:
+            case T_VARCHAR:
+            case T_CHAR: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    char *value = (char *)array_value->set[i];
+                    db_send("\"%s\"", value);
+                    if (i < array_value->size - 1)
+                        db_send(",");
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_FLOAT: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                float value = *(float *)array_value->set[i];
-                char *strVal = ftos(value);
-                db_send(strVal);
-                if (i < array_value->size - 1)
-                     db_send(",");
-                db_free(strVal);
+            case T_FLOAT: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    float value = *(float *)array_value->set[i];
+                    char *strVal = ftos(value);
+                    db_send(strVal);
+                    if (i < array_value->size - 1)
+                         db_send(",");
+                    db_free(strVal);
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_DOUBLE: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                double value = *(double *)array_value->set[i];
-                char *strVal = dtos(value);
-                db_send(strVal);
-                if (i < array_value->size - 1)
-                    db_send(",");
-                db_free(strVal);
+            case T_DOUBLE: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    double value = *(double *)array_value->set[i];
+                    char *strVal = dtos(value);
+                    db_send(strVal);
+                    if (i < array_value->size - 1)
+                        db_send(",");
+                    db_free(strVal);
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_TIMESTAMP: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                time_t value = *(time_t *)array_value->set[i];
-                char *strVal = ttos(value, "%Y-%m-%d %H:%M:%S");
-                db_send("\"%s\"", strVal);
-                if (i < array_value->size - 1)
-                    db_send(",");
-                db_free(strVal);
+            case T_TIMESTAMP: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    time_t value = *(time_t *)array_value->set[i];
+                    char *strVal = ttos(value, "%Y-%m-%d %H:%M:%S");
+                    db_send("\"%s\"", strVal);
+                    if (i < array_value->size - 1)
+                        db_send(",");
+                    db_free(strVal);
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_DATE: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                time_t value = *(time_t *)array_value->set[i];
-                char *strVal = ttos(value, "%Y-%m-%d");
-                db_send("\"%s\"", strVal);
-                if (i < array_value->size - 1)
-                    db_send(",");
-                db_free(strVal);
+            case T_DATE: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    time_t value = *(time_t *)array_value->set[i];
+                    char *strVal = ttos(value, "%Y-%m-%d");
+                    db_send("\"%s\"", strVal);
+                    if (i < array_value->size - 1)
+                        db_send(",");
+                    db_free(strVal);
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
-        }
-        case T_REFERENCE: {
-            db_send("\"%s\": [", key);
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                Refer *refer = (Refer *)array_value->set[i];
-                Row *subrow = define_visible_row(refer);
-                json_row(subrow);
-                if (i < array_value->size - 1)
-                    db_send(",");
-                free_row(subrow);
+            case T_REFERENCE: {
+                db_send("\"%s\": [", key);
+                uint32_t i;
+                for (i = 0; i < array_value->size; i++) {
+                    Refer *refer = (Refer *)array_value->set[i];
+                    Row *subrow = define_visible_row(refer);
+                    json_row(subrow);
+                    if (i < array_value->size - 1)
+                        db_send(",");
+                    free_row(subrow);
+                }
+                db_send("]");
+                break;
             }
-            db_send("]");
-            break;
+            default:
+                db_log(PANIC, "Not support data type at <json_key_value>");
         }
-        default:
-            db_log(PANIC, "Not support data type at <json_key_value>");
     }
 }
 
