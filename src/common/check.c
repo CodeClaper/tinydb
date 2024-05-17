@@ -345,6 +345,7 @@ static bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
 
 /* Check ValueItemNode. */
 static bool check_value_item_node(MetaTable *meta_table, char *column_name, ValueItemNode *value_item_node) {
+
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
@@ -357,16 +358,21 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
                 }
                 case V_NULL: {
                     if (meta_column->not_null)
-                        db_log(ERROR, "Column '%s' not allowed null.", column_name);
+                        db_log(ERROR, "Column '%s' can`t be null.", column_name);
                     return true;
                 }
                 case V_ARRAY: {
                     ValueItemSetNode *value_set = value_item_node->value.value_set;
                     return check_value_item_set_node(meta_table, column_name, value_set);
                 }
+                default: {
+                    UNEXPECTED_VALUE(value_item_node->type);
+                    return false;
+                }
             }
         }
     }
+
     db_log(ERROR, "Unknown column '%s'.", column_name);
     return false;
 }
@@ -783,6 +789,7 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
             if (!check_value_item_node(meta_table, meta_column->column_name, value_item_node))
                 return false;
         }
+
     } else {
 
         /* Check column number equals the insert values number. */
@@ -799,6 +806,7 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
             if (!check_value_item_node(meta_table, meta_column->column_name, value_item_node))
                 return false;
         }
+
     }
 
     return true;

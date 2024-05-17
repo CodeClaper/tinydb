@@ -82,6 +82,7 @@ static void operate_column(MetaColumn *meta_column, ColumnDefOptNodeList *column
                 break;
             case OPT_PRIMARY_KEY:
                 meta_column->is_primary = true;
+                meta_column->not_null = true;
                 break;
             case OPT_DEFAULT_VALUE:
             case OPT_DEFAULT_NULL:
