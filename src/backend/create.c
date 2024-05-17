@@ -33,6 +33,11 @@ MetaColumn SYS_RESERVED_COLUMNS[] = {
 /* System reserved columns length. */
 #define SYS_RESERVED_COLUMNS_LENGTH sizeof(SYS_RESERVED_COLUMNS) / sizeof(SYS_RESERVED_COLUMNS[0])
 
+/* Get system reserved columns length. */
+uint32_t sys_reserved_column_count() {
+    return SYS_RESERVED_COLUMNS_LENGTH;
+}
+
 /* Calculate meta column length. 
  * If define data len, use defined data length, note that, T_STRING & T_VARCHAR data length will add 1 for '0' as end.
  * Otherwise, use system default data length.

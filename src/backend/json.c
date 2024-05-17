@@ -250,9 +250,8 @@ static void json_single_key_value(KeyValue *key_value) {
                     struct tm *tmp_time = localtime(&t);
                     strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
                     db_send("\"%s\": \"%s\"", key, temp);
-                } else {
+                } else 
                     db_send("\"%s\": \"%s\"", key, "null");
-                }
                 break;
             }
             /* Specially deal with T_REFERENCE data. */
@@ -309,8 +308,8 @@ static void json_row(Row *row) {
 /* Send out map result. */
 static void json_map(Map *map) {
     db_send("{ ");
-    int i = 0;
-    for(i =0; i <map->size; i++) {
+    uint32_t i = 0;
+    for(i =0; i < map->size; i++) {
         KeyValue *key_value = map->body[i];
         json_key_value(key_value);
         /* split with ',' */
