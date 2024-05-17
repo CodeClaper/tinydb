@@ -61,6 +61,9 @@ void set_meta_column(void *root_node, void *destination, uint32_t index);
 /* Get meta column size. */
 uint32_t get_root_node_meta_column_size();
 
+/* Check cell is null. */
+bool is_null_cell(void *destination);
+
 /* Get array number. */
 uint32_t get_array_number(void *destination);
 

@@ -505,7 +505,7 @@ static void copy_root_to_leaf_node(Table *table, uint32_t new_page_num, uint32_t
     uint32_t cell_num = get_leaf_node_cell_num(root); 
 
     uint32_t i;
-    for(i = 0; i < cell_num; i++) {
+    for (i = 0; i < cell_num; i++) {
         set_leaf_node_cell_key(leaf_node, i, key_len, value_len, get_leaf_node_cell_key(root, i, key_len, value_len)); 
         memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, i), get_leaf_node_cell_value(root, key_len, value_len, i), value_len);
         /* Update refer. */
@@ -913,6 +913,8 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
         
         /* Flush into disk. */
         flush_page(table_name, cursor->table->pager, cursor->page_num);
+
+        db_free(destination);
     }
 }
 
@@ -960,6 +962,8 @@ void update_row_data(Row *row, Cursor *cursor) {
     memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
 
     flush_page(table->meta_table->table_name, table->pager, cursor->page_num);
+
+    db_free(destination);
 }
 
 
@@ -1262,19 +1266,24 @@ void *serialize_meta_column(MetaColumn *meta_column) {
     return destination;
 }
 
+/* Check cell is null. */
+bool is_null_cell(void *destination) {
+    return (*(uint8_t *)destination == 1);
+}
+
 /* Assign array number. */
 void assign_array_number(void *destination, uint32_t array_num) {
-    memcpy(destination, &array_num, LEAF_NODE_ARRAY_NUM_SIZE);
+    memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, &array_num, LEAF_NODE_ARRAY_NUM_SIZE);
 }
 
 /* Get array number. */
 uint32_t get_array_number(void *destination) {
-    return *(uint32_t *)destination;
+    return *(uint32_t *)(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE);
 }
 
 /* Get array value. */
 void *get_array_value(void *destination, uint32_t i, uint32_t span) {
-    return (destination + LEAF_NODE_ARRAY_NUM_SIZE + span * i);
+    return (destination + LEAF_NODE_CELL_NULL_FLAG_SIZE + LEAF_NODE_ARRAY_NUM_SIZE + span * i);
 }
 
 /* Get row value. 
@@ -1294,6 +1303,7 @@ static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
  * Note: for array value cell, we will reserve LEAF_NODE_ARRAY_NUM_SIZE bytes length for store array number.
  * */
 static void assign_row_array_value(void *destination, ArrayValue *array_value, MetaColumn *meta_column) {
+
     /* User insert arrary values number integer multiple of array dim. */
     Assert(array_value->size % meta_column->array_dim == 0);
 
@@ -1301,12 +1311,12 @@ static void assign_row_array_value(void *destination, ArrayValue *array_value, M
     assign_array_number(destination, array_value->size);
 
     /* span: every value in array data lenght. */
-    uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE) / meta_column->array_cap;
+    uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE - LEAF_NODE_CELL_NULL_FLAG_SIZE) / meta_column->array_cap;
 
     uint32_t i;
     for (i = 0; i < array_value->size; i++) {
         void *value = array_value->set[i];
-        memcpy((destination + LEAF_NODE_ARRAY_NUM_SIZE + span * i), value, span);        
+        memcpy((destination + LEAF_NODE_CELL_NULL_FLAG_SIZE + LEAF_NODE_ARRAY_NUM_SIZE + span * i), value, span);        
     }
 }
 
@@ -1314,10 +1324,17 @@ static void assign_row_array_value(void *destination, ArrayValue *array_value, M
 static void assign_row_value(void *destination, void *value, MetaColumn *meta_column) {
     /* If not array value, assign value to destination, 
      * if array value, assign values one by one. */
-    if (meta_column->array_dim == 0) 
-        memcpy(destination, value, meta_column->column_length);
-    else 
-        assign_row_array_value(destination, value, meta_column);
+    if (meta_column->array_dim == 0) {
+        bool nflag = value == NULL ? true : false;
+        memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
+        if (!nflag)
+            memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, value, meta_column->column_length);
+    } else {
+        bool nflag = value == NULL ? true : false;
+        memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
+        if (!nflag)
+            assign_row_array_value(destination, value, meta_column);
+    } 
 }
 
 /* Serialize row data */

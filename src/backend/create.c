@@ -25,9 +25,9 @@
 
 /* System reserved columns. */
 MetaColumn SYS_RESERVED_COLUMNS[] = {
-    { SYS_RESERVED_ID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true, 0, 0 },
-    { CREATED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true, 0, 0 },
-    { EXPIRED_XID_COLUMN_NAME, T_LONG, "",  sizeof(int64_t), false, false, false, true, 0, 0 }
+    { SYS_RESERVED_ID_COLUMN_NAME, T_LONG, "", (LEAF_NODE_CELL_NULL_FLAG_SIZE + sizeof(int64_t)), false, false, false, true, 0, 0 },
+    { CREATED_XID_COLUMN_NAME, T_LONG, "", (LEAF_NODE_CELL_NULL_FLAG_SIZE + sizeof(int64_t)), false, false, false, true, 0, 0 },
+    { EXPIRED_XID_COLUMN_NAME, T_LONG, "", (LEAF_NODE_CELL_NULL_FLAG_SIZE + sizeof(int64_t)), false, false, false, true, 0, 0 }
 }; 
 
 /* System reserved columns length. */
@@ -62,8 +62,8 @@ uint32_t calc_column_len(ColumnDefNode *column_def, uint32_t array_cap) {
     }
     /* If type is array, single data type length multiply by array cap. */
     return array_cap == 0 
-        ? column_length 
-        : column_length * array_cap + LEAF_NODE_ARRAY_NUM_SIZE;
+        ? (column_length + LEAF_NODE_CELL_NULL_FLAG_SIZE)
+        : (column_length * array_cap + LEAF_NODE_ARRAY_NUM_SIZE + LEAF_NODE_CELL_NULL_FLAG_SIZE);
 }
 
 /* Column Operation. */

@@ -557,7 +557,7 @@ static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_colum
     /* Generate ArrayValue instance. */
     ArrayValue *array_value = new_array_value(meta_column->column_type, array_num);
 
-    uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE) / meta_column->array_cap;
+    uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE - LEAF_NODE_CELL_NULL_FLAG_SIZE) / meta_column->array_cap;
     uint32_t i;
     for (i = 0; i < array_num; i++) {
         void *value = get_array_value(destination, i, span);
@@ -570,7 +570,7 @@ static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_colum
 static void *assign_row_value(void *destination, MetaColumn *meta_column) {
     return meta_column->array_dim ==  0
             /* For non-array data. */
-            ? copy_value(destination, meta_column->column_type) 
+            ? copy_value(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, meta_column->column_type) 
             /* For array data. */
             : get_row_array_value(destination, meta_column); 
 }
@@ -579,9 +579,7 @@ static void *assign_row_value(void *destination, MetaColumn *meta_column) {
 static Row *generate_row(void *destination, MetaTable *meta_table) {
 
     /* Instance new row. */
-    Row *row = new_row(NULL, 
-                       db_strdup(meta_table->table_name), 
-                       meta_table->all_column_size);
+    Row *row = new_row(NULL, db_strdup(meta_table->table_name), meta_table->all_column_size);
 
     /* Assignment row data. */
     uint32_t i;
@@ -590,11 +588,11 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
 
         /* Get the column offset. */
         uint32_t offset = calc_offset(meta_table, meta_column->column_name);
-        
+
         /* Generate a key value pair. */
-        KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name),
-                                            assign_row_value(destination + offset, meta_column),
-                                            meta_column->column_type);
+        KeyValue *key_value = is_null_cell(destination + offset) 
+            ? new_key_value(db_strdup(meta_column->column_name), NULL, meta_column->column_type)
+            : new_key_value(db_strdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
         key_value->is_array = meta_column->array_dim > 0;
         key_value->table_name = db_strdup(meta_table->table_name);
 
@@ -602,7 +600,7 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
         
         /* Assign primary key. */
         if (meta_column->is_primary)
-            row->key = copy_value(destination + offset, meta_column->column_type);
+            row->key = assign_row_value(destination + offset, meta_column);
     }
 
     return row;
@@ -2077,6 +2075,4 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
     db_log(SUCCESS, "Query %d rows data from table '%s' successfully.", 
            result->rows, 
            select_result->table_name);
-
-    end_allocator();
 }

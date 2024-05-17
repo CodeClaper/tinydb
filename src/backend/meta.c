@@ -17,6 +17,7 @@
 #include "insert.h"
 #include "utils.h"
 #include "common.h"
+#include "const.h"
 #include "ltree.h"
 #include "list.h"
 #include "asserts.h"
@@ -332,8 +333,8 @@ uint32_t calc_table_row_length(Table *table) {
     uint32_t row_len = 0;
     uint32_t i;
     for (i = 0; i < table->meta_table->all_column_size; i++) {
-        MetaColumn *meta_col = (table->meta_table->meta_column[i]);
-        row_len+= meta_col->column_length;
+        MetaColumn *meta_column = table->meta_table->meta_column[i];
+        row_len += meta_column->column_length;
     }
     return row_len;
 }
@@ -401,11 +402,9 @@ MetaTable *get_meta_table(Table *table, char *table_name) {
     for (i = 0; i < column_size; i++) {
         MetaColumn *current = get_meta_column_by_index(root_node, i);
         meta_table->meta_column[i] = current;
-
         /* Skip to system reserved column. */
         if (!current->sys_reserved)
             meta_table->column_size++;
-
         meta_table->all_column_size++;
     }
 

@@ -169,11 +169,13 @@ static Row *convert_insert_row(Row *row, Table *table) {
     /* Add reserved columns for sys_id, created_xid and expired_xid. */
     insert_row->column_len = row->column_len + 3;
     insert_row->data = db_malloc(sizeof(KeyValue *) * insert_row->column_len, "pointer");
+
     /* Copy data. */
     uint32_t i;
     for (i = 0; i < row->column_len; i++) {
         insert_row->data[i] = copy_key_value(row->data[i]);
     }
+
     /* Copy row key. */
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     Assert(primary_meta_column);
@@ -252,9 +254,11 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
     ReferSet *refer_set = instance(ReferSet);
 
     ValuesOrQuerySpecNode *values_or_query_spec = insert_node->values_or_query_spec;
+
     /* Make select statement to get safisfied rows. */
     SelectNode *select_node = convert_select_node(values_or_query_spec->query_spec);
 
+    /* Make a DBResult to store query result. */
     DBResult *result = new_db_result();
     result->stmt_type = SELECT_STMT;
 
