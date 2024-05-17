@@ -80,8 +80,8 @@ static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
     return select_node;
 }
 
-/* Make up sys_id. */
-static void make_up_sys_id(Row *row) {
+/* Supplement sys_id. */
+static void supple_sys_id(Row *row) {
     /* Automatically insert sys_id using current sys time. */
     int64_t sys_id = get_current_sys_time(NANOSECOND);
     KeyValue *sys_id_col = instance(KeyValue);
@@ -144,9 +144,6 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         if (key_value->data_type == T_REFERENCE && key_value->value == NULL)
             return NULL;
         
-        if (!key_value->value)
-            assert_not_null(key_value->value, "System error, get key value fail.");
-
         /* Check if primary key column. */
         if (meta_column->is_primary) 
             row->key = copy_value(key_value->value, key_value->data_type);
@@ -154,8 +151,8 @@ static Row *generate_insert_row(InsertNode *insert_node) {
         row->data[i] = key_value;
     }
 
-    /* Make up sys_id column. */
-    make_up_sys_id(row);
+    /* Supplement sys_id column. */
+    supple_sys_id(row);
 
     return row;
 }
@@ -273,8 +270,8 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
         uint32_t i;
         for (i = 0; i < select_result->row_size; i++) {
             Row *insert_row = convert_insert_row(select_result->rows[i], table);
-            /* Make up sys_id column. */
-            make_up_sys_id(insert_row);
+            /* Supplement sys_id column. */
+            supple_sys_id(insert_row);
             Refer *refer = insert_one_row(table, insert_row);
             refer_set->set[i] = refer;
             free_row(insert_row);

@@ -1346,7 +1346,6 @@ void *serialize_row_data(Row *row, Table *table) {
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
         void *value = get_value_from_row(row, meta_column);
-        assert_not_null(value, "Inner error, unknown column '%s'.", meta_column->column_name);
         /* Assign row value to destination. */
         assign_row_value(destination + offset, value, meta_column);
         offset += meta_column->column_length;
