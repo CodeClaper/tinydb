@@ -128,6 +128,29 @@ def test_select_table_without_primary_key():
         {"r": 45, "p": { "x": 92.0, "y": 29.5}},
     ]
 
+## specify part columns when insert
+def test_insert_part_columns():
+    sql = "insert into Student (id, name, phone) values('S004', 'bingo', '13001332823');" 
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    
+## query after insert part columns
+def test_query_after_insert_part_columns():
+    sql = "select * from Student where id = 'S004';" 
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"] == [{ 
+        "id": "S004", 
+        "name": "bingo", 
+        "age": None, 
+        "grade": None, 
+        "sex": None, 
+        "birth": None, 
+        "phone": "13001332823", 
+        "address": None, 
+        "createdTime": None
+    }]
+
 ## drop table
 def test_drop_table():
     sql = "drop table Parent;\n"\
