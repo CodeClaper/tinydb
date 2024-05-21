@@ -16,8 +16,8 @@ bin_PROGRAMS = tinydb \
 			   tinydb_cli
 
 tinydb_SOURCES = db.c
-tinydb_LDADD = memory/libmemory.a lock/liblock.a trans/libtrans.a storage/libstorage.a utils/libutils.a \
-			   backend/libbackend.a parser/libparser.a common/libcommon.a -lpthread -lm 
+tinydb_LDADD = memory/libmemory.a lock/liblock.a trans/libtrans.a storage/libstorage.a \
+			   backend/libbackend.a parser/libparser.a common/libcommon.a utils/libutils.a -lpthread -lm 
 
 tinydb_cli_SOURCES = db_cli.c 
 tinydb_cli_LDADD = -lreadline -ltinfo
