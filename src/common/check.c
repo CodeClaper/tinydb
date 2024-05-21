@@ -865,6 +865,24 @@ static bool check_table(char *table_name) {
     }
 }
 
+/* Check if table uses refer. */
+static bool if_table_used_refer(char *table_name, char *refer_table_name) {
+    Table *table = open_table(table_name);
+    assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
+    MetaTable *meta_table = table->meta_table;
+
+    uint32_t i;
+    for(i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *current_meta_column = meta_table->meta_column[i];
+        if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
+            db_log(ERROR , "Table '%s' is refered by column '%s' in table '%s', so can`t drop it.", refer_table_name, current_meta_column->column_name, table_name);
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /* Check SelectNode. */
 bool check_select_node(SelectNode *select_node) {
     AliasMap alias_map;
@@ -928,26 +946,17 @@ bool check_create_table_node(CreateTableNode *create_table_node) {
         && check_table_element_commalist(create_table_node->base_table_element_commalist);
 }
 
-/* Check if table uses refer. */
-static bool if_table_used_refer(char *table_name, char *refer_table_name) {
-    Table *table = open_table(table_name);
-    assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
-    MetaTable *meta_table = table->meta_table;
-
-    uint32_t i;
-    for(i = 0; i < meta_table->column_size; i++) {
-        MetaColumn *current_meta_column = meta_table->meta_column[i];
-        if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
-            db_log(ERROR , "Table '%s' is refered by column '%s' in table '%s', so can`t drop it.", refer_table_name, current_meta_column->column_name, table_name);
-            return true;
-        }
-    }
-
-    return false;
-}
 
 /* Chech allowed to drop table. */
 bool check_drop_table(char *table_name) {
+
+    /* Check table exists. */
+    if (!check_table_exist(table_name)) {
+        db_log(ERROR, "Table '%s' not exists.", table_name);
+        return false;
+    }
+    
+    /* Check table refered by others. */
     TableList *table_list = get_table_list();
 
     uint32_t i;

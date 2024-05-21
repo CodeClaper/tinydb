@@ -22,7 +22,6 @@
 #include "pager.h"
 #include "log.h"
 #include "index.h"
-#include "check.h"
 
 /* Get table list. */
 TableList *get_table_list() {
@@ -185,15 +184,10 @@ Table *open_table(char *table_name) {
 
 /* Drop an existed table. */
 bool drop_table(char *table_name) {
+
     /* Check if exist the table. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-        db_log(ERROR, "Table '%s' not exists.", table_name);
-        db_free(file_path);
-        return false;
-    }
-    /* Check if allowed to drop the table. */
-    if (!check_drop_table(table_name)) {
         db_free(file_path);
         return false;
     }
