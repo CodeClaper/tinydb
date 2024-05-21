@@ -23,9 +23,9 @@ static uint32_t calc_meta_column_len(MetaColumn *meta_column) {
     switch (meta_column->column_type) {
         case T_STRING:
         case T_VARCHAR:
-            return meta_column->column_length - 1;
+            return meta_column->column_length - 2;
         default:
-            return meta_column->column_length;
+            return meta_column->column_length - 1;
     }
 }
 
@@ -60,9 +60,10 @@ static MapList *gen_describe_result(MetaTable *meta_table) {
 
         /* array dim */
         KeyValue *key_value_is_array = instance(KeyValue);
-        key_value_is_array->key = db_strdup("array_dim");
-        key_value_is_array->value = copy_value(&meta_column->array_dim, T_INT);
-        key_value_is_array->data_type = T_INT;
+        bool is_array = meta_column->array_dim > 0;
+        key_value_is_array->key = db_strdup("is_array");
+        key_value_is_array->value = copy_value(&is_array, T_BOOL);
+        key_value_is_array->data_type = T_BOOL;
         map->body[2] = key_value_is_array;
 
         /* primary key */
@@ -74,7 +75,7 @@ static MapList *gen_describe_result(MetaTable *meta_table) {
 
         /* length */
         KeyValue *key_value_size = instance(KeyValue);
-        key_value_size->key = db_strdup("data_size");
+        key_value_size->key = db_strdup("data_length");
         uint32_t column_length = calc_meta_column_len(meta_column);
         key_value_size->value = copy_value(&column_length, T_INT);
         key_value_size->data_type = T_INT;
