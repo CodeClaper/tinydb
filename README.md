@@ -10,23 +10,6 @@ TinyDb (can also be called tinydb as well) is a light, statble and effecive obje
 
 TinyDb is a server-side database engine and only support Linux environment for now. 
 
-### GNU Autotools
-
-TinyDb uses GNU Automake as the tool to compile the program.  To install [GNU build system](https://en.wikipedia.org/wiki/GNU_build_system), also known as Autotools, you need to install autoconf and automake packages.
-
-**Debian** or **Ubuntu**
-
-```shell
-sudo apt-get install autoconf automake
-```
-
-**Centos**
-
-```shell
-yum install autoconf automake
-```
-
-
 
 ### Lex & Yacc
 
@@ -61,37 +44,18 @@ yum install readline-devel
 ```
 
 
-
 ## Compile
 
-Firstly, generate configuration scripts.
-
-```shell
-autoreconf --install
-```
-
-The configure script is automatic generated, run it to to determine certain information about the packages.
-
-```
-./configure
-```
-
-If you want to use GDB debug.
-
-```shell
-./configure --enable-debug=yes CFLAGS='-g -O0'
-```
-
-If you want print out debug info.
-
-```shell
-./configure --enable-debug=yes CFLAGS='-g -O0 -D DEBUG'
-```
-
-Finally, makefile is generated, compile it.
+Compile all Makefile:
 
 ```shell
 make
+```
+
+If you want debug:
+
+```shell
+make DEBUG=1
 ```
 
 ## RoadMap

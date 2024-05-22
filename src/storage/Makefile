@@ -1,5 +1,5 @@
 
-includedir = ../../include/
+includedir = ../../include
 headerdirs = $(includedir)/storage $(includedir)/common $(includedir)/memory \
 			 $(includedir)/trans $(includedir)/backend $(includedir)/utils
 headers := $(shell find $(headerdirs) -name "*.h")

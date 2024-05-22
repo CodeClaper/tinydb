@@ -1,4 +1,3 @@
-
 includedir = ../include
 SUBDIRS := backend common lock memory parser storage trans utils
 CC = gcc
@@ -9,6 +8,11 @@ headerdirs = $(includedir)/common $(includedir)/lock $(includedir)/memory $(incl
 
 headers := $(shell find $(headerdirs) -name "*.h")
 CFLAGS = -g -Wall -O0 $(foreach headerdir, $(headerdirs), -I$(headerdir))
+
+ifdef DEBUG
+CFLAGS += -D DEBUG
+endif
+
 LDADDCFLAGS = -lpthread -lm 
 
 all: $(SUBDIRS) tinydb tinydb_cli

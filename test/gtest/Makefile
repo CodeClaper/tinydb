@@ -15,16 +15,16 @@ CPPFLAGS = -w -I/usr/src/googletest/googletest/include -I/usr/src/googletest/goo
 
 target = gtest
 
-all: $(objects)
+check: $(target)
+	@./gtest
+
+$(target): $(objects)
 	$(CXX) $(CPPFLAGS) $(objects) -o $(target) $(CPPLDADD) $(CPPLDFLAGS)
 
 %o: %.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@ $(CPPLDADD) $(CPPLDFLAGS)
 
-.PHONY: clean all test
-
-check: 
-	@./gtest
+.PHONY: clean check
 
 clean:
 	rm -f *.o $(target)

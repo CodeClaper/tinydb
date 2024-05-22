@@ -7,6 +7,10 @@ objects := $(patsubst %.c,%.o,$(wildcard *.c))
 CC = gcc
 CFLAGS = $(foreach headerdir, $(headerdirs), -I$(headerdir))
 
+ifdef DEBUG
+CFLAGS += -D DEBUG
+endif
+
 all: $(objects)
 
 %.o: %.c $(headers)
