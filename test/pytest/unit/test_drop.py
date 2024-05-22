@@ -26,4 +26,5 @@ def test_drop_table():
 def test_drop_not_exist_table():
     ret = client.execute("drop table X")
     assert ret["success"] == False
+    assert ret["message"] == "Table 'X' not exists."
 
