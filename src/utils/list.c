@@ -3,6 +3,7 @@
  ***********************************************************************************************
  **/
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include "list.h"
@@ -36,20 +37,70 @@ static void enlarge_list(List *list) {
     }
 }
 
+/* Last list cell. */
 static inline ListCell *last_cell(List *list) {
     Assert(list != NIL);
     return &list->elements[list->size - 1];
 }
 
-/* Append item to list. 
- * Return current number of items in list.
- * */
-List *append_list(List *list, void *item) {
+/* Append int item to list. */
+void append_list_int(List *list, int item) {
+    if (list->size >= list->capacity)
+        enlarge_list(list);
+    list->size++;
+    lfirst_int(last_cell(list)) = item;
+}
+
+/* Append bool item to list. */
+void append_list_bool(List *list, bool item) {
+    if (list->size >= list->capacity)
+        enlarge_list(list);
+    list->size++;
+    lfirst_bool(last_cell(list)) = item;
+}
+
+/* Append float item to list. */
+void append_list_float(List *list, float item) {
+    if (list->size >= list->capacity)
+        enlarge_list(list);
+    list->size++;
+    lfirst_float(last_cell(list)) = item;
+}
+
+/* Append float item to list. */
+void append_list_double(List *list, double item) {
+    if (list->size >= list->capacity)
+        enlarge_list(list);
+    list->size++;
+    lfirst_double(last_cell(list)) = item;
+}
+
+void append_list_ptr(List *list, void *item) {
     if (list->size >= list->capacity)
         enlarge_list(list);
     list->size++;
     lfirst(last_cell(list)) = item;
-    return list;
+}
+
+/* Append item to list. */
+void append_list(List *list, void *item) {
+    switch (list->type) {
+        case NODE_INT:
+            append_list_int(list, *(int *)item);
+            break;
+        case NODE_BOOL:
+            append_list_bool(list, *(bool *)item);
+            break;
+        case NODE_FLOAT:
+            append_list_float(list, *(float *)item);
+            break;
+        case NODE_DOUBLE:
+            append_list_double(list, *(double *)item);
+            break;
+        default:
+            append_list_ptr(list, item);
+            break;
+    }
 }
 
 /* Locate the n'th cell (counting from 0) of the list.
@@ -79,11 +130,20 @@ void free_list(List *list) {
 /* Free all cells and any object that are 
  * point-to by cells in list will be freed*/
 void free_list_deep(List *list) {
-    
+
     if (list != NIL) {
-        int32_t i;
-        for (i = 0; i < list->size; i++) {
-            db_free(lfirst(&list->elements[i]));
+        switch (list->type) {
+            case NODE_INT:
+            case NODE_BOOL:
+            case NODE_FLOAT:
+            case NODE_DOUBLE:
+                break;
+            default: {
+                int32_t i;
+                for (i = 0; i < list->size; i++) {
+                    db_free(lfirst(&list->elements[i]));
+                }
+            }
         }
 
         if (list->elements != list->initial_elements)

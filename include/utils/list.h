@@ -3,10 +3,6 @@
 
 #define INIT_LIST_CELL_SIZE 8
 #define NIL (List *)(NULL)
-#define lfirst(l) ((l)->ptr)
-
-#define foreach(lc, list) \
-        for (uint32_t i = 0; i < list->size ? (lc = &list->elements[i], true) : (lc = NULL, false); i++)
 
 typedef enum NodeTag {
     NODE_INT,
@@ -18,8 +14,12 @@ typedef enum NodeTag {
 } NodeTag;
 
 /* Cell in List.*/
-typedef struct ListCell {
-    void *ptr;
+typedef union ListCell {
+    void *ptr_value;
+    int int_value;
+    bool bool_value;
+    float float_value;
+    double double_value;
 } ListCell;
 
 /* List */
@@ -32,15 +32,22 @@ typedef struct List {
 } List;
 
 
+#define lfirst(l) ((l)->ptr_value)
+#define lfirst_int(l) ((l)->int_value)
+#define lfirst_bool(l) ((l)->bool_value)
+#define lfirst_float(l) ((l)->float_value)
+#define lfirst_double(l) ((l)->double_value)
+
+#define foreach(lc, list) \
+        for (uint32_t i = 0; i < list->size ? (lc = &list->elements[i], true) : (lc = NULL, false); i++)
+
 /* Create List and initialization. 
  * Return the created list.
  * */
 List *create_list(NodeTag type);
 
-/* Append item to list. 
- * Return list after appending.
- * */
-List *append_list(List *list, void *item);
+/* Append item to list. */
+void append_list(List *list, void *item);
 
 /* Locate the n'th cell (counting from 0) of the list.
  * It is an assertion failure if there is no such cell.
@@ -56,4 +63,5 @@ void free_list(List *list);
 /* Free all cells and any object that are 
  * point-to by cells in list will be freed*/
 void free_list_deep(List *list);
+
 
