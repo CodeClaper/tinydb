@@ -11,7 +11,7 @@ objects += $(patsubst %.c, %.o, $(shell find $(SUBDIRS) -name "*.c"))
 CPPLDADD = -lgtest_main -lgtest
 CPPLDFLAGS= -pthread
 CPPFLAGS = -w -I/usr/src/googletest/googletest/include -I/usr/src/googletest/googletest \
-		   -I$(includedir)/lock -I$(includedir)/common  -I$(includedir)/utils
+		   -I$(includedir)/lock -I$(includedir)/common  -I$(includedir)/utils -I$(includedir)/memory
 
 target = gtest
 
