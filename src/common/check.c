@@ -690,9 +690,9 @@ static bool check_duplicate_table(char *table_name) {
 /* Check if column already exists. */
 static bool check_if_column_already_exists(List *list, ColumnDefNode *column_def) {
 
-    uint32_t i;
-    for (i = 0; i < list->size; i++) {
-        ColumnDefNode *current_column_def = (ColumnDefNode *)list->set[i];
+    ListCell *lc;
+    foreach (lc, list) {
+        ColumnDefNode *current_column_def = lfirst(lc);
         if (streq(current_column_def->column->column, column_def->column->column))
             return true;
     }
@@ -715,7 +715,7 @@ static bool check_if_contain_primary_key(ColumnDefOptNodeList *column_def_opt_li
 /* Check if exists duplicate column name. */
 static bool check_table_element_commalist(BaseTableElementCommalist *base_table_element_commalist) {
 
-    List *list = create_list();
+    List *list = create_list(NODE_COLUMN_DEF_NODE);
 
     bool primary_key_flag = false;
     uint32_t i;
@@ -725,15 +725,16 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
             case TELE_COLUMN_DEF: {
                 ColumnDefNode *current_column_def = base_table_element->column_def;
                 if (check_if_column_already_exists(list, current_column_def)) {
-                    destroy_list(list);
+                    free_list(list);
                     db_log(ERROR, "Column def '%s' already exists, not allowd duplicate defination.", 
                            current_column_def->column->column);
                     return false;
                 }
                 if (check_if_contain_primary_key(current_column_def->column_def_opt_list)) {
                     if (primary_key_flag) {
-                        destroy_list(list);
+                        free_list(list);
                         db_log(ERROR, "Dulicate primary key.");
+                        return false;
                     } else
                         primary_key_flag = true;
                 }
@@ -744,8 +745,9 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
                 TableContraintDefNode *table_contraint_def = base_table_element->table_contraint_def;
                 if (table_contraint_def->type == TCONTRAINT_PRIMARY_KEY) {
                     if (primary_key_flag) {
-                        destroy_list(list);
+                        free_list(list);
                         db_log(ERROR, "Dulicate primary key.");
+                        return false;
                     } else
                         primary_key_flag = true;
                 }
@@ -756,7 +758,7 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
                 break;
         }
     }
-    destroy_list(list);
+    free_list(list);
 
     return true;
 }

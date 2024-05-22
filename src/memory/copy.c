@@ -13,7 +13,6 @@
 #include "asserts.h"
 #include "common.h"
 #include "mmu.h"
-#include "list.h"
 
 /* Copy value. */
 void *copy_value(void *value, DataType data_type) {

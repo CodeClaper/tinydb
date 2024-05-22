@@ -813,10 +813,5 @@ typedef struct AliasMap {
     AliasEntry map[MAX_MULTI_TABLE_NUM];
 } AliasMap;
 
-/* List */
-typedef struct List {
-    uint32_t size;
-    void **set;
-} List;
 
 #endif
