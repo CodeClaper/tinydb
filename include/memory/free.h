@@ -120,12 +120,6 @@ void free_transaction_handle(TransactionHandle *trans_handle);
 /* Free LockHandle. */
 void free_lock_handle(LockHandle *lock_state);
 
-/* Free Map. */
-void free_map(Map *map);
-
-/* Free MapList. */
-void free_map_list(MapList *map_list);
-
 /* Free DBResult. */
 void free_db_result(DBResult *result);
 

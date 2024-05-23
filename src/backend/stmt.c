@@ -25,6 +25,7 @@
 #include "log.h"
 #include "free.h"
 #include "json.h"
+#include "type.h"
 #include "xlog.h"
 
 
@@ -97,11 +98,11 @@ static void statement_delete(Statement *statement, DBResult *result) {
 /*Describe Statement*/
 static void statement_describe(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == DESCRIBE_STMT, "System error, describe statement type error.\n"); 
-    MapList *map_list = exec_describe_statement(statement->describe_node);
-    if (map_list) {
+    List *list = exec_describe_statement(statement->describe_node);
+    if (list) {
         /* Success resule. */
         result->success = true;
-        result->data = map_list;
+        result->data = list;
         result->message = db_strdup("Describe executed successfully.");
         db_log(SUCCESS, "Describe executed successfully.");
     }

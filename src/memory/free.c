@@ -9,6 +9,7 @@
 #include "index.h"
 #include "xlog.h"
 #include "log.h"
+#include "list.h"
 
 /* Free value */
 void free_value(void *value, DataType data_type) {
@@ -825,30 +826,6 @@ void free_transaction_handle(TransactionHandle *trans_handle) {
     }
 }
 
-/* Free Map. */
-void free_map(Map *map) {
-    if (map) {
-        int i;
-        for(i = 0; i < map->size; i++) {
-            free_key_value(map->body[i]);
-        }
-        db_free(map->body);
-        db_free(map);
-    }
-}
-
-/* Free MapList. */
-void free_map_list(MapList *map_list) {
-    if (map_list) {
-        int i;
-        for (i = 0; i < map_list->size; i++) {
-            free_map(map_list->data[i]);
-        }
-        db_free(map_list->data);
-        db_free(map_list);
-    }
-}
-
 /* Free DBResult. */
 void free_db_result(DBResult *result) {
     if (result) {
@@ -862,7 +839,7 @@ void free_db_result(DBResult *result) {
                 break;
             case SHOW_STMT:
             case DESCRIBE_STMT:
-                free_map_list(result->data);
+                free_list_deep(result->data);
                 break;
             default:
                 break;

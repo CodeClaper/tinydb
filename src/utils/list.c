@@ -9,6 +9,7 @@
 #include "list.h"
 #include "data.h"
 #include "mmu.h"
+#include "free.h"
 #include "asserts.h"
 
 /* Create List and initialization. 
@@ -138,11 +139,33 @@ void free_list_deep(List *list) {
             case NODE_FLOAT:
             case NODE_DOUBLE:
                 break;
-            default: {
-                int32_t i;
-                for (i = 0; i < list->size; i++) {
-                    db_free(lfirst(&list->elements[i]));
+            case NODE_LIST: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_list_deep(lfirst(lc));
                 }
+                break;
+            }
+            case NODE_STRING: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    db_free(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_KEY_VALUE: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_key_value(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_COLUMN_DEF_NODE: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_column_def_node(lfirst(lc));
+                }
+                break;
             }
         }
 

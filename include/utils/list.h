@@ -1,6 +1,9 @@
 #include "data.h"
 #include <stdint.h>
 
+#ifndef LIST_H
+#define LIST_H
+
 #define INIT_LIST_CELL_SIZE 8
 #define NIL (List *)(NULL)
 
@@ -10,8 +13,14 @@ typedef enum NodeTag {
     NODE_FLOAT,
     NODE_DOUBLE,
     NODE_STRING,
+    NODE_LIST,
+    NODE_KEY_VALUE,
     NODE_COLUMN_DEF_NODE
 } NodeTag;
+
+typedef struct ListState {
+    uint32_t i;
+} ListState;
 
 /* Cell in List.*/
 typedef union ListCell {
@@ -38,8 +47,10 @@ typedef struct List {
 #define lfirst_float(l) ((l)->float_value)
 #define lfirst_double(l) ((l)->double_value)
 
+/* Notice: there use __i rather than i as iterators, 
+ * user habitually input i at the loop body that can cause mess. */
 #define foreach(lc, list) \
-        for (uint32_t i = 0; i < list->size ? (lc = &list->elements[i], true) : (lc = NULL, false); i++)
+        for (uint32_t __i = 0; __i < list->size ? (lc = &list->elements[__i], true) : (lc = NULL, false); __i++)
 
 /* Create List and initialization. 
  * Return the created list.
@@ -64,4 +75,4 @@ void free_list(List *list);
  * point-to by cells in list will be freed*/
 void free_list_deep(List *list);
 
-
+#endif

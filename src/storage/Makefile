@@ -5,7 +5,12 @@ headerdirs = $(includedir)/storage $(includedir)/common $(includedir)/memory \
 headers := $(shell find $(headerdirs) -name "*.h")
 objects := $(patsubst %.c,%.o,$(wildcard *.c))
 CC = gcc
-CFLAGS = $(foreach headerdir, $(headerdirs), -I$(headerdir))
+
+ifdef DEBUG
+	CFLAGS := -g -Wall -O0 $(foreach headerdir, $(headerdirs), -I$(headerdir)) -D DEBUG
+else
+	CFLAGS := -O2 $(foreach headerdir, $(headerdirs), -I$(headerdir))
+endif
 
 all: $(objects)
 

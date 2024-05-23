@@ -34,6 +34,32 @@ TEST(list, enlarge_list) {
     }
 }
 
+TEST(list, append_list) {
+    char* strings[10] = {
+        "hello everyone!", 
+        "¡Hola a todos!", 
+        "大家好!", 
+        "Bonjour à tous !", 
+        "Guten Tag, alle zusammen!", 
+        "Ciao a tutti!", 
+        "Здравствуйте, все!", 
+        "こんにちは、皆さん！", 
+        " 여러분, 안녕하세요!", 
+        "مرحباً جميعًا!" };
+    
+    List *list = create_list(NODE_STRING);
+    for (int i = 0; i < 10; i++) {
+        append_list(list, strings[i]);
+    }
+    
+    ListCell *lc;
+    int j = 0;
+    foreach (lc, list) {
+        ASSERT_STREQ((char *)lfirst(list_nth_cell(list, j)), strings[j]);
+        j++;
+    }
+    ASSERT_EQ(j, 10);
+}
 /* Test for free list. */
 TEST(list, free_list_deep) {
 

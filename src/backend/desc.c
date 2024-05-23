@@ -5,12 +5,14 @@
 #include <string.h>
 #include "data.h"
 #include "desc.h"
+#include "list.h"
 #include "mmu.h"
 #include "table.h"
 #include "meta.h"
 #include "copy.h"
 #include "session.h"
 #include "json.h"
+#include "type.h"
 #include "log.h"
 
 /*Get table name.*/
@@ -30,65 +32,51 @@ static uint32_t calc_meta_column_len(MetaColumn *meta_column) {
 }
 
 /* Generate DescribeResult. */
-static MapList *gen_describe_result(MetaTable *meta_table) {
+static List *gen_describe_result(MetaTable *meta_table) {
 
-    MapList *map_list = instance(MapList);
-    map_list->size = meta_table->column_size;
-    map_list->data = db_malloc(sizeof(Map *) * map_list->size, "pointer");
+    List *list = create_list(NODE_LIST);
 
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
 
-        Map *map = instance(Map);
-        map->size = 5;
-        map->body = db_malloc(sizeof(KeyValue *) * map->size, "pointer");
+        List *child_list = create_list(NODE_KEY_VALUE);
 
         /* filed */
-        KeyValue *key_value_field = instance(KeyValue);
-        key_value_field->key = db_strdup("field");
-        key_value_field->value = db_strdup(meta_column->column_name);
-        key_value_field->data_type = T_STRING;
-        map->body[0] = key_value_field;
+        append_list(child_list, new_key_value(db_strdup("field"), 
+                                              db_strdup(meta_column->column_name), 
+                                              T_STRING));
 
         /* type */
-        KeyValue *key_value_type = instance(KeyValue);
-        key_value_type->key = db_strdup("data_type");
-        key_value_type->value = db_strdup(data_type_name(meta_column->column_type));
-        key_value_type->data_type = T_STRING;
-        map->body[1] = key_value_type;
+        append_list(child_list, new_key_value(db_strdup("data_type"), 
+                                              db_strdup(data_type_name(meta_column->column_type)), 
+                                              T_STRING));
 
         /* array dim */
-        KeyValue *key_value_is_array = instance(KeyValue);
         bool is_array = meta_column->array_dim > 0;
-        key_value_is_array->key = db_strdup("is_array");
-        key_value_is_array->value = copy_value(&is_array, T_BOOL);
-        key_value_is_array->data_type = T_BOOL;
-        map->body[2] = key_value_is_array;
+        append_list(child_list, new_key_value(db_strdup("is_array"), 
+                                              copy_value(&is_array, T_BOOL), 
+                                              T_BOOL));
 
         /* primary key */
-        KeyValue *key_value_key = instance(KeyValue);
-        key_value_key->key = db_strdup("primary_key");
-        key_value_key->value = copy_value(&meta_column->is_primary, T_BOOL);
-        key_value_key->data_type = T_BOOL;
-        map->body[3] = key_value_key;
+        append_list(child_list, new_key_value(db_strdup("is_primary_key"), 
+                                              copy_value(&meta_column->is_primary, T_BOOL), 
+                                              T_BOOL));
 
         /* length */
-        KeyValue *key_value_size = instance(KeyValue);
-        key_value_size->key = db_strdup("data_length");
         uint32_t column_length = calc_meta_column_len(meta_column);
-        key_value_size->value = copy_value(&column_length, T_INT);
-        key_value_size->data_type = T_INT;
-        map->body[4] = key_value_size;
+        append_list(child_list, new_key_value(db_strdup("data_length"), 
+                                              copy_value(&column_length, T_INT), 
+                                              T_INT));
 
-        map_list->data[i] = map;
+        append_list(list, child_list);
     }
 
-    return map_list;
+    return list;
 }
 
 /* Execute describe statment. */
-MapList *exec_describe_statement(DescribeNode *describe_node) {
+List *exec_describe_statement(DescribeNode *describe_node) {
     char *table_name = get_table_name(describe_node); 
     Table *table = open_table(table_name);
     if (table == NULL) {

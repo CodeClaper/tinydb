@@ -12,10 +12,12 @@
 #include "mmu.h"
 #include "free.h"
 #include "copy.h"
+#include "list.h"
 #include "session.h"
 #include "asserts.h"
 #include "json.h"
 #include "log.h"
+#include "type.h"
 #include "timer.h"
 
 #define KB_THRESHOLD 1024
@@ -23,21 +25,18 @@
 #define GB_THRESHOLD 1024 * MB_THRESHOLD
 
 /*Gen table map list.*/
-static MapList *gen_table_map_list() {
+static List *gen_table_map_list() {
+    List *list = create_list(NODE_LIST);
+
     DIR *dir;
     struct dirent *entry;
-    MapList *map_list = instance(MapList);
-    map_list->size = 0;
-    map_list->data = db_malloc(0, "pointer");
     if ((dir = opendir(conf->data_dir)) ==NULL) 
         db_log(PANIC, "System error, not found directory: ", conf->data_dir); 
     else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
                 /* map */
-                Map *map = instance(Map);
-                map->size = 3;
-                map->body = db_malloc(sizeof(KeyValue *) * map->size, "pointer");
+                List *child_list = create_list(NODE_KEY_VALUE);
 
                 struct stat info;
                 char full_path[BUFF_SIZE];
@@ -45,86 +44,64 @@ static MapList *gen_table_map_list() {
                 assert_true(stat(full_path, &info) == 0, "Try to get file '%s' info fail.", full_path);
 
                 /* name */
-                KeyValue *key_value_name = instance(KeyValue);
-                key_value_name->key = db_strdup("table_name");
-                key_value_name->value = replace(entry->d_name, ".dbt", "");
-                key_value_name->data_type = T_STRING;
-                map->body[0] = key_value_name;
+                append_list(child_list, new_key_value(db_strdup("table_name"), 
+                                                replace(entry->d_name, ".dbt", ""), 
+                                                T_STRING));
 
                 /* size */
-                KeyValue *key_value_size = instance(KeyValue);
-                key_value_size->key = db_strdup("table_size");
-                key_value_size->value = copy_value(&info.st_size, T_INT);
-                key_value_size->data_type = T_INT;
-                map->body[1] = key_value_size;
+                append_list(child_list, new_key_value(db_strdup("table_size"), 
+                                                copy_value(&info.st_size, T_INT), 
+                                                T_INT));
+
+                /* blk_size */
+                append_list(child_list, new_key_value(db_strdup("blk_size"),
+                                                copy_value(&info.st_blksize, T_INT), 
+                                                T_INT));
 
                 /* create_time */
-                KeyValue *key_value_created = instance(KeyValue);
-                key_value_created->key = db_strdup("create_time");
-                key_value_created->value = format_time("%Y-%m-%d", info.st_ctim.tv_sec);
-                key_value_created->data_type = T_STRING;
-                map->body[2] = key_value_created;
+                append_list(child_list, new_key_value(db_strdup("create_time"),
+                                                format_time("%Y-%m-%d", info.st_ctim.tv_sec), 
+                                                T_STRING));
 
-                map_list->size++;
-                map_list->data = db_realloc(map_list->data, sizeof(Map *) * map_list->size);
-                map_list->data[map_list->size - 1] = map;
+                append_list(list, child_list);
             }
         }
         closedir(dir);
     }
-    return map_list;
+    return list;
 }
 
 /* Generate memory info. */
-static MapList *gen_memory_map_list() {
+static List *gen_memory_map_list() {
 
-    /* map_list */
-    MapList *map_list = instance(MapList);
-    map_list->size = 1;
-    map_list->data = db_malloc(sizeof(Map *) * map_list->size, "pointer");
+    List *list = create_list(NODE_KEY_VALUE);
 
-    /* map */
-    Map *map = instance(Map);
-    map->size = 3;
-    map->body = db_malloc(sizeof(KeyValue *) * map->size, "pointer");
-    
     /* Used memory. */
-    KeyValue *key_value_mem = instance(KeyValue);
-    uint32_t mmsize = db_memesize();
-    key_value_mem->key = db_strdup("used_memory");
-    key_value_mem->value = copy_value(&mmsize, T_LONG);
-    *(int64_t *)key_value_mem->value = mmsize;
-    key_value_mem->data_type = T_LONG;
-    map->body[0] = key_value_mem;
+    size_t mmsize = db_memesize();
+    append_list(list, new_key_value(db_strdup("used_memory"), 
+                                    copy_value(&mmsize, T_LONG), 
+                                    T_LONG));
 
     /* Mtable capacity. */
-    KeyValue *key_value_cap = instance(KeyValue);
     uint32_t cap = mtable_capacity();
-    key_value_cap->key = db_strdup("mtable_capacity");
-    key_value_cap->value = copy_value(&cap, T_LONG);
-    *(int64_t *)key_value_cap->value = cap;
-    key_value_cap->data_type = T_LONG;
-    map->body[1] = key_value_cap;
+    append_list(list, new_key_value(db_strdup("mtable_capacity"), 
+                                    copy_value(&cap, T_INT), 
+                                    T_INT));
 
     /* MEntry number. */
-    KeyValue *key_value_num = instance(KeyValue);
     uint32_t num = mentry_num();
-    key_value_num->key = db_strdup("mentry_num");
-    key_value_num->value = copy_value(&num, T_LONG);
-    *(int64_t *)key_value_num->value = num;
-    key_value_num->data_type = T_LONG;
-    map->body[2] = key_value_num;
+    append_list(list, new_key_value(db_strdup("mtable_capacity"), 
+                                    copy_value(&num, T_INT), 
+                                    T_INT));
 
-    map_list->data[0] = map;
-
-    return map_list;
+    return list;
 }
 
 /* Execute show statement. */
 void exec_show_statement(ShowNode *show_node, DBResult *result) {
     switch(show_node->type) {
         case SHOW_TABLES: {
-            MapList *map_list = gen_table_map_list();
+            List *map_list = gen_table_map_list();
             result->success = true;
             result->data = map_list;
             result->message = db_strdup("Show tables executed successfully.");
@@ -132,7 +109,7 @@ void exec_show_statement(ShowNode *show_node, DBResult *result) {
             break;
         }
         case SHOW_MEMORY: {
-            MapList *map_list = gen_memory_map_list();
+            List *map_list = gen_memory_map_list();
             result->success = true;
             result->data = map_list;
             result->message = db_strdup("Show memory executed successfully.");

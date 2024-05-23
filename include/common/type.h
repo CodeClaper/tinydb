@@ -1,0 +1,19 @@
+#include "data.h"
+
+/* New KeyValue instance. */
+KeyValue *new_key_value(char *key, void *value, DataType data_type);
+
+/* New row instance. */
+Row *new_row(void *key, char *table_name, uint32_t column_len);
+
+/* New ArrayValue instance. */
+ArrayValue *new_array_value(DataType data_type, uint32_t size);
+
+/* New select result structure. */
+SelectResult *new_select_result(char *table_name);
+
+/* Generate new db result. */
+DBResult *new_db_result();
+
+/* Generate new db result set. */
+DBResultSet *new_db_result_set();

@@ -7,10 +7,11 @@ headerdirs = $(includedir)/common $(includedir)/lock $(includedir)/memory $(incl
 			 $(includedir)/backend $(includedir)/storage $(includedir)/trans $(includedir)/utils
 
 headers := $(shell find $(headerdirs) -name "*.h")
-CFLAGS = -g -Wall -O0 $(foreach headerdir, $(headerdirs), -I$(headerdir))
 
 ifdef DEBUG
-CFLAGS += -D DEBUG
+	CFLAGS := -g -Wall -O0 $(foreach headerdir, $(headerdirs), -I$(headerdir)) -D DEBUG
+else
+	CFLAGS := -O2 $(foreach headerdir, $(headerdirs), -I$(headerdir)) 
 endif
 
 LDADDCFLAGS = -lpthread -lm 

@@ -23,6 +23,7 @@
 #include "meta.h"
 #include "copy.h"
 #include "free.h"
+#include "list.h"
 #include "trans.h"
 #include "select.h"
 #include "asserts.h"
@@ -34,26 +35,8 @@ static void handle_dulicate_key(Row *row);
 /* Send out row. */
 static void json_row(Row *row);
 
+static void json_list(List *list);
 
-/* Generate new db result. */
-DBResult *new_db_result() {
-    /* New DbResule and initialize it. */
-    DBResult *result = instance(DBResult);
-    result->success = false;
-    result->message = NULL;
-    result->data = NULL;
-    result->rows = 0;
-    result->duration = 0;
-    return result;
-}
-
-/* Generate new db result set. */
-DBResultSet *new_db_result_set() {
-    DBResultSet *result_set = instance(DBResultSet);
-    result_set->size = 0;
-    result_set->set = db_malloc(0, "pointer");
-    return result_set;
-}
 
 /* Add db result to set. */
 void add_db_result(DBResultSet *result_set, DBResult *result) {
@@ -61,7 +44,7 @@ void add_db_result(DBResultSet *result_set, DBResult *result) {
     result_set->set[result_set->size++] = result;
 }
 
-/* Generate array-value key value json. */
+/* Json array-value key value. */
 static void json_array_key_value(KeyValue *key_value) {
     Assert(key_value->is_array);
     char *key = key_value->key;
@@ -200,7 +183,7 @@ static void json_array_key_value(KeyValue *key_value) {
     }
 }
 
-/* Generate single-value key value json. */
+/* Json single-value key value. */
 static void json_single_key_value(KeyValue *key_value) {
 
     Assert(!key_value->is_array);
@@ -276,7 +259,7 @@ static void json_single_key_value(KeyValue *key_value) {
     }
 }
 
-/* Get key value pair string. */
+/* Json key value. */
 static void json_key_value(KeyValue *key_value) {
     Assert(key_value);
     if (key_value->is_array)
@@ -285,7 +268,7 @@ static void json_key_value(KeyValue *key_value) {
         json_single_key_value(key_value);
 }
 
-/* Send out row. */
+/* Json row. */
 static void json_row(Row *row) {
     if (!row) 
         db_send("null");
@@ -305,21 +288,7 @@ static void json_row(Row *row) {
     }
 }
 
-/* Send out map result. */
-static void json_map(Map *map) {
-    db_send("{ ");
-    uint32_t i = 0;
-    for(i =0; i < map->size; i++) {
-        KeyValue *key_value = map->body[i];
-        json_key_value(key_value);
-        /* split with ',' */
-        if (i < map->size - 1) 
-            db_send(", ");
-    }
-    db_send(" }");
-}
-
-/* Send out db select execution result. */
+/* Json select result.. */
 static void json_select_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\"", 
             result->success ? "true" : "false", 
@@ -341,7 +310,7 @@ static void json_select_result(DBResult *result) {
     db_send(", \"duration\": %lf }", result->duration);
 }
 
-/* Send out db none data result. */
+/* Json result without data but rows. */
 static void json_nondata_rows_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"rows\": %d, \"duration\": %lf }", 
             result->success ? "true" : "false", 
@@ -349,7 +318,7 @@ static void json_nondata_rows_result(DBResult *result) {
             result->duration);
 }
 
-/* Send out db none data result. */
+/* Json result without data. */
 static void json_nondata_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"duration\": %lf }", 
             result->success ? "true" : "false", 
@@ -357,23 +326,64 @@ static void json_nondata_result(DBResult *result) {
             result->duration);
 }
 
-/* Send out db show tables result. */
-static void json_map_list(DBResult *result) {
-    MapList *map_list = (MapList *)result->data;
+/* Json list of key value. */
+static void json_key_value_list(List *list) {
+    db_send("{ ");
+
+    uint32_t i = 0;
+    ListCell *lc;
+    foreach (lc, list) {
+        KeyValue *key_value = lfirst(lc);
+        json_key_value(key_value);
+        if (i < list->size - 1)
+            db_send(", ");
+        i++;
+    }
+
+    db_send(" }");
+}
+
+/* Json list of list type. */
+static void json_list_list(List *list) {
+    db_send("[");
+
+    uint32_t i = 0;
+    ListCell *lc;
+    foreach (lc, list) {
+        List *child_list = lfirst(lc);
+        json_list(child_list);
+        if (i < list->size - 1)
+            db_send(", ");
+        i++;
+    }
+
+    db_send("]");
+}
+
+/* Json list. */
+static void json_list(List *list) {
+    switch (list->type) {
+        case NODE_LIST:
+            json_list_list(list);
+            break;
+        case NODE_KEY_VALUE:
+            json_key_value_list(list);
+            break;
+        default:
+            panic("Unsupported list type: %d", list->type);
+            break;
+    }
+}
+
+/* Json result list. */
+static void json_result_list(DBResult *result) {
+    List *list = (List *)result->data;
     db_send("{ \"success\": %s, \"message\": \"%s\" ", 
             result->success ? "true" : "false", 
             result->success ? result->message : get_log_msg());
     if (result->success) {
         db_send(", \"data\": ");
-        db_send("[");
-        uint32_t i;
-        for(i = 0; i < map_list->size; i++) {
-            Map *map = map_list->data[i];
-            json_map(map);
-            if (i < map_list->size - 1)
-                db_send(", ");
-        }
-        db_send("]");
+        json_list(list);
     }
     db_send(", \"duration\": %lf }", result->duration);
 }
@@ -409,7 +419,7 @@ void json_result(DBResult *result) {
             break;
         case SHOW_STMT:
         case DESCRIBE_STMT:
-            json_map_list(result);
+            json_result_list(result);
             break;
         default:
             json_nondata_result(result);

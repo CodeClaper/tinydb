@@ -36,17 +36,7 @@
 #include "log.h"
 #include "utils.h"
 #include "json.h"
-
-/* Get the index of column in the insert node. */
-static int get_column_index(ColumnSetNode *column_set, char *column_name) {
-    int i;
-    for (i = 0; i < column_set->size; i++) {
-        ColumnNode *column_node = column_set->columns[i];
-        if (streq(column_node->column_name, column_name))
-            return i;
-    }
-    return -1;
-}
+#include "type.h"
 
 /* Get value in insert node to assign column at index. */
 static void *get_insert_value(ValueItemSetNode *value_item_set, uint32_t index, MetaColumn *meta_column) {

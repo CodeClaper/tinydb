@@ -636,17 +636,6 @@ typedef struct KeyValue {
     bool is_array;
 } KeyValue;
 
-/* Map */
-typedef struct Map {
-    KeyValue **body;
-    uint32_t size;
-} Map;
-
-typedef struct MapList {
-    Map **data;
-    uint32_t size;
-} MapList;
-
 /* Row */
 typedef struct Row {
     void *key;

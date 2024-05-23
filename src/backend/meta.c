@@ -84,7 +84,7 @@ DataType convert_data_type(AtomType atom_type) {
 }
 
 /* Data type name. */
-char *data_type_name(DataType data_type) {
+inline char *data_type_name(DataType data_type) {
     return DATA_TYPE_NAMES[data_type];
 }
 

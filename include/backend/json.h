@@ -1,11 +1,5 @@
 #include "data.h"
 
-/* Generate new db result. */
-DBResult *new_db_result();
-
-/* Generate new db result set. */
-DBResultSet *new_db_result_set();
-
 /* Add db result to set. */
 void add_db_result(DBResultSet *result_set, DBResult *result);
 
