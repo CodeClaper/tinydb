@@ -112,3 +112,7 @@ test/pytest/unit/__pycache__
 .pytest_cache/
 .cache/
 compile_commands.json
+
+src/tinydb
+src/tinydb_cli
+test/gtest/gtest
