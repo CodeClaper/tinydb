@@ -2,15 +2,11 @@
 includedir = ../../include
 headerdirs = $(includedir)/common $(includedir)/utils $(includedir)/memory \
 			 $(includedir)/storage $(includedir)/trans $(includedir)/backend
-objects := $(patsubst %.c,%.o,$(wildcard *.c))
 headers := $(shell find $(headerdirs) -name "*.h")
+objects := $(patsubst %.c,%.o,$(wildcard *.c))
 CC = gcc
 
-ifdef DEBUG
-	CFLAGS := -g -Wall -O0 $(foreach headerdir, $(headerdirs), -I$(headerdir)) -D DEBUG
-else
-	CFLAGS := -O2 $(foreach headerdir, $(headerdirs), -I$(headerdir))
-endif
+include ../common.mk
 
 all: $(objects)
 

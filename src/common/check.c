@@ -388,6 +388,37 @@ static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, 
     return true;
 }
 
+/* Check function value type. */
+static bool check_funtion_value_type(FunctionType type, ColumnNode *column, MetaColumn *meta_column) {
+    if (!column->has_sub_column) {
+        switch (type) {
+            case F_SUM:
+            case F_AVG:
+            case F_MAX:
+            case F_MIN: {
+                if (meta_column->column_type == T_REFERENCE) {
+                    db_log(ERROR, "Function %s not support for reference type column.", 
+                           function_type_name(type));
+                    return false;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    } else if (column->sub_column) {
+        Table *table = open_table(meta_column->table_name);
+        MetaColumn *sub_meta_column = get_meta_column_by_name(table->meta_table, column->sub_column->column_name);
+        return check_funtion_value_type(type, column->sub_column, sub_meta_column);
+    } else if (column->has_sub_column) {
+        db_log(ERROR, "Function %s not support for reference type column.", 
+               function_type_name(type));
+        return false;
+    }
+
+    return true;
+}
+
 /* Check function node */
 static bool check_function_node(FunctionNode *function, AliasMap alias_map) {
     FunctionValueNode *value_node = function->value;
@@ -398,7 +429,9 @@ static bool check_function_node(FunctionNode *function, AliasMap alias_map) {
         case V_COLUMN: {
             ColumnNode *column = value_node->column;
             MetaTable *meta_table = confirm_meta_table_via_column(column, alias_map);
-            return check_column_node(column, meta_table); 
+            MetaColumn *meta_column = get_meta_column_by_name(meta_table, column->column_name);
+            return check_funtion_value_type(function->type, column, meta_column) 
+                && check_column_node(column, meta_table); 
         }
         default: {
             UNEXPECTED_VALUE(value_node->value_type);

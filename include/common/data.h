@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "list.h"
 
 #ifndef DATA_H
 #define DATA_H
@@ -648,9 +649,8 @@ typedef struct Row {
 typedef struct SelectResult {
     char *table_name;               /* Table name. */
     char *range_variable;           /* Range variable. */
-    uint32_t row_size;              /* Row size. */
-    int32_t row_index;              /* current row index. */
-    Row **rows;                     /* Selected rows. */
+    uint32_t row_size;              /* Row size. Although in rows list indicates the row size, these row_size works for count agg. */
+    List *rows;                     /* Selected rows. */
     struct SelectResult *derived;   /* Derived select result, used for multi-table query. */
     bool last_derived;              /* Last derived flag. */
 } SelectResult;
@@ -722,12 +722,6 @@ typedef struct {
     char *message;
     double duration;
 } DBResult;
-
-/* DB Result Set.*/
-typedef struct {
-    uint32_t size;
-    DBResult **set;
-} DBResultSet;
 
 /* Alias struct flock. */
 typedef struct flock FileLock;

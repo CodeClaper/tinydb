@@ -14,6 +14,3 @@ SelectResult *new_select_result(char *table_name);
 
 /* Generate new db result. */
 DBResult *new_db_result();
-
-/* Generate new db result set. */
-DBResultSet *new_db_result_set();

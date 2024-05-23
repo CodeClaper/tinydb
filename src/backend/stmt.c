@@ -186,7 +186,7 @@ void execute(char *sql) {
 
     clock_t start, end;
     start = clock();
-    DBResultSet *result_set = new_db_result_set();
+    List *result_list = create_list(NODE_DB_RESULT);
     Statements *statements = NULL;
 
     /* Check empty sql. */
@@ -198,25 +198,25 @@ void execute(char *sql) {
             uint32_t i;
             for (i = 0; i < statements->size; i++) {
                 DBResult *result = new_db_result();
-                add_db_result(result_set, result);
+                append_list(result_list, result);
                 Statement *statement = statements->list[i];
                 exec_statement(statement, result);
             }
         } else {
             /* Catch routine. */
             /* If the set is empty, which means sql syntax error, put an error result to the set. */
-            if (result_set->size == 0) {
+            if (list_empty(result_list)) {
 
                 DBResult *err_result = new_db_result();
 
                 /* For error catch, result is false. */
                 err_result->success = false;
 
-                add_db_result(result_set, err_result);
+                append_list(result_list, err_result);
             }
 
             /* If last result is error, it lack duration, make up. */
-            DBResult *last_result = result_set->set[result_set->size - 1];
+            DBResult *last_result = lfirst(last_cell(result_list));
             if (last_result->success == false) {
                 /* Calulate duration. */
                 end = clock();
@@ -226,13 +226,13 @@ void execute(char *sql) {
         }
     } 
 
-    json_result_set(result_set);
+    json_list(result_list);
 
     /* Free statements.*/
     free_statements(statements);
 
     /* Free result_set. */
-    free_db_result_set(result_set);
+    free_list_deep(result_list);
 
     /* Free buffer. */
     remove_table_buffer();

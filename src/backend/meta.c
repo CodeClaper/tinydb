@@ -31,8 +31,24 @@
 #define DEFAULT_REFERENCE_LENGTH    48
 
 /* DataTypeNames */
-static char *DATA_TYPE_NAMES[] = 
-    {"unknown", "bool",  "char", "varchar", "int", "long", "double", "float", "string", "date", "timestamp",  "reference", "array" };
+static char *DATA_TYPE_NAMES[] =  {
+    "unknown", 
+    "bool",  
+    "char", 
+    "varchar", 
+    "int", 
+    "long", 
+    "double", 
+    "float", 
+    "string", 
+    "date", 
+    "timestamp",  
+    "reference", 
+    "array" 
+};
+
+/* Function type names*/
+static char *FUNCTION_TYPE_NAMES[] = { "COUNT", "MAX", "MIN", "SUM", "AVG" };
 
 /* Column type length */
 uint32_t default_data_len(DataType column_type) {
@@ -86,6 +102,11 @@ DataType convert_data_type(AtomType atom_type) {
 /* Data type name. */
 inline char *data_type_name(DataType data_type) {
     return DATA_TYPE_NAMES[data_type];
+}
+
+/* Function type name. */
+inline char *function_type_name(FunctionType function_type) {
+    return FUNCTION_TYPE_NAMES[function_type];
 }
 
 /* Assign value from atom*/

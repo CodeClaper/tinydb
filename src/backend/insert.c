@@ -312,17 +312,18 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
 
     if (result->success) {
         SelectResult *select_result = (SelectResult *)result->data;
-        refer_set->size = select_result->row_size;
+        refer_set->size = len_list(select_result->rows);
         refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
 
         /* Insert into rows. */
-        uint32_t i;
-        for (i = 0; i < select_result->row_size; i++) {
-            Row *insert_row = convert_insert_row(select_result->rows[i], table);
+        ListCell *lc;
+        int i = 0;
+        foreach (lc, select_result->rows) {
+            Row *insert_row = convert_insert_row(lfirst(lc), table);
             /* Supplement sys_id column. */
             supple_sys_id(insert_row);
             Refer *refer = insert_one_row(table, insert_row);
-            refer_set->set[i] = refer;
+            refer_set->set[i++] = refer;
             free_row(insert_row);
         }
     }

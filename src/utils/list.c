@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <string.h>
 #include "list.h"
-#include "data.h"
 #include "mmu.h"
 #include "free.h"
 #include "asserts.h"
@@ -36,12 +35,6 @@ static void enlarge_list(List *list) {
     } else {
         list->elements = db_realloc(list->elements, sizeof(ListCell) * list->capacity);
     }
-}
-
-/* Last list cell. */
-static inline ListCell *last_cell(List *list) {
-    Assert(list != NIL);
-    return &list->elements[list->size - 1];
 }
 
 /* Append int item to list. */
@@ -160,6 +153,20 @@ void free_list_deep(List *list) {
                 }
                 break;
             }
+            case NODE_ROW: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_row(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_DB_RESULT: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_db_result(lfirst(lc));
+                }
+                break;
+            }
             case NODE_COLUMN_DEF_NODE: {
                 ListCell *lc;
                 foreach (lc, list) {
@@ -176,3 +183,7 @@ void free_list_deep(List *list) {
     }
 }
 
+/* List is empty. */
+bool list_empty(List *list) {
+    return list->size == 0;
+}

@@ -123,9 +123,6 @@ void free_lock_handle(LockHandle *lock_state);
 /* Free DBResult. */
 void free_db_result(DBResult *result);
 
-/* Free DBResultSet. */ 
-void free_db_result_set(DBResultSet *result_set);
-
 /* Free LogEntry.*/
 void free_log_entry(LogEntry *log_entry);
 

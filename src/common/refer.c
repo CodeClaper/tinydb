@@ -176,13 +176,14 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     query_with_condition(condition_node, select_result, select_row, NULL);
 
     Refer *refer = NULL;
-    if (select_result->row_size > 1) {
+    uint32_t row_size = len_list(select_result->rows);
+    if (row_size > 1) {
         db_log(ERROR, "Expected to one reference, but found %d, maybe you can use 'in' as for array.", select_result->row_size);
         return NULL;
     }
-    else if (select_result->row_size == 1) {
+    else if (row_size == 1) {
         /* Take the first row as refered. Maybe row size should be one, but now there is no check. */
-        Row *row = select_result->rows[0];
+        Row *row = lfirst(first_cell(select_result->rows));
         refer = define_refer(row);
     }
     free_select_result(select_result);

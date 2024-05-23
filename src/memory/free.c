@@ -120,14 +120,9 @@ void free_select_result(SelectResult *select_result) {
         if (select_result->range_variable) 
             db_free(select_result->range_variable);
 
-        if (select_result->rows) {
+        if (select_result->rows) 
             /* free rows. */
-            uint32_t i;
-            for (i = 0; i < select_result->row_size; i++) {
-                free_row(select_result->rows[i]);
-            }
-            db_free(select_result->rows);
-        }
+            free_list_deep(select_result->rows);
 
         if (select_result->derived)
             free_select_result(select_result->derived);
@@ -845,17 +840,6 @@ void free_db_result(DBResult *result) {
                 break;
         }
         db_free(result);
-    }
-}
-
-/* Free DBResultSet. */ 
-void free_db_result_set(DBResultSet *result_set) {
-    if (result_set) {
-        for (uint32_t i = 0; i < result_set->size; i++) {
-            free_db_result(result_set->set[i]);
-        }
-        db_free(result_set->set);
-        db_free(result_set);
     }
 }
 

@@ -9,6 +9,9 @@ DataType convert_data_type(AtomType atom_type);
 /* Data type name. */
 char *data_type_name(DataType data_type);
 
+/* Function type name. */
+char *function_type_name(FunctionType function_type);
+
 /* Assign value from ValueItemNode. */
 void *assign_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column);
 

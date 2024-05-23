@@ -35,10 +35,9 @@ ArrayValue *new_array_value(DataType data_type, uint32_t size) {
 SelectResult *new_select_result(char *table_name) {
     SelectResult *select_result = instance(SelectResult);
     select_result->row_size = 0;
-    select_result->row_index = 0;
     select_result->table_name = table_name ? db_strdup(table_name) : NULL;
     select_result->range_variable = NULL;
-    select_result->rows = db_malloc(0, "pointer");
+    select_result->rows = create_list(NODE_ROW);
     select_result->derived = NULL;
     select_result->last_derived = false;
     return select_result;
@@ -56,10 +55,3 @@ DBResult *new_db_result() {
     return result;
 }
 
-/* Generate new db result set. */
-DBResultSet *new_db_result_set() {
-    DBResultSet *result_set = instance(DBResultSet);
-    result_set->size = 0;
-    result_set->set = db_malloc(0, "pointer");
-    return result_set;
-}

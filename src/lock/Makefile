@@ -1,16 +1,12 @@
 
 includedir = ../../include
 headerdirs = $(includedir)/lock $(includedir)/common $(includedir)/memory \
-			 $(includedir)/storage
+			 $(includedir)/storage $(includedir)/utils
 objects := $(patsubst %.c,%.o,$(wildcard *.c))
 headers := $(shell find $(headerdirs) -name "*.h")
 CC = gcc
 
-ifdef DEBUG
-	CFLAGS := -g -Wall -O0 $(foreach headerdir, $(headerdirs), -I$(headerdir)) -D DEBUG
-else
-	CFLAGS := -O2 $(foreach headerdir, $(headerdirs), -I$(headerdir))
-endif
+include ../common.mk
 
 all: $(objects)
 

@@ -8,11 +8,7 @@ headerdirs = $(includedir)/common $(includedir)/lock $(includedir)/memory $(incl
 
 headers := $(shell find $(headerdirs) -name "*.h")
 
-ifdef DEBUG
-	CFLAGS := -g -Wall -O0 $(foreach headerdir, $(headerdirs), -I$(headerdir)) -D DEBUG
-else
-	CFLAGS := -O2 $(foreach headerdir, $(headerdirs), -I$(headerdir)) 
-endif
+include ./common.mk
 
 LDADDCFLAGS = -lpthread -lm 
 

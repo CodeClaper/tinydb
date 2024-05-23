@@ -1,5 +1,5 @@
-#include "data.h"
 #include <stdint.h>
+#include "asserts.h"
 
 #ifndef LIST_H
 #define LIST_H
@@ -15,6 +15,8 @@ typedef enum NodeTag {
     NODE_STRING,
     NODE_LIST,
     NODE_KEY_VALUE,
+    NODE_ROW,
+    NODE_DB_RESULT,
     NODE_COLUMN_DEF_NODE
 } NodeTag;
 
@@ -52,6 +54,25 @@ typedef struct List {
 #define foreach(lc, list) \
         for (uint32_t __i = 0; __i < list->size ? (lc = &list->elements[__i], true) : (lc = NULL, false); __i++)
 
+
+/* Last list cell. */
+static inline ListCell *first_cell(List *list) {
+    Assert(list != NIL);
+    return &list->elements[0];
+}
+
+/* Last list cell. */
+static inline ListCell *last_cell(List *list) {
+    Assert(list != NIL);
+    return &list->elements[list->size - 1];
+}
+
+/* Length of list. */
+static inline uint32_t len_list(List *list) {
+    Assert(list != NIL);
+    return list->size;
+}
+
 /* Create List and initialization. 
  * Return the created list.
  * */
@@ -70,9 +91,11 @@ ListCell *list_nth_cell(List *list, int nth);
  * point-to by cells in list DOES NOT be freed*/
 void free_list(List *list);
 
-
 /* Free all cells and any object that are 
  * point-to by cells in list will be freed*/
 void free_list_deep(List *list);
+
+/* List is empty. */
+bool list_empty(List *list);
 
 #endif

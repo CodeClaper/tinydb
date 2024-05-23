@@ -10,7 +10,6 @@
  * */
 
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
@@ -34,15 +33,6 @@ static void handle_dulicate_key(Row *row);
 
 /* Send out row. */
 static void json_row(Row *row);
-
-static void json_list(List *list);
-
-
-/* Add db result to set. */
-void add_db_result(DBResultSet *result_set, DBResult *result) {
-    result_set->set = db_realloc(result_set->set, sizeof(DBResult *) * (result_set->size + 1));
-    result_set->set[result_set->size++] = result;
-}
 
 /* Json array-value key value. */
 static void json_array_key_value(KeyValue *key_value) {
@@ -288,7 +278,7 @@ static void json_row(Row *row) {
     }
 }
 
-/* Json select result.. */
+/* Json select result. */
 static void json_select_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\"", 
             result->success ? "true" : "false", 
@@ -297,12 +287,14 @@ static void json_select_result(DBResult *result) {
         db_send(", \"data\": ");
         SelectResult *select_result = result->data;
         db_send("[");
-        uint32_t i;
-        for(i = 0; i < select_result->row_size; i++) {
-            Row *row = select_result->rows[i];
+        uint32_t i = 0;
+        ListCell *lc;
+        foreach (lc, select_result->rows) {
+            Row *row = lfirst(lc);
             json_row(row);
-            if (i < select_result->row_size - 1)
+            if (i < len_list(select_result->rows) - 1)
                 db_send(", ");
+            i++;
         }
         db_send("]");
         db_send(", \"rows\": %d", result->rows);
@@ -360,25 +352,10 @@ static void json_list_list(List *list) {
     db_send("]");
 }
 
-/* Json list. */
-static void json_list(List *list) {
-    switch (list->type) {
-        case NODE_LIST:
-            json_list_list(list);
-            break;
-        case NODE_KEY_VALUE:
-            json_key_value_list(list);
-            break;
-        default:
-            panic("Unsupported list type: %d", list->type);
-            break;
-    }
-}
-
 /* Json result list. */
 static void json_result_list(DBResult *result) {
     List *list = (List *)result->data;
-    db_send("{ \"success\": %s, \"message\": \"%s\" ", 
+    db_send("{ \"success\": %s, \"message\": \"%s\"", 
             result->success ? "true" : "false", 
             result->success ? result->message : get_log_msg());
     if (result->success) {
@@ -406,8 +383,8 @@ static void handle_dulicate_key(Row *row) {
     }
 }
 
-/* Send out db execution result. */
-void json_result(DBResult *result) {
+/* Json DBResult. */
+void json_db_result(DBResult *result) {
     switch (result->stmt_type) {
         case SELECT_STMT:
             json_select_result(result);
@@ -427,14 +404,39 @@ void json_result(DBResult *result) {
     }
 }
 
-/* Send out db execution result set. */
-void json_result_set(DBResultSet *result_set) {
-    db_send(result_set->size > 1 ? "[" : "");
-    uint32_t i;
-    for (i = 0; i < result_set->size; i++) {
-        json_result(result_set->set[i]);
-        if (i < result_set->size - 1)
+/* Json DBResult list*/
+static void json_db_result_list(List *list) {
+    
+    db_send(list->size > 1 ? "[" : "");
+
+    uint32_t i = 0;
+    ListCell *lc;
+    foreach (lc, list) {
+        DBResult *result = lfirst(lc);
+        json_db_result(result);
+        if (i < list->size - 1)
             db_send(", ");
+        i++;
     }
-    db_send(result_set->size > 1 ? "]\n" : "\n");
+
+    db_send(list->size > 1 ? "]\n" : "\n");
 }
+
+/* Json list. */
+void json_list(List *list) {
+    switch (list->type) {
+        case NODE_LIST:
+            json_list_list(list);
+            break;
+        case NODE_KEY_VALUE:
+            json_key_value_list(list);
+            break;
+        case NODE_DB_RESULT:
+            json_db_result_list(list);
+            break;
+        default:
+            UNEXPECTED_VALUE(list->type);
+            break;
+    }
+}
+

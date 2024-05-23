@@ -672,11 +672,11 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         if (derived) {
 
             /* Cartesian product. */
-            uint32_t j;
-            for (j = 0; j < derived->row_size; j++) {
+            ListCell *lc;
+            foreach (lc, derived->rows) {
 
                 /* Merge derived-row. */
-                Row *derived_row = derived->rows[j];
+                Row *derived_row = lfirst(lc);
                 Row *mrow = merge_row(derived_row, row);
 
                 /* Check if the row data include, 
@@ -814,17 +814,16 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
-    select_result->rows = db_realloc(select_result->rows, sizeof(Row *) * (select_result->row_size + 1));
-    select_result->rows[select_result->row_size++] = copy_row_without_reserved(row);
+    append_list(select_result->rows, copy_row_without_reserved(row));
 }
 
 /* Calulate column sum value. */
 static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_result) {
     
     double sum = 0;
-    uint32_t i ;
-    for (i = 0; i < select_result->row_size; i++) {
-        Row *row = select_result->rows[i];
+    ListCell *lc;
+    foreach (lc, select_result->rows) {
+        Row *row = lfirst(lc);
         KeyValue *key_value = query_plain_column_value(select_result, column, row);
         switch (key_value->data_type) {
             case T_INT: {
@@ -853,6 +852,8 @@ static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_
                 break;
             }
         }
+
+        free_key_value(key_value);
     }
 
     return new_key_value(db_strdup(SUM_NAME), 
@@ -865,9 +866,9 @@ static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_
 static KeyValue *calc_column_avg_value(ColumnNode *column, SelectResult *select_result) {
     double sum = 0;
     double avg = 0;
-    uint32_t i;
-    for (i = 0; i < select_result->row_size; i++) {
-        Row *row = select_result->rows[i];
+    ListCell *lc;
+    foreach (lc, select_result->rows) {
+        Row *row = lfirst(lc);
         KeyValue *key_value = query_plain_column_value(select_result, column, row);
         switch (key_value->data_type) {
             case T_INT: {
@@ -896,8 +897,9 @@ static KeyValue *calc_column_avg_value(ColumnNode *column, SelectResult *select_
                 break;
             }
         }
+        free_key_value(key_value);
     }
-    avg = sum / select_result->row_size;
+    avg = sum / len_list(select_result->rows);
 
     return new_key_value(db_strdup(AVG_NAME), 
                          copy_value(&avg, T_DOUBLE), 
@@ -909,19 +911,22 @@ static KeyValue *calc_column_avg_value(ColumnNode *column, SelectResult *select_
 static KeyValue *calc_column_max_value(ColumnNode *column, SelectResult *select_result) {
     void *max_value = NULL;
     DataType data_type;
-    uint32_t i;
-    for (i = 0; i < select_result->row_size; i++) {
-        Row *row = select_result->rows[i];
+    ListCell *lc;
+    foreach (lc, select_result->rows) {
+        Row *row = lfirst(lc);
         KeyValue *current = query_plain_column_value(select_result, column, row);
         void *current_value = current->value;
         if (!max_value || greater(current_value, max_value, current->data_type)) {
-            max_value = current_value;
             data_type = current->data_type;
+            if (max_value)
+                free_value(max_value, data_type);
+            max_value = copy_value(current_value, data_type);
         }
+        free_key_value(current);
     }
 
     return new_key_value(db_strdup(MAX_NAME), 
-                         copy_value(max_value, data_type), 
+                         max_value, 
                          data_type);
 }
 
@@ -929,26 +934,29 @@ static KeyValue *calc_column_max_value(ColumnNode *column, SelectResult *select_
 static KeyValue *calc_column_min_value(ColumnNode *column, SelectResult *select_result) {
     void *min_value = NULL;
     DataType data_type;
-    uint32_t i;
-    for (i = 0; i < select_result->row_size; i++) {
-        Row *row = select_result->rows[i];
+    ListCell *lc;
+    foreach (lc, select_result->rows) {
+        Row *row = lfirst(lc);
         KeyValue *current = query_plain_column_value(select_result, column, row);
         void *current_value = current->value;
         if (min_value == NULL || less(current_value, min_value, current->data_type)) {
             data_type = current->data_type;
-            min_value = current_value;
+            if (min_value)
+                free_value(min_value, data_type);
+            min_value = copy_value(current_value, data_type);
         }
+        free_key_value(current);
     }
 
     return new_key_value(db_strdup(MIN_NAME), 
-                         copy_value(min_value, data_type), 
+                         min_value, 
                          data_type);
 }
 
 
 /* Query count function. */
 static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *select_result) {
-    uint32_t row_size = select_result->row_size;
+    uint32_t row_size = len_list(select_result->rows);
     return new_key_value(db_strdup("count"), 
                          copy_value(&row_size, T_INT), 
                          T_INT);
@@ -960,7 +968,7 @@ static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *sele
         case V_COLUMN: 
             return calc_column_sum_value(value->column, select_result);
         case V_INT: {
-            double sum = value->i_value * select_result->row_size;
+            double sum = value->i_value * len_list(select_result->rows);
             return new_key_value(db_strdup(SUM_NAME), 
                                  copy_value(&sum, T_DOUBLE), 
                                  T_DOUBLE);
@@ -1753,11 +1761,11 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
         case SCALAR_COLUMN: {
             ColumnNode *column = scalar_exp->column;
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
-            if (select_result->row_size == 0)
+            if (list_empty(select_result->rows))
                 return new_key_value(db_strdup(column->column_name), NULL, meta_column->column_type);
             else
                 /* Default, when query function and column data, column only return first data. */
-                return query_plain_column_value(select_result, column, select_result->rows[0]);
+                return query_plain_column_value(select_result, column, lfirst(first_cell(select_result->rows)));
         }
         case SCALAR_FUNCTION:
             return query_function_column_value(scalar_exp->function, select_result);
@@ -1765,10 +1773,10 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
             return query_function_calculate_column_value(scalar_exp->calculate, select_result);
         case SCALAR_VALUE: {
             ValueItemNode *value = scalar_exp->value;
-            if (select_result->row_size == 0) 
+            if (list_empty(select_result->rows)) 
                 return new_key_value(db_strdup("value"), NULL, convert_data_type(value->value.atom->type));
             else
-                return query_value_item(value, select_result->rows[0]);
+                return query_value_item(value, lfirst(first_cell(select_result->rows)));
         }
         default: {
             UNEXPECTED_VALUE("Unknown scalar type");
@@ -1794,14 +1802,10 @@ static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResul
     }
 
     /* Free old rows memory. */
-    uint32_t j;
-    for (j = 0; j <select_result->row_size; j++) {
-        free_row(select_result->rows[j]);
-    }
+    free_list_deep(select_result->rows);
 
-    select_result->rows = db_realloc(select_result->rows, sizeof(Row *) * 1);
-    select_result->row_size = 1;
-    select_result->rows[0] = row;
+    select_result->rows = create_list(NODE_ROW);
+    append_list(select_result->rows, row);
 }
 
 /* Query all-columns calcuate column value. */
@@ -1912,10 +1916,10 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
 
 /* Query all columns data. */
 static void query_columns_selection(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
-    uint32_t i;
-    for (i = 0; i < select_result->row_size; i++) {
-        Row *row = select_result->rows[i];
-        select_result->rows[i] = query_plain_row_selection(select_result, scalar_exp_set, row);
+    ListCell *lc;
+    foreach (lc, select_result->rows) {
+        Row *row = lfirst(lc);
+        lfirst(lc) = query_plain_row_selection(select_result, scalar_exp_set, row);
         free_row(row);
     }
 }
@@ -2007,6 +2011,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
 
         result = current_result;
     }
+
     return result;
 }
 
@@ -2023,7 +2028,7 @@ void exec_select_statement(SelectNode *select_node, DBResult *result) {
     query_with_selection(select_node->selection, select_result);
 
     /* If select all, return all row data. */
-    result->rows = select_result->row_size;
+    result->rows = len_list(select_result->rows);
     result->data = select_result;
     result->success = true;
     result->message = format("Query %d rows data from table '%s' successfully.", 
