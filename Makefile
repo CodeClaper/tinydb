@@ -1,9 +1,9 @@
-SUBDIRS := src 
+SUBDIRS := src test/gtest
 
 all: 
 	$(foreach dir, $(SUBDIRS), $(MAKE) -C $(dir);)
 
-.PHONY: all check check-pytest check_gtest clean-local
+.PHONY: all check check-pytest check_gtest clean
 
 check: check-gtest check-pytest
 

@@ -3,11 +3,50 @@
 
 extern "C" {
 #include "data.h"
+#include "mmu.h"
+#include "mem.h"
+#include "log.h"
+#include "session.h"
+#include "rwlock.h"
+#include "trans.h"
+#include "xlog.h"
+#include "cache.h"
+#include "buffer.h"
+#include "conf.h"
+#include "refer.h"
 }
 Conf *conf; /* Conf */
 jmp_buf errEnv; /* jmp_buf for error. */
 
+
+/* DB Start. */
+static void db_start() {
+    /* Initialise memory manager unit. */
+    init_mmu();
+    /* Initialise memory manger. */
+    init_mem();
+    /* Initialise log. */
+    init_log();
+    /* Initialise session. */
+    init_session();
+    /* Initialise lock. */
+    init_lock();
+    /* Initialise transaction. */
+    init_transaction();
+    /* Initialise xlog. */
+    init_xlog();
+    /* Initialise table cache. */
+    init_table_cache();
+    /* Initialise table buffer. */
+    init_table_buffer();
+    /* Initialise refer. */
+    init_refer();
+    /* Load configuration. */
+    conf = load_conf();
+}
+
 int main(int argc, char **argv) {
+    db_start();
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
