@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-#include <stdio.h>
 
 extern "C" {
 #include "list.h"
