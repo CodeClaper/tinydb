@@ -5,6 +5,8 @@
 #include "refer.h"
 #include "log.h"
 
+
+
 /*Equal operation (=).*/
 bool equal(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 
@@ -254,3 +256,4 @@ bool eval(CompareType compare_type, void *source, void *target, DataType data_ty
     }
     return false;
 }
+

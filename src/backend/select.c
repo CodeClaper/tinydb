@@ -162,7 +162,12 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
     ScalarExpNode *comparsion_value = comparison->value;
     switch (comparsion_value->type) {
         case SCALAR_VALUE:
-            return include_internal_comparison_predicate_value(select_result, min_key, max_key, comparison->type, comparsion_value->value, meta_column);
+            return include_internal_comparison_predicate_value(select_result, 
+                                                               min_key, 
+                                                               max_key, 
+                                                               comparison->type, 
+                                                               comparsion_value->value, 
+                                                               meta_column);
         /* Other comparison value type, regarded as true for including internal predicate. */
         case SCALAR_COLUMN:
         case SCALAR_FUNCTION:
@@ -179,7 +184,11 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
 static bool include_internal_predicate(SelectResult *select_result, void *min_key, void *max_key, PredicateNode *predicate, MetaTable *meta_table) {
     switch (predicate->type) {
         case PRE_COMPARISON:
-            return include_internal_comparison_predicate(select_result, min_key, max_key, predicate->comparison, meta_table);
+            return include_internal_comparison_predicate(select_result, 
+                                                         min_key, 
+                                                         max_key, 
+                                                         predicate->comparison, 
+                                                         meta_table);
         /* For in or like predicate, no skip include. */
         case PRE_IN:
         case PRE_LIKE:
