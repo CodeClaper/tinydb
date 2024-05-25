@@ -35,7 +35,7 @@
 #include "trans.h"
 #include "refer.h"
 #include "utils.h"
-#include "json.h"
+#include "jsonwriter.h"
 #include "const.h"
 
 /* Maximum number of rows fetched at once.*/

@@ -24,7 +24,7 @@
 #include "buffer.h"
 #include "log.h"
 #include "free.h"
-#include "json.h"
+#include "jsonwriter.h"
 #include "type.h"
 #include "xlog.h"
 

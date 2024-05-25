@@ -35,7 +35,7 @@
 #include "xlog.h"
 #include "log.h"
 #include "utils.h"
-#include "json.h"
+#include "jsonwriter.h"
 #include "type.h"
 
 /* Get value in insert node to assign column at index. */

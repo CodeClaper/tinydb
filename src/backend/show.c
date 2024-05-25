@@ -15,7 +15,7 @@
 #include "list.h"
 #include "session.h"
 #include "asserts.h"
-#include "json.h"
+#include "jsonwriter.h"
 #include "log.h"
 #include "type.h"
 #include "timer.h"

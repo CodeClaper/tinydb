@@ -21,7 +21,7 @@ static pthread_key_t key; /* Pthread key to store session. */
 
 
 /* Init spool. */
-static void clearn_up_spool();
+static void clearn_up_spool(Session *session);
 
 /* Initialize session. */
 void init_session() {

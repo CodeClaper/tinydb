@@ -11,11 +11,11 @@
 #include "refer.h"
 #include "ltree.h"
 #include "check.h"
+#include "jsonwriter.h"
 #include "trans.h"
 #include "session.h"
 #include "utils.h"
 #include "xlog.h"
-#include "json.h"
 #include "log.h"
 
 /* Delete row */

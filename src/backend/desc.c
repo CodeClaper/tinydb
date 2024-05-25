@@ -11,7 +11,6 @@
 #include "meta.h"
 #include "copy.h"
 #include "session.h"
-#include "json.h"
 #include "type.h"
 #include "log.h"
 
