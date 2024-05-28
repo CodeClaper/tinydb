@@ -34,7 +34,7 @@ TEST(list, enlarge_list) {
 }
 
 TEST(list, append_list) {
-    char* strings[10] = {
+    static char* strings[10] = {
         "hello everyone!", 
         "¡Hola a todos!", 
         "大家好!", 
@@ -44,7 +44,8 @@ TEST(list, append_list) {
         "Здравствуйте, все!", 
         "こんにちは、皆さん！", 
         " 여러분, 안녕하세요!", 
-        "مرحباً جميعًا!" };
+        "مرحباً جميعًا!" 
+    };
     
     List *list = create_list(NODE_STRING);
     for (int i = 0; i < 10; i++) {
