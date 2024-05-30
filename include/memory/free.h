@@ -102,11 +102,8 @@ void free_insert_node(InsertNode *insert_node);
 /* Free create table node. */
 void free_create_table_node(CreateTableNode *create_table_node);
 
-/* Free statment */
-void free_statment(Statement *stmt);
-
-/* Free statements. */
-void free_statements(Statements *statements);
+/* Free statement */
+void free_statement(Statement *stmt);
 
 /* Free TransactionHandle. */
 void free_transaction_handle(TransactionHandle *trans_handle);

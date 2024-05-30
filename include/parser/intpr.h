@@ -183,10 +183,4 @@ ShowNode *make_show_node(ShowNodeType type);
 /* make a statement. */
 Statement *make_statement();
 
-/* make statements. */
-Statements *make_statements();
-
-/* add statement to statements*/
-void add_statement(Statements *statements, Statement *statement);
-
 #endif

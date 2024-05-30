@@ -376,16 +376,3 @@ Statement *make_statement() {
     return statement;
 }
 
-/* make statements. */
-Statements *make_statements() {
-    Statements *statements = instance(Statements);
-    statements->size = 0;
-    statements->list = db_malloc(0, "pointer");
-    return statements;
-}
-
-/* add statement to statements*/
-void add_statement(Statements *statements, Statement *statement) {
-    statements->list = db_realloc(statements->list, sizeof(Statement *) * (statements->size + 1));
-    statements->list[statements->size++] = statement;
-}

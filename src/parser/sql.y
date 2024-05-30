@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "list.h"
 #include "intpr.h"
 #include "mmu.h"
 #include "y.tab.h"
@@ -66,7 +67,7 @@ int yylex();
    DescribeNode                 *describe_node;
    ShowNode                     *show_node;
    Statement                    *statement;
-   Statements                   *statements;
+   List                         *list;
 };
 
 %left OR
@@ -156,19 +157,19 @@ int yylex();
 %type <describe_node> describe_statement
 %type <show_node> show_statement
 %type <statement> statement;
-%type <statements> statements;
-%parse-param {Statements *states}
+%type <list> statements;
+%parse-param {List *states}
 
 %%
 statements: 
     statement 
         {
-            add_statement(states, $1);
+            append_list(states, $1);
             $$ = states;
         }
     | statements statement
         {
-            add_statement($1, $2);
+            append_list($1, $2);
             $$ = $1;
         }
     ;

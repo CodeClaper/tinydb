@@ -197,7 +197,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 16 "sql.y"
+#line 17 "sql.y"
 
    char                         *strVal;
    int64_t                      intVal;
@@ -251,7 +251,7 @@ union YYSTYPE
    DescribeNode                 *describe_node;
    ShowNode                     *show_node;
    Statement                    *statement;
-   Statements                   *statements;
+   List                         *list;
 
 #line 257 "y.tab.h"
 
@@ -265,7 +265,7 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 
-int yyparse (Statements *states);
+int yyparse (List *states);
 
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */

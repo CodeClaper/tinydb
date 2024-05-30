@@ -3,6 +3,7 @@
 #include <setjmp.h>
 #include <time.h>
 #include "stmt.h"
+#include "list.h"
 #include "defs.h"
 #include "mmu.h"
 #include "mem.h"
@@ -187,7 +188,7 @@ void execute(char *sql) {
     clock_t start, end;
     start = clock();
     List *result_list = create_list(NODE_DB_RESULT);
-    Statements *statements = NULL;
+    List *statements = NULL;
 
     /* Check empty sql. */
     if (!is_empty(sql)) {
@@ -195,11 +196,11 @@ void execute(char *sql) {
         if (setjmp(errEnv) == 0) {
             statements = parse(sql);
             /* Execute each statement. */
-            uint32_t i;
-            for (i = 0; i < statements->size; i++) {
+            ListCell *lc;
+            foreach (lc, statements) {
                 DBResult *result = new_db_result();
                 append_list(result_list, result);
-                Statement *statement = statements->list[i];
+                Statement *statement = lfirst(lc);
                 exec_statement(statement, result);
             }
         } else {
@@ -229,7 +230,7 @@ void execute(char *sql) {
     json_list(result_list);
 
     /* Free statements.*/
-    free_statements(statements);
+    free_list_deep(statements);
 
     /* Free result_set. */
     free_list_deep(result_list);

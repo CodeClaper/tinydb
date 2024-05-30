@@ -167,6 +167,13 @@ void free_list_deep(List *list) {
                 }
                 break;
             }
+            case NODE_STATEMENT: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_statement(lfirst(lc));
+                }
+                break;
+            }
             case NODE_DB_RESULT: {
                 ListCell *lc;
                 foreach (lc, list) {

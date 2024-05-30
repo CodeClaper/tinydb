@@ -765,19 +765,6 @@ void free_statement(Statement *statement) {
     db_free(statement);
 }
 
-/* Free statements. */
-void free_statements(Statements *statements) {
-    if (statements) {
-        uint32_t i;
-        for (i = 0; i < statements->size; i++) {
-            free_statement(statements->list[i]);
-        }
-        db_free(statements->list);
-        db_free(statements);
-    }
-}
-
-
 /* Free LockHandle. */
 void free_lock_handle(LockHandle *lock_handle) {
     if (lock_handle) {

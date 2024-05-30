@@ -16,11 +16,11 @@ typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(void);
 extern YY_BUFFER_STATE yy_scan_string(char *str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
-extern int yyparse(Statements *states);
+extern int yyparse(List *states);
 
 
-/* Parse sql. */
-Statements *parse(char *sql) {
+/* Parse sql and generate statement list. */
+List *parse(char *sql) {
     if (sql == NULL)
         return NULL;
 
@@ -32,7 +32,7 @@ Statements *parse(char *sql) {
     sprintf(buff, "%s%c", sql, '\n');
     YY_BUFFER_STATE buffer = yy_scan_string(buff);
 
-    Statements *states = make_statements();
+    List *states = create_list(NODE_STATEMENT);
 
     return yyparse(states) == 0 ? states : NULL;
 }

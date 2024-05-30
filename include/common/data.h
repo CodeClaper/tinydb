@@ -552,12 +552,6 @@ typedef struct Statement {
   };
 } Statement;
 
-/* Statements */
-typedef struct Statements {
-    uint32_t size;
-    Statement **list;
-} Statements;
-
 /* Pager */
 typedef struct Pager {
     int file_descriptor;
