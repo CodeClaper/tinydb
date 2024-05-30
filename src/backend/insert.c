@@ -288,7 +288,7 @@ Refer *insert_for_values(InsertNode *insert_node) {
 }
 
 /* Insert for query spec case. */
-static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
+static List *insert_for_query_spec(InsertNode *insert_node) {
 
     /* Check if table exists. */
     Table *table = open_table(insert_node->table_name);
@@ -297,7 +297,7 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
         return NULL;
     }
     
-    ReferSet *refer_set = instance(ReferSet);
+    List *list = create_list(NODE_REFER);
 
     ValuesOrQuerySpecNode *values_or_query_spec = insert_node->values_or_query_spec;
 
@@ -312,8 +312,6 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
 
     if (result->success) {
         SelectResult *select_result = (SelectResult *)result->data;
-        refer_set->size = len_list(select_result->rows);
-        refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
 
         /* Insert into rows. */
         ListCell *lc;
@@ -323,7 +321,7 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
             /* Supplement sys_id column. */
             supple_sys_id(insert_row);
             Refer *refer = insert_one_row(table, insert_row);
-            refer_set->set[i++] = refer;
+            append_list(list, refer);
             free_row(insert_row);
         }
     }
@@ -331,24 +329,22 @@ static ReferSet *insert_for_query_spec(InsertNode *insert_node) {
     free_select_node(select_node);
     free_db_result(result);
 
-    return refer_set;
+    return list;
 }
 
-/* Combine ReferSet with single refer. */
-ReferSet *combine_single_refer_set(Refer *refer) {
+/* Combine Refer list with single refer. */
+List *combine_single_refer_list(Refer *refer) {
     Assert(refer);
-    ReferSet *refer_set = instance(ReferSet);
-    refer_set->size = 1;
-    refer_set->set = db_malloc(sizeof(Refer *) * refer_set->size, "pointer");
-    refer_set->set[0] = refer;
-    return refer_set;
+    List *list = create_list(NODE_REFER);
+    append_list(list, refer);
+    return list;
 }
 
 /* Execute insert statement. 
- * Return ReferSet if it excutes successfully,
+ * Return Refer List if it excutes successfully,
  * otherwise, return NULL.
  * */
-ReferSet *exec_insert_statement(InsertNode *insert_node) {
+List *exec_insert_statement(InsertNode *insert_node) {
 
     /* Check if insert node valid. */
     if (!check_insert_node(insert_node)) 
@@ -360,7 +356,7 @@ ReferSet *exec_insert_statement(InsertNode *insert_node) {
         case VQ_VALUES: {
             Refer *refer = insert_for_values(insert_node);
             return refer 
-                ? combine_single_refer_set(refer)
+                ? combine_single_refer_list(refer)
                 : NULL;
         }
         case VQ_QUERY_SPEC: {

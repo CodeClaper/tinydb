@@ -7,4 +7,4 @@ InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_
 Refer *insert_for_values(InsertNode *insert_node);
 
 /* Execute insert statement. */
-ReferSet *exec_insert_statement(InsertNode *insert_node);
+List *exec_insert_statement(InsertNode *insert_node);

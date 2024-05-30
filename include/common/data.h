@@ -700,12 +700,6 @@ typedef struct Refer {
     int32_t cell_num;
 } Refer;
 
-/* ReferSet. */
-typedef struct ReferSet {
-    uint32_t size;
-    Refer **set;
-} ReferSet;
-
 /* ReferUpdateEntity */
 typedef struct ReferUpdateEntity {
     Refer *old_refer;

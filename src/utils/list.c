@@ -160,6 +160,13 @@ void free_list_deep(List *list) {
                 }
                 break;
             }
+            case NODE_REFER: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_refer(lfirst(lc));
+                }
+                break;
+            }
             case NODE_DB_RESULT: {
                 ListCell *lc;
                 foreach (lc, list) {
