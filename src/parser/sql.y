@@ -33,7 +33,6 @@ int yylex();
    ColumnDefOptNodeList         *column_def_opt_list;
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
-   ColumnSetNode                *column_set_node;
    AtomNode                     *atom_node;
    ValueItemNode                *value_item_node;
    ValueItemSetNode             *value_item_set_node;
@@ -112,7 +111,7 @@ int yylex();
 %type <scalar_exp_set_node> scalar_exp_commalist
 %type <selection_node> selection
 %type <column_node> column
-%type <column_set_node> columns 
+%type <list> columns 
 %type <atom_node> atom
 %type <value_item_node> value_item
 %type <value_item_set_node> value_items
@@ -302,7 +301,7 @@ insert_statement:
             InsertNode *node = make_insert_node();
             node->all_column = false;
             node->table_name = $3;
-            node->columns_set_node = $5;
+            node->column_list = $5;
             node->values_or_query_spec = $7;
             $$ = node;
         }
@@ -569,14 +568,14 @@ calculate:
 columns:
     column
         {
-            ColumnSetNode *column_set_node = make_column_set_node();
-            add_column_to_set(column_set_node, $1);
+            List *column_set_node = create_list(NODE_COLUMN);
+            append_list(column_set_node, $1);
             $$ = column_set_node;
         }
     | columns ',' column
         {
             $$ = $1;
-            add_column_to_set($$, $3);
+            append_list($$, $3);
         }
     ;
 base_table_element_commalist:

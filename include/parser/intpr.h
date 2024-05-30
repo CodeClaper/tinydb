@@ -60,12 +60,6 @@ ColumnDefNameCommalist *make_column_def_name_list();
 /* Add ColumnDefName to set. */
 void add_column_def_name_to_set(ColumnDefNameCommalist *list, ColumnDefName *column_def_name);
 
-/* make a column set node. */
-ColumnSetNode *make_column_set_node();
-
-/* add column node to set. */
-void add_column_to_set(ColumnSetNode *column_set_node, ColumnNode *column_node);
-
 /* make a condition node. */
 ConditionNode *make_condition_node();
 

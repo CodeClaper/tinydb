@@ -217,7 +217,6 @@ union YYSTYPE
    ColumnDefOptNodeList         *column_def_opt_list;
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
-   ColumnSetNode                *column_set_node;
    AtomNode                     *atom_node;
    ValueItemNode                *value_item_node;
    ValueItemSetNode             *value_item_set_node;
@@ -253,7 +252,7 @@ union YYSTYPE
    Statement                    *statement;
    List                         *list;
 
-#line 257 "y.tab.h"
+#line 256 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

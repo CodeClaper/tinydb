@@ -28,9 +28,6 @@ Table *copy_table(Table *table);
 /* Copy column node. */
 ColumnNode *copy_column_node(ColumnNode *column_node);
 
-/* Copy column set node. */
-ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node);
-
 /* Copy value item node. */
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node);
 
@@ -60,9 +57,6 @@ LimitNode *copy_limit_node(LimitNode *limit_node);
 
 /* Copy ReferValue. */
 ReferValue *copy_refer_value(ReferValue *refer_value);
-
-/* Copy select items node. */
-SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node);
 
 /* Copy TableExpNode. */
 TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node);

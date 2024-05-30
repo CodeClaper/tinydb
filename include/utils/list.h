@@ -17,6 +17,7 @@ typedef enum NodeTag {
     NODE_KEY_VALUE,
     NODE_ROW,
     NODE_REFER,
+    NODE_COLUMN,
     NODE_STATEMENT,
     NODE_DB_RESULT,
     NODE_COLUMN_DEF_NODE

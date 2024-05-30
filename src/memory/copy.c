@@ -237,19 +237,6 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
     return column_node_copy;
 }
 
-/* Copy column set node. */
-ColumnSetNode *copy_column_set_node(ColumnSetNode *column_set_node) {
-    if (column_set_node == NULL)
-        return NULL;
-    ColumnSetNode *column_set_node_copy = instance(ColumnSetNode);
-    column_set_node_copy->size = column_set_node->size;
-    column_set_node_copy->columns = db_malloc(sizeof(ColumnNode *) * column_set_node_copy->size, "pointer");
-    for (uint32_t i = 0; i < column_set_node_copy->size; i++) {
-        *(column_set_node_copy->columns + i) = copy_column_node(*(column_set_node->columns + i));
-    }
-    return column_set_node_copy;
-}
-
 /* Copy AtomNode. */
 AtomNode *copy_atom_node(AtomNode *atom_node) {
     if (!atom_node)
@@ -472,25 +459,6 @@ ArrayValue *copy_array_value(ArrayValue *array_value) {
         array_value_dup->set[i] = copy_value(array_value->set[i], array_value_dup->type);
     }
     return array_value_dup;
-}
-
-/* Copy select items node. */
-SelectItemsNode *copy_select_items_node(SelectItemsNode *select_items_node) {
-    if (select_items_node == NULL)
-        return NULL;
-    SelectItemsNode *select_items_node_copy = instance(SelectItemsNode);
-    select_items_node_copy->type = select_items_node->type;
-    switch(select_items_node_copy->type) {
-        case SELECT_FUNCTION:
-            select_items_node_copy->function_node = copy_function_node(select_items_node->function_node);
-            break;
-        case SELECT_COLUMNS:
-            select_items_node_copy->column_set_node = copy_column_set_node(select_items_node->column_set_node);
-            break;
-        case SELECT_ALL:
-            break;
-    }
-    return select_items_node_copy;
 }
 
 /* Copy a ScalarExpNode. */

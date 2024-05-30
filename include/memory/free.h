@@ -24,6 +24,9 @@ void free_meta_column(MetaColumn *meta_column);
 /* Free meta table. */
 void free_meta_table(MetaTable *meta_table);
 
+/* Free column */
+void free_column_node(ColumnNode *column_node);
+
 /* Free Pager. */
 void free_pager(Pager *pager);
 
@@ -63,11 +66,7 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node);
 /* Free ScalarExpSetNode. */
 void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node);
 
-
 void free_column_def_name(ColumnDefName *column_def_name);
-
-/* Free column set node. */
-void free_column_set_node(ColumnSetNode *column_set_node);
 
 /* Free column def node. */
 void free_column_def_node(ColumnDefNode *column_def_node);

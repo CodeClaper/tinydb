@@ -828,18 +828,20 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
     } else {
 
         /* Check column number equals the insert values number. */
-        if (insert_node->columns_set_node->size != value_item_set_node->num) {
+        if (len_list(insert_node->column_list) != value_item_set_node->num) {
             db_log(ERROR, "Column count doesn`t match value count.");
             return false;
         }
 
-        uint32_t i;
-        for (i = 0; i < insert_node->columns_set_node->size; i++) {
-            ColumnNode *column_node = insert_node->columns_set_node->columns[i];
+        ListCell *lc;
+        int i = 0;
+        foreach (lc, insert_node->column_list) {
+            ColumnNode *column_node = lfirst(lc);
             ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             if (!check_value_item_node(meta_table, meta_column->column_name, value_item_node))
                 return false;
+            i++;
         }
 
     }
@@ -864,9 +866,9 @@ static bool check_insert_node_for_query_spec(InsertNode *insert_node, QuerySpecN
                 return false;
         }
     } else {
-        uint32_t i;
-        for (i = 0; i < insert_node->columns_set_node->size; i++) {
-            ColumnNode *column_node = insert_node->columns_set_node->columns[i];
+        ListCell *lc;
+        foreach (lc, insert_node->column_list) {
+            ColumnNode *column_node = lfirst(lc);
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
             if (!include_column_for_query_spece(meta_column, query_spec))
                 return false;

@@ -141,7 +141,7 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
 /* Generate insert row for part columns.*/
 static Row *generate_insert_row_for_part(InsertNode *insert_node) {
 
-    ColumnSetNode *column_set = insert_node->columns_set_node;
+    List *column_list = insert_node->column_list;
     ValueItemSetNode *value_set = insert_node->values_or_query_spec->values;
 
     /* Instance row. */
@@ -158,14 +158,15 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
     
     /* Combination */
     row->table_name = db_strdup(meta_table->table_name);
-    row->column_len = column_set->size + sys_reserved_column_count();
+    row->column_len = len_list(column_list) + sys_reserved_column_count();
     row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
     
     /* Row data. */
-    uint32_t i;
-    for (i = 0; i < column_set->size; i++) {
+    ListCell *lc;
+    int i = 0;
+    foreach (lc, column_list) {
 
-        ColumnNode *column = column_set->columns[i];
+        ColumnNode *column = lfirst(lc);
 
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, column->column_name);
 
@@ -188,6 +189,7 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
             row->key = copy_value(key_value->value, key_value->data_type);
 
         row->data[i] = key_value;
+        i++;
     }
     
     /* Supplement sys_id column. */

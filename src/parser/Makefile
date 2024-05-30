@@ -10,7 +10,7 @@ include ../common.mk
 
 all: $(objects)
 
-%.o: %.c $(headers)
+%.o: %.c $(headers) y.tab.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
 y.tab.c: sql.l sql.y

@@ -61,21 +61,6 @@ void add_column_def_name_to_set(ColumnDefNameCommalist *list, ColumnDefName *col
     list->set[list->size++] = column_def_name;
 }
 
-/* make a column set node. */
-ColumnSetNode *make_column_set_node() {
-    ColumnSetNode *column_set_node = instance(ColumnSetNode);
-    column_set_node->size = 0;
-    column_set_node->columns = db_malloc(0, "pointer");
-    return column_set_node;
-}
-
-/* add column node to set. */
-void add_column_to_set(ColumnSetNode *column_set_node, ColumnNode *column_node) {
-    column_set_node->columns = db_realloc(column_set_node->columns, sizeof(ColumnNode *) * (column_set_node->size + 1));
-    *(column_set_node->columns + column_set_node->size) = column_node;
-    column_set_node->size++;
-}
-
 /* Make a ArrayValue. */
 ArrayValue *make_array_value() {
     ArrayValue *array_value = instance(ArrayValue);

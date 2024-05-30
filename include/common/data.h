@@ -149,12 +149,6 @@ typedef struct ColumnNode {
     struct ScalarExpSetNode *scalar_exp_set;
 } ColumnNode;
 
-/* ColumnSetNode */
-typedef struct ColumnSetNode {
-    ColumnNode **columns;
-    uint32_t size;
-} ColumnSetNode;
-
 /* FunctionValueType */
 typedef struct FunctionValueNode {
     FunctionValueType value_type;
@@ -187,7 +181,7 @@ typedef struct CalculateNode {
 
 /* SelectItemsNode */
 typedef struct {
-    ColumnSetNode *column_set_node;
+    List *column_list;
     FunctionNode *function_node;
     SelectItemType type;
 } SelectItemsNode;
@@ -510,7 +504,7 @@ typedef struct SelectNode {
 typedef struct InsertNode {
     bool all_column;
     char *table_name;
-    ColumnSetNode *columns_set_node;
+    List *column_list;
     ValuesOrQuerySpecNode *values_or_query_spec;
 } InsertNode;
 

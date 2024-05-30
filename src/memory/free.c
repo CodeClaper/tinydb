@@ -119,9 +119,8 @@ void free_select_result(SelectResult *select_result) {
 
 /* Free meta column. */
 void free_meta_column(MetaColumn *meta_column) {
-    if (meta_column) {
+    if (meta_column) 
         db_free(meta_column);
-    }
 }
 
 /* Free meta table. */
@@ -155,18 +154,6 @@ void free_column_node(ColumnNode *column_node) {
         db_free(column_node);
     }
 
-}
-
-/* Free column set node. */
-void free_column_set_node(ColumnSetNode *column_set_node) {
-    if (column_set_node) {
-        uint32_t i;
-        for (i = 0; i < column_set_node->size; i++) {
-            free_column_node(*(column_set_node->columns + i));
-        }
-        db_free(column_set_node->columns);
-        db_free(column_set_node);
-    }
 }
 
 /* Free Pager. */
@@ -369,7 +356,7 @@ void free_select_items_node(SelectItemsNode *select_items_node) {
                 free_function_node(select_items_node->function_node);
                 break;
             case SELECT_COLUMNS:
-                free_column_set_node(select_items_node->column_set_node);
+                free_list_deep(select_items_node->column_list);
                 break;
             case SELECT_ALL:
                 break;
@@ -666,7 +653,7 @@ void free_insert_node(InsertNode *insert_node) {
         if (insert_node->table_name)
             db_free(insert_node->table_name);
         if (!insert_node->all_column)
-            free_column_set_node(insert_node->columns_set_node);
+            free_list_deep(insert_node->column_list);
         free_values_or_query_spec_node(insert_node->values_or_query_spec);
         db_free(insert_node);
     }
