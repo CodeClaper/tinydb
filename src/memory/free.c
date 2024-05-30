@@ -778,18 +778,6 @@ void free_statements(Statements *statements) {
 }
 
 
-/* Free table list */
-void free_table_list(TableList *table_list) {
-    if (table_list) {
-        int i;
-        for (i = 0; i < table_list->count; i++) {
-            db_free(table_list->table_name_list[i]);
-        }
-        db_free(table_list->table_name_list);
-        db_free(table_list);
-    }
-}
-
 /* Free LockHandle. */
 void free_lock_handle(LockHandle *lock_handle) {
     if (lock_handle) {

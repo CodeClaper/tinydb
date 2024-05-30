@@ -44,15 +44,15 @@ void loop_gc() {
         auto_begin_transaction();
 
         /* loop each of tables to gc. */
-        TableList *table_list = get_table_list();
+        List *table_list = get_table_list();
 
-        int i;
-        for (i = 0; i < table_list->count; i++) {
-            gc_table(table_list->table_name_list[i]); 
+        ListCell *lc;
+        foreach (lc, table_list) {
+            gc_table(lfirst(lc)); 
         }
 
         /* Free memory. */
-        free_table_list(table_list);
+        free_list_deep(table_list);
 
         /* Remove Buffer. */
         remove_table_buffer();

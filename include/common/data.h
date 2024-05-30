@@ -614,13 +614,6 @@ typedef struct TableBuffer {
     uint32_t size;
 } TableBuffer;
 
-
-/* TableList */
-typedef struct TableList {
-  char **table_name_list;
-  uint32_t count;
-} TableList;
-
 /* Cursor */
 typedef struct Cursor {
     Table *table;

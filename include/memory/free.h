@@ -108,9 +108,6 @@ void free_statment(Statement *stmt);
 /* Free statements. */
 void free_statements(Statements *statements);
 
-/* Free table list */
-void free_table_list(TableList *table_list);
-
 /* Free TransactionHandle. */
 void free_transaction_handle(TransactionHandle *trans_handle);
 

@@ -992,14 +992,18 @@ bool check_drop_table(char *table_name) {
     }
     
     /* Check table refered by others. */
-    TableList *table_list = get_table_list();
+    List *table_list = get_table_list();
 
-    uint32_t i;
-    for (i = 0; i < table_list->count; i++) {
-        char *curent_table_name = table_list->table_name_list[i];
-        if (if_table_used_refer(curent_table_name, table_name))
-            return false;
+    bool ret = true;
+    ListCell *lc;
+    foreach (lc, table_list) {
+        char *curent_table_name = lfirst(lc);
+        if (if_table_used_refer(curent_table_name, table_name))  {
+            ret = false;
+            break;
+        }
     }
 
-    return true;
+    free_list_deep(table_list);
+    return ret;
 }

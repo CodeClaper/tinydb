@@ -24,11 +24,9 @@
 #include "index.h"
 
 /* Get table list. */
-TableList *get_table_list() {
+List *get_table_list() {
 
-    TableList *table_list = instance(TableList);
-    table_list->count = 0;
-    table_list->table_name_list = db_malloc(0, "pointer");
+    List *list = create_list(NODE_STRING);
 
     DIR *dir;
     struct dirent *entry;
@@ -38,14 +36,12 @@ TableList *get_table_list() {
     else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
-                table_list->table_name_list = db_realloc(table_list->table_name_list, sizeof(char *) * (table_list->count + 1));
-                table_list->table_name_list[table_list->count] = replace(entry->d_name, ".dbt", "");
-                table_list->count++;
+                append_list(list, replace(entry->d_name, ".dbt", ""));
             }
         }
         closedir(dir);
     }
-    return table_list;
+    return list;
 }
 
 /* Get table file path. */

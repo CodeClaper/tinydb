@@ -357,14 +357,16 @@ static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update
 /* Update releated tables reference. */
 void update_related_tables_refer(ReferUpdateEntity *refer_update_entity) {
 
-    TableList *table_list = get_table_list();
+    List *table_list = get_table_list();
     /* Update table refer. */
-    uint32_t i;
-    for (i = 0; i < table_list->count; i++) {
-        char *curent_table_name = table_list->table_name_list[i];
+    ListCell *lc;
+    foreach (lc, table_list) {
+        char *curent_table_name = lfirst(lc);
         if (if_related_table(curent_table_name, refer_update_entity->old_refer->table_name)) 
             update_table_refer(curent_table_name, refer_update_entity);
     }
+
+    free_list_deep(table_list);
 }
 
 
