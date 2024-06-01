@@ -102,13 +102,12 @@ Row *copy_row(Row *row) {
     Row *row_copy = instance(Row);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type);
-    row_copy->column_len = row->column_len;
     row_copy->table_name = db_strdup(row->table_name);
-    row_copy->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
+    row_copy->data = create_list(NODE_KEY_VALUE);
 
-    uint32_t i;
-    for(i = 0; i < row->column_len; i++) {
-        row_copy->data[i] = copy_key_value(row->data[i]);
+    ListCell *lc;
+    foreach (lc, row->data) {
+        append_list(row_copy->data, lfirst(lc));
     }
 
     return row_copy;
@@ -132,21 +131,18 @@ Row *copy_row_without_reserved(Row *row) {
     Row *row_copy = instance(Row);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type);
     row_copy->table_name = db_strdup(row->table_name);
-    row_copy->column_len = 0;
-    row_copy->data = db_malloc(sizeof(KeyValue *) * row_copy->column_len, "pointer");
+    row_copy->data = create_list(NODE_KEY_VALUE);
 
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
 
         /* Skip system reserved columns. */
         MetaColumn *meta_column = get_all_meta_column_by_name(table->meta_table, key_value->key);
         if (meta_column && meta_column->sys_reserved) 
             continue;
 
-        row_copy->data = db_realloc(row_copy->data, sizeof(KeyValue *) * (row_copy->column_len + 1));
-        /* copy key value. */
-        row_copy->data[row_copy->column_len++] = copy_key_value(key_value);
+        append_list(row_copy->data, copy_key_value(key_value));
     }
 
     return row_copy;

@@ -1291,10 +1291,12 @@ void *get_array_value(void *destination, uint32_t i, uint32_t span) {
  * */
 static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
     char *column_name = meta_column->column_name;
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        if (streq(column_name, row->data[i]->key))
-           return row->data[i]->value;
+
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
+        if (streq(column_name, key_value->key))
+           return key_value->value;
     }
     return NULL;
 }

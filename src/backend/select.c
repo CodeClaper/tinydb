@@ -286,9 +286,9 @@ static bool check_row_predicate_column(SelectResult *select_result, Row *row, vo
     if (table_name == NULL)
         return true;
 
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
         if (streq(key_value->table_name, table_name) && streq(key_value->key, column->column_name)) {
             return eval(type, value, key_value->value, meta_column->column_type);
         }
@@ -310,9 +310,9 @@ static bool check_row_predicate_value(SelectResult *select_result, void *value, 
 /* Check the row predicate. */
 static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNode *column, ComparisonNode *comparison) {
 
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
         if (streq(key_value->key, column->column_name)) {
             /* If exists range variable, check if equals. */
             if (column->range_variable) {
@@ -397,9 +397,10 @@ static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void 
 /* Check if include leaf node satisfy in predicate. */
 static bool include_leaf_in_predicate(Row *row, InNode *in_node) {
     Table *table = open_table(row->table_name);
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
         /* Define the column. */
         if (streq(key_value->key, in_node->column->column_name)) {
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table , key_value->key);
@@ -439,11 +440,12 @@ static bool check_like_string_value(char *value, char *target) {
 static bool include_leaf_like_predicate(Row *row, LikeNode *like_node) {
     Table *table = open_table(row->table_name);
     bool ret = false;
-    uint32_t i; 
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
         /* Define the column. */
-        if (strcmp(key_value->key, like_node->column->column_name) == 0) {
+        if (streq(key_value->key, like_node->column->column_name)) {
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
             void *target_value = get_value_from_value_item_node(like_node->value, meta_column);
             ret = check_like_string_value(key_value->value, target_value);
@@ -451,6 +453,7 @@ static bool include_leaf_like_predicate(Row *row, LikeNode *like_node) {
             break;
         }
     }
+
     return ret;
 }
 
@@ -547,7 +550,7 @@ static void *assign_row_value(void *destination, MetaColumn *meta_column) {
 static Row *generate_row(void *destination, MetaTable *meta_table) {
 
     /* Instance new row. */
-    Row *row = new_row(NULL, db_strdup(meta_table->table_name), meta_table->all_column_size);
+    Row *row = new_row(NULL, db_strdup(meta_table->table_name));
 
     /* Assignment row data. */
     uint32_t i;
@@ -563,8 +566,9 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
             : new_key_value(db_strdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
         key_value->is_array = meta_column->array_dim > 0;
         key_value->table_name = db_strdup(meta_table->table_name);
-
-        row->data[i] = key_value;
+    
+        /* Append to row data. */
+        append_list(row->data, key_value);
         
         /* Assign primary key. */
         if (meta_column->is_primary)
@@ -607,29 +611,23 @@ Row *define_row(Refer *refer) {
  * */
 Row *define_visible_row(Refer *refer) {
     Row *row = define_row(refer);
-    if (row_is_deleted(row)) 
+    if (row_is_deleted(row)) {
+        free_row(row);
         return NULL;
-    else {
+    } else {
         Row *filter_row = copy_row_without_reserved(row);
         free_row(row);
         return filter_row;
     }
 }
 
-/* Merge tow row into new one. */
-static Row *merge_row(Row *row1, Row *row2) {
+/* Merge the second row data into the first one. */
+static void merge_row(Row *row1, Row *row2) {
     /* According the first row generate new merge row. */
-    Row *row = copy_row(row1);
-    row->column_len = row1->column_len + row2->column_len;
-    row->data = db_realloc(row->data, sizeof(KeyValue *) * row->column_len);
-
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        if (i >= row1->column_len)
-            row->data[i] = copy_key_value(row2->data[i - row1->column_len]);
+    ListCell *lc;
+    foreach (lc, row2->data) {
+        append_list(row1->data, lfirst(lc));
     }
-
-    return row;
 }
 
 /* Search table via alias name in SelectResult. 
@@ -686,16 +684,13 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
 
                 /* Merge derived-row. */
                 Row *derived_row = lfirst(lc);
-                Row *mrow = merge_row(derived_row, row);
+                merge_row(derived_row, row);
 
                 /* Check if the row data include, 
                  * in another word, check if the row data satisfy the condition. */
-                if (include_leaf_node(select_result, mrow, condition)) 
+                if (include_leaf_node(select_result, derived_row, condition)) 
                     /* Execute row handler. */
-                    row_handler(mrow, select_result, table, arg);
-
-                /* Free useless row. */
-                free_row(mrow);
+                    row_handler(derived_row, select_result, table, arg);
             }
 
             /* Free useless row. */
@@ -1087,9 +1082,9 @@ static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNod
         return NULL;
     }
 
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
         if (streq(column->column_name, key_value->key) 
             && (table_name == NULL || streq(table_name, key_value->table_name))) {
                 /* Reference type and query sub column. */
@@ -1797,7 +1792,7 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
 /* Query function data. */
 static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
 
-    Row *row = new_row(NULL, db_strdup(select_result->table_name), scalar_exp_set->size);
+    Row *row = new_row(NULL, db_strdup(select_result->table_name));
 
     uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
@@ -1807,7 +1802,7 @@ static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResul
             free_value(key_value->key, T_STRING);
             key_value->key = db_strdup(scalar_exp->alias);
         }
-        row->data[i] = key_value;
+        append_list(row->data, key_value);
     }
 
     /* Free old rows memory. */
@@ -1905,9 +1900,7 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
     Table *table = open_table(row->table_name);
     MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
 
-    Row *sub_row = new_row(copy_value(row->key, key_meta_column->column_type), 
-                            db_strdup(row->table_name), 
-                            scalar_exp_set->size);
+    Row *sub_row = new_row(copy_value(row->key, key_meta_column->column_type), db_strdup(row->table_name));
 
     uint32_t i;
     for (i = 0; i < scalar_exp_set->size; i++) {
@@ -1918,7 +1911,7 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
             free_value(key_value->key, T_STRING);
             key_value->key = db_strdup(scalar_exp->alias);
         }
-        sub_row->data[i] = key_value;
+        append_list(sub_row->data, key_value);
     }
     return sub_row;
 }

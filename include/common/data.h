@@ -622,8 +622,7 @@ typedef struct KeyValue {
 typedef struct Row {
     void *key;
     char *table_name;
-    uint32_t column_len;
-    KeyValue **data;
+    List *data;    /* List of KeyValue. */
 } Row;
 
 /* SelectResult */

@@ -189,11 +189,14 @@ void execute_roll_back() {
 /* Reverse insert operation. */
 static void reverse_insert(Refer *refer, TransactionHandle *transaction) {
     Row *row = define_row(refer);
-    int64_t row_created_xid = *(int64_t *)row->data[row->column_len - 2]->value;
-    assert_true(row_created_xid == transaction->xid, "System error, row created xid not equals transaction xid");
+
+    KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
+    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
+    int64_t created_xid = *(int64_t *)created_xid_col->value;
+    assert_true(created_xid == transaction->xid, "System error, row created xid not equals transaction xid");
 
     /* Delete the insered row. */
-    *(int64_t *)row->data[row->column_len - 1]->value = transaction->xid;
+    *(int64_t *)expired_xid_col->value = transaction->xid;
 
     update_row_data(row, convert_cursor(refer));
 }
@@ -207,11 +210,13 @@ static void reverse_delete(Refer *refer, TransactionHandle *transaction) {
     Row *row = define_row(refer);
 
     assert_true(row_is_deleted(row), "System error, row not been deleted.");
-    int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
+    
+    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
+    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
     assert_true(row_expired_xid == transaction->xid, "System error, row expired xid not equals transaction xid");
 
     /* Make the row visible. */
-    *(int64_t *)row->data[row->column_len - 1]->value = 0;
+    *(int64_t *)expired_xid_col->value = 0;
 
     Table *table = open_table(refer->table_name);
     
@@ -228,11 +233,13 @@ static void reverse_update_delete(Refer *refer, TransactionHandle *transaction) 
     Row *row = define_row(refer);
 
     assert_true(row_is_deleted(row), "System error, row not been deleted.");
-    int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
+
+    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
+    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
     assert_true(row_expired_xid == transaction->xid, "System error, row expired xid not equals transaction xid");
 
     /* Make the row visible. */
-    *(int64_t *)row->data[row->column_len - 1]->value = 0;
+    *(int64_t *)expired_xid_col->value = 0;
 
     Table *table = open_table(refer->table_name);
     

@@ -13,12 +13,11 @@ KeyValue *new_key_value(char *key, void *value, DataType data_type) {
 }
 
 /* Generate new row instance. */
-Row *new_row(void *key, char *table_name, uint32_t column_len) {
+Row *new_row(void *key, char *table_name) {
     Row *row = instance(Row);
     row->key = key;
     row->table_name = table_name;
-    row->column_len = column_len;
-    row->data = db_malloc(sizeof(KeyValue *) * column_len, "pointer");
+    row->data = create_list(NODE_KEY_VALUE);
     return row;
 }
 

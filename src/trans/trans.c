@@ -66,6 +66,7 @@
 #include "asserts.h"
 #include "utils.h"
 #include "xlog.h"
+#include "type.h"
 
 
 static pthread_mutex_t mutex;
@@ -298,8 +299,10 @@ bool row_is_visible(Row *row) {
     TransactionHandle *trans_handle = find_transaction();
 
     /* Get row created_xid and expired_xid. */
-    int64_t row_created_xid = *(int64_t *)row->data[row->column_len - 2]->value;
-    int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
+    KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
+    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
+    int64_t row_created_xid = *(int64_t *)created_xid_col->value;
+    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
 
     /* Three satisfied conditions. */
     if (row_created_xid == trans_handle->xid && row_expired_xid == 0)
@@ -314,7 +317,8 @@ bool row_is_visible(Row *row) {
 
 /* Check if a row has been deleted. */
 bool row_is_deleted(Row *row) {
-    int64_t row_expired_xid = *(int64_t *)row->data[row->column_len - 1]->value;
+    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
+    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
     return row_expired_xid != 0;
 }
 
@@ -330,19 +334,17 @@ static void transaction_insert_row(Row *row) {
     }
 
     /* For created_xid */
-    KeyValue *created_xid_col = instance(KeyValue);
-    created_xid_col->key = db_strdup(CREATED_XID_COLUMN_NAME);
-    created_xid_col->value = copy_value(&current_trans->xid, T_LONG);
-    created_xid_col->data_type = T_LONG;
-    row->data[row->column_len - 2] = created_xid_col;
+    KeyValue *created_xid_col = new_key_value(db_strdup(CREATED_XID_COLUMN_NAME), 
+                                              copy_value(&current_trans->xid, T_LONG), 
+                                              T_LONG);
+    lfirst(second_last_cell(row->data)) = created_xid_col;
 
     /* For expired_xid */
     int64_t zero = 0;
-    KeyValue *expired_xid_col = instance(KeyValue);
-    expired_xid_col->key = db_strdup(EXPIRED_XID_COLUMN_NAME);
-    expired_xid_col->value = copy_value(&zero, T_LONG);
-    expired_xid_col->data_type = T_LONG;
-    row->data[row->column_len - 1] = expired_xid_col;
+    KeyValue *expired_xid_col = new_key_value(db_strdup(EXPIRED_XID_COLUMN_NAME),
+                                              copy_value(&zero, T_LONG),
+                                              T_LONG);
+    lfirst(last_cell(row->data)) = expired_xid_col;
 }
 
 /* Tranasction operation for delete row. */
@@ -352,7 +354,8 @@ static void transaction_delete_row(Row *row) {
     TransactionHandle *current_trans = find_transaction();
 
     /* Asssign current transaction id to expired_xid. */
-    *(int64_t *)row->data[row->column_len - 1]->value = current_trans->xid;
+    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
+    *(int64_t *)expired_xid_col->value = current_trans->xid;
 }
 
 /* Update transaction state. */

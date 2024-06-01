@@ -31,9 +31,9 @@
 
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node, MetaColumn *meta_column) {
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
         if (streq(key_value->key, assign_node->column->column_name)) {
             ValueItemNode *value_item = assign_node->value;
             /* Free old value. */

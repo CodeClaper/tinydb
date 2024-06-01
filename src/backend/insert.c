@@ -77,14 +77,15 @@ static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
 static void supple_sys_id(Row *row) {
     /* Automatically insert sys_id using current sys time. */
     int64_t sys_id = get_current_sys_time(NANOSECOND);
-    KeyValue *sys_id_col = instance(KeyValue);
-    sys_id_col->key = db_strdup(SYS_RESERVED_ID_COLUMN_NAME);
-    sys_id_col->value = copy_value(&sys_id, T_LONG);
-    sys_id_col->data_type = T_LONG;
-    row->data[row->column_len - 3] = sys_id_col;
-
-    /* If user not define primary, use sys_id as primary key. */
-    if (!row->key)
+    KeyValue *sys_id_col = new_key_value(db_strdup(SYS_RESERVED_ID_COLUMN_NAME), 
+                                         copy_value(&sys_id, T_LONG), 
+                                         T_LONG);
+    lfirst(third_last_cell(row->data)) = sys_id_col;
+    
+    /* Check if using sys id as priamry key column. */
+    Table *table = open_table(row->table_name);
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+    if (streq(primary_meta_column->column_name, SYS_RESERVED_ID_COLUMN_NAME))
         row->key = copy_value(&sys_id, T_LONG);
 }
 
@@ -107,29 +108,28 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
     
     /* Combination */
     row->table_name = db_strdup(meta_table->table_name);
-    row->column_len = meta_table->all_column_size;
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
+    row->data = create_list(NODE_KEY_VALUE);
     
     /* Row data. */
     uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
+    for (i = 0; i < meta_table->all_column_size; i++) {
 
         MetaColumn *meta_column = meta_table->meta_column[i];
 
         /* Ship system reserved. */
-        if (meta_column->sys_reserved) 
+        if (meta_column->sys_reserved) {
+            append_list(row->data, NULL);
             continue;
+        }
 
-        KeyValue *key_value = instance(KeyValue);
-        key_value->key = db_strdup(meta_column->column_name);
-        key_value->data_type = meta_column->column_type;
-        key_value->value = get_insert_value(value_set, i, meta_column);
-
+        KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name),
+                                            get_insert_value(value_set, i, meta_column),
+                                            meta_column->column_type);
         /* Check if primary key column. */
         if (meta_column->is_primary) 
             row->key = copy_value(key_value->value, key_value->data_type);
 
-        row->data[i] = key_value;
+        append_list(row->data, key_value);
     }
     
     /* Supplement sys_id column. */
@@ -158,8 +158,7 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
     
     /* Combination */
     row->table_name = db_strdup(meta_table->table_name);
-    row->column_len = len_list(column_list) + sys_reserved_column_count();
-    row->data = db_malloc(sizeof(KeyValue *) * row->column_len, "pointer");
+    row->data = create_list(NODE_KEY_VALUE);
     
     /* Row data. */
     ListCell *lc;
@@ -175,10 +174,9 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
                    column->column_name,
                    meta_table->table_name);
 
-        KeyValue *key_value = instance(KeyValue);
-        key_value->key = db_strdup(meta_column->column_name);
-        key_value->data_type = meta_column->column_type;
-        key_value->value = get_insert_value(value_set, i, meta_column);
+        KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name), 
+                                            get_insert_value(value_set, i, meta_column), 
+                                            meta_column->column_type);
 
         /* Value of KeyValue may be null when it is Refer. */
         if (key_value->data_type == T_REFERENCE && key_value->value == NULL)
@@ -188,8 +186,13 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
         if (meta_column->is_primary) 
             row->key = copy_value(key_value->value, key_value->data_type);
 
-        row->data[i] = key_value;
+        append_list(row->data, key_value);
         i++;
+    }
+
+    /* Make space for reserved columns.*/
+    for (int j = 0; j < sys_reserved_column_count(); j++) {
+        append_list(row->data, NULL);
     }
     
     /* Supplement sys_id column. */
@@ -212,23 +215,27 @@ static Row *generate_insert_row(InsertNode *insert_node) {
 /* Convert to insert row. */
 static Row *convert_insert_row(Row *row, Table *table) {
 
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
+
     Row *insert_row = instance(Row);
 
     insert_row->table_name = db_strdup(table->meta_table->table_name);
-    /* Add reserved columns for sys_id, created_xid and expired_xid. */
-    insert_row->column_len = row->column_len + 3;
-    insert_row->data = db_malloc(sizeof(KeyValue *) * insert_row->column_len, "pointer");
+    insert_row->data = create_list(NODE_KEY_VALUE);
 
     /* Copy data. */
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        insert_row->data[i] = copy_key_value(row->data[i]);
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = copy_key_value(lfirst(lc));
+        append_list(insert_row->data, key_value);
+
+        if (streq(key_value->key, primary_meta_column->column_name))
+            insert_row->key = copy_value(key_value->value, primary_meta_column->column_type);
     }
 
-    /* Copy row key. */
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    Assert(primary_meta_column);
-    insert_row->key = copy_value(row->key, primary_meta_column->column_type);
+    /* Make space for reserved columns.*/
+    for (int j = 0; j < sys_reserved_column_count(); j++) {
+        append_list(insert_row->data, NULL);
+    }
 
     return insert_row;
 }

@@ -296,9 +296,10 @@ static bool update_array_key_value_refer(KeyValue *key_value, ReferUpdateEntity 
 static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cursor, ReferUpdateEntity *refer_update_entity) {
     
     bool flag = false;
-    uint32_t i;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *key_value = row->data[i];
+
+    ListCell *lc;
+    foreach (lc, row->data) {
+        KeyValue *key_value = lfirst(lc);
         if (key_value->data_type == T_REFERENCE 
             && streq(key_value->key, meta_column->column_name)) {
                 if (key_value->is_array) {
@@ -310,6 +311,8 @@ static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cu
                 }
         }
     }
+    
+    /* If satisfied above conditions, update the row. */
     if (flag)
         update_row_data(row, cursor);
 }

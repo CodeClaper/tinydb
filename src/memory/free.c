@@ -81,13 +81,8 @@ void free_row(Row *row) {
         if (row->key)
             db_free(row->key);
         /* free row data. */
-        if (row->data) {
-            uint32_t i;
-            for (i = 0; i < row->column_len; i++) {
-                free_key_value(row->data[i]);
-            }
-            db_free(row->data);
-        }
+        if (row->data) 
+            free_list_deep(row->data);
         /* table name. */
         if (row->table_name)
             db_free(row->table_name);

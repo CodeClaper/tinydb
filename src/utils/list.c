@@ -241,6 +241,8 @@ void list_delete_ptr(List *list, void *item) {
 
 /* Delete item in List. 
  * Skip if not found in list.
+ * Note: if item is a pointer, 
+ * this function will not automatically free the memory.
  * */
 void list_delete(List *list, void *item) {
     
@@ -261,16 +263,6 @@ void list_delete(List *list, void *item) {
             list_delete_ptr(list, item);
             break;
     }
-}
-
-/* Locate the n'th cell (starts from 0) of the list.
- * It is an assertion failure if there is no such cell.
- * */
-ListCell *list_nth_cell(List *list, int nth) {
-    Assert(list != NIL);
-    Assert(nth >= 0 && nth < list->size);
-
-    return &list->elements[nth];
 }
 
 

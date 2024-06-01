@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <time.h>
 #include "asserts.h"
 
 #ifndef LIST_H
@@ -57,14 +58,45 @@ typedef struct List {
 /* Last list cell. */
 static inline ListCell *first_cell(List *list) {
     Assert(list != NIL);
-    return &list->elements[0];
+    return list->size == 0 
+            ? NULL 
+            : &list->elements[0];
 }
 
 /* Last list cell. */
 static inline ListCell *last_cell(List *list) {
     Assert(list != NIL);
-    return &list->elements[list->size - 1];
+    return list->size == 0 
+            ? NULL 
+            : &list->elements[list->size - 1];
 }
+
+/* Second to last cell. */
+static inline ListCell *second_last_cell(List *list) {
+    Assert(list != NIL);
+    return list->size >= 2 
+            ? &list->elements[list->size - 2]
+            : NULL;
+}
+
+/* Third to last cell. */
+static inline ListCell *third_last_cell(List *list) {
+    Assert(list != NIL);
+    return list->size >= 3 
+            ? &list->elements[list->size - 3]
+            : NULL;
+}
+
+/* Locate the n'th cell (counting from 0) of the list.
+ * It is an assertion failure if there is no such cell.
+ * */
+static inline ListCell *list_nth_cell(List *list, int nth) {
+    Assert(list != NIL);
+    Assert(nth >= 0 && nth < list->size);
+
+    return &list->elements[nth];
+}
+
 
 /* Length of list. */
 static inline uint32_t len_list(List *list) {
@@ -128,11 +160,6 @@ void list_delete_double(List *list, double item);
  * Skip if not found in list.
  * */
 void list_delete(List *list, void *item);
-
-/* Locate the n'th cell (counting from 0) of the list.
- * It is an assertion failure if there is no such cell.
- * */
-ListCell *list_nth_cell(List *list, int nth);
 
 
 /* Free all cells and objects those are 

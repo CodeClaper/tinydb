@@ -265,12 +265,12 @@ static void json_row(Row *row) {
         /* Handler duplacate key. */
         handle_dulicate_key(row);
         db_send("{ ");
-        uint32_t i;
-        for (i = 0; i < row->column_len; i++) {
-            KeyValue *key_value = row->data[i];
+        ListCell *lc;
+        foreach (lc, row->data) {
+            KeyValue *key_value = lfirst(lc);
             json_key_value(key_value);
             /* split with ',' */
-            if (i < row->column_len - 1) 
+            if (last_cell(row->data) != lc) 
                 db_send(", ");
         }
         db_send(" }");
@@ -367,12 +367,12 @@ static void json_result_list(DBResult *result) {
 /* Handle duplicate Key. */
 static void handle_dulicate_key(Row *row) {
     uint32_t times = 0;
-    uint32_t i,j;
-    for (i = 0; i < row->column_len; i++) {
-        KeyValue *first = row->data[i];
-        for (j = i + 1; j < row->column_len; j++) {
-            KeyValue *second = row->data[j];
-            if (!first || !second)
+    ListCell *lc1, *lc2;
+    foreach (lc1, row->data) {
+        KeyValue *first = lfirst(lc1);
+        foreach (lc2, row->data) {
+            KeyValue *second = lfirst(lc2);
+            if (lc1 == lc2)
                 continue;
             if (streq(second->key, first->key)) {
                 db_free(second->key);

@@ -4,7 +4,7 @@
 KeyValue *new_key_value(char *key, void *value, DataType data_type);
 
 /* New row instance. */
-Row *new_row(void *key, char *table_name, uint32_t column_len);
+Row *new_row(void *key, char *table_name);
 
 /* New ArrayValue instance. */
 ArrayValue *new_array_value(DataType data_type, uint32_t size);
