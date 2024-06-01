@@ -73,3 +73,34 @@ TEST(list, free_list_deep) {
 
     free_list_deep(list);
 }
+
+/* Test for checking item in list member. */
+TEST(list, list_member_int) {
+    List *list = create_list(NODE_INT);
+
+    for (int i; i < 10; i++) {
+        append_list(list, &i);    
+    }
+
+    ASSERT_TRUE(list_member_int(list, 2));
+    ASSERT_TRUE(list_member_int(list, 9));
+    ASSERT_FALSE(list_member_int(list, 10));
+}
+
+/* Test for list delete item. */
+TEST(list, list_delete_int) {
+    List *list = create_list(NODE_INT);
+
+    for (int i; i < 10; i++) {
+        append_list(list, &i);    
+    }
+    
+    list_delete_int(list, 2);
+    list_delete_int(list, 6);
+    list_delete_int(list, 8);
+
+    ASSERT_FALSE(list_member_int(list, 2));
+    ASSERT_FALSE(list_member_int(list, 6));
+    ASSERT_TRUE(list_member_int(list, 5));
+
+}
