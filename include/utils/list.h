@@ -72,6 +72,11 @@ static inline uint32_t len_list(List *list) {
     return list->size;
 }
 
+/* List is empty. */
+static inline bool list_empty(List *list) {
+    return list->size == 0;
+}
+
 /* Create List and initialization. 
  * Return the created list.
  * */
@@ -79,6 +84,50 @@ List *create_list(NodeTag type);
 
 /* Append item to list. */
 void append_list(List *list, void *item);
+
+/* Check if the int item is the member of list. */
+bool list_member_int(List *list, int item);
+
+/* Check if the bool item is the member of list. */
+bool list_member_bool(List *list, bool item);
+
+/* Check if the float item is the member of list. */
+bool list_member_float(List *list, float item);
+
+/* Check if the double item is the member of list. */
+bool list_member_double(List *list, double item);
+
+/* Check if the pointer is the member of list. */
+bool list_member_ptr(List *list, void *ptr);
+
+/* Check if the item is the memeber of list. */
+bool list_member(List *list, void *item);
+
+/* Delete int item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_int(List *list, int item);
+
+/* Delete bool item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_bool(List *list, bool item);
+
+/* Delete float item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_float(List *list, float item);
+
+/* Delete double item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_double(List *list, double item);
+
+
+/* Delete item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete(List *list, void *item);
 
 /* Locate the n'th cell (counting from 0) of the list.
  * It is an assertion failure if there is no such cell.
@@ -93,8 +142,5 @@ void free_list(List *list);
 /* Free all cells and any object that are 
  * point-to by cells in list will be freed*/
 void free_list_deep(List *list);
-
-/* List is empty. */
-bool list_empty(List *list);
 
 #endif

@@ -97,7 +97,173 @@ void append_list(List *list, void *item) {
     }
 }
 
-/* Locate the n'th cell (counting from 0) of the list.
+/* Check if the int item is the member of list. */
+bool list_member_int(List *list, int item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_int(lc) == item) 
+            return true;
+    }
+    return false;
+}
+
+/* Check if the bool item is the member of list. */
+bool list_member_bool(List *list, bool item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_bool(lc) == item) 
+            return true;
+    }
+    return false;
+}
+
+/* Check if the float item is the member of list. */
+bool list_member_float(List *list, float item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_float(lc) == item) 
+            return true;
+    }
+    return false;
+}
+
+/* Check if the double item is the member of list. */
+bool list_member_double(List *list, double item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_double(lc) == item) 
+            return true;
+    }
+    return false;
+}
+
+/* Check if the pointer is the member of list. */
+bool list_member_ptr(List *list, void *ptr) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst(lc) == ptr) 
+            return true;
+    }
+    return false;
+}
+
+/* Check if the item is the memeber of list. */
+bool list_member(List *list, void *item) {
+    switch (list->type) {
+        case NODE_INT:
+            return list_member_int(list, *(int *)item);
+        case NODE_BOOL:
+            return list_member_bool(list, *(bool *)item);
+        case NODE_FLOAT:
+            return list_member_float(list, *(float *)item);
+        case NODE_DOUBLE:
+            return list_member_double(list, *(double *)item);
+        default:
+            return list_member_ptr(list, item);
+    }
+}
+
+/* Delete nth cell in List. */
+void list_delete_nth_cell(List *list, int n) {
+    Assert(n >= 0 && n < list->size);
+    memcpy(list->elements + n, list->elements + n + 1, 
+           sizeof(ListCell) * (list->size - n - 1));
+}
+
+/* Delete ListCell in List. */
+void list_delete_cell(List *list, ListCell *lc) {
+    list_delete_nth_cell(list, lc - list->elements);
+}
+
+/* Delete int item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_int(List *list, int item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_int(lc) == item) {
+            list_delete_cell(list, lc);
+        }
+    }
+}
+
+/* Delete bool item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_bool(List *list, bool item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_bool(lc) == item) {
+            list_delete_cell(list, lc);
+        }
+    }
+}
+
+/* Delete float item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_float(List *list, float item) {
+
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_float(lc) == item) {
+            list_delete_cell(list, lc);
+        }
+    }
+}
+
+
+/* Delete double item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_double(List *list, double item) {
+
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_double(lc) == item) {
+            list_delete_cell(list, lc);
+        }
+    }
+}
+
+/* Delete pointer item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_ptr(List *list, void *item) {
+
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst(lc) == item) {
+            list_delete_cell(list, lc);
+        }
+    }
+}
+
+/* Delete item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete(List *list, void *item) {
+    
+    switch (list->type) {
+        case NODE_INT:
+            list_delete_int(list, *(int *)item);
+            break;
+        case NODE_BOOL:
+            list_delete_bool(list, *(bool *)item);
+            break;
+        case NODE_FLOAT:
+            list_delete_float(list, *(float *)item);
+            break;
+        case NODE_DOUBLE:
+            list_delete_double(list, *(double *)item);
+            break;
+        default:
+            list_delete_ptr(list, item);
+            break;
+    }
+}
+
+/* Locate the n'th cell (starts from 0) of the list.
  * It is an assertion failure if there is no such cell.
  * */
 ListCell *list_nth_cell(List *list, int nth) {
@@ -204,7 +370,3 @@ void free_list_deep(List *list) {
     }
 }
 
-/* List is empty. */
-bool list_empty(List *list) {
-    return list->size == 0;
-}
