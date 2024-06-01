@@ -73,20 +73,57 @@ static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
     return select_node;
 }
 
-/* Supplement sys_id. */
-static void supple_sys_id(Row *row) {
+/* Generate new sys_id column.*/
+static KeyValue *new_sys_id_column() {
     /* Automatically insert sys_id using current sys time. */
     int64_t sys_id = get_current_sys_time(NANOSECOND);
-    KeyValue *sys_id_col = new_key_value(db_strdup(SYS_RESERVED_ID_COLUMN_NAME), 
+    return new_key_value(db_strdup(SYS_RESERVED_ID_COLUMN_NAME), 
                                          copy_value(&sys_id, T_LONG), 
                                          T_LONG);
-    lfirst(third_last_cell(row->data)) = sys_id_col;
+}
+
+/* Generate new created_xid column.*/
+static KeyValue *new_created_xid_column() {
+    /* Get current transaction. */
+    TransactionHandle *current_trans = find_transaction();
+
+    if (current_trans == NULL) {
+        db_log(ERROR, "Not found transaction.");
+        return NULL;
+    }
+
+    return new_key_value(db_strdup(CREATED_XID_COLUMN_NAME), 
+                                              copy_value(&current_trans->xid, T_LONG), 
+                                              T_LONG);
+}
+
+/* Generate new expired_xid column. */
+static KeyValue *new_expired_xid_column() {
+    /* For expired_xid */
+    int64_t zero = 0;
+    return new_key_value(db_strdup(EXPIRED_XID_COLUMN_NAME),
+                                              copy_value(&zero, T_LONG),
+                                              T_LONG);
+}
+
+/* Supplement system reserved column. */
+static void supple_reserved_column(Row *row) {
+
+    /* Append sys_id column key value. */
+    KeyValue *sys_id_col = new_sys_id_column();
+    append_list(row->data, sys_id_col);
+
+    /* Append created_xid column key value. */
+    append_list(row->data, new_created_xid_column());
+
+    /* Append expired_xid column key value. */
+    append_list(row->data, new_expired_xid_column());
     
-    /* Check if using sys id as priamry key column. */
+    
+    /* If built-in primary key, assign it with sys_id. */
     Table *table = open_table(row->table_name);
-    MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    if (streq(primary_meta_column->column_name, SYS_RESERVED_ID_COLUMN_NAME))
-        row->key = copy_value(&sys_id, T_LONG);
+    if (built_in_primary_key(table->meta_table))
+        row->key = copy_value(sys_id_col->value, T_LONG);
 }
 
 /* Generate insert row for all columns. */
@@ -117,10 +154,8 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
         MetaColumn *meta_column = meta_table->meta_column[i];
 
         /* Ship system reserved. */
-        if (meta_column->sys_reserved) {
-            append_list(row->data, NULL);
+        if (meta_column->sys_reserved) 
             continue;
-        }
 
         KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name),
                                             get_insert_value(value_set, i, meta_column),
@@ -131,10 +166,9 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
 
         append_list(row->data, key_value);
     }
-    
-    /* Supplement sys_id column. */
-    supple_sys_id(row);
 
+    supple_reserved_column(row);
+    
     return row;
 }
 
@@ -190,13 +224,7 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
         i++;
     }
 
-    /* Make space for reserved columns.*/
-    for (int j = 0; j < sys_reserved_column_count(); j++) {
-        append_list(row->data, NULL);
-    }
-    
-    /* Supplement sys_id column. */
-    supple_sys_id(row);
+    supple_reserved_column(row);
 
     return row;
 }
@@ -232,10 +260,7 @@ static Row *convert_insert_row(Row *row, Table *table) {
             insert_row->key = copy_value(key_value->value, primary_meta_column->column_type);
     }
 
-    /* Make space for reserved columns.*/
-    for (int j = 0; j < sys_reserved_column_count(); j++) {
-        append_list(insert_row->data, NULL);
-    }
+    supple_reserved_column(row);
 
     return insert_row;
 }
@@ -256,9 +281,6 @@ static Refer *insert_one_row(Table *table, Row *row) {
         free_cursor(cursor);
         return NULL;
     }
-
-    /* Update row transaction state for insert. */
-    update_transaction_state(row, TR_INSERT);
 
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
@@ -286,6 +308,7 @@ Refer *insert_for_values(InsertNode *insert_node) {
     
     /* Generate insert row. */
     Row *row = generate_insert_row(insert_node);
+
     Assert(row);
 
     /* Do insert. */
@@ -327,8 +350,6 @@ static List *insert_for_query_spec(InsertNode *insert_node) {
         int i = 0;
         foreach (lc, select_result->rows) {
             Row *insert_row = convert_insert_row(lfirst(lc), table);
-            /* Supplement sys_id column. */
-            supple_sys_id(insert_row);
             Refer *refer = insert_one_row(table, insert_row);
             append_list(list, refer);
             free_row(insert_row);

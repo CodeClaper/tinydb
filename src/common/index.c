@@ -23,16 +23,6 @@
     return equal(target, key, primary_key_meta_column->column_type);
 }
 
-/* Get meta column of primary key. */
-MetaColumn *get_primary_key_meta_column(MetaTable *meta_table) {
-    uint32_t i;
-    for(i = 0; i < meta_table->all_column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-        if (meta_column->is_primary)
-            return meta_column;
-    }
-    return NULL; //may be return system built-in primary key, but now, return null temporiarily.
-}
 
 /* Get key string value. */
 char *get_key_str(void *key, DataType data_type) {

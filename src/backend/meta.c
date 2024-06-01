@@ -207,6 +207,12 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
     }    
 }
 
+/* Check if system built-in primary key.*/
+bool built_in_primary_key(MetaTable *meta_table) {
+    MetaColumn *primary_meta_column = get_primary_key_meta_column(meta_table);
+    return streq(primary_meta_column->column_name, SYS_RESERVED_ID_COLUMN_NAME);
+}
+
 /* Assign value from array. */
 void *assign_value_from_array(ValueItemSetNode *value_set, MetaColumn *meta_column) {
     ArrayValue *array_value = instance(ArrayValue);
@@ -389,6 +395,17 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
         return meta_column;
     }
     return NULL;
+}
+
+/* Get meta column of primary key. */
+MetaColumn *get_primary_key_meta_column(MetaTable *meta_table) {
+    uint32_t i;
+    for (i = 0; i < meta_table->all_column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (meta_column->is_primary)
+            return meta_column;
+    }
+    return NULL; 
 }
 
 

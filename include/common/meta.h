@@ -12,6 +12,9 @@ char *data_type_name(DataType data_type);
 /* Function type name. */
 char *function_type_name(FunctionType function_type);
 
+/* Check if system built-in primary key.*/
+bool built_in_primary_key(MetaTable *meta_table);
+
 /* Assign value from ValueItemNode. */
 void *assign_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn *meta_column);
 
@@ -32,3 +35,6 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name);
 
 /* Get all meta column info by column name including system reserved column. */
 MetaColumn *get_all_meta_column_by_name(MetaTable *meta_table, char *name);
+
+/* Get meta column of primary key. */
+MetaColumn *get_primary_key_meta_column(MetaTable *meta_table);
