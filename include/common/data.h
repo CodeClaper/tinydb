@@ -36,6 +36,8 @@
 #define MAX_DATE_STR_LENGTH 30
 #define MAX_TIMESTAMP_STR_LENGTH 30
 
+#define MAX_DEFAULT_VALUE_LENGTH 64
+
 #define SYS_RESERVED_ID_COLUMN_NAME  "sys_id"
 #define CREATED_XID_COLUMN_NAME  "created_xid"
 #define EXPIRED_XID_COLUMN_NAME  "expired_xid"
@@ -554,6 +556,12 @@ typedef struct Pager {
     void *pages[MAX_TABLE_PAGE];
 } Pager;
 
+typedef enum DefaultValueType {
+    DEFAULT_VALUE_NONE = 0,
+    DEFAULT_VALUE_NULL,
+    DEFAULT_VALUE
+} DefaultValueType;
+
 /* MetaColumn */
 typedef struct MetaColumn {
     char column_name[MAX_COLUMN_NAME_LEN];  /* Column Name. */
@@ -566,6 +574,8 @@ typedef struct MetaColumn {
     bool sys_reserved;                      /* System reserved column, only visible for system. */
     uint32_t array_dim;                     /* Array dimension. Default zero if not array. */
     uint32_t array_cap;                     /* Array capacity. (array_cap = array_dim * n) */
+    DefaultValueType default_value_type;    /* Default value type. */
+    void *default_value;                    /* Default value. */
 } MetaColumn;
 
 /* MetaTable */

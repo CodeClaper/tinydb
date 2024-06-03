@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "create.h"
 #include "data.h"
 #include "const.h"
@@ -74,6 +75,7 @@ uint32_t calc_column_len(ColumnDefNode *column_def, uint32_t array_cap) {
 static void operate_column(MetaColumn *meta_column, ColumnDefOptNodeList *column_def_opt_list) {
     if (!column_def_opt_list) 
         return;
+
     uint32_t i;
     for (i = 0; i < column_def_opt_list->size; i++) {
         ColumnDefOptNode *column_def_opt = column_def_opt_list->set[i];
@@ -89,7 +91,12 @@ static void operate_column(MetaColumn *meta_column, ColumnDefOptNodeList *column
                 meta_column->not_null = true;
                 break;
             case OPT_DEFAULT_VALUE:
+                meta_column->default_value_type = DEFAULT_VALUE;
+                meta_column->default_value = get_value_from_value_item_node(column_def_opt->value, meta_column);
+                break;
             case OPT_DEFAULT_NULL:
+                meta_column->default_value_type = DEFAULT_VALUE_NULL;
+                break;
             case OPT_CHECK_CONDITION:
             case OPT_REFERENECS:
                 db_log(ERROR, "Not support thus column def operation yet");
@@ -100,6 +107,7 @@ static void operate_column(MetaColumn *meta_column, ColumnDefOptNodeList *column
 
 /* Combine user-level column. */
 MetaColumn *combine_user_meta_column(ColumnDefNode *column_def, char *table_name) {
+
     MetaColumn *meta_column = instance(MetaColumn);
 
     /* Base info. */
@@ -112,6 +120,8 @@ MetaColumn *combine_user_meta_column(ColumnDefNode *column_def, char *table_name
     meta_column->array_dim = column_def->array_dim;
     meta_column->array_cap = column_def->array_dim * ARRAY_FLARE_FACTOR;
     meta_column->column_length = calc_column_len(column_def, meta_column->array_cap);
+    meta_column->default_value_type = DEFAULT_VALUE_NONE;
+    meta_column->default_value = NULL;
 
     /* Special handling Reference. */
     if (column_def->data_type->type == T_REFERENCE) {

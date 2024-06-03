@@ -26,6 +26,7 @@
 #include <time.h>
 #include "ltree.h"
 #include "mmu.h"
+#include "copy.h"
 #include "free.h"
 #include "refer.h"
 #include "common.h"
@@ -1246,6 +1247,17 @@ MetaColumn *deserialize_meta_column(void *destination) {
     meta_column->not_null = (bool)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE);
     meta_column->array_dim = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE);
     meta_column->array_cap = *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE);
+    meta_column->default_value_type = (DefaultValueType)*(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE + ROOT_NODE_ARRAY_CAP_SIZE);
+    switch (meta_column->default_value_type) {
+        case DEFAULT_VALUE:
+           meta_column->default_value = copy_value(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE + ROOT_NODE_ARRAY_CAP_SIZE + ROOT_NODE_DEFAULT_VALUE_TYPE_SIZE, 
+                                                   meta_column->column_type);
+           break; 
+        case DEFAULT_VALUE_NONE:
+        case DEFAULT_VALUE_NULL:
+            meta_column->default_value = NULL;
+            break;
+    }
     return meta_column;
 }
 
@@ -1262,7 +1274,17 @@ void *serialize_meta_column(MetaColumn *meta_column) {
     *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE) = meta_column->is_unique;  
     *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE) = meta_column->not_null;  
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE) = meta_column->array_dim;  
-    *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE) = meta_column->array_cap;  
+    *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE) = meta_column->array_cap;
+    *(uint8_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE + ROOT_NODE_ARRAY_CAP_SIZE) = meta_column->default_value_type;
+    switch (meta_column->default_value_type) {
+        case DEFAULT_VALUE:
+            memcpy(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE + ROOT_NODE_META_COLUMN_LENGTH_SIZE + ROOT_NODE_IS_PRIMARY_SIZE + ROOT_NODE_META_COLUMN_TABLE_NAME_SIZE + ROOT_NODE_SYS_RESERVED_SIZE + ROOT_NODE_IS_UNIQUE_SIZE + ROOT_NODE_NOT_NULL_SIZE + ROOT_NODE_ARRAY_DIM_SIZE + ROOT_NODE_ARRAY_CAP_SIZE + ROOT_NODE_DEFAULT_VALUE_TYPE_SIZE, 
+                   meta_column->default_value, 
+                   ROOT_NODE_DEFAULT_VALUE_SIZE);
+            break;
+        default:
+            break;
+    }
     return destination;
 }
 
@@ -1287,7 +1309,8 @@ void *get_array_value(void *destination, uint32_t i, uint32_t span) {
 }
 
 /* Get row value. 
- * Return NULL if not found.
+ * Note: firstly, find values in user-passed row,
+ * if missing, rturn the default values.
  * */
 static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
     char *column_name = meta_column->column_name;
@@ -1298,7 +1321,14 @@ static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
         if (streq(column_name, key_value->key))
            return key_value->value;
     }
-    return NULL;
+
+    switch (meta_column->default_value_type) {
+        case DEFAULT_VALUE_NULL:
+        case DEFAULT_VALUE_NONE:
+            return NULL;
+        case DEFAULT_VALUE:
+            return meta_column->default_value;
+    }
 }
 
 /* Serialize array value. 

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "data.h"
 #include "desc.h"
 #include "list.h"
@@ -58,15 +59,33 @@ static List *gen_describe_result(MetaTable *meta_table) {
                                               T_BOOL));
 
         /* primary key */
-        append_list(child_list, new_key_value(db_strdup("is_primary_key"), 
-                                              copy_value(&meta_column->is_primary, T_BOOL), 
-                                              T_BOOL));
+        if (is_array) 
+            append_list(child_list, new_key_value(db_strdup("is_primary_key"), 
+                                                  copy_value(&meta_column->is_primary, T_BOOL), 
+                                                  T_BOOL));
 
         /* length */
         uint32_t column_length = calc_meta_column_len(meta_column);
         append_list(child_list, new_key_value(db_strdup("data_length"), 
                                               copy_value(&column_length, T_INT), 
                                               T_INT));
+
+        /* Default value. */
+        switch (meta_column->default_value_type) {
+            case DEFAULT_VALUE_NONE:
+                break;
+            case DEFAULT_VALUE_NULL:
+                append_list(child_list, new_key_value(db_strdup("default_value"), 
+                                                      copy_value(NULL, meta_column->column_type), 
+                                                      meta_column->column_type));
+                break;
+            case DEFAULT_VALUE:
+                append_list(child_list, new_key_value(db_strdup("default_value"), 
+                                                      copy_value(meta_column->default_value, meta_column->column_type), 
+                                                      meta_column->column_type));
+                break;
+                
+        }
 
         append_list(list, child_list);
     }
