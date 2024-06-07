@@ -78,7 +78,7 @@ TEST(list, free_list_deep) {
 TEST(list, list_member_int) {
     List *list = create_list(NODE_INT);
 
-    for (int i; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {
         append_list(list, &i);    
     }
 
@@ -91,7 +91,7 @@ TEST(list, list_member_int) {
 TEST(list, list_delete_int) {
     List *list = create_list(NODE_INT);
 
-    for (int i; i < 10; i++) {
+    for (int i= 0; i < 10; i++) {
         append_list(list, &i);    
     }
     
