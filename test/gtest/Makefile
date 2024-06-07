@@ -24,8 +24,7 @@ endif
 
 target = gtest
 
-all: $(target)
-
+all: 
 
 $(target): $(objects)
 	$(CXX) $(CPPFLAGS) $(objects) -o $(target) $(CPPLDADD) $(CPPLDFLAGS)
@@ -38,6 +37,6 @@ $(target): $(objects)
 clean:
 	rm -f *.o $(target)
 
-check:
+check:$(target)
 	@./gtest
 
