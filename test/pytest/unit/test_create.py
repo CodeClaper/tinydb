@@ -31,6 +31,13 @@ def test_create_table_without_priamry_key():
     ret = client.execute(sql)
     assert_all(ret)
 
+## test create table with conflict default value define.
+def test_create_conflict_default_value():
+    sql = "create table Student(id varchar(32) primary key, name varchar(64) not null default null, age int);"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Invalid default value for 'name'"
+
 ## test drop table
 def test_drop_table():
     sql = "DROP TABLE A;\n"\
