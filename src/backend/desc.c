@@ -9,6 +9,7 @@
 #include "list.h"
 #include "mmu.h"
 #include "table.h"
+#include "index.h"
 #include "meta.h"
 #include "copy.h"
 #include "session.h"
@@ -46,41 +47,47 @@ static List *gen_describe_result(MetaTable *meta_table) {
         append_list(child_list, new_key_value(db_strdup("field"), 
                                               db_strdup(meta_column->column_name), 
                                               T_STRING));
+    
+        /* key */
+        append_list(child_list, new_key_value(db_strdup("key"), 
+                                                  db_strdup(key_type_name(meta_column)), 
+                                                  T_STRING));
 
         /* type */
-        append_list(child_list, new_key_value(db_strdup("data_type"), 
+        append_list(child_list, new_key_value(db_strdup("type"), 
                                               db_strdup(data_type_name(meta_column->column_type)), 
                                               T_STRING));
 
+        /* length */
+        uint32_t column_length = calc_meta_column_len(meta_column);
+        append_list(child_list, new_key_value(db_strdup("length"), 
+                                              copy_value(&column_length, T_INT), 
+                                              T_INT));
+
+
         /* array dim */
         bool is_array = meta_column->array_dim > 0;
-        append_list(child_list, new_key_value(db_strdup("is_array"), 
+        append_list(child_list, new_key_value(db_strdup("array"), 
                                               copy_value(&is_array, T_BOOL), 
                                               T_BOOL));
 
         /* primary key */
         if (is_array) 
-            append_list(child_list, new_key_value(db_strdup("is_primary_key"), 
-                                                  copy_value(&meta_column->is_primary, T_BOOL), 
+            append_list(child_list, new_key_value(db_strdup("array_dim"), 
+                                                  copy_value(&meta_column->array_dim, T_BOOL), 
                                                   T_BOOL));
-
-        /* length */
-        uint32_t column_length = calc_meta_column_len(meta_column);
-        append_list(child_list, new_key_value(db_strdup("data_length"), 
-                                              copy_value(&column_length, T_INT), 
-                                              T_INT));
 
         /* Default value. */
         switch (meta_column->default_value_type) {
             case DEFAULT_VALUE_NONE:
                 break;
             case DEFAULT_VALUE_NULL:
-                append_list(child_list, new_key_value(db_strdup("default_value"), 
+                append_list(child_list, new_key_value(db_strdup("default"), 
                                                       copy_value(NULL, meta_column->column_type), 
                                                       meta_column->column_type));
                 break;
             case DEFAULT_VALUE:
-                append_list(child_list, new_key_value(db_strdup("default_value"), 
+                append_list(child_list, new_key_value(db_strdup("default"), 
                                                       copy_value(meta_column->default_value, meta_column->column_type), 
                                                       meta_column->column_type));
                 break;

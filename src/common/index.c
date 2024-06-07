@@ -70,3 +70,13 @@ char *get_key_str(void *key, DataType data_type) {
         }
     }
 }
+
+/* Get key type name */
+char *key_type_name(MetaColumn *meta_column) {
+    if (meta_column->is_primary) 
+        return "primary";
+    else if (meta_column->is_unique)
+        return "unique";
+    else
+        return "NULL";
+}
