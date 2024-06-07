@@ -29,6 +29,11 @@ static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, 
 /* Check ScalarExpNode. */
 static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map);
 
+/* Get column name in ColumnDefNode. */
+static inline char *get_column_def_name(ColumnDefNode *column_def) {
+    return column_def->column->column;
+}
+
 /* Get ConditionNode from WhereClauseNode. */
 static ConditionNode *get_condition_from_where_clause(WhereClauseNode *where_clause) {
     if (!where_clause)
@@ -745,6 +750,34 @@ static bool check_if_contain_primary_key(ColumnDefOptNodeList *column_def_opt_li
     return false;
 }
 
+/* Check if ColumnDefOptNodeList contains conflict default value. */
+static bool check_conflict_default_value(ColumnDefOptNodeList *column_def_opt_list) {
+    if (column_def_opt_list) {
+        bool has_defined_not_null = false;
+        bool has_defined_default_null = false;
+        uint32_t i;
+        for (i = 0; i < column_def_opt_list->size; i++) {
+            ColumnDefOptNode *column_def_opt = column_def_opt_list->set[i];
+            switch (column_def_opt->opt_type) {
+                case OPT_NOT_NULL:
+                case OPT_PRIMARY_KEY:
+                    has_defined_not_null = true;
+                    break;
+                case OPT_DEFAULT_NULL: 
+                    has_defined_default_null = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (has_defined_not_null && has_defined_default_null) 
+            return false;
+    }
+
+    return true;
+}
+
 /* Check if exists duplicate column name. */
 static bool check_table_element_commalist(BaseTableElementCommalist *base_table_element_commalist) {
 
@@ -760,7 +793,7 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
                 if (check_if_column_already_exists(list, current_column_def)) {
                     free_list(list);
                     db_log(ERROR, "Column def '%s' already exists, not allowd duplicate defination.", 
-                           current_column_def->column->column);
+                           get_column_def_name(current_column_def));
                     return false;
                 }
                 if (check_if_contain_primary_key(current_column_def->column_def_opt_list)) {
@@ -770,6 +803,11 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
                         return false;
                     } else
                         primary_key_flag = true;
+                }
+                if (!check_conflict_default_value(current_column_def->column_def_opt_list)) {
+                    db_log(ERROR, "Invalid default value for '%s'", 
+                           get_column_def_name(current_column_def));
+                    return false;
                 }
                 append_list(list, current_column_def);
                 break;
