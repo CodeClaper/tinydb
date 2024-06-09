@@ -737,6 +737,7 @@ static bool check_if_column_already_exists(List *list, ColumnDefNode *column_def
     return false;
 }
 
+
 /* Check if ColumnDefOptNodeList contains primary key. */
 static bool check_if_contain_primary_key(ColumnDefOptNodeList *column_def_opt_list) {
     if (column_def_opt_list) {
@@ -750,8 +751,72 @@ static bool check_if_contain_primary_key(ColumnDefOptNodeList *column_def_opt_li
     return false;
 }
 
+
+static bool check_default_atom_value_type(AtomNode *atom_node, DataType data_type) {
+    switch(data_type) {
+        case T_BOOL: {
+            if (atom_node->type == A_BOOL)
+                return true;
+            break;
+        }
+        case T_INT:
+        case T_LONG: {
+            if (atom_node->type == A_INT)
+                return true;
+            break;
+        }
+        case T_FLOAT:
+        case T_DOUBLE: {
+            if (atom_node->type == A_FLOAT || atom_node->type == A_INT)
+                return true;
+            break;
+        }
+        case T_CHAR:
+        case T_STRING:
+        case T_VARCHAR: {
+            if (atom_node->type == A_STRING)
+                return true;
+            break;
+        }
+        case T_TIMESTAMP:
+        case T_DATE: {
+            if (atom_node->type == A_STRING)
+                return true;
+            break;
+        }
+        case T_REFERENCE: 
+            /* For Reference, it`s complicate, user can pass a refer or subrow column, 
+             * to be simple, just make flag true. */
+            return true;
+        default:
+            UNEXPECTED_VALUE(data_type);
+    }
+
+    return false;
+}
+
+
+static bool check_default_value_type(ValueItemNode *value_item_node, DataType data_type) {
+    switch (value_item_node->type) {
+        case V_ATOM: {
+            AtomNode *atom_node = value_item_node->value.atom;
+            return check_default_atom_value_type(atom_node, data_type);
+        }
+        case V_NULL: 
+            return true;
+        case V_ARRAY: {
+            db_log(ERROR, "Not support array type default value.");
+            return true;
+        }
+        default: {
+            UNEXPECTED_VALUE(value_item_node->type);
+            return false;
+        }
+    }
+}
+
 /* Check if ColumnDefOptNodeList contains conflict default value. */
-static bool check_conflict_default_value(ColumnDefOptNodeList *column_def_opt_list) {
+static bool check_conflict_default_value(ColumnDefOptNodeList *column_def_opt_list, DataType data_type) {
     if (column_def_opt_list) {
         bool has_defined_not_null = false;
         bool has_defined_default_null = false;
@@ -766,6 +831,12 @@ static bool check_conflict_default_value(ColumnDefOptNodeList *column_def_opt_li
                 case OPT_DEFAULT_NULL: 
                     has_defined_default_null = true;
                     break;
+                case OPT_DEFAULT_VALUE: {
+                    ValueItemNode *value_item_node = column_def_opt->value;
+                    if (!check_default_value_type(value_item_node, data_type))
+                        return false;
+                    break;
+                } 
                 default:
                     break;
             }
@@ -804,7 +875,8 @@ static bool check_table_element_commalist(BaseTableElementCommalist *base_table_
                     } else
                         primary_key_flag = true;
                 }
-                if (!check_conflict_default_value(current_column_def->column_def_opt_list)) {
+                if (!check_conflict_default_value(current_column_def->column_def_opt_list, 
+                                                  current_column_def->data_type->type)) {
                     db_log(ERROR, "Invalid default value for '%s'", 
                            get_column_def_name(current_column_def));
                     return false;

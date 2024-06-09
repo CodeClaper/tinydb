@@ -245,6 +245,7 @@ typedef enum ColumnDefOptType {
     OPT_PRIMARY_KEY,
     OPT_DEFAULT_VALUE,
     OPT_DEFAULT_NULL,
+    OPT_COMMENT,
     OPT_CHECK_CONDITION,
     OPT_REFERENECS
 } ColumnDefOptType;
@@ -255,6 +256,7 @@ typedef struct ColumnDefOptNode {
     struct ValueItemNode *value;
     struct ConditionNode *condition;
     char *refer_table;
+    char *comment;
 } ColumnDefOptNode;
 
 /* ColumnDefOptNodeList */
