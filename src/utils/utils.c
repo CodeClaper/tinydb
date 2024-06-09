@@ -156,6 +156,11 @@ bool strempty(char *str) {
     return str == NULL || strlen(str) == 0;
 }
 
+/* Return if pointer is NULL. */
+bool is_null(void *ptr) {
+    return ptr == NULL;
+}
+
 /* Convert int32 to string. */
 char *itos(int32_t val) {
     char *str = db_malloc(MAX_INT_STR_LENGTH, "string");

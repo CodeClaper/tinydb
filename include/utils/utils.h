@@ -40,10 +40,11 @@ bool streq(char *str1, char *str2);
 bool streq_or_null(char *str1, char *str2);
 
 /* Check if string is empty.
- * Empty means string is NULL or "".
- * */
+ * Empty means string is NULL or "". */
 bool strempty(char *str);
 
+/* Return if pointer is NULL. */
+bool is_null(void *ptr);
 
 /* Convert int32 to string. */
 char *itos(int32_t val);

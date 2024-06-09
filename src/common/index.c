@@ -78,5 +78,5 @@ char *key_type_name(MetaColumn *meta_column) {
     else if (meta_column->is_unique)
         return "unique";
     else
-        return "NULL";
+        return NULL;
 }

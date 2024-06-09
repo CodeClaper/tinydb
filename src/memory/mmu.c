@@ -26,11 +26,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <time.h>
 #include "mmu.h"
 #include "asserts.h"
 #include "log.h"
 #include "data.h"
 #include "defs.h"
+#include "utils.h"
 
 #define MAXIMUM_CAPACITY 1<<31
 #define MININUM_CAPACITY 1<<10
@@ -362,6 +364,9 @@ void *db_realloc(void *ptr, size_t size) {
 
 /* Database level db_strdup. */
 char *db_strdup(char *str) {
+    if (is_null(str))
+        return NULL;
+
     char *ret = strdup(str);
     assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.");
 
