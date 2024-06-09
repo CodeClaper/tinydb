@@ -37,6 +37,7 @@
 #define MAX_TIMESTAMP_STR_LENGTH 30
 
 #define MAX_DEFAULT_VALUE_LENGTH 64
+#define MAX_COMMENT_STRING_LENGTH 64
 
 #define SYS_RESERVED_ID_COLUMN_NAME  "sys_id"
 #define CREATED_XID_COLUMN_NAME  "created_xid"
@@ -566,18 +567,20 @@ typedef enum DefaultValueType {
 
 /* MetaColumn */
 typedef struct MetaColumn {
-    char column_name[MAX_COLUMN_NAME_LEN];  /* Column Name. */
-    DataType column_type;                   /* Column data type. */
-    char table_name[MAX_TABLE_NAME_LEN];    /* Owned table Name */
-    uint32_t column_length;                 /* Column data length. Not allowed exceed the length limit. */
-    bool is_primary;                        /* Primary-key column. */
-    bool not_null;                          /* Not-null column. */
-    bool is_unique;                         /* Unique column. */
-    bool sys_reserved;                      /* System reserved column, only visible for system. */
-    uint32_t array_dim;                     /* Array dimension. Default zero if not array. */
-    uint32_t array_cap;                     /* Array capacity. (array_cap = array_dim * n) */
-    DefaultValueType default_value_type;    /* Default value type. */
-    void *default_value;                    /* Default value. */
+    char column_name[MAX_COLUMN_NAME_LEN];      /* Column Name. */
+    DataType column_type;                       /* Column data type. */
+    char table_name[MAX_TABLE_NAME_LEN];        /* Owned table Name */
+    uint32_t column_length;                     /* Column data length. Not allowed exceed the length limit. */
+    bool is_primary;                            /* Primary-key column. */
+    bool not_null;                              /* Not-null column. */
+    bool is_unique;                             /* Unique column. */
+    bool sys_reserved;                          /* System reserved column, only visible for system. */
+    uint32_t array_dim;                         /* Array dimension. Default zero if not array. */
+    uint32_t array_cap;                         /* Array capacity. (array_cap = array_dim * n) */
+    DefaultValueType default_value_type;        /* Default value type. */
+    void *default_value;                        /* Default value. */
+    bool has_comment;                           /* Has comment. */
+    char comment[MAX_COMMENT_STRING_LENGTH];    /* Comment */
 } MetaColumn;
 
 /* MetaTable */

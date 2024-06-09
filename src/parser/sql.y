@@ -95,6 +95,7 @@ int yylex();
 %token <keyword> TRUE FALSE
 %token <keyword> NULLX
 %token <keyword> AS
+%token <keyword> COMMENT
 %token <keyword> CHAR INT LONG VARCHAR STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> NOT
@@ -767,6 +768,12 @@ column_def_opt:
         {
             $$ = make_column_def_opt_node();
             $$->opt_type = OPT_DEFAULT_NULL;
+        }
+    | COMMENT STRINGVALUE
+        {
+            $$ = make_column_def_opt_node();
+            $$->opt_type = OPT_COMMENT;
+            $$->comment = $2;
         }
     | CHECK '(' condition ')'
         {

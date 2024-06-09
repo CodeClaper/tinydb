@@ -94,6 +94,13 @@ static List *gen_describe_result(MetaTable *meta_table) {
                 
         }
 
+        if (meta_column->has_comment)
+            /* Comment */
+            append_list(child_list, new_key_value(db_strdup("comment"), 
+                                                  db_strdup(meta_column->comment), 
+                                                  T_STRING));
+
+
         append_list(list, child_list);
     }
 

@@ -254,10 +254,12 @@ void free_function_node(FunctionNode *function_node) {
 /* Free ColumnDefOptNode. */
 void free_column_def_opt_node(ColumnDefOptNode *column_def_opt) {
     if (column_def_opt) {
-        if (column_def_opt->refer_table)
-            db_free(column_def_opt->refer_table);
         free_value_item_node(column_def_opt->value);
         free_condition_node(column_def_opt->condition);
+        if (column_def_opt->refer_table)
+            db_free(column_def_opt->refer_table);
+        if (column_def_opt->comment)
+            db_free(column_def_opt->comment);
         db_free(column_def_opt);
     }
 }

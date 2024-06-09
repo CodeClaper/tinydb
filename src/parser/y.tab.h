@@ -93,32 +93,33 @@ extern int yydebug;
     FALSE = 294,                   /* FALSE  */
     NULLX = 295,                   /* NULLX  */
     AS = 296,                      /* AS  */
-    CHAR = 297,                    /* CHAR  */
-    INT = 298,                     /* INT  */
-    LONG = 299,                    /* LONG  */
-    VARCHAR = 300,                 /* VARCHAR  */
-    STRING = 301,                  /* STRING  */
-    BOOL = 302,                    /* BOOL  */
-    FLOAT = 303,                   /* FLOAT  */
-    DOUBLE = 304,                  /* DOUBLE  */
-    DATE = 305,                    /* DATE  */
-    TIMESTAMP = 306,               /* TIMESTAMP  */
-    EQ = 307,                      /* EQ  */
-    NE = 308,                      /* NE  */
-    GT = 309,                      /* GT  */
-    GE = 310,                      /* GE  */
-    LT = 311,                      /* LT  */
-    LE = 312,                      /* LE  */
-    IN = 313,                      /* IN  */
-    LIKE = 314,                    /* LIKE  */
-    NOT = 315,                     /* NOT  */
-    SYSTEM = 316,                  /* SYSTEM  */
-    CONFIG = 317,                  /* CONFIG  */
-    MEMORY = 318,                  /* MEMORY  */
-    IDENTIFIER = 319,              /* IDENTIFIER  */
-    INTVALUE = 320,                /* INTVALUE  */
-    FLOATVALUE = 321,              /* FLOATVALUE  */
-    STRINGVALUE = 322              /* STRINGVALUE  */
+    COMMENT = 297,                 /* COMMENT  */
+    CHAR = 298,                    /* CHAR  */
+    INT = 299,                     /* INT  */
+    LONG = 300,                    /* LONG  */
+    VARCHAR = 301,                 /* VARCHAR  */
+    STRING = 302,                  /* STRING  */
+    BOOL = 303,                    /* BOOL  */
+    FLOAT = 304,                   /* FLOAT  */
+    DOUBLE = 305,                  /* DOUBLE  */
+    DATE = 306,                    /* DATE  */
+    TIMESTAMP = 307,               /* TIMESTAMP  */
+    EQ = 308,                      /* EQ  */
+    NE = 309,                      /* NE  */
+    GT = 310,                      /* GT  */
+    GE = 311,                      /* GE  */
+    LT = 312,                      /* LT  */
+    LE = 313,                      /* LE  */
+    IN = 314,                      /* IN  */
+    LIKE = 315,                    /* LIKE  */
+    NOT = 316,                     /* NOT  */
+    SYSTEM = 317,                  /* SYSTEM  */
+    CONFIG = 318,                  /* CONFIG  */
+    MEMORY = 319,                  /* MEMORY  */
+    IDENTIFIER = 320,              /* IDENTIFIER  */
+    INTVALUE = 321,                /* INTVALUE  */
+    FLOATVALUE = 322,              /* FLOATVALUE  */
+    STRINGVALUE = 323              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -166,32 +167,33 @@ extern int yydebug;
 #define FALSE 294
 #define NULLX 295
 #define AS 296
-#define CHAR 297
-#define INT 298
-#define LONG 299
-#define VARCHAR 300
-#define STRING 301
-#define BOOL 302
-#define FLOAT 303
-#define DOUBLE 304
-#define DATE 305
-#define TIMESTAMP 306
-#define EQ 307
-#define NE 308
-#define GT 309
-#define GE 310
-#define LT 311
-#define LE 312
-#define IN 313
-#define LIKE 314
-#define NOT 315
-#define SYSTEM 316
-#define CONFIG 317
-#define MEMORY 318
-#define IDENTIFIER 319
-#define INTVALUE 320
-#define FLOATVALUE 321
-#define STRINGVALUE 322
+#define COMMENT 297
+#define CHAR 298
+#define INT 299
+#define LONG 300
+#define VARCHAR 301
+#define STRING 302
+#define BOOL 303
+#define FLOAT 304
+#define DOUBLE 305
+#define DATE 306
+#define TIMESTAMP 307
+#define EQ 308
+#define NE 309
+#define GT 310
+#define GE 311
+#define LT 312
+#define LE 313
+#define IN 314
+#define LIKE 315
+#define NOT 316
+#define SYSTEM 317
+#define CONFIG 318
+#define MEMORY 319
+#define IDENTIFIER 320
+#define INTVALUE 321
+#define FLOATVALUE 322
+#define STRINGVALUE 323
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -252,7 +254,7 @@ union YYSTYPE
    Statement                    *statement;
    List                         *list;
 
-#line 256 "y.tab.h"
+#line 258 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

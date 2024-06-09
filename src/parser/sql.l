@@ -52,6 +52,7 @@ DEFAULT                 return DEFAULT;
 REFERENCES              return REFERENCES;
 CHECK                   return CHECK;
 FOREIGN                 return FOREIGN;
+COMMENT                 return COMMENT;
 INT                     return INT;
 LONG                    return LONG;
 CHAR                    return CHAR;

@@ -94,10 +94,13 @@ static void operate_column(MetaColumn *meta_column, ColumnDefOptNodeList *column
                 meta_column->default_value_type = DEFAULT_VALUE;
                 meta_column->default_value = get_value_from_value_item_node(column_def_opt->value, meta_column);
                 break;
-            case OPT_DEFAULT_NULL: {
+            case OPT_DEFAULT_NULL: 
                 meta_column->default_value_type = DEFAULT_VALUE_NULL;
                 break;
-            }
+            case OPT_COMMENT: 
+                meta_column->has_comment = true;
+                strcpy(meta_column->comment, column_def_opt->comment);
+                break;
             case OPT_CHECK_CONDITION:
             case OPT_REFERENECS:
                 db_log(ERROR, "Not support thus column def operation yet");
