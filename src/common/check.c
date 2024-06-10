@@ -739,11 +739,11 @@ static bool check_if_column_already_exists(List *list, ColumnDefNode *column_def
 
 
 /* Check if ColumnDefOptNodeList contains primary key. */
-static bool check_if_contain_primary_key(ColumnDefOptNodeList *column_def_opt_list) {
+static bool check_if_contain_primary_key(List *column_def_opt_list) {
     if (column_def_opt_list) {
-        uint32_t i;
-        for (i = 0; i < column_def_opt_list->size; i++) {
-            ColumnDefOptNode *column_def_opt = column_def_opt_list->set[i];
+        ListCell *lc;
+        foreach (lc, column_def_opt_list) {
+            ColumnDefOptNode *column_def_opt = lfirst(lc);
             if (column_def_opt->opt_type == OPT_PRIMARY_KEY)
                 return true;
         }
@@ -816,13 +816,14 @@ static bool check_default_value_type(ValueItemNode *value_item_node, DataType da
 }
 
 /* Check if ColumnDefOptNodeList contains conflict default value. */
-static bool check_conflict_default_value(ColumnDefOptNodeList *column_def_opt_list, DataType data_type) {
+static bool check_conflict_default_value(List *column_def_opt_list, DataType data_type) {
     if (column_def_opt_list) {
         bool has_defined_not_null = false;
         bool has_defined_default_null = false;
-        uint32_t i;
-        for (i = 0; i < column_def_opt_list->size; i++) {
-            ColumnDefOptNode *column_def_opt = column_def_opt_list->set[i];
+
+        ListCell *lc;
+        foreach (lc, column_def_opt_list) {
+            ColumnDefOptNode *column_def_opt = lfirst(lc);
             switch (column_def_opt->opt_type) {
                 case OPT_NOT_NULL:
                 case OPT_PRIMARY_KEY:
@@ -852,7 +853,7 @@ static bool check_conflict_default_value(ColumnDefOptNodeList *column_def_opt_li
 /* Check if exists duplicate column name. */
 static bool check_table_element_commalist(BaseTableElementCommalist *base_table_element_commalist) {
 
-    List *list = create_list(NODE_COLUMN_DEF_NODE);
+    List *list = create_list(NODE_COLUMN_DEF);
 
     bool primary_key_flag = false;
     uint32_t i;

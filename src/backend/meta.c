@@ -516,4 +516,5 @@ char *get_default_value_name(MetaColumn *meta_column) {
         case DEFAULT_VALUE:
             return stringify_value(meta_column->default_value, meta_column->column_type);
     }
+    return NULL;
 }

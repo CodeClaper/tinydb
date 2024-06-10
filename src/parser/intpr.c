@@ -215,39 +215,10 @@ ColumnDefNode *make_column_def_node() {
     return column_def_node;
 }
 
-/* make a column def set node. */
-ColumnDefSetNode *make_column_def_set_node() {
-    ColumnDefSetNode *column_def_set_node = instance(ColumnDefSetNode);
-    column_def_set_node->column_defs = db_malloc(0, "pointer");
-    column_def_set_node->size = 0;
-    return column_def_set_node;
-}
-
-/* add column def node to set. */
-void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node) {
-    columns_def_set_node->column_defs = db_realloc(columns_def_set_node->column_defs, sizeof(ColumnDefNode *) * (columns_def_set_node->size + 1));
-    *(columns_def_set_node->column_defs + columns_def_set_node->size) = column_def_node;
-    columns_def_set_node->size++;
-}
-
 /* Make ColumnDefOptNode. */
 ColumnDefOptNode *make_column_def_opt_node() {
     ColumnDefOptNode *column_def_opt = instance(ColumnDefOptNode);
     return column_def_opt;
-}
-
-/* Make ColumnDefOptNodeList */
-ColumnDefOptNodeList *make_column_def_opt_list() {
-    ColumnDefOptNodeList *list = instance(ColumnDefOptNodeList);
-    list->size = 0;
-    list->set = db_malloc(0, "pointer");
-    return list;
-}
-
-/* Add ColumnDefOptNode to set. */
-void add_column_def_opt_to_set(ColumnDefOptNodeList *list, ColumnDefOptNode *node) {
-    list->set = db_realloc(list->set, sizeof(ColumnDefOptNode *) * (list->size + 1));
-    list->set[list->size++] = node;
 }
 
 /* make a primary key node. */

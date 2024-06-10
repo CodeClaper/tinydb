@@ -26,11 +26,9 @@ int yylex();
    ColumnDefName                *column_def_name;
    ColumnDefNameCommalist       *column_def_name_commalist;
    ColumnDefNode                *column_def_node;
-   ColumnDefSetNode             *column_def_set_node;
    BaseTableElementNode         *base_table_element;
    BaseTableElementCommalist    *base_table_element_commalist;
    ColumnDefOptNode             *column_def_opt;
-   ColumnDefOptNodeList         *column_def_opt_list;
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
    AtomNode                     *atom_node;
@@ -121,10 +119,10 @@ int yylex();
 %type <base_table_element> base_table_element
 %type <base_table_element_commalist> base_table_element_commalist
 %type <column_def_opt> column_def_opt
-%type <column_def_opt_list> column_def_opt_list
+%type <list> column_def_opt_list
 %type <table_contraint_def> table_contraint_def
 %type <column_def_node> column_def
-%type <column_def_set_node> column_defs
+%type <list> column_defs
 %type <condition_node> condition
 %type <predicate_node> predicate
 %type <comparison_node> comparison_predicate
@@ -611,13 +609,13 @@ base_table_element:
 column_defs:
     column_def
         {
-            ColumnDefSetNode *column_def_set_node = make_column_def_set_node();
-            add_column_def_to_set(column_def_set_node, $1);
-            $$ = column_def_set_node;
+            list *column_def_list = create_list(NODE_COLUMN_DEF_NODE);
+            append_list(column_def_list, $1);
+            $$ = column_def_list;
         }
     | column_defs ',' column_def
         {
-            add_column_def_to_set($1, $3);
+            append_list($1, $3);
             $$ = $1;
         }
     ;
@@ -733,12 +731,12 @@ column_def_opt_list:
         }
     | column_def_opt
         {
-            $$ = make_column_def_opt_list();
-            add_column_def_opt_to_set($$, $1);
+            $$ = create_list(NODE_COLUMN_DEF_OPT);
+            append_list($$, $1);
         }
     | column_def_opt_list column_def_opt
         {
-            add_column_def_opt_to_set($1, $2);
+            append_list($1, $2);
             $$ = $1;
         }
     ;

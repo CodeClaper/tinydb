@@ -66,13 +66,14 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node);
 /* Free ScalarExpSetNode. */
 void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node);
 
+/* Free ColumnDefOptNode. */
+void free_column_def_opt_node(ColumnDefOptNode *column_def_opt);
+
+/* Free ColumnDefName. */
 void free_column_def_name(ColumnDefName *column_def_name);
 
 /* Free column def node. */
 void free_column_def_node(ColumnDefNode *column_def_node);
-
-/* Free column def set node. */
-void free_column_def_set_node(ColumnDefSetNode *column_def_set_node);
 
 /* Free value item set node. */
 void free_value_item_set_node(ValueItemSetNode *value_item_set_node);

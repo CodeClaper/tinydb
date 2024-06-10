@@ -264,38 +264,14 @@ void free_column_def_opt_node(ColumnDefOptNode *column_def_opt) {
     }
 }
 
-/* Free ColumnDefOptNodeList. */
-void free_column_def_opt_list(ColumnDefOptNodeList *column_def_opt_list) {
-    if (column_def_opt_list) {
-        uint32_t i;
-        for (i = 0; i < column_def_opt_list->size; i++) {
-            free_column_def_opt_node(column_def_opt_list->set[i]);
-        }
-        db_free(column_def_opt_list->set);
-        db_free(column_def_opt_list);
-    }
-}
-
 /* Free column def node. */
 void free_column_def_node(ColumnDefNode *column_def_node) {
     if (column_def_node) {
         free_column_def_name(column_def_node->column);
         free_data_type_node(column_def_node->data_type);
-        free_column_def_opt_list(column_def_node->column_def_opt_list);
+        free_list_deep(column_def_node->column_def_opt_list);
         db_free(column_def_node);
     }
-}
-
-/* Free column def set node. */
-void free_column_def_set_node(ColumnDefSetNode *column_def_set_node) {
-    if (column_def_set_node) {
-        uint32_t i;
-        for (i = 0; i < column_def_set_node->size; i++) {
-            free_column_def_node(*(column_def_set_node->column_defs + i));
-        }
-        db_free(column_def_set_node->column_defs);
-        db_free(column_def_set_node);
-    } 
 }
 
 /* Free value item set node. */

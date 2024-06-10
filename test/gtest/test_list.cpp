@@ -34,7 +34,7 @@ TEST(list, enlarge_list) {
 }
 
 TEST(list, append_list) {
-    static char* strings[10] = {
+     char* strings[10] = {
         "hello everyone!", 
         "¡Hola a todos!", 
         "大家好!", 
@@ -63,7 +63,7 @@ TEST(list, append_list) {
 /* Test for free list. */
 TEST(list, free_list_deep) {
 
-    List *list = create_list(NODE_COLUMN_DEF_NODE);
+    List *list = create_list(NODE_COLUMN_DEF);
 
     int i;
     for (i = 0; i < 30; i++) {

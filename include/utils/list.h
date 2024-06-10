@@ -21,7 +21,8 @@ typedef enum NodeTag {
     NODE_COLUMN,
     NODE_STATEMENT,
     NODE_DB_RESULT,
-    NODE_COLUMN_DEF_NODE
+    NODE_COLUMN_DEF,
+    NODE_COLUMN_DEF_OPT
 } NodeTag;
 
 /* Cell in List.*/

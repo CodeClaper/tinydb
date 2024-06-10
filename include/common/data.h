@@ -260,12 +260,6 @@ typedef struct ColumnDefOptNode {
     char *comment;
 } ColumnDefOptNode;
 
-/* ColumnDefOptNodeList */
-typedef struct ColumnDefOptNodeList {
-    uint32_t size;
-    ColumnDefOptNode **set;
-} ColumnDefOptNodeList;
-
 /* TableContraintType */
 typedef enum TableContraintType {
     TCONTRAINT_UNIQUE,
@@ -295,17 +289,11 @@ typedef struct ColumnDefNameCommalist {
 
 /* ColumnDefNode */
 typedef struct ColumnDefNode { 
-    ColumnDefName *column;                       /* Column defination name. */
-    DataTypeNode *data_type;                     /* Column defination data type. */ 
-    uint32_t array_dim;                          /* Array dimension, default zero if not arrary. */ 
-    ColumnDefOptNodeList *column_def_opt_list;   /* Column defination operation list. */
+    ColumnDefName *column;         /* Column defination name. */
+    DataTypeNode *data_type;       /* Column defination data type. */ 
+    uint32_t array_dim;            /* Array dimension, default zero if not arrary. */ 
+    List *column_def_opt_list;     /* Column defination operation list. */
 } ColumnDefNode;
-
-/* ColumnDefSetNode */
-typedef struct ColumnDefSetNode {
-    ColumnDefNode **column_defs;
-    uint32_t size;
-} ColumnDefSetNode;
 
 /* PrimaryKeyNode */
 typedef struct {

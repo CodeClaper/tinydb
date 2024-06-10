@@ -114,12 +114,6 @@ void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node);
 /* make a column def node. */
 ColumnDefNode *make_column_def_node();
 
-/* make a column def set node. */
-ColumnDefSetNode *make_column_def_set_node();
-
-/* add column def node to set. */
-void add_column_def_to_set(ColumnDefSetNode *columns_def_set_node, ColumnDefNode *column_def_node);
-
 /* Make TableContraintDefNode. */
 TableContraintDefNode *make_table_contraint_def_node();
 
@@ -134,12 +128,6 @@ void add_base_table_element_to_set(BaseTableElementCommalist *list, BaseTableEle
 
 /* Make ColumnDefOptNode. */
 ColumnDefOptNode *make_column_def_opt_node();
-
-/* Make ColumnDefOptNodeList */
-ColumnDefOptNodeList *make_column_def_opt_list();
-
-/* Add ColumnDefOptNode to set. */
-void add_column_def_opt_to_set(ColumnDefOptNodeList *list, ColumnDefOptNode *node);
 
 /* make a primary key node. */
 PrimaryKeyNode *make_primary_key_node();

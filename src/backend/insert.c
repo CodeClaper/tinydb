@@ -347,7 +347,6 @@ static List *insert_for_query_spec(InsertNode *insert_node) {
 
         /* Insert into rows. */
         ListCell *lc;
-        int i = 0;
         foreach (lc, select_result->rows) {
             Row *insert_row = convert_insert_row(lfirst(lc), table);
             Refer *refer = insert_one_row(table, insert_row);

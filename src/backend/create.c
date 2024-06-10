@@ -72,13 +72,13 @@ uint32_t calc_column_len(ColumnDefNode *column_def, uint32_t array_cap) {
 }
 
 /* Column Operation. */
-static void operate_column(MetaColumn *meta_column, ColumnDefOptNodeList *column_def_opt_list) {
+static void operate_column(MetaColumn *meta_column, List *column_def_opt_list) {
     if (!column_def_opt_list) 
         return;
 
-    uint32_t i;
-    for (i = 0; i < column_def_opt_list->size; i++) {
-        ColumnDefOptNode *column_def_opt = column_def_opt_list->set[i];
+    ListCell *lc;
+    foreach (lc, column_def_opt_list) {
+        ColumnDefOptNode *column_def_opt = lfirst(lc);
         switch (column_def_opt->opt_type) {
             case OPT_NOT_NULL:
                 meta_column->not_null = true;

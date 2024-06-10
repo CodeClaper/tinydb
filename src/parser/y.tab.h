@@ -212,11 +212,9 @@ union YYSTYPE
    ColumnDefName                *column_def_name;
    ColumnDefNameCommalist       *column_def_name_commalist;
    ColumnDefNode                *column_def_node;
-   ColumnDefSetNode             *column_def_set_node;
    BaseTableElementNode         *base_table_element;
    BaseTableElementCommalist    *base_table_element_commalist;
    ColumnDefOptNode             *column_def_opt;
-   ColumnDefOptNodeList         *column_def_opt_list;
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
    AtomNode                     *atom_node;
@@ -254,7 +252,7 @@ union YYSTYPE
    Statement                    *statement;
    List                         *list;
 
-#line 258 "y.tab.h"
+#line 256 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

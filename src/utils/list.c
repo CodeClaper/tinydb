@@ -346,10 +346,17 @@ void free_list_deep(List *list) {
                 }
                 break;
             }
-            case NODE_COLUMN_DEF_NODE: {
+            case NODE_COLUMN_DEF: {
                 ListCell *lc;
                 foreach (lc, list) {
                     free_column_def_node(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_COLUMN_DEF_OPT: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_column_def_opt_node(lfirst(lc));
                 }
                 break;
             }
