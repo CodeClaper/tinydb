@@ -286,14 +286,12 @@ static void json_select_result(DBResult *result) {
         db_send(", \"data\": ");
         SelectResult *select_result = result->data;
         db_send("[");
-        uint32_t i = 0;
         ListCell *lc;
         foreach (lc, select_result->rows) {
             Row *row = lfirst(lc);
             json_row(row);
-            if (i < len_list(select_result->rows) - 1)
+            if (last_cell(select_result->rows) != lc)
                 db_send(", ");
-            i++;
         }
         db_send("]");
         db_send(", \"rows\": %d", result->rows);
@@ -321,14 +319,12 @@ static void json_nondata_result(DBResult *result) {
 static void json_key_value_list(List *list) {
     db_send("{ ");
 
-    uint32_t i = 0;
     ListCell *lc;
     foreach (lc, list) {
         KeyValue *key_value = lfirst(lc);
         json_key_value(key_value);
-        if (i < list->size - 1)
+        if (last_cell(list) != lc)
             db_send(", ");
-        i++;
     }
 
     db_send(" }");
@@ -338,14 +334,12 @@ static void json_key_value_list(List *list) {
 static void json_list_list(List *list) {
     db_send("[");
 
-    uint32_t i = 0;
     ListCell *lc;
     foreach (lc, list) {
         List *child_list = lfirst(lc);
         json_list(child_list);
-        if (i < list->size - 1)
+        if (last_cell(list) != lc)
             db_send(", ");
-        i++;
     }
 
     db_send("]");
@@ -405,20 +399,17 @@ void json_db_result(DBResult *result) {
 
 /* Json DBResult list*/
 static void json_db_result_list(List *list) {
-    
-    db_send(list->size > 1 ? "[" : "");
+    db_send(len_list(list) > 1 ? "[" : "");
 
-    uint32_t i = 0;
     ListCell *lc;
     foreach (lc, list) {
         DBResult *result = lfirst(lc);
         json_db_result(result);
-        if (i < list->size - 1)
+        if (last_cell(list) != lc)
             db_send(", ");
-        i++;
     }
 
-    db_send(list->size > 1 ? "]\n" : "\n");
+    db_send(len_list(list) > 1 ? "]\n" : "\n");
 }
 
 /* Json list. */
