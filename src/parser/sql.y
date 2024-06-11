@@ -24,10 +24,8 @@ int yylex();
    CompareType                  compare_type;
    DataTypeNode                 *data_type_node;
    ColumnDefName                *column_def_name;
-   ColumnDefNameCommalist       *column_def_name_commalist;
    ColumnDefNode                *column_def_node;
    BaseTableElementNode         *base_table_element;
-   BaseTableElementCommalist    *base_table_element_commalist;
    ColumnDefOptNode             *column_def_opt;
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
@@ -115,9 +113,9 @@ int yylex();
 %type <value_item_node> value_item
 %type <value_item_set_node> value_items
 %type <column_def_name> column_def_name
-%type <column_def_name_commalist> column_def_name_commalist
+%type <list> column_def_name_commalist
 %type <base_table_element> base_table_element
-%type <base_table_element_commalist> base_table_element_commalist
+%type <list> base_table_element_commalist
 %type <column_def_opt> column_def_opt
 %type <list> column_def_opt_list
 %type <table_contraint_def> table_contraint_def
@@ -580,13 +578,13 @@ columns:
 base_table_element_commalist:
     base_table_element
         {
-            BaseTableElementCommalist *base_table_element_commalist = make_base_table_element_commalist();
-            add_base_table_element_to_set(base_table_element_commalist, $1);
+            List *base_table_element_commalist = create_list(NODE_BASE_TABLE_ELEMENT);
+            append_list(base_table_element_commalist, $1);
             $$ = base_table_element_commalist;
         }
     | base_table_element_commalist ',' base_table_element
         {
-            add_base_table_element_to_set($1, $3);
+            append_list($1, $3);
             $$ = $1;
         }
     ;
@@ -633,13 +631,13 @@ column_def:
 column_def_name_commalist:
     column_def_name
         {
-            ColumnDefNameCommalist *list = make_column_def_name_list();
-            add_column_def_name_to_set(list, $1);
+            List *list = create_list(NODE_COLUMN_DEF_NAME);
+            append_list(list, $1);
             $$ = list;
         }
     | column_def_name_commalist ',' column_def_name
         {
-            add_column_def_name_to_set($1, $3);
+            append_list($1, $3);
             $$ = $1;
         }
     ;

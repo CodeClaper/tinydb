@@ -81,6 +81,9 @@ void free_value_item_set_node(ValueItemSetNode *value_item_set_node);
 /* Free primary key node. */
 void free_primary_key_node(PrimaryKeyNode *primary_key_node);
 
+/* Free BaseTableElementNode */
+void free_base_table_element_node(BaseTableElementNode *base_table_element);
+
 /* Free select items node. */
 void free_select_items_node(SelectItemsNode *select_items_node);
 

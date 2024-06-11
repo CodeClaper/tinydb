@@ -54,12 +54,6 @@ CalculateNode *make_calculate_node();
 /* Make ColumnDefNode. */
 ColumnDefName *make_column_def_name();
 
-/* Make ColumnDefNameCommalist. */
-ColumnDefNameCommalist *make_column_def_name_list();
-
-/* Add ColumnDefName to set. */
-void add_column_def_name_to_set(ColumnDefNameCommalist *list, ColumnDefName *column_def_name);
-
 /* make a condition node. */
 ConditionNode *make_condition_node();
 
@@ -119,12 +113,6 @@ TableContraintDefNode *make_table_contraint_def_node();
 
 /* Make BaseTableElementNode. */
 BaseTableElementNode *make_base_table_element_node();
-
-/* Make BaseTableElementCommalist */
-BaseTableElementCommalist *make_base_table_element_commalist();
-
-/* Add BaseTableElementNode to set. */
-void add_base_table_element_to_set(BaseTableElementCommalist *list, BaseTableElementNode *node);
 
 /* Make ColumnDefOptNode. */
 ColumnDefOptNode *make_column_def_opt_node();

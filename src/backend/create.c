@@ -152,9 +152,10 @@ MetaColumn *combine_sys_meta_column(char *table_name, int index) {
 /* Get column def size in create table statement. */
 static uint32_t get_column_def_size(CreateTableNode *create_table_node) {
     uint32_t size = 0;
-    uint32_t i;
-    for (i = 0; i < create_table_node->base_table_element_commalist->size; i++) {
-        BaseTableElementNode *base_table_element = create_table_node->base_table_element_commalist->set[i];
+    
+    ListCell *lc;
+    foreach (lc, create_table_node->base_table_element_commalist) {
+        BaseTableElementNode *base_table_element = lfirst(lc);
         if (base_table_element->type == TELE_COLUMN_DEF)
             size++;
     }
@@ -162,10 +163,10 @@ static uint32_t get_column_def_size(CreateTableNode *create_table_node) {
 }
 
 /* Operate table about unique-key columns/ */
-static void operate_table_unique(MetaTable *meta_table, ColumnDefNameCommalist *commalist) {
-    uint32_t i;
-    for (i = 0; i < commalist->size; i++) {
-        ColumnDefName *column_def_name = commalist->set[i];
+static void operate_table_unique(MetaTable *meta_table, List *commalist) {
+    ListCell *lc;
+    foreach (lc, commalist) {
+        ColumnDefName *column_def_name = lfirst(lc);
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_def_name->column);
         meta_column->is_unique = true;
         break; /* Not support mult-columns as unique key. */
@@ -173,10 +174,10 @@ static void operate_table_unique(MetaTable *meta_table, ColumnDefNameCommalist *
 }
 
 /* Operate table abount primary-key columns */
-static void operate_table_primary_key(MetaTable *meta_table, ColumnDefNameCommalist *commalist) {
-    uint32_t i;
-    for (i = 0; i < commalist->size; i++) {
-        ColumnDefName *column_def_name = commalist->set[i];
+static void operate_table_primary_key(MetaTable *meta_table, List *commalist) {
+    ListCell *lc;
+    foreach (lc, commalist) {
+        ColumnDefName *column_def_name = lfirst(lc);
         MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_def_name->column);
         meta_column->is_primary = true;
         break; /* Not support mult-columns as primary key. */
@@ -226,9 +227,10 @@ static MetaTable *combine_meta_table(CreateTableNode *create_table_node) {
     meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * meta_table->all_column_size, "pointer");
 
     /* User-level defination. */
-    uint32_t i, j;
-    for (i = 0, j = 0; i < create_table_node->base_table_element_commalist->size; i++) {
-        BaseTableElementNode *base_table_element = create_table_node->base_table_element_commalist->set[i];
+    uint32_t j = 0;
+    ListCell *lc;
+    foreach (lc, create_table_node->base_table_element_commalist) {
+        BaseTableElementNode *base_table_element = lfirst(lc);
         switch (base_table_element->type) {
             case TELE_COLUMN_DEF:
                 meta_table->meta_column[j++] = combine_user_meta_column(base_table_element->column_def, create_table_node->table_name);

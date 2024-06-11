@@ -210,10 +210,8 @@ union YYSTYPE
    CompareType                  compare_type;
    DataTypeNode                 *data_type_node;
    ColumnDefName                *column_def_name;
-   ColumnDefNameCommalist       *column_def_name_commalist;
    ColumnDefNode                *column_def_node;
    BaseTableElementNode         *base_table_element;
-   BaseTableElementCommalist    *base_table_element_commalist;
    ColumnDefOptNode             *column_def_opt;
    TableContraintDefNode        *table_contraint_def;
    ColumnNode                   *column_node;
@@ -252,7 +250,7 @@ union YYSTYPE
    Statement                    *statement;
    List                         *list;
 
-#line 256 "y.tab.h"
+#line 254 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

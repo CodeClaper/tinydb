@@ -851,14 +851,15 @@ static bool check_conflict_default_value(List *column_def_opt_list, DataType dat
 }
 
 /* Check if exists duplicate column name. */
-static bool check_table_element_commalist(BaseTableElementCommalist *base_table_element_commalist) {
+static bool check_table_element_commalist(List *base_table_element_commalist) {
 
     List *list = create_list(NODE_COLUMN_DEF);
 
     bool primary_key_flag = false;
-    uint32_t i;
-    for (i = 0; i < base_table_element_commalist->size; i++) {
-        BaseTableElementNode *base_table_element = base_table_element_commalist->set[i];
+
+    ListCell *lc;
+    foreach (lc, base_table_element_commalist) {
+        BaseTableElementNode *base_table_element = lfirst(lc);
         switch (base_table_element->type) {
             case TELE_COLUMN_DEF: {
                 ColumnDefNode *current_column_def = base_table_element->column_def;

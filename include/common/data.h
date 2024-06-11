@@ -1,4 +1,3 @@
-#include <sys/types.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -233,12 +232,6 @@ typedef struct BaseTableElementNode {
     struct TableContraintDefNode *table_contraint_def;
 } BaseTableElementNode; 
 
-/* BaseTableElementCommalist */
-typedef struct BaseTableElementCommalist {
-    uint32_t size;
-    struct BaseTableElementNode **set;
-} BaseTableElementCommalist;
-
 /* ColumnDefOptType */
 typedef enum ColumnDefOptType {
     OPT_NOT_NULL,
@@ -271,7 +264,7 @@ typedef enum TableContraintType {
 /* TableContraintDefNode */
 typedef struct TableContraintDefNode {
     TableContraintType type;
-    struct ColumnDefNameCommalist *column_commalist;
+    List *column_commalist;
     char *table;
     struct ConditionNode *condition;
 } TableContraintDefNode;
@@ -280,12 +273,6 @@ typedef struct TableContraintDefNode {
 typedef struct ColumnDefName {
     char *column;
 } ColumnDefName;
-
-/* ColumnDefNameCommaList */
-typedef struct ColumnDefNameCommalist {
-    uint32_t size;
-    ColumnDefName **set;
-} ColumnDefNameCommalist;
 
 /* ColumnDefNode */
 typedef struct ColumnDefNode { 
@@ -479,7 +466,7 @@ typedef struct TableExpNode {
 /* CreateTableNode */
 typedef struct {
     char *table_name;
-    BaseTableElementCommalist *base_table_element_commalist;
+    List *base_table_element_commalist;
 } CreateTableNode;
 
 /* DropTableNode */

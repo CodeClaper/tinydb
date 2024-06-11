@@ -47,20 +47,6 @@ ColumnDefName *make_column_def_name() {
     return column_def_name;
 }
 
-/* Make ColumnDefNameCommalist. */
-ColumnDefNameCommalist *make_column_def_name_list() {
-    ColumnDefNameCommalist *column_def_name_list = instance(ColumnDefNameCommalist);
-    column_def_name_list->set = db_malloc(0, "pointer");
-    column_def_name_list->size = 0;
-    return column_def_name_list;
-}
-
-/* Add ColumnDefName to set. */
-void add_column_def_name_to_set(ColumnDefNameCommalist *list, ColumnDefName *column_def_name) {
-    list->set = db_realloc(list->set, sizeof(ColumnDefName *) * (list->size + 1));
-    list->set[list->size++] = column_def_name;
-}
-
 /* Make a ArrayValue. */
 ArrayValue *make_array_value() {
     ArrayValue *array_value = instance(ArrayValue);
@@ -193,20 +179,6 @@ TableContraintDefNode *make_table_contraint_def_node() {
 BaseTableElementNode *make_base_table_element_node() {
     BaseTableElementNode *node = instance(BaseTableElementNode);
     return node;
-}
-
-/* Make BaseTableElementCommalist */
-BaseTableElementCommalist *make_base_table_element_commalist() {
-    BaseTableElementCommalist *base_table_element_commalist = instance(BaseTableElementCommalist);
-    base_table_element_commalist->set = db_malloc(0, "pointer");
-    base_table_element_commalist->size = 0;
-    return base_table_element_commalist;
-}
-
-/* Add BaseTableElementNode to set. */
-void add_base_table_element_to_set(BaseTableElementCommalist *list, BaseTableElementNode *node) {
-    list->set = db_realloc(list->set, sizeof(BaseTableElementNode *) * (list->size + 1));
-    list->set[list->size++] = node;
 }
 
 /* make a column def node. */

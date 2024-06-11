@@ -502,24 +502,13 @@ void free_column_def_name(ColumnDefName *column_def_name) {
     }
 }
 
-/* Free ColumnDefNameCommalist. */
-void free_column_def_name_commalist(ColumnDefNameCommalist *commalist) {
-    if (commalist) {
-        uint32_t i;
-        for (i = 0; i < commalist->size; i++) {
-            free_column_def_name(commalist->set[i]);
-        }
-        db_free(commalist);
-    }
-}
-
 /* Free TableContraintDefNode. */
 void free_table_contraint_def_node(TableContraintDefNode *table_contraint) {
     if (table_contraint) {
         if (table_contraint->table)
             db_free(table_contraint->table);
         free_condition_node(table_contraint->condition);
-        free_column_def_name_commalist(table_contraint->column_commalist);
+        free_list_deep(table_contraint->column_commalist);
         db_free(table_contraint);
     }
 }
@@ -539,17 +528,6 @@ void free_base_table_element_node(BaseTableElementNode *base_table_element) {
                 break;
         }
         db_free(base_table_element);
-    }
-}
-
-/* Free BaseTableElementCommalist*/
-void free_base_table_element_commalist(BaseTableElementCommalist *commalist) {
-    if (commalist) {
-        uint32_t i;
-        for (i = 0; i < commalist->size; i++) {
-            free_base_table_element_node(commalist->set[i]);
-        }
-        db_free(commalist);
     }
 }
 
@@ -658,7 +636,7 @@ void free_create_table_node(CreateTableNode *create_table_node) {
     if (create_table_node != NULL) {
         if (create_table_node->table_name)
             db_free(create_table_node->table_name);
-        free_base_table_element_commalist(create_table_node->base_table_element_commalist);
+        free_list_deep(create_table_node->base_table_element_commalist);
         db_free(create_table_node);
     }
 }

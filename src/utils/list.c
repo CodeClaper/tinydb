@@ -360,6 +360,20 @@ void free_list_deep(List *list) {
                 }
                 break;
             }
+            case NODE_COLUMN_DEF_NAME: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_column_def_name(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_BASE_TABLE_ELEMENT: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_base_table_element_node(lfirst(lc));
+                }
+                break;
+            }
         }
 
         if (list->elements != list->initial_elements)
