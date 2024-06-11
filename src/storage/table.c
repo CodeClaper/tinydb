@@ -36,7 +36,7 @@ List *get_table_list() {
     else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
-                append_list(list, replace(entry->d_name, ".dbt", ""));
+                append_list(list, replace_once(entry->d_name, ".dbt", ""));
             }
         }
         closedir(dir);

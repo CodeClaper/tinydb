@@ -45,7 +45,7 @@ static List *gen_table_map_list() {
 
                 /* name */
                 append_list(child_list, new_key_value(db_strdup("table_name"), 
-                                                replace(entry->d_name, ".dbt", ""), 
+                                                replace_once(entry->d_name, ".dbt", ""), 
                                                 T_STRING));
 
                 /* size */

@@ -9,13 +9,17 @@
 #include "utils.h"
 #include "mmu.h"
 
-/* left trim*/
+/* Left trim. 
+ * Notice: not use the s directly, 
+ * rather than the returning vlaue. */
 char *ltrim(char *s) {
     while(isspace(*s)) s++;
     return s;
 }
 
-/* right trim */
+/* Right trim. 
+ * Notice: although you can use s directly, 
+ * but not recommand that. */
 char *rtrim(char *s) {
     char* back = s + strlen(s);
     while(isspace(*--back));
@@ -77,8 +81,8 @@ char *substr(char *str, uint32_t start, uint32_t end) {
     return substr;
 }
 
-/* replace */
-char *replace(char *str, char *old_str, char *new_str) {
+/* replace onece */
+char *replace_once(char *str, char *old_str, char *new_str) {
     if (!str || !old_str)
         return NULL;
     ssize_t str_size = strlen(str);
@@ -88,23 +92,53 @@ char *replace(char *str, char *old_str, char *new_str) {
     if (new_str == NULL)
         new_str = "";
     ssize_t new_size = strlen(new_str);
+    char *ret = db_malloc(str_size - old_size + new_size + 1, "string");
+
     uint32_t index;
-    char *repl = db_malloc(str_size - old_size + new_size + 1, "string");
     for (index = 0; index < str_size; index++) {
-        char *temp = db_malloc(old_size + 1, "string");
-        memcpy(temp, str + index, old_size);
-        if (strcmp(temp, old_str) == 0) {
-            memcpy(repl + index , new_str, new_size); 
-            strcpy(repl + index + new_size, str + index + old_size);
-            *(repl + str_size - old_size + new_size) = '\0';
-            db_free(temp);
-            return repl;
+        if (strncmp(str + index, old_str, old_size) == 0) {
+            memcpy(ret + index , new_str, new_size); 
+            strcpy(ret + index + new_size, str + index + old_size);
+            *(ret + str_size - old_size + new_size) = '\0';
+            return ret;
         }
-        db_free(temp);
-        *(repl+index) = *(str+index);
+        *(ret + index) = *(str + index);
     }
-    db_free(repl);
+    db_free(ret);
     return NULL;
+}
+
+/* Replace all. */
+char *replace_all(char *str, char *old_str, char *new_str) {
+    if (!str || !old_str)
+        return NULL;
+    ssize_t str_size = strlen(str);
+    ssize_t old_size = strlen(old_str);
+    if (old_size > str_size)
+        return NULL;
+    if (new_str == NULL)
+        new_str = "";
+    ssize_t new_size = strlen(new_str);
+    
+    ssize_t size = str_size + 1;
+    char* ret = db_malloc(size, "String");
+    uint32_t i, j;
+    for (i = 0, j = 0; i < str_size; i++, j++) {
+        if (strncmp(str + i, old_str, old_size) == 0) {
+            if (j + new_size - old_size + 1 > size) {
+                size = j + new_size -old_size + 1;
+                ret = db_realloc(ret, size);
+            }
+            memcpy(ret + j, new_str, new_size);
+            i += old_size;
+            j += new_size;
+        } 
+        *(ret + j) = *(str + i);
+    }
+
+    *(ret + j) = '\0';
+    
+    return ret;
 }
 
 /* Check if empty string. */
@@ -149,13 +183,6 @@ bool streq_or_null(char *str1, char *str2) {
         return false;
 }
 
-/* Check if string is empty.
- * Empty means string is NULL or "".
- * */
-bool strempty(char *str) {
-    return str == NULL || strlen(str) == 0;
-}
-
 /* Return if pointer is NULL. */
 bool is_null(void *ptr) {
     return ptr == NULL;
@@ -192,7 +219,7 @@ char *ftos(float val) {
 /* Convert float to string. */
 char *dtos(double val) {
     char *str = db_malloc(MAX_DOUBLE_STR_LENGTH, "string");
-    sprintf(str, "%lf", val);
+    sprintf(str, "%.15lf", val);
     return str;
 }
 

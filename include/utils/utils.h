@@ -23,8 +23,11 @@ bool endwith(char *str, char *suffix);
 /* substring */
 char *substr(char *str, uint32_t start, uint32_t end);
 
-/* replace */
-char *replace(char *str, char *old_str, char *new_str);
+/* replace once */
+char *replace_once(char *str, char *old_str, char *new_str);
+
+/* Replace all. */
+char *replace_all(char *str, char *old_str, char *new_str);
 
 /* Check if empty string. */
 bool is_empty(char *s);
@@ -38,10 +41,6 @@ bool streq(char *str1, char *str2);
 /* Check both string if equal, 
  * if both is null, also return true. */
 bool streq_or_null(char *str1, char *str2);
-
-/* Check if string is empty.
- * Empty means string is NULL or "". */
-bool strempty(char *str);
 
 /* Return if pointer is NULL. */
 bool is_null(void *ptr);
