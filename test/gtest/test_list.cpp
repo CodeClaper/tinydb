@@ -63,6 +63,55 @@ TEST(list, append_list) {
     ASSERT_EQ(j, 10);
 }
 
+/* Test for foreach macro. */
+TEST(list, foreach) {
+    List *list = create_list(NODE_INT);
+
+    for (int i = 0; i < 10; i++) {
+        append_list(list, &i);    
+    }
+
+    int k = 0;
+
+    ListCell *lc;
+    foreach (lc, list) {
+        ASSERT_EQ(lfirst_int(lc), k++);    
+    }
+}
+
+/* Test for forboth marco. */
+TEST(list, forboth) {
+     char* strings[10] = {
+        "hello everyone!", 
+        "¡Hola a todos!", 
+        "大家好!", 
+        "Bonjour à tous !", 
+        "Guten Tag, alle zusammen!", 
+        "Ciao a tutti!", 
+        "Здравствуйте, все!", 
+        "こんにちは、皆さん！", 
+        " 여러분, 안녕하세요!", 
+        "مرحباً جميعًا!" 
+    };
+
+    List *ls1 = create_list(NODE_INT);
+    List *ls2 = create_list(NODE_STRING);
+
+    for (int i = 0; i < 10; i++) {
+        append_list(ls1, &i);
+        append_list(ls2, strings[i]);
+    }
+
+    ListCell *lc1, *lc2;
+
+    int k = 0;
+    forboth(lc1, ls1, lc2, ls2) {
+        ASSERT_EQ(lfirst_int(lc1), k);
+        ASSERT_STREQ((char *)lfirst(lc2), strings[k]);
+        k++;
+    }
+}
+
 /* Test for checking item in list member. */
 TEST(list, list_member_int) {
     List *list = create_list(NODE_INT);

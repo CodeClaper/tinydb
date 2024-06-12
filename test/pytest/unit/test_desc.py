@@ -10,7 +10,7 @@ def test_create_table():
     ret = client.execute(sql)
     assert ret["success"] == True
 
-## Desc table after creating table.
+## Test for desc table after creating table.
 def test_desc_table():
     sql = "DESC Student;"
     ret = client.execute(sql)
@@ -22,7 +22,14 @@ def test_desc_table():
         { "field": "address", "type": "varchar", "length": 64, "array": False, "key": None, "comment": "Student address", "default": "unknown" }
     ]
 
-## Drop table Student. 
+## Test for desc non-existen table.
+def test_desc_non_existen_table():
+    sql = "DESC non_table;"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Table 'non_table' not exists."
+
+## Test for drop table Student. 
 def test_drop_table():
     sql = "DROP TABLE Student;"
     ret = client.execute(sql)
