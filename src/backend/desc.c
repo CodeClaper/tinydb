@@ -112,7 +112,7 @@ List *exec_describe_statement(DescribeNode *describe_node) {
     char *table_name = get_table_name(describe_node); 
     Table *table = open_table(table_name);
     if (table == NULL) {
-        db_log(ERROR, "Table '%s' not exist.", table_name);
+        db_log(ERROR, "Table '%s' not exists.", table_name);
         return NULL;
     }
 

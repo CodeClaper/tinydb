@@ -105,7 +105,7 @@ void exec_show_statement(ShowNode *show_node, DBResult *result) {
             result->success = true;
             result->data = map_list;
             result->message = db_strdup("Show tables executed successfully.");
-            db_log(SUCCESS, "Show tables executed successfully."); 
+            db_log(SUCCESS, "Show tables statement is executed successfully."); 
             break;
         }
         case SHOW_MEMORY: {
@@ -113,7 +113,7 @@ void exec_show_statement(ShowNode *show_node, DBResult *result) {
             result->success = true;
             result->data = map_list;
             result->message = db_strdup("Show memory executed successfully.");
-            db_log(SUCCESS, "Show memory executed successfully."); 
+            db_log(SUCCESS, "Show memory statement is executed successfully."); 
             break;
         }
     }

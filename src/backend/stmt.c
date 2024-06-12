@@ -105,7 +105,7 @@ static void statement_describe(Statement *statement, DBResult *result) {
         result->success = true;
         result->data = list;
         result->message = db_strdup("Describe executed successfully.");
-        db_log(SUCCESS, "Describe executed successfully.");
+        db_log(SUCCESS, "Describe statement is executed successfully.");
     }
 }
 

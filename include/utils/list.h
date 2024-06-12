@@ -54,11 +54,13 @@ typedef struct List {
 #define lfirst_float(l) ((l)->float_value)
 #define lfirst_double(l) ((l)->double_value)
 
-/* Notice: there use __i rather than i as iterators, 
+/* foreach: a macro for looping through a list.
+ * Notice: there use __i rather than i as iterators, 
  * user habitually input i at the loop body that can cause mess. */
 #define foreach(lc, list) \
         for (uint32_t __i = 0; __i < list->size ? (lc = &list->elements[__i], true) : (lc = NULL, false); __i++)
 
+/* forboth: a macro for looping through both lists and stoping when either list runs out of elements. */
 #define forboth(lc1, list1, lc2, list2) \
         for (uint32_t __i = 0; __i < list1->size && __i < list2->size ? (lc1 = &list1->elements[__i], lc2 = &list2->elements[__i], true) : (lc1 = NULL, lc2 = NULL,  false); __i++)
 
