@@ -290,7 +290,7 @@ typedef enum ValuesOrQuerySpecType {
 /* ValuesOrQuerySpecNode. */
 typedef struct {
     ValuesOrQuerySpecType type;
-    struct ValueItemSetNode *values;
+    List *values;
     struct QuerySpecNode *query_spec;
 } ValuesOrQuerySpecNode;
 
@@ -305,7 +305,7 @@ typedef struct ReferValue {
     ReferFetchType type;
     union {
         /* For directly. */
-        struct ValueItemSetNode *nest_value_item_set;
+        List *nest_value_list;
         /* For indirectly. */
         struct ConditionNode *condition;
     };
@@ -351,15 +351,10 @@ typedef struct ValueItemNode {
     ValueItemType type;
     union {
         AtomNode *atom;
-        struct ValueItemSetNode *value_set;
+        List *value_list;
     } value;
 } ValueItemNode;
 
-/* ValueItemSetNode */
-typedef struct ValueItemSetNode {
-    ValueItemNode **value_item_node;
-    uint32_t num;
-} ValueItemSetNode;
 
 /* QuerySpecNode. */
 typedef struct QuerySpecNode {
@@ -420,7 +415,7 @@ typedef struct LikeNode {
 /* InNode */
 typedef struct InNode {
     ColumnNode *column;
-    ValueItemSetNode *value_set;
+    List *value_list;
 } InNode;
 
 /* LimitNode */

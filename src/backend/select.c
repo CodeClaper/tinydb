@@ -381,11 +381,12 @@ static bool include_leaf_comparison_predicate(SelectResult *select_result, Row *
 }
 
 /* Check if include in value item set. */
-static bool check_in_value_item_set(ValueItemSetNode *value_item_set_node, void *value, MetaColumn *meta_column) {
+static bool check_in_value_item_set(List *value_list, void *value, MetaColumn *meta_column) {
     bool ret = false;
-    uint32_t i;
-    for (i = 0; i < value_item_set_node->num; i++) {
-        void *target = get_value_from_value_item_node(value_item_set_node->value_item_node[i], meta_column);
+
+    ListCell *lc;
+    foreach (lc, value_list) {
+        void *target = get_value_from_value_item_node(lfirst(lc), meta_column);
         ret = equal(value, target, meta_column->column_type);
         free_value(target, meta_column->column_type);
         if (ret)
@@ -404,7 +405,7 @@ static bool include_leaf_in_predicate(Row *row, InNode *in_node) {
         /* Define the column. */
         if (streq(key_value->key, in_node->column->column_name)) {
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table , key_value->key);
-            return check_in_value_item_set(in_node->value_set, key_value->value, meta_column);
+            return check_in_value_item_set(in_node->value_list, key_value->value, meta_column);
         }
     }
     return false;

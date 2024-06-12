@@ -24,7 +24,7 @@
 #include "list.h"
 
 /* Check ValueItemSetNode. */
-static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node);
+static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, List *value_list);
 
 /* Check ScalarExpNode. */
 static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map);
@@ -370,8 +370,8 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
                     return true;
                 }
                 case V_ARRAY: {
-                    ValueItemSetNode *value_set = value_item_node->value.value_set;
-                    return check_value_item_set_node(meta_table, column_name, value_set);
+                    List *value_list = value_item_node->value.value_list;
+                    return check_value_item_set_node(meta_table, column_name, value_list);
                 }
                 default: {
                     UNEXPECTED_VALUE(value_item_node->type);
@@ -386,10 +386,10 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
 }
 
 /* Check ValueItemSetNode. */
-static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, ValueItemSetNode *value_item_set_node) {
-    uint32_t i;
-    for (i = 0; i < value_item_set_node->num; i++) {
-        ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
+static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, List *value_list) {
+    ListCell *lc;
+    foreach (lc, value_list) {
+        ValueItemNode *value_item_node = lfirst(lc);
         if (!check_value_item_node(meta_table, column_name, value_item_node))
             return false;
     }
@@ -530,7 +530,7 @@ static bool check_in_node(InNode *in_node, AliasMap alias_map) {
     MetaTable *current_meta_table = confirm_meta_table_via_column(column, alias_map);
 
     return check_column_node(in_node->column, current_meta_table) // check select column
-           && check_value_item_set_node(current_meta_table, column->column_name, in_node->value_set);
+           && check_value_item_set_node(current_meta_table, column->column_name, in_node->value_list);
 }
 
 /* Check like data type. */
@@ -913,7 +913,7 @@ static bool check_table_element_commalist(List *base_table_element_commalist) {
 }
 
 /* Check InsertNode for VALUES. */
-static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNode *value_item_set_node) {
+static bool check_insert_node_for_values(InsertNode *insert_node, List *value_list) {
 
     /* Check table exist.*/
     Table *table = open_table(insert_node->table_name);
@@ -926,17 +926,17 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
     if (insert_node->all_column) {
         
         /* Check column number equals the insert values number. */
-        if (meta_table->column_size != value_item_set_node->num) {
+        if (meta_table->column_size != len_list(value_list)) {
             db_log(ERROR, "Column count doesn`t match value count: %d != %d.", 
                    meta_table->column_size, 
-                   value_item_set_node->num);
+                   len_list(value_list));
             return false;
         }
 
         uint32_t i;
         for (i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
-            ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
+            ValueItemNode *value_item_node = lfirst(list_nth_cell(value_list, i));
             if (!check_value_item_node(meta_table, meta_column->column_name, value_item_node))
                 return false;
         }
@@ -944,20 +944,18 @@ static bool check_insert_node_for_values(InsertNode *insert_node, ValueItemSetNo
     } else {
 
         /* Check column number equals the insert values number. */
-        if (len_list(insert_node->column_list) != value_item_set_node->num) {
+        if (len_list(insert_node->column_list) != len_list(value_list)) {
             db_log(ERROR, "Column count doesn`t match value count.");
             return false;
         }
 
-        ListCell *lc;
-        int i = 0;
-        foreach (lc, insert_node->column_list) {
-            ColumnNode *column_node = lfirst(lc);
-            ValueItemNode *value_item_node = value_item_set_node->value_item_node[i];
+        ListCell *lc1, *lc2;
+        forboth (lc1, insert_node->column_list, lc2, value_list) {
+            ColumnNode *column_node = lfirst(lc1);
+            ValueItemNode *value_item_node = lfirst(lc2);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
             if (!check_value_item_node(meta_table, meta_column->column_name, value_item_node))
                 return false;
-            i++;
         }
 
     }

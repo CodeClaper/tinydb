@@ -72,9 +72,6 @@ void free_column_def_name(ColumnDefName *column_def_name);
 /* Free column def node. */
 void free_column_def_node(ColumnDefNode *column_def_node);
 
-/* Free value item set node. */
-void free_value_item_set_node(ValueItemSetNode *value_item_set_node);
-
 /* Free primary key node. */
 void free_primary_key_node(PrimaryKeyNode *primary_key_node);
 

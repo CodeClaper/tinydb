@@ -218,7 +218,7 @@ void free_value_item_node(ValueItemNode *value_item_node) {
                 free_atom_node(value_item_node->value.atom);
                 break;
             case V_ARRAY:
-                free_value_item_set_node(value_item_node->value.value_set);
+                free_list_deep(value_item_node->value.value_list);
                 break;
             case V_NULL:
                 break;
@@ -279,17 +279,6 @@ void free_column_def_node(ColumnDefNode *column_def_node) {
     }
 }
 
-/* Free value item set node. */
-void free_value_item_set_node(ValueItemSetNode *value_item_set_node) {
-    if (value_item_set_node) {
-        uint32_t i;
-        for (i = 0; i < value_item_set_node->num; i++) {
-            free_value_item_node(value_item_set_node->value_item_node[i]);
-        }
-        db_free(value_item_set_node->value_item_node);
-        db_free(value_item_set_node);
-    }
-}
 
 /* Free QuerySpecNode. */
 void free_query_spec_node(QuerySpecNode *query_spec_node) {
@@ -305,7 +294,7 @@ void free_values_or_query_spec_node(ValuesOrQuerySpecNode *value_or_query_spec_n
     if (value_or_query_spec_node) {
         switch (value_or_query_spec_node->type) {
             case VQ_VALUES:
-                free_value_item_set_node(value_or_query_spec_node->values);
+                free_list_deep(value_or_query_spec_node->values);
                 break;
             case VQ_QUERY_SPEC:
                 free_query_spec_node(value_or_query_spec_node->query_spec);
@@ -377,7 +366,7 @@ void free_comparison_node(ComparisonNode *comparison_node) {
 void free_in_node(InNode *in_node) {
     if (in_node) {
         free_column_node(in_node->column);
-        free_value_item_set_node(in_node->value_set);
+        free_list_deep(in_node->value_list);
     }
 }
 
@@ -440,7 +429,7 @@ void free_refer_value(ReferValue *refer_value) {
     if (refer_value) {
         switch (refer_value->type) {
             case DIRECTLY:
-                free_value_item_set_node(refer_value->nest_value_item_set);
+                free_list_deep(refer_value->nest_value_list);
                 break;
             case INDIRECTLY:
                 free_condition_node(refer_value->condition);

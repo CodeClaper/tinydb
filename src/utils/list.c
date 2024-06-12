@@ -336,11 +336,20 @@ List *list_copy_deep(List *old_list) {
             }
             break;
         }
+
         case NODE_SCALAR_EXP: {
             ListCell *lc;
             foreach (lc, old_list) {
-                ScalarExpNode *scalar_exp = copy_scalar_exp_node(lfirst(lc));
-                append_list_ptr(new_list, scalar_exp);
+                ScalarExpNode *replica = copy_scalar_exp_node(lfirst(lc));
+                append_list_ptr(new_list, replica);
+            }
+            break;
+        }
+        case NODE_VALUE_ITEM: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                ValueItemNode *replica = copy_value_item_node(lfirst(lc));
+                append_list_ptr(new_list, replica);
             }
             break;
         }
@@ -456,6 +465,13 @@ void free_list_deep(List *list) {
                 ListCell *lc;
                 foreach (lc, list) {
                     free_scalar_exp_node(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_VALUE_ITEM: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_value_item_node(lfirst(lc));
                 }
                 break;
             }

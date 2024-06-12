@@ -39,29 +39,29 @@
 #include "type.h"
 
 /* Get value in insert node to assign column at index. */
-static void *get_insert_value(ValueItemSetNode *value_item_set, uint32_t index, MetaColumn *meta_column) {
+static void *get_insert_value(List *value_list, uint32_t index, MetaColumn *meta_column) {
 
-    Assert(index < value_item_set->num);
+    Assert(index < len_list(value_list));
 
     /* Get value item node at index. */
-    ValueItemNode* value_item_node = value_item_set->value_item_node[index];
+    ValueItemNode* value_item_node = lfirst(list_nth_cell(value_list, index));
     return assign_value_from_value_item_node(value_item_node, meta_column);
 }
 
 /* Fake ValuesOrQuerySpecNode for VALUES type. */
-static ValuesOrQuerySpecNode *fake_values_or_query_spec_node(ValueItemSetNode *value_item_set_node) {
+static ValuesOrQuerySpecNode *fake_values_or_query_spec_node(List *value_list) {
     ValuesOrQuerySpecNode *values_or_query_spec = instance(ValuesOrQuerySpecNode);
     values_or_query_spec->type = VQ_VALUES;
-    values_or_query_spec->values = copy_value_item_set_node(value_item_set_node);
+    values_or_query_spec->values = list_copy_deep(value_list);
     return values_or_query_spec;
 }
 
 /* Make a fake InsertNode. */
-InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_node) {
+InsertNode *fake_insert_node(char *table_name, List *value_list) {
     InsertNode *insert_node = instance(InsertNode);
     insert_node->table_name = db_strdup(table_name);
     insert_node->all_column = true;
-    insert_node->values_or_query_spec = fake_values_or_query_spec_node(value_item_set_node);
+    insert_node->values_or_query_spec = fake_values_or_query_spec_node(value_list);
     return insert_node;
 }
 
@@ -131,7 +131,7 @@ static void supple_reserved_column(Row *row) {
 /* Generate insert row for all columns. */
 static Row *generate_insert_row_for_all(InsertNode *insert_node) {
 
-    ValueItemSetNode *value_set = insert_node->values_or_query_spec->values;
+    List *value_list = insert_node->values_or_query_spec->values;
 
     /* Instance row. */
     Row *row = instance(Row);
@@ -160,7 +160,7 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
             continue;
 
         KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name),
-                                            get_insert_value(value_set, i, meta_column),
+                                            get_insert_value(value_list, i, meta_column),
                                             meta_column->column_type);
         /* Check if primary key column. */
         if (meta_column->is_primary) 
@@ -178,7 +178,7 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
 static Row *generate_insert_row_for_part(InsertNode *insert_node) {
 
     List *column_list = insert_node->column_list;
-    ValueItemSetNode *value_set = insert_node->values_or_query_spec->values;
+    List *value_list = insert_node->values_or_query_spec->values;
 
     /* Instance row. */
     Row *row = instance(Row);
@@ -211,7 +211,7 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
                    meta_table->table_name);
 
         KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name), 
-                                            get_insert_value(value_set, i, meta_column), 
+                                            get_insert_value(value_list, i, meta_column), 
                                             meta_column->column_type);
 
         /* Value of KeyValue may be null when it is Refer. */

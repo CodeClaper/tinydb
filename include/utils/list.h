@@ -25,6 +25,7 @@ typedef enum NodeTag {
     NODE_COLUMN_DEF_OPT,
     NODE_COLUMN_DEF_NAME,
     NODE_SCALAR_EXP,
+    NODE_VALUE_ITEM,
     NODE_BASE_TABLE_ELEMENT
 } NodeTag;
 
@@ -58,6 +59,8 @@ typedef struct List {
 #define foreach(lc, list) \
         for (uint32_t __i = 0; __i < list->size ? (lc = &list->elements[__i], true) : (lc = NULL, false); __i++)
 
+#define forboth(lc1, list1, lc2, list2) \
+        for (uint32_t __i = 0; __i < list1->size && __i < list2->size ? (lc1 = &list1->elements[__i], lc2 = &list2->elements[__i], true) : (lc1 = NULL, lc2 = NULL,  false); __i++)
 
 /* Last list cell. */
 static inline ListCell *first_cell(List *list) {
@@ -91,7 +94,7 @@ static inline ListCell *third_last_cell(List *list) {
             : NULL;
 }
 
-/* Locate the n'th cell (counting from 0) of the list.
+/* Locate the n'th cell (starting from 0) of the list.
  * It is an assertion failure if there is no such cell.
  * */
 static inline ListCell *list_nth_cell(List *list, int nth) {

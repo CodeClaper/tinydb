@@ -1,6 +1,6 @@
+#include <stdlib.h>
 #include "qsort.h"
 #include "list.h"
-#include <stdlib.h>
 
 /* Qsort for list. */
 void list_qsort(List *list, list_sort_comparator comparator) {

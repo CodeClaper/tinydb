@@ -31,9 +31,6 @@ ColumnNode *copy_column_node(ColumnNode *column_node);
 /* Copy value item node. */
 ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node);
 
-/* Copy ValueItemSetNode. */
-ValueItemSetNode *copy_value_item_set_node(ValueItemSetNode *value_item_set_node);
-
 /* Copy function value node. */
 FunctionValueNode *copy_function_value_node(FunctionValueNode *function_value_node);
 

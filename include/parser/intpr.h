@@ -93,12 +93,6 @@ AtomNode *make_atom_node();
 /* make a value item node. */
 ValueItemNode *make_value_item_node();
 
-/* make a value item set node. */
-ValueItemSetNode *make_value_item_set_node();
-
-/* add value item into set. */
-void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node);
-
 /* make a column def node. */
 ColumnDefNode *make_column_def_node();
 

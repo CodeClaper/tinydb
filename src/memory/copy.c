@@ -274,7 +274,7 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
             break;
         }
         case V_ARRAY: {
-            value_item_node_dup->value.value_set = copy_value_item_set_node(value_item_node->value.value_set);
+            value_item_node_dup->value.value_list = list_copy_deep(value_item_node->value.value_list);
             break;
         }
         case V_NULL:
@@ -283,21 +283,6 @@ ValueItemNode *copy_value_item_node(ValueItemNode *value_item_node) {
             UNEXPECTED_VALUE(value_item_node_dup->type);
     }
     return value_item_node_dup;
-}
-
-/* Copy ValueItemSetNode. */
-ValueItemSetNode *copy_value_item_set_node(ValueItemSetNode *value_item_set_node) {
-    if (!value_item_set_node)
-        return NULL;
-    ValueItemSetNode *value_set_dup = instance(ValueItemSetNode);
-    value_set_dup->num = value_item_set_node->num;
-    value_set_dup->value_item_node = db_malloc(sizeof(ValueItemNode *) * value_item_set_node->num, "pointer");
-
-    uint32_t i;
-    for (i = 0; i < value_item_set_node->num; i++) {
-        value_set_dup->value_item_node[i] = copy_value_item_node(value_item_set_node->value_item_node[i]);
-    }
-    return value_set_dup;
 }
 
 /*Copy function value node. */
@@ -411,7 +396,7 @@ InNode *copy_in_node(InNode *in_node) {
         return NULL;
     InNode *copy = instance(InNode);
     copy->column = copy_column_node(in_node->column);
-    copy->value_set = copy_value_item_set_node(in_node->value_set);
+    copy->value_list = list_copy_deep(in_node->value_list);
     return copy;
 }
 
@@ -433,7 +418,7 @@ ReferValue *copy_refer_value(ReferValue *refer_value) {
     refer_value_copy->type = refer_value->type;
     switch (refer_value->type) {
         case DIRECTLY:
-            refer_value_copy->nest_value_item_set = copy_value_item_set_node(refer_value->nest_value_item_set);
+            refer_value_copy->nest_value_list = list_copy_deep(refer_value->nest_value_list);
             break;
         case INDIRECTLY:
             refer_value_copy->condition = copy_condition_node(refer_value->condition);

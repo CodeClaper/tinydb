@@ -187,7 +187,7 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
             ReferValue *refer_value = atom_node->value.referval;
             switch (refer_value->type) {
                 case DIRECTLY: {
-                    InsertNode *insert_node = fake_insert_node(meta_column->table_name, refer_value->nest_value_item_set);
+                    InsertNode *insert_node = fake_insert_node(meta_column->table_name, refer_value->nest_value_list);
                     Refer *refer = insert_for_values(insert_node);
                     free_insert_node(insert_node);
                     return refer;
@@ -214,15 +214,15 @@ bool built_in_primary_key(MetaTable *meta_table) {
 }
 
 /* Assign value from array. */
-void *assign_value_from_array(ValueItemSetNode *value_set, MetaColumn *meta_column) {
+void *assign_value_from_array(List *value_list, MetaColumn *meta_column) {
     ArrayValue *array_value = instance(ArrayValue);
-    array_value->size = value_set->num;
+    array_value->size = len_list(value_list);
     array_value->type = meta_column->column_type;
     array_value->set = db_malloc(sizeof(void *) * array_value->size, "pointer");
 
     uint32_t i;
     for (i = 0; i < array_value->size; i++) {
-        ValueItemNode *value_item = value_set->value_item_node[i];
+        ValueItemNode *value_item = lfirst(list_nth_cell(value_list, i));
         array_value->set[i] = assign_value_from_value_item_node(value_item, meta_column);
     }
 
@@ -237,8 +237,8 @@ void *assign_value_from_value_item_node(ValueItemNode *value_item_node, MetaColu
             return assign_value_from_atom(atom_node, meta_column);
         }
         case V_ARRAY: {
-            ValueItemSetNode *value_set = value_item_node->value.value_set;
-            return assign_value_from_array(value_set, meta_column);
+            List *value_list = value_item_node->value.value_list;
+            return assign_value_from_array(value_list, meta_column);
         }
         case V_NULL:
             return NULL;
@@ -349,7 +349,7 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
             return get_value_from_atom(atom_node, meta_column);
         }
         case V_ARRAY:
-            return value_item_node->value.value_set;
+            return list_copy_deep(value_item_node->value.value_list);
         case V_NULL:
             return NULL;
         default:

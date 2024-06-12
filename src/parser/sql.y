@@ -31,7 +31,6 @@ int yylex();
    ColumnNode                   *column_node;
    AtomNode                     *atom_node;
    ValueItemNode                *value_item_node;
-   ValueItemSetNode             *value_item_set_node;
    SelectionNode                *selection_node;
    ScalarExpNode                *scalar_exp_node;
    FunctionValueNode            *function_value_node;
@@ -110,7 +109,7 @@ int yylex();
 %type <list> columns 
 %type <atom_node> atom
 %type <value_item_node> value_item
-%type <value_item_set_node> value_items
+%type <list> value_items
 %type <column_def_name> column_def_name
 %type <list> column_def_name_commalist
 %type <base_table_element> base_table_element
@@ -843,14 +842,14 @@ column:
 value_items:
     value_item
         {
-            ValueItemSetNode *node = make_value_item_set_node();
-            add_value_item(node, $1);
-            $$ = node;
+            List *value_list = create_list(NODE_VALUE_ITEM);
+            append_list(value_list, $1);
+            $$ = value_list;
         }
     | value_items ',' value_item
         {
             $$ = $1;
-            add_value_item($$, $3);
+            append_list($$, $3);
         }
     ;
 value_item:
@@ -871,7 +870,7 @@ value_item:
         {
             ValueItemNode *node = make_value_item_node();
             node->type = V_ARRAY;
-            node->value.value_set = $2;
+            node->value.value_list = $2;
             $$ = node;
         }
     ;
@@ -918,7 +917,7 @@ REFERVALUE:
         {
             ReferValue *refer = make_refer_value();
             refer->type = DIRECTLY;
-            refer->nest_value_item_set = $2;
+            refer->nest_value_list = $2;
             $$ = refer;
         }
     /* Indirectly fetch already row refer. */
@@ -1038,7 +1037,7 @@ in_predicate:
         {
             InNode *in_node = make_in_node();
             in_node->column = $1;
-            in_node->value_set = $4;
+            in_node->value_list = $4;
             $$ = in_node;
         }
     ;

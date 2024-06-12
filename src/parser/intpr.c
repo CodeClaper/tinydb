@@ -71,20 +71,6 @@ ValueItemNode *make_value_item_node() {
     return value_item_node;
 }
 
-ValueItemSetNode *make_value_item_set_node() {
-    ValueItemSetNode *node = instance(ValueItemSetNode);
-    node->value_item_node = db_malloc(0, "pointer");
-    node->num = 0;
-    return node;
-}
-
-/* add value item into set. */
-void add_value_item(ValueItemSetNode *node, ValueItemNode *value_item_node) {
-    node->value_item_node = db_realloc(node->value_item_node, sizeof(ValueItemNode *) * (node->num + 1));
-    *(node->value_item_node + node->num) = value_item_node;
-    node->num++;
-}
-
 /* Make a SelectionNode. */
 SelectionNode *make_selection_node() {
     SelectionNode *selection_node = instance(SelectionNode);
