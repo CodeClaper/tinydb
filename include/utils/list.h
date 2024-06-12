@@ -24,6 +24,7 @@ typedef enum NodeTag {
     NODE_COLUMN_DEF,
     NODE_COLUMN_DEF_OPT,
     NODE_COLUMN_DEF_NAME,
+    NODE_SCALAR_EXP,
     NODE_BASE_TABLE_ELEMENT
 } NodeTag;
 
@@ -163,6 +164,14 @@ void list_delete_double(List *list, double item);
  * Skip if not found in list.
  * */
 void list_delete(List *list, void *item);
+
+
+/* List copy. */
+List *list_copy(List *old_list);
+
+
+/* List copy deep. */
+List *list_copy_deep(List *old_list);
 
 
 /* Free all cells and objects those are 

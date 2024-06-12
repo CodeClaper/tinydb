@@ -99,9 +99,10 @@ static bool include_column_for_query_spece(MetaColumn *meta_column, QuerySpecNod
         return true;
     } else {
         MetaColumn *target_meta_column = NULL;
-        uint32_t i;
-        for (i = 0; i < selection->scalar_exp_set->size; i++) {
-            ScalarExpNode *scalar_exp = selection->scalar_exp_set->data[i];
+
+        ListCell *lc;
+        foreach (lc, selection->scalar_exp_list) {
+            ScalarExpNode *scalar_exp = lfirst(lc);
             char *alias_name = scalar_exp->alias;
             char *column_name = scalar_exp->column->column_name;
             if (alias_name) {
@@ -139,9 +140,11 @@ static bool check_column_node(ColumnNode *column_node, MetaTable *meta_table) {
                 Table *table = open_table(meta_column->table_name);
                 if (column_node->sub_column)
                     return check_column_node(column_node->sub_column, table->meta_table);
-                else if (column_node->scalar_exp_set) {
-                    for (uint32_t j = 0; j < column_node->scalar_exp_set->size; j++) {
-                        ScalarExpNode *scalar_exp = column_node->scalar_exp_set->data[j];
+                else if (column_node->scalar_exp_list) {
+
+                    ListCell *lc;
+                    foreach (lc, column_node->scalar_exp_list) {
+                        ScalarExpNode *scalar_exp = lfirst(lc);
                         switch (scalar_exp->type) {
                             case SCALAR_COLUMN:{
                                 check_column_node(scalar_exp->column, table->meta_table);
@@ -472,11 +475,12 @@ static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map) {
     }
 }
 
-/* Check ScalarExpSetNode. */
-static bool check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, AliasMap alias_map) {
-    uint32_t i;
-    for (i = 0; i < scalar_exp_set->size; i++) {
-        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+/* Check ScalarExpNode list. */
+static bool check_scalar_exp_list(List *scalar_exp_list, AliasMap alias_map) {
+
+    ListCell *lc;
+    foreach (lc, scalar_exp_list) {
+        ScalarExpNode *scalar_exp = lfirst(lc);
         if (!check_scalar_exp(scalar_exp, alias_map))
             return false;
     }
@@ -488,7 +492,7 @@ static bool check_scalar_exp_set(ScalarExpSetNode *scalar_exp_set, AliasMap alia
 static bool check_selection(SelectionNode *selection_node, AliasMap alias_map) {
     return selection_node->all_column 
            ? true 
-           : check_scalar_exp_set(selection_node->scalar_exp_set, alias_map);
+           : check_scalar_exp_list(selection_node->scalar_exp_list, alias_map);
 }
 
 /* Check ComparisonNode value.*/

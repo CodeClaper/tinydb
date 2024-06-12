@@ -148,7 +148,7 @@ typedef struct ColumnNode {
     char *range_variable;
     bool has_sub_column;
     struct ColumnNode *sub_column;
-    struct ScalarExpSetNode *scalar_exp_set;
+    List *scalar_exp_list;
 } ColumnNode;
 
 /* FunctionValueType */
@@ -191,14 +191,8 @@ typedef struct {
 /* SelectionNode */
 typedef struct SelectionNode {
     bool all_column;
-    struct ScalarExpSetNode *scalar_exp_set;
+    List *scalar_exp_list;
 } SelectionNode;
-
-/* ScalarExprSetNode */
-typedef struct ScalarExpSetNode {
-    uint32_t size;
-    struct ScalarExpNode **data;
-} ScalarExpSetNode;
 
 /* ScalarExpType */
 typedef enum ScalarExpType {

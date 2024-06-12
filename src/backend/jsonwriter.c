@@ -210,9 +210,9 @@ static void json_single_key_value(KeyValue *key_value) {
                     struct tm *tmp_time = localtime(&t);
                     strftime(temp, sizeof(temp), "%Y-%m-%d %H:%M:%S", tmp_time);
                     db_send("\"%s\": \"%s\"", key, temp);
-                } else {
+                } 
+                else 
                     db_send("\"%s\": \"%s\"", key, "null");
-                }
                 break;
             }
             case T_DATE: {
@@ -222,7 +222,8 @@ static void json_single_key_value(KeyValue *key_value) {
                     struct tm *tmp_time = localtime(&t);
                     strftime(temp, sizeof(temp), "%Y-%m-%d", tmp_time);
                     db_send("\"%s\": \"%s\"", key, temp);
-                } else 
+                }
+                else 
                     db_send("\"%s\": \"%s\"", key, "null");
                 break;
             }
@@ -282,6 +283,7 @@ static void json_select_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\"", 
             result->success ? "true" : "false", 
             result->success ? result->message : get_log_msg());
+
     if (result->success) {
         db_send(", \"data\": ");
         SelectResult *select_result = result->data;
@@ -296,6 +298,7 @@ static void json_select_result(DBResult *result) {
         db_send("]");
         db_send(", \"rows\": %d", result->rows);
     }
+
     db_send(", \"duration\": %lf }", result->duration);
 }
 

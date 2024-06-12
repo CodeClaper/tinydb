@@ -65,11 +65,13 @@ InsertNode *fake_insert_node(char *table_name, ValueItemSetNode *value_item_set_
     return insert_node;
 }
 
-/* Convert QuerySpecNode to SelectionNode. */
+/* Convert QuerySpecNode to SelectionNode. 
+ * Notice: not need to free selection, table_exp in select_node.
+ * */
 static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
     SelectNode *select_node = instance(SelectNode);
-    select_node->selection = copy_selection_node(query_spec->selection);
-    select_node->table_exp = copy_table_exp_node(query_spec->table_exp);
+    select_node->selection = query_spec->selection;
+    select_node->table_exp = query_spec->table_exp;
     return select_node;
 }
 
@@ -355,7 +357,7 @@ static List *insert_for_query_spec(InsertNode *insert_node) {
         }
     }
 
-    free_select_node(select_node);
+    db_free(select_node);
     free_db_result(result);
 
     return list;

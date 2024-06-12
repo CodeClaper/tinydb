@@ -63,9 +63,6 @@ void free_function_node(FunctionNode *function_node);
 /* Free ScalarExpNode. */
 void free_scalar_exp_node(ScalarExpNode *scalar_exp_node);
 
-/* Free ScalarExpSetNode. */
-void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node);
-
 /* Free ColumnDefOptNode. */
 void free_column_def_opt_node(ColumnDefOptNode *column_def_opt);
 

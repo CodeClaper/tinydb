@@ -227,7 +227,7 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
     column_node_copy->has_sub_column = column_node->has_sub_column;
     if (column_node_copy->has_sub_column) {
         column_node_copy->sub_column = copy_column_node(column_node->sub_column);
-        column_node_copy->scalar_exp_set = copy_scalar_exp_set_node(column_node->scalar_exp_set);
+        column_node_copy->scalar_exp_list = list_copy_deep(column_node->scalar_exp_list);
     }
     column_node_copy->column_name = db_strdup(column_node->column_name);
     return column_node_copy;
@@ -484,20 +484,6 @@ ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
     return copy;
 }
 
-/* Copy ScalarExpSetNode. */
-ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node) {
-    if (scalar_exp_set_node == NULL)
-         return NULL;
-    ScalarExpSetNode *copy = instance(ScalarExpSetNode);
-    copy->size = scalar_exp_set_node->size;
-    copy->data = db_malloc(sizeof(ScalarExpNode *) * scalar_exp_set_node->size, "pointer");
-    int i;
-    for (i = 0; i < scalar_exp_set_node->size; i++) {
-        copy->data[i] = copy_scalar_exp_node(scalar_exp_set_node->data[i]);
-    }
-    return copy;
-}
-
 /* Copy TableRefNode. */
 TableRefNode *copy_table_ref_node(TableRefNode *table_ref) {
     if (!table_ref)
@@ -554,17 +540,6 @@ TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node) {
     table_exp_copy->from_clause = copy_from_clause_node(table_exp_node->from_clause);
     table_exp_copy->where_clause = copy_where_clause_node(table_exp_node->where_clause);
     return table_exp_copy;
-}
-
-/* Copy SelectionNode. */
-SelectionNode *copy_selection_node(SelectionNode *selection_node) {
-    if (selection_node == NULL)
-        return NULL;
-    SelectionNode *copy = instance(SelectionNode);
-    copy->all_column = selection_node->all_column;
-    if (!copy->all_column)
-        copy->scalar_exp_set = copy_scalar_exp_set_node(selection_node->scalar_exp_set);
-    return copy;
 }
 
 /* Copy a dymamic memory block */

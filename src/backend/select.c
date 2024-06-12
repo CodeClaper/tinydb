@@ -72,7 +72,7 @@ static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *sca
 
 /* Query a Row of Selection,
  * Actually, the Selection is all-column. */
-static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetNode *scalar_exp_set, Row *row);
+static Row *query_plain_row_selection(SelectResult *select_result, List *scalar_exp_set, Row *row);
 
 /* Generate select row. */
 static Row *generate_row(void *destinct, MetaTable *meta_table);
@@ -344,7 +344,7 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
                 bool ret = check_row_predicate(select_result, sub_row, column->sub_column, comparison); 
                 free_row(sub_row);
                 return ret;
-            } else if (column->has_sub_column && column->scalar_exp_set) {
+            } else if (column->has_sub_column && column->scalar_exp_list) {
                 db_log(ERROR, "Not support support sub column for pridicate.");
                 return false;
             } else {
@@ -1095,8 +1095,8 @@ static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNod
                         KeyValue *sub_key_value = query_plain_column_value(select_result, column->sub_column, sub_row);
                         free_row(sub_row);
                         return sub_key_value;
-                    } else if (column->has_sub_column && column->scalar_exp_set) {
-                        Row *filtered_subrow = query_plain_row_selection(select_result, column->scalar_exp_set, sub_row);
+                    } else if (column->has_sub_column && column->scalar_exp_list) {
+                        Row *filtered_subrow = query_plain_row_selection(select_result, column->scalar_exp_list, sub_row);
                         free_row(sub_row);
                         return new_key_value(db_strdup(column->column_name), filtered_subrow, T_ROW);
                     } else if (!column->has_sub_column) {
@@ -1790,13 +1790,13 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
 }
 
 /* Query function data. */
-static void query_fuction_selecton(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
+static void query_fuction_selecton(List *scalar_exp_list, SelectResult *select_result) {
 
     Row *row = new_row(NULL, db_strdup(select_result->table_name));
 
-    uint32_t i;
-    for (i = 0; i < scalar_exp_set->size; i++) {
-        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+    ListCell *lc;
+    foreach (lc, scalar_exp_list) {
+        ScalarExpNode *scalar_exp = lfirst(lc);
         KeyValue *key_value = query_function_value(scalar_exp, select_result);        
         if (scalar_exp->alias) {
             free_value(key_value->key, T_STRING);
@@ -1892,7 +1892,7 @@ static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *sca
 
 /* Query a Row of Selection,
  * Actually, the Selection is pure-column scalars. */
-static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetNode *scalar_exp_set, Row *row) {
+static Row *query_plain_row_selection(SelectResult *select_result, List *scalar_exp_list, Row *row) {
 
     if (!row) 
         return NULL;
@@ -1902,9 +1902,9 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
 
     Row *sub_row = new_row(copy_value(row->key, key_meta_column->column_type), db_strdup(row->table_name));
 
-    uint32_t i;
-    for (i = 0; i < scalar_exp_set->size; i++) {
-        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+    ListCell *lc;
+    foreach (lc, scalar_exp_list) {
+        ScalarExpNode *scalar_exp = lfirst(lc);
         KeyValue *key_value = query_row_value(select_result, scalar_exp, row);
         if (scalar_exp->alias) {
             /* Rename as alias. */
@@ -1917,11 +1917,11 @@ static Row *query_plain_row_selection(SelectResult *select_result, ScalarExpSetN
 }
 
 /* Query all columns data. */
-static void query_columns_selection(ScalarExpSetNode *scalar_exp_set, SelectResult *select_result) {
+static void query_columns_selection(List *scalar_exp_list, SelectResult *select_result) {
     ListCell *lc;
     foreach (lc, select_result->rows) {
         Row *row = lfirst(lc);
-        lfirst(lc) = query_plain_row_selection(select_result, scalar_exp_set, row);
+        lfirst(lc) = query_plain_row_selection(select_result, scalar_exp_list, row);
         free_row(row);
     }
 }
@@ -1946,11 +1946,12 @@ static bool is_function_scalar_exp(ScalarExpNode *scalar_exp) {
 }
 
 /* Check if exists function type scalar exp. */
-static bool exists_function_scalar_exp(ScalarExpSetNode *scalar_exp_set) {
-    uint32_t i;
-    for (i = 0; i < scalar_exp_set->size; i++) {
+static bool exists_function_scalar_exp(List *scalar_exp_list) {
+
+    ListCell *lc;
+    foreach (lc, scalar_exp_list) {
         /* Check self if SCALAR_FUNCTION. */
-        ScalarExpNode *scalar_exp = scalar_exp_set->data[i];
+        ScalarExpNode *scalar_exp = lfirst(lc);
         if (is_function_scalar_exp(scalar_exp))
             return true;
     }
@@ -1962,10 +1963,10 @@ static bool exists_function_scalar_exp(ScalarExpSetNode *scalar_exp_set) {
 static void query_with_selection(SelectionNode *selection, SelectResult *select_result) {
     if (selection->all_column)
         return;
-    if (exists_function_scalar_exp(selection->scalar_exp_set)) 
-        query_fuction_selecton(selection->scalar_exp_set, select_result);
+    if (exists_function_scalar_exp(selection->scalar_exp_list)) 
+        query_fuction_selecton(selection->scalar_exp_list, select_result);
     else 
-        query_columns_selection(selection->scalar_exp_set, select_result);
+        query_columns_selection(selection->scalar_exp_list, select_result);
 }
 
 /* Get TableExpNode condition. 

@@ -34,7 +34,6 @@ int yylex();
    ValueItemSetNode             *value_item_set_node;
    SelectionNode                *selection_node;
    ScalarExpNode                *scalar_exp_node;
-   ScalarExpSetNode             *scalar_exp_set_node;
    FunctionValueNode            *function_value_node;
    FunctionNode                 *function_node;
    CalculateNode                *calculate_node;
@@ -105,7 +104,7 @@ int yylex();
 %type <strVal> table
 %type <strVal> range_variable
 %type <scalar_exp_node> scalar_exp
-%type <scalar_exp_set_node> scalar_exp_commalist
+%type <list> scalar_exp_commalist
 %type <selection_node> selection
 %type <column_node> column
 %type <list> columns 
@@ -355,7 +354,7 @@ selection:
         {
             SelectionNode *selection_node = make_selection_node();
             selection_node->all_column = false;
-            selection_node->scalar_exp_set = $1;
+            selection_node->scalar_exp_list = $1;
             $$ = selection_node;
         }
     | '*'
@@ -479,13 +478,13 @@ query_spec:
 scalar_exp_commalist:
     scalar_exp
         {
-            ScalarExpSetNode *scalar_exp_set_node = make_scalar_exp_set_node();
-            add_scalar_exp_node(scalar_exp_set_node, $1);
-            $$ = scalar_exp_set_node;
+            List *scalar_exp_list = create_list(NODE_SCALAR_EXP);
+            append_list(scalar_exp_list, $1);
+            $$ = scalar_exp_list;
         }
     | scalar_exp_commalist ',' scalar_exp
         {
-            add_scalar_exp_node($1, $3);
+            append_list($1, $3);
             $$ = $1;
         }
     ;
@@ -831,7 +830,7 @@ column:
         {
             ColumnNode *column_node = make_column_node();
             column_node->column_name = $1;
-            column_node->scalar_exp_set = $3;
+            column_node->scalar_exp_list = $3;
             column_node->has_sub_column = true;
             $$ = column_node;
         }

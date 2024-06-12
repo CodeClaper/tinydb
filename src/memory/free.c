@@ -136,16 +136,21 @@ void free_meta_table(MetaTable *meta_table) {
 /* Free column */
 void free_column_node(ColumnNode *column_node) {
     if (column_node) {
+
         /* Free subColumn. */
         if (column_node->has_sub_column && column_node->sub_column)
             free_column_node(column_node->sub_column);
+
         /* Free subScalarExpNode. */
-        if (column_node->has_sub_column && column_node->scalar_exp_set)
-            free_scalar_exp_set_node(column_node->scalar_exp_set);
+        if (column_node->has_sub_column && column_node->scalar_exp_list)
+            free_list_deep(column_node->scalar_exp_list);
+
         if (column_node->column_name)
             db_free(column_node->column_name);
+
         if (column_node->range_variable)
             db_free(column_node->range_variable);
+
         db_free(column_node);
     }
 
@@ -481,18 +486,6 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
     }
 }
 
-/* Free ScalarExpSetNode. */
-void free_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node) {
-    if (scalar_exp_set_node) {
-        int i;
-        for (i = 0; i < scalar_exp_set_node->size; i++) {
-            free_scalar_exp_node(scalar_exp_set_node->data[i]);
-        }
-        db_free(scalar_exp_set_node->data);
-        db_free(scalar_exp_set_node);
-    }
-}
-
 /* Free ColumnDefName. */
 void free_column_def_name(ColumnDefName *column_def_name) {
     if (column_def_name) {
@@ -584,7 +577,7 @@ void free_table_exp_node(TableExpNode *table_exp_node) {
 void free_selection_node(SelectionNode *selection_node) {
     if (selection_node) {
         if (!selection_node->all_column)
-            free_scalar_exp_set_node(selection_node->scalar_exp_set);
+            free_list_deep(selection_node->scalar_exp_list);
         db_free(selection_node);
     }
 }

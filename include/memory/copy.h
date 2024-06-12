@@ -61,14 +61,8 @@ ReferValue *copy_refer_value(ReferValue *refer_value);
 /* Copy TableExpNode. */
 TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node);
 
-/* Copy SelectionNode. */
-SelectionNode *copy_selection_node(SelectionNode *selection_node);
-
 /* Copy a ScalarExpNode. */
 ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node);
-
-/* Copy ScalarExpSetNode. */
-ScalarExpSetNode *copy_scalar_exp_set_node(ScalarExpSetNode *scalar_exp_set_node);
 
 /* Copy a dymamic memory block */
 void *copy_block(void *value, size_t size);

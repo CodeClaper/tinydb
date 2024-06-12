@@ -97,21 +97,6 @@ ScalarExpNode *make_scalar_exp_node() {
     return scalar_exp_node;
 }
 
-/* Mkae a ScalarExprSetNode. */
-ScalarExpSetNode *make_scalar_exp_set_node() {
-    ScalarExpSetNode *scalar_exp_set_node = instance(ScalarExpSetNode);
-    scalar_exp_set_node->size = 0;
-    scalar_exp_set_node->data = db_malloc(0, "pointer");
-    return scalar_exp_set_node;
-}
-
-/* Add a ScalarExpNode to ScalarExpSetNode. */
-void add_scalar_exp_node(ScalarExpSetNode *scalar_exp_set_node, ScalarExpNode *scalar_exp_node) {
-    scalar_exp_set_node->data = db_realloc(scalar_exp_set_node->data, sizeof(ScalarExpNode *) * (scalar_exp_set_node->size + 1));
-    scalar_exp_set_node->data[scalar_exp_set_node->size] = scalar_exp_node;
-    scalar_exp_set_node->size++;
-}
-
 /* Make a condition node. */
 ConditionNode *make_condition_node() {
     ConditionNode *cond_node = instance(ConditionNode);

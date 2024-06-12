@@ -10,6 +10,8 @@
 #include "mmu.h"
 #include "free.h"
 #include "asserts.h"
+#include "data.h"
+#include "copy.h"
 
 /* Create List and initialization. 
  * Return the created list.
@@ -163,6 +165,7 @@ bool list_member(List *list, void *item) {
     }
 }
 
+
 /* Delete nth cell in List. */
 void list_delete_nth_cell(List *list, int n) {
     Assert(n >= 0 && n < list->size);
@@ -266,6 +269,88 @@ void list_delete(List *list, void *item) {
 }
 
 
+/* List copy shallow. 
+ * Notice: the replica list must be free`d by free_list if necessary.
+ * */
+List *list_copy(List *old_list) {
+    if (old_list == NIL)
+        return NIL;
+
+    List *new_list = create_list(old_list->type);
+    new_list->size = old_list->size;
+    new_list->capacity = old_list->capacity;
+    memcpy(new_list->initial_elements, old_list->initial_elements, sizeof(ListCell) * INIT_LIST_CELL_SIZE);
+    
+    if (old_list->elements == old_list->initial_elements) {
+        new_list->elements = new_list->initial_elements;
+    } else {
+        new_list->elements = db_malloc(sizeof(ListCell) * new_list->capacity, "pointer");
+        memcpy(new_list->elements, old_list->elements, sizeof(ListCell) * new_list->size);
+    }
+    return new_list;
+}
+
+/* List copy deep. 
+ * Notice: the replica list must be free`d by free_list_deep if necessary.
+ * */
+List *list_copy_deep(List *old_list) {
+    if (old_list == NIL)
+        return NIL;
+
+    List *new_list = create_list(old_list->type);
+
+    switch (new_list->type) {
+        case NODE_INT: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                append_list_int(new_list, lfirst_int(lc));
+            }
+            break;
+        }
+        case NODE_BOOL: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                append_list_bool(new_list, lfirst_bool(lc));
+            }
+            break;
+        }
+        case NODE_FLOAT: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                append_list_float(new_list, lfirst_float(lc));
+            }
+            break;
+        }
+        case NODE_DOUBLE: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                append_list_double(new_list, lfirst_double(lc));
+            }
+            break;
+        }
+        case NODE_STRING: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                char *replica = db_strdup(lfirst(lc));
+                append_list(new_list, replica);
+            }
+            break;
+        }
+        case NODE_SCALAR_EXP: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                ScalarExpNode *scalar_exp = copy_scalar_exp_node(lfirst(lc));
+                append_list_ptr(new_list, scalar_exp);
+            }
+            break;
+        }
+        default:
+            UNEXPECTED_VALUE("Not support this node to copy.");
+    }
+    return new_list;
+}
+
+
 /* Free all cells and objects that are 
  * point-to by cells in list DOES NOT be freed*/
 void free_list(List *list) {
@@ -364,6 +449,13 @@ void free_list_deep(List *list) {
                 ListCell *lc;
                 foreach (lc, list) {
                     free_column_def_name(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_SCALAR_EXP: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_scalar_exp_node(lfirst(lc));
                 }
                 break;
             }
