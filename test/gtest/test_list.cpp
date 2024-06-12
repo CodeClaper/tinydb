@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include <cstring>
 
 extern "C" {
 #include "list.h"
@@ -33,6 +34,7 @@ TEST(list, enlarge_list) {
     }
 }
 
+/* Test for append_list. */
 TEST(list, append_list) {
      char* strings[10] = {
         "hello everyone!", 
@@ -59,19 +61,6 @@ TEST(list, append_list) {
         j++;
     }
     ASSERT_EQ(j, 10);
-}
-/* Test for free list. */
-TEST(list, free_list_deep) {
-
-    List *list = create_list(NODE_COLUMN_DEF);
-
-    int i;
-    for (i = 0; i < 30; i++) {
-        ColumnDefNode *node = instance(ColumnDefNode);
-        append_list(list, node);       
-    }
-
-    free_list_deep(list);
 }
 
 /* Test for checking item in list member. */
@@ -102,5 +91,107 @@ TEST(list, list_delete_int) {
     ASSERT_FALSE(list_member_int(list, 2));
     ASSERT_FALSE(list_member_int(list, 6));
     ASSERT_TRUE(list_member_int(list, 5));
+
+}
+
+
+/* Test for free_list. */
+TEST(list, free_list) {
+
+     char* strings[10] = {
+        "hello everyone!", 
+        "¡Hola a todos!", 
+        "大家好!", 
+        "Bonjour à tous !", 
+        "Guten Tag, alle zusammen!", 
+        "Ciao a tutti!", 
+        "Здравствуйте, все!", 
+        "こんにちは、皆さん！", 
+        " 여러분, 안녕하세요!", 
+        "مرحباً جميعًا!" 
+    };
+
+    List *list = create_list(NODE_STRING);
+
+    for (int i = 0 ; i < 10; i++) {
+        append_list(list, strings[i]);
+    }
+
+    free_list(list);
+}
+
+/* Test for free list deep. */
+TEST(list, free_list_deep) {
+
+    List *list = create_list(NODE_COLUMN_DEF);
+
+    int i;
+    for (i = 0; i < 30; i++) {
+        ColumnDefNode *node = instance(ColumnDefNode);
+        append_list(list, node);       
+    }
+
+    free_list_deep(list);
+}
+
+
+/* Test for free_list. */
+TEST(list, list_copy_deep) {
+    
+     char* strings[10] = {
+        "hello everyone!", 
+        "¡Hola a todos!", 
+        "大家好!", 
+        "Bonjour à tous !", 
+        "Guten Tag, alle zusammen!", 
+        "Ciao a tutti!", 
+        "Здравствуйте, все!", 
+        "こんにちは、皆さん！", 
+        " 여러분, 안녕하세요!", 
+        "مرحباً جميعًا!" 
+    };
+
+    List *list1 = create_list(NODE_STRING);
+
+    for (int i = 0 ; i < 10; i++) {
+        append_list(list1, strdup(strings[i]));
+    }
+
+    List *list2 = list_copy_deep(list1);
+
+    ASSERT_NE(list1, list2);
+    ASSERT_NE(first_cell(list1), first_cell(list2));
+    ASSERT_NE(lfirst(first_cell(list1)), lfirst(first_cell(list2)));
+
+}
+
+
+/* Test for free_list. */
+TEST(list, list_copy) {
+    
+     char* strings[10] = {
+        "hello everyone!", 
+        "¡Hola a todos!", 
+        "大家好!", 
+        "Bonjour à tous !", 
+        "Guten Tag, alle zusammen!", 
+        "Ciao a tutti!", 
+        "Здравствуйте, все!", 
+        "こんにちは、皆さん！", 
+        " 여러분, 안녕하세요!", 
+        "مرحباً جميعًا!" 
+    };
+
+    List *list1 = create_list(NODE_STRING);
+
+    for (int i = 0 ; i < 10; i++) {
+        append_list(list1, strings[i]);
+    }
+
+    List *list2 = list_copy(list1);
+
+    ASSERT_NE(list1, list2);
+    ASSERT_NE(first_cell(list1), first_cell(list2));
+    ASSERT_EQ(lfirst(first_cell(list1)), lfirst(first_cell(list2)));
 
 }
