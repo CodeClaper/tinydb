@@ -34,6 +34,11 @@ static inline char *get_column_def_name(ColumnDefNode *column_def) {
     return column_def->column->column;
 }
 
+/* Get data type in ColumnDefNode. */
+static inline DataType get_column_def_data_type(ColumnDefNode *column_def) {
+    return column_def->data_type->type;
+}
+
 /* Get ConditionNode from WhereClauseNode. */
 static ConditionNode *get_condition_from_where_clause(WhereClauseNode *where_clause) {
     if (!where_clause)
@@ -799,7 +804,7 @@ static bool check_default_atom_value_type(AtomNode *atom_node, DataType data_typ
     return false;
 }
 
-
+/* Check default value type. */
 static bool check_default_value_type(ValueItemNode *value_item_node, DataType data_type) {
     switch (value_item_node->type) {
         case V_ATOM: {
@@ -809,24 +814,22 @@ static bool check_default_value_type(ValueItemNode *value_item_node, DataType da
         case V_NULL: 
             return true;
         case V_ARRAY: {
-            db_log(ERROR, "Not support array type default value.");
-            return true;
-        }
-        default: {
-            UNEXPECTED_VALUE(value_item_node->type);
+            db_log(ERROR, "Not support array as default value.");
             return false;
         }
+        default: 
+            UNEXPECTED_VALUE(value_item_node->type);
     }
 }
 
 /* Check if ColumnDefOptNodeList contains conflict default value. */
-static bool check_conflict_default_value(List *column_def_opt_list, DataType data_type) {
-    if (column_def_opt_list) {
+static bool check_column_def_opt_list(ColumnDefNode *column_def) {
+    if (column_def->column_def_opt_list) {
         bool has_defined_not_null = false;
         bool has_defined_default_null = false;
 
         ListCell *lc;
-        foreach (lc, column_def_opt_list) {
+        foreach (lc, column_def->column_def_opt_list) {
             ColumnDefOptNode *column_def_opt = lfirst(lc);
             switch (column_def_opt->opt_type) {
                 case OPT_NOT_NULL:
@@ -838,17 +841,33 @@ static bool check_conflict_default_value(List *column_def_opt_list, DataType dat
                     break;
                 case OPT_DEFAULT_VALUE: {
                     ValueItemNode *value_item_node = column_def_opt->value;
-                    if (!check_default_value_type(value_item_node, data_type))
+                    DataType data_type = get_column_def_data_type(column_def);
+                    if (!check_default_value_type(value_item_node, data_type)) {
+                        db_log(ERROR, "Invalid default value for '%s', can`t convert to '%s'.", 
+                               get_column_def_name(column_def),
+                               data_type_name(data_type));
                         return false;
+                    }
                     break;
                 } 
+                case OPT_COMMENT: {
+                    if (strlen(column_def_opt->comment) > MAX_COMMENT_STRING_LENGTH) {
+                        db_log(ERROR, "Too long comment for '%s'.", 
+                               get_column_def_name(column_def));
+                        return false;
+                    }
+                    break;
+                }
                 default:
                     break;
             }
         }
 
-        if (has_defined_not_null && has_defined_default_null) 
+        if (has_defined_not_null && has_defined_default_null) {
+            db_log(ERROR, "Invalid default value for '%s'", 
+                   get_column_def_name(column_def));
             return false;
+        }
     }
 
     return true;
@@ -881,10 +900,7 @@ static bool check_table_element_commalist(List *base_table_element_commalist) {
                     } else
                         primary_key_flag = true;
                 }
-                if (!check_conflict_default_value(current_column_def->column_def_opt_list, 
-                                                  current_column_def->data_type->type)) {
-                    db_log(ERROR, "Invalid default value for '%s'", 
-                           get_column_def_name(current_column_def));
+                if (!check_column_def_opt_list(current_column_def)) {
                     return false;
                 }
                 append_list(list, current_column_def);

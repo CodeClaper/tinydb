@@ -8,7 +8,7 @@ def test_invalid_default_value():
     sql = "CREATE TABLE A (id int primary key, name varchar(32) default 0, age int default 0);"
     ret = client.execute(sql)
     assert ret["success"] == False
-    assert ret["message"] == "Invalid default value for 'name'"
+    assert ret["message"] == "Invalid default value for 'name', can`t convert to 'varchar'."
 
 ## test conflict default value.
 def test_conflict_default_value():
