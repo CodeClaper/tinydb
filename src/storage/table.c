@@ -99,12 +99,19 @@ bool create_table(MetaTable *meta_table) {
     /* Set meta column */
     set_column_size(root_node, meta_table->all_column_size);
     
+    /* Get default value cell. */
+    void *default_value_dest = get_default_value_cell(root_node);
+
     /* Serialize */
+    uint32_t offset = 0;
     uint32_t i;
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = (MetaColumn *)(meta_table->meta_column[i]);
         void *destination = serialize_meta_column(meta_column);
         set_meta_column(root_node, destination, i);
+        if (meta_column->default_value_type == DEFAULT_VALUE)
+            memcpy(default_value_dest + offset, meta_column->default_value, meta_column->column_length);
+        offset += meta_column->column_length;
     }
 
     /* Flush to disk. */

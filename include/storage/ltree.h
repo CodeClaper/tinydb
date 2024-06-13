@@ -22,6 +22,12 @@ uint32_t get_column_size(void *node);
 /* Set root node column size. */
 void set_column_size(void *node, uint32_t value);
 
+/* Get default value cell. */
+void *get_default_value_cell(void *node);
+
+/* Set default value cell. */
+void set_default_value_cell(void *node, void *destination, uint32_t default_value_len);
+
 /* Get leaf node cell number. */
 uint32_t get_leaf_node_cell_num(void *node, uint32_t default_value_len);
 

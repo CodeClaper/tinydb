@@ -394,9 +394,14 @@ uint32_t calc_primary_key_length(Table *table) {
 }
 
 /* Get index column meta info */
-MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index) {
+MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index, uint32_t offset) {
     void *destination = get_meta_column_pointer(root_node, index);
-    return deserialize_meta_column(destination);
+    MetaColumn *meta_column = deserialize_meta_column(destination);
+    if (meta_column->default_value_type == DEFAULT_VALUE) {
+        void *default_value_dest = get_default_value_cell(root_node);
+        meta_column->default_value = copy_value(default_value_dest + offset, meta_column->column_type);
+    }
+    return meta_column;
 }
 
 /* Get meta column info by column name. */
@@ -449,14 +454,16 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
     meta_table->all_column_size = 0;
     meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * column_size, "pointer");
 
+    uint32_t offset = 0;
     uint32_t i;
     for (i = 0; i < column_size; i++) {
-        MetaColumn *current = get_meta_column_by_index(root_node, i);
+        MetaColumn *current = get_meta_column_by_index(root_node, i, offset);
         meta_table->meta_column[i] = current;
         /* Skip to system reserved column. */
         if (!current->sys_reserved)
             meta_table->column_size++;
         meta_table->all_column_size++;
+        offset += current->column_length;
     }
 
     assert_true(meta_table->all_column_size == column_size, "System Logic Error in <get_meta_table>");
