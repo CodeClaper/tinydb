@@ -112,21 +112,22 @@ Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
 static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t page_num, void *key) {
     Cursor *cursor = instance(Cursor);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    uint32_t cell_num = get_leaf_node_cell_num(leaf_node);
-    uint32_t row_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t cell_num = get_leaf_node_cell_num(leaf_node, value_len);
     cursor->table = table;
     cursor->page_num = page_num;
-    cursor->cell_num = get_leaf_node_cell_index(leaf_node, key, cell_num, key_len, row_len, primary_meta_column->column_type);
+    cursor->cell_num = get_leaf_node_cell_index(leaf_node, key, cell_num, key_len, value_len, primary_meta_column->column_type);
     return cursor;
 }
 
 /* Define cursor when meet internal node. */
 static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
-    uint32_t keys_num = get_internal_node_keys_num(internal_node);
     uint32_t key_len = calc_primary_key_length(table);
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, primary_meta_column->column_type);
+    uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type);
     void *child_node = get_page(table->meta_table->table_name, table->pager, child_page_num);
     
     NodeType node_type = get_node_type(child_node);

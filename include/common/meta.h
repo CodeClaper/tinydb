@@ -24,11 +24,14 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
 /* Calculate the length of table row. */
 uint32_t calc_table_row_length(Table *table);
 
+/* Calculate the length of table row. */
+uint32_t calc_table_row_length2(MetaTable *meta_table);
+
 /* Calculate primary key lenght. if not exist primary key , return -1; */
 uint32_t calc_primary_key_length(Table *table);
 
-/* Get table meta info. */
-MetaTable *get_meta_table(Table *table, char *table_name);
+/* Genrate table meta info. */
+MetaTable *gen_meta_table(Table *table, char *table_name);
 
 /* Get meta column info by column name. */
 MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name);

@@ -368,6 +368,17 @@ uint32_t calc_table_row_length(Table *table) {
     return row_len;
 }
 
+/* Calculate the length of table row. */
+uint32_t calc_table_row_length2(MetaTable *meta_table) {
+    uint32_t row_len = 0;
+    uint32_t i;
+    for (i = 0; i < meta_table->all_column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        row_len += meta_column->column_length;
+    }
+    return row_len;
+}
+
 /* Calculate primary key lenght. 
  * Return primary-key column length.
  * Panic if not found. */
@@ -424,8 +435,8 @@ MetaColumn *get_all_meta_column_by_name(MetaTable *meta_table, char *name) {
     return NULL;
 }
 
-/* Get table meta info. */
-MetaTable *get_meta_table(Table *table, char *table_name) {
+/* Generate table meta info. */
+MetaTable *gen_meta_table(Table *table, char *table_name) {
     /* Check valid. */
     assert_not_null(table_name, "Input table name can`t be null.");
 

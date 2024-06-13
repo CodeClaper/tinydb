@@ -91,8 +91,10 @@ bool create_table(MetaTable *meta_table) {
     }
     void *root_node = db_malloc(PAGE_SIZE, "pointer");
 
+    uint32_t default_value_len = calc_table_row_length2(meta_table);
+
     /* Initialize root node */
-    initial_leaf_node(root_node, true);
+    initial_leaf_node(root_node, default_value_len, true);
 
     /* Set meta column */
     set_column_size(root_node, meta_table->all_column_size);
@@ -155,17 +157,20 @@ Table *open_table(char *table_name) {
         db_free(file_path);
         return NULL;
     }
-    table->pager = pager;
 
     /* Define root page is first page. */
     table->root_page_num = 0; 
+    table->pager = pager;
+
+    table->meta_table = gen_meta_table(table, table_name);
+
     if (pager->size == 0) {
         /* New db file and initialize page 0 as leaf node. */
         void *root_node = get_page(table_name, pager, 0);
-        initial_leaf_node(root_node, true);
+        uint32_t value_len = calc_table_row_length(table);
+        initial_leaf_node(root_node, value_len, true);
     }
 
-    table->meta_table = get_meta_table(table, table_name);
 
     /* Save table cache. */
     save_or_update_table_cache(table);

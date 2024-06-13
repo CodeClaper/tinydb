@@ -23,25 +23,22 @@ uint32_t get_column_size(void *node);
 void set_column_size(void *node, uint32_t value);
 
 /* Get leaf node cell number. */
-uint32_t get_leaf_node_cell_num(void *node);
+uint32_t get_leaf_node_cell_num(void *node, uint32_t default_value_len);
 
 /* Get internal node keys number. */
-uint32_t get_internal_node_keys_num(void *node);
+uint32_t get_internal_node_keys_num(void *node, uint32_t default_value_len);
 
 /* Get right child of internal node. */
-uint32_t get_internal_node_right_child(void *node);
+uint32_t get_internal_node_right_child(void *node, uint32_t default_value_len);
 
 /* Get keys number in the node by index. */
-void* get_internal_node_key(void *node, uint32_t index, uint32_t key_len);
+void* get_internal_node_key(void *node, uint32_t index, uint32_t key_len, uint32_t value_len);
 
 /* Get child value in the node by index. */
-uint32_t get_internal_node_child(void *node, uint32_t index, uint32_t key_len);
+uint32_t get_internal_node_child(void *node, uint32_t index, uint32_t key_len, uint32_t value_len);
 
 /* Get internal node child page num. */
-uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, DataType primary_key_data_type);
-
-/* Get leaf node cell offset. */
-uint32_t get_leaf_node_cell_offset(void *node, uint32_t cell_len, uint32_t index);
+uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, uint32_t value_len, DataType primary_key_data_type);
 
 /* Get leaf node cell key. */
 void *get_leaf_node_cell_key(void *node, uint32_t index, uint32_t key_len,uint32_t value_len);
@@ -71,7 +68,7 @@ uint32_t get_array_number(void *destination);
 void *get_array_value(void *destination, uint32_t index, uint32_t span);
 
 /* Initialize leaf node. */
-void initial_leaf_node(void *leaf_node, bool is_root);
+void initial_leaf_node(void *leaf_node, uint32_t default_value_len, bool is_root);
 
 /* Insert new internal node cell. */
 void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_child_page_num);
