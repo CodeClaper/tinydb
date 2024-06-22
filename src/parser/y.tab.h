@@ -199,7 +199,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 17 "sql.y"
+#line 19 "sql.y"
 
    char                         *strVal;
    int64_t                      intVal;

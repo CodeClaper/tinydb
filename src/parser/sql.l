@@ -83,7 +83,7 @@ REF                     return REF;
 TRUE                    return TRUE;
 FALSE                   return FALSE;
 [a-zA-Z][a-zA-Z0-9_]*   { yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
-[0-9]+                  { yylval.intVal = atoi(yytext); return INTVALUE;}
+[0-9]+                  { yylval.strVal = db_strdup(yytext); return INTVALUE;}
 [0-9]+	|
 [0-9]+"."[0-9]* |
 "."[0-9]*	            { yylval.floatVal = atof(yytext); return FLOATVALUE; }

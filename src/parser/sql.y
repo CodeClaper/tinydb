@@ -6,6 +6,8 @@
 #include "list.h"
 #include "intpr.h"
 #include "mmu.h"
+#include "log.h"
+#include "utils.h"
 #include "y.tab.h"
 
 int yywrap() {
@@ -95,7 +97,7 @@ int yylex();
 %token <keyword> NOT
 %token <keyword> SYSTEM CONFIG MEMORY
 %token <strVal> IDENTIFIER
-%token <intVal> INTVALUE
+%token <strVal> INTVALUE
 %token <floatVal> FLOATVALUE
 %token <strVal> STRINGVALUE
 %type <boolVal> BOOLVALUE
@@ -667,7 +669,15 @@ data_type:
         {
             $$ = make_data_type_node();
             $$->type = T_VARCHAR; 
-            $$->len = $3; 
+            int ret = stoi32($3, &$$->len);
+            switch (ret) {
+                case 0:
+                    db_log(ERROR,"'%s' is not a valid number", $1);
+                    break;
+                case -1:
+                    db_log(ERROR,"'%s' is overflow.", $1);
+                    break;
+            }
         }
     | STRING     
         { 
@@ -878,7 +888,15 @@ atom:
     INTVALUE
         {
             AtomNode *node = make_atom_node();
-            node->value.intval = $1;
+            int ret = stoi32($1, &node->value.intval);
+            switch (ret) {
+                case 0:
+                    db_log(ERROR,"'%s' is not a valid number", $1);
+                    break;
+                case -1:
+                    db_log(ERROR,"'%s' is overflow.", $1);
+                    break;
+            }
             node->type = A_INT;
             $$ = node;
         }
@@ -1050,14 +1068,38 @@ opt_limit:
         {
             LimitNode *limit_node = make_limit_node();
             limit_node->start = 0;
-            limit_node->end = $2;
+            int ret = stoi32($2, &limit_node->end);
+            switch (ret) {
+                case 0:
+                    db_log(ERROR,"'%s' is not a valid number", $1);
+                    break;
+                case -1:
+                    db_log(ERROR,"'%s' is overflow.", $1);
+                    break;
+            }
             $$ = limit_node;
         }
     | LIMIT INTVALUE ',' INTVALUE
         {
             LimitNode *limit_node = make_limit_node();
-            limit_node->start = $2;
-            limit_node->end = $4;
+            int ret = stoi32($2, &limit_node->start);
+            switch (ret) {
+                case 0:
+                    db_log(ERROR,"'%s' is not a valid number", $1);
+                    break;
+                case -1:
+                    db_log(ERROR,"'%s' is overflow.", $1);
+                    break;
+            }
+            ret = stoi32($4, &limit_node->end);
+            switch (ret) {
+                case 0:
+                    db_log(ERROR,"'%s' is not a valid number", $1);
+                    break;
+                case -1:
+                    db_log(ERROR,"'%s' is overflow.", $1);
+                    break;
+            }
             $$ = limit_node;
         }
     ;
@@ -1110,7 +1152,15 @@ function_value:
     INTVALUE
         {
             FunctionValueNode *node = make_function_value_node();
-            node->i_value = $1;
+            int ret = stoi32($1, &node->i_value);
+            switch (ret) {
+                case 0:
+                    db_log(ERROR,"'%s' is not a valid number", $1);
+                    break;
+                case -1:
+                    db_log(ERROR,"'%s' is overflow.", $1);
+                    break;
+            }
             node->value_type = V_INT;
             $$ = node;
         }
@@ -1132,7 +1182,15 @@ non_all_function_value:
     INTVALUE
         {
             FunctionValueNode *node = make_function_value_node();
-            node->i_value = $1;
+            int ret = stoi32($1, &node->i_value);
+            switch (ret) {
+                case 0:
+                    db_log(ERROR,"'%s' is not a valid number", $1);
+                    break;
+                case -1:
+                    db_log(ERROR,"'%s' is overflow.", $1);
+                    break;
+            }
             node->value_type = V_INT;
             $$ = node;
         }

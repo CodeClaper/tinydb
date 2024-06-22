@@ -1259,7 +1259,7 @@ YY_RULE_SETUP
 case 65:
 YY_RULE_SETUP
 #line 86 "sql.l"
-{ yylval.intVal = atoi(yytext); return INTVALUE;}
+{ yylval.strVal = db_strdup(yytext); return INTVALUE;}
 	YY_BREAK
 case 66:
 #line 88 "sql.l"
