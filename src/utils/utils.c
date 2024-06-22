@@ -1,9 +1,11 @@
+#include <limits.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <time.h>
 #include "utils.h"
@@ -233,6 +235,57 @@ char *ttos(time_t val, char *frmt) {
     return str;
 }
 
+/* Convert String value to int32_t value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * */
+int stoi32(char *val,  int32_t *ret) {
+    char buf[BUFF_SIZE];
+    char *endptr;
+
+    long longVal = strtol(val, &endptr, 10);
+    if (*endptr != '\0')
+        return 0;
+
+    /* Check if overflow max int value. */
+    if (longVal > INT_MAX || longVal < INT_MIN)
+        return -1;
+
+    /* Check if overflow max long value*/
+    memset(buf, 0, BUFF_SIZE);
+    sprintf(buf, "%ld", longVal);
+    if (!streq(val, buf))
+        return -1;
+
+    *ret =  (int32_t) longVal;
+
+    return 1;
+}
+
+/* Convert String value to int64 value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * */
+int stoi64(char *val,  int64_t *ret) {
+    char buf[BUFF_SIZE];
+    char *endptr;
+
+    int64_t longValu = strtol(val, &endptr, 10);
+    if (*endptr != '\0')
+        return 0;
+
+    /* Check if overflow max long value*/
+    memset(buf, 0, BUFF_SIZE);
+    sprintf(buf, "%ld", longValu);
+    if (!streq(val, buf))
+        return -1;
+
+    *ret = longValu;
+
+    return 1;
+}
 
 /**********************************************************************/
 /* Get a line from a socket, whether the line ends in a newline,

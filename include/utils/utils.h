@@ -63,5 +63,22 @@ char *dtos(double val);
 /* Convert time to string. */
 char *ttos(time_t val, char *frmt);
 
+
+/* Convert String value to int32_t value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * */
+int stoi32(char *val,  int32_t *ret);
+
+
+/* Convert String value to int64 value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * */
+int stoi64(char *val,  int64_t *ret);
+
+
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);

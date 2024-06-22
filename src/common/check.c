@@ -307,7 +307,7 @@ static bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             if (size > meta_column->column_length)
                 db_log(ERROR, "Exceed the limit of data length: %d > %d, for column '%s'. ", 
                        size, 
-                       meta_column->column_length - 1, 
+                       meta_column->column_length - 2, 
                        meta_column->column_name);
             return size <= meta_column->column_length;
         }
