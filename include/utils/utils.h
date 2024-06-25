@@ -80,5 +80,22 @@ int stoi32(char *val,  int32_t *ret);
 int stoi64(char *val,  int64_t *ret);
 
 
+
+/* Convert String value to float value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * */
+int stof(char *val, float *ret);
+
+
+/* Convert String value to double value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * return -2 out of range
+ * */
+int stod(char *val, double *ret);
+
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);

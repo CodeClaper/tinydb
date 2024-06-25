@@ -1,13 +1,16 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <limits.h>
 #include <ctype.h>
+#include <math.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/socket.h>
 #include <time.h>
+#include <float.h>
 #include "utils.h"
 #include "mmu.h"
 
@@ -263,6 +266,7 @@ int stoi32(char *val,  int32_t *ret) {
     return 1;
 }
 
+
 /* Convert String value to int64 value.
  * return 1 if success.
  * return 0 if not valid number.
@@ -283,6 +287,59 @@ int stoi64(char *val,  int64_t *ret) {
         return -1;
 
     *ret = longValu;
+
+    return 1;
+}
+
+
+/* Convert String value to float value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * return -2 out of range
+ * */
+int stof(char *val, float *ret) {
+    char *endptr;
+    errno = 0;
+    double converted = strtod(val, &endptr);
+
+    if (*endptr != '\0')
+        return 0;
+    else if (errno == ERANGE)
+        return -2;
+    else if (isinf(converted))
+        return -1;
+
+    if (converted > FLT_MAX || converted < FLT_MIN) 
+        return -1;
+
+    *ret = (float) converted;
+
+    return 1;
+}
+
+/* Convert String value to double value.
+ * return 1 if success.
+ * return 0 if not valid number.
+ * return -1 if overflow.
+ * return -2 out of range
+ * */
+int stod(char *val, double *ret) {
+    char *endptr;
+    errno = 0;
+    double converted = strtod(val, &endptr);
+
+    if (*endptr != '\0')
+        return 0;
+    else if (errno == ERANGE)
+        return -2;
+    else if (isinf(converted))
+        return -1;
+
+    if (converted > DBL_MAX || converted < DBL_MIN) 
+        return -1;
+
+    *ret = converted;
 
     return 1;
 }
