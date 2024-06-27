@@ -4,6 +4,8 @@
 #include <string.h>
 #include <regex.h>
 #include <time.h>
+#include <limits.h>
+#include <float.h>
 #include "check.h"
 #include "utils.h"
 #include "mmu.h"
@@ -284,12 +286,20 @@ static bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
 
     switch(meta_column->column_type) {
         case T_BOOL:
-        case T_INT:
         case T_LONG:
-        case T_FLOAT:
         case T_DOUBLE:
         case T_REFERENCE: 
             return true;
+        case T_INT: {
+            if (atom_node->value.intval > INT_MAX || atom_node->value.intval < INT_MIN)
+                db_log(ERROR, "Value is overflow for column '%s'.", meta_column->column_name);
+            return true;
+        }
+        case T_FLOAT: {
+            if (atom_node->value.floatval > FLT_MAX || atom_node->value.floatval < FLT_MIN)
+                db_log(ERROR, "Value is overflow for column '%s'.", meta_column->column_name);
+            return true;
+        }
         case T_CHAR: {
             if (value == NULL)
                 return false;
