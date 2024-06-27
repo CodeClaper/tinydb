@@ -1259,7 +1259,7 @@ YY_RULE_SETUP
 case 65:
 YY_RULE_SETUP
 #line 86 "sql.l"
-{ yylval.strVal = db_strdup(yytext); return INTVALUE;}
+{ yylval.intVal = parse_long(yytext); return INTVALUE;}
 	YY_BREAK
 case 66:
 #line 88 "sql.l"
@@ -1268,7 +1268,7 @@ case 67:
 case 68:
 YY_RULE_SETUP
 #line 89 "sql.l"
-{ yylval.floatVal = atof(yytext); return FLOATVALUE; }
+{ yylval.floatVal = parse_double(yytext); return FLOATVALUE; }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP

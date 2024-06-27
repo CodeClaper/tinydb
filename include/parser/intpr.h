@@ -141,4 +141,10 @@ ShowNode *make_show_node(ShowNodeType type);
 /* make a statement. */
 Statement *make_statement();
 
+/* Paser a string value to int64_t value. */
+int64_t parse_long(char *val);
+
+/* Paser a string value to double value. */
+double parse_double(char *val);
+
 #endif

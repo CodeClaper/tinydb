@@ -2,6 +2,13 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+typedef enum ST_FLAG {
+    ST_SUCCESS = 0,
+    ST_INVALID,
+    ST_OVERFLOW,
+    ST_OUTRANGE
+} ST_FLAG;
+
 /* left trim*/
 char *ltrim(char *s);
 
@@ -64,38 +71,20 @@ char *dtos(double val);
 char *ttos(time_t val, char *frmt);
 
 
-/* Convert String value to int32_t value.
- * return 1 if success.
- * return 0 if not valid number.
- * return -1 if overflow.
- * */
-int stoi32(char *val,  int32_t *ret);
+/* Convert String value to int32_t value. */
+ST_FLAG stoi32(char *val,  int32_t *ret);
 
 
-/* Convert String value to int64 value.
- * return 1 if success.
- * return 0 if not valid number.
- * return -1 if overflow.
- * */
-int stoi64(char *val,  int64_t *ret);
+/* Convert String value to int64 value.*/
+ST_FLAG stoi64(char *val,  int64_t *ret);
 
 
-
-/* Convert String value to float value.
- * return 1 if success.
- * return 0 if not valid number.
- * return -1 if overflow.
- * */
-int stof(char *val, float *ret);
+/* Convert String value to float value. */
+ST_FLAG stof(char *val, float *ret);
 
 
-/* Convert String value to double value.
- * return 1 if success.
- * return 0 if not valid number.
- * return -1 if overflow.
- * return -2 out of range
- * */
-int stod(char *val, double *ret);
+/* Convert String value to double value. */
+ST_FLAG stod(char *val, double *ret);
 
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);

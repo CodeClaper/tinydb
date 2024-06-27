@@ -238,32 +238,28 @@ char *ttos(time_t val, char *frmt) {
     return str;
 }
 
-/* Convert String value to int32_t value.
- * return 1 if success.
- * return 0 if not valid number.
- * return -1 if overflow.
- * */
-int stoi32(char *val,  int32_t *ret) {
+/* Convert String value to int32_t value.*/
+ST_FLAG stoi32(char *val, int32_t *ret) {
     char buf[BUFF_SIZE];
     char *endptr;
 
-    long longVal = strtol(val, &endptr, 10);
+    long converted = strtol(val, &endptr, 10);
     if (*endptr != '\0')
-        return 0;
+        return ST_INVALID;
 
     /* Check if overflow max int value. */
-    if (longVal > INT_MAX || longVal < INT_MIN)
-        return -1;
+    if (converted > INT_MAX || converted < INT_MIN)
+        return ST_OVERFLOW;
 
     /* Check if overflow max long value*/
     memset(buf, 0, BUFF_SIZE);
-    sprintf(buf, "%ld", longVal);
+    sprintf(buf, "%ld", converted);
     if (!streq(val, buf))
-        return -1;
+        return ST_OVERFLOW;
 
-    *ret =  (int32_t) longVal;
+    *ret =  (int32_t) converted;
 
-    return 1;
+    return ST_SUCCESS;
 }
 
 
@@ -272,76 +268,66 @@ int stoi32(char *val,  int32_t *ret) {
  * return 0 if not valid number.
  * return -1 if overflow.
  * */
-int stoi64(char *val,  int64_t *ret) {
+ST_FLAG stoi64(char *val, int64_t *ret) {
     char buf[BUFF_SIZE];
     char *endptr;
 
-    int64_t longValu = strtol(val, &endptr, 10);
+    int64_t converted = strtol(val, &endptr, 10);
     if (*endptr != '\0')
-        return 0;
+        return ST_INVALID;
 
     /* Check if overflow max long value*/
     memset(buf, 0, BUFF_SIZE);
-    sprintf(buf, "%ld", longValu);
+    sprintf(buf, "%ld", converted);
     if (!streq(val, buf))
-        return -1;
-
-    *ret = longValu;
-
-    return 1;
-}
-
-
-/* Convert String value to float value.
- * return 1 if success.
- * return 0 if not valid number.
- * return -1 if overflow.
- * return -2 out of range
- * */
-int stof(char *val, float *ret) {
-    char *endptr;
-    errno = 0;
-    double converted = strtod(val, &endptr);
-
-    if (*endptr != '\0')
-        return 0;
-    else if (errno == ERANGE)
-        return -2;
-    else if (isinf(converted))
-        return -1;
-
-    if (converted > FLT_MAX || converted < FLT_MIN) 
-        return -1;
-
-    *ret = (float) converted;
-
-    return 1;
-}
-
-/* Convert String value to double value.
- * return 1 if success.
- * return 0 if not valid number.
- * return -1 if overflow.
- * return -2 out of range
- * */
-int stod(char *val, double *ret) {
-    char *endptr;
-    errno = 0;
-    double converted = strtod(val, &endptr);
-
-    if (*endptr != '\0')
-        return 0;
-    else if (errno == ERANGE)
-        return -2;
-    else if (isinf(converted))
-        return -1;
-
-    if (converted > DBL_MAX || converted < DBL_MIN) 
-        return -1;
+        return ST_OVERFLOW;
 
     *ret = converted;
 
-    return 1;
+    return ST_SUCCESS;
+}
+
+
+/* Convert String value to float value.*/
+ST_FLAG stof(char *val, float *ret) {
+    char *endptr;
+    errno = 0;
+    double converted = strtod(val, &endptr);
+
+    if (*endptr != '\0')
+        return ST_INVALID;
+    else if (errno == ERANGE)
+        return ST_OUTRANGE;
+    else if (isinf(converted))
+        return ST_OVERFLOW;
+
+    if (converted > FLT_MAX || converted < FLT_MIN) 
+        return ST_OVERFLOW;
+
+    *ret = (float) converted;
+
+    return ST_SUCCESS;
+}
+
+/* Convert String value to double value. */
+ST_FLAG stod(char *val, double *ret) {
+    char *endptr;
+    errno = 0;
+    double converted = strtod(val, &endptr);
+
+    if (*endptr != '\0')
+        return ST_INVALID;
+    else if (errno == ERANGE)
+        return ST_OUTRANGE;
+    else if (isinf(converted))
+        return ST_OVERFLOW;
+
+    if (converted > DBL_MAX || converted < DBL_MIN) 
+        return ST_OVERFLOW;
+
+    *ret = converted;
+
+    return ST_SUCCESS;
 }
 
 /**********************************************************************/
