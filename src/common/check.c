@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -292,12 +293,15 @@ static bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             return true;
         case T_INT: {
             if (atom_node->value.intval > INT_MAX || atom_node->value.intval < INT_MIN)
-                db_log(ERROR, "Value is overflow for column '%s'.", meta_column->column_name);
+                db_log(ERROR, "Value is int overflow for column '%s'.", meta_column->column_name);
             return true;
         }
         case T_FLOAT: {
-            if (atom_node->value.floatval > FLT_MAX || atom_node->value.floatval < FLT_MIN)
-                db_log(ERROR, "Value is overflow for column '%s'.", meta_column->column_name);
+            if (atom_node->type == T_FLOAT && (atom_node->value.floatval > FLT_MAX || atom_node->value.floatval < FLT_MIN))
+                db_log(ERROR, "Value is float overflow for column '%s'.", meta_column->column_name);
+            float temp = (float) atom_node->value.floatval;
+            if (isinff(temp))
+                db_log(ERROR, "Value is float overflow for column '%s'.", meta_column->column_name);
             return true;
         }
         case T_CHAR: {

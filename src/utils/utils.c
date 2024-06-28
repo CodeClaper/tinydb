@@ -298,7 +298,7 @@ ST_FLAG stof(char *val, float *ret) {
         return ST_INVALID;
     else if (errno == ERANGE)
         return ST_OUTRANGE;
-    else if (isinf(converted))
+    else if (isinff(converted))
         return ST_OVERFLOW;
 
     if (converted > FLT_MAX || converted < FLT_MIN) 
