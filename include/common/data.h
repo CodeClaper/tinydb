@@ -81,7 +81,8 @@ typedef enum {
     DELETE_STMT, 
     DESCRIBE_STMT, 
     SHOW_STMT, 
-    DROP_TABLE_STMT 
+    DROP_TABLE_STMT ,
+    ALTER_TABLE_STMT
 } StatementType; // statement type
 
 /* Tansaction operation type. */
@@ -500,6 +501,46 @@ typedef struct ShowNode {
     ShowNodeType type;
 } ShowNode;
 
+typedef enum AlterTableActionType {
+    ALTER_TO_ADD_COLUMN,
+    ALTER_TO_DROP_COLUMN,
+    ALTER_TO_CHANGE_COLUMN
+} AlterTableActionType;
+
+/* AddColumnDef */
+typedef struct AddColumnDef {
+    ColumnDefNode *column_def;
+} AddColumnDef;
+
+/* DropColumnDef. */
+typedef struct DropColumnDef {
+    char *column_name;
+} DropColumnDef;
+
+/* ChangeColumnDef */
+typedef struct ChangeColumnDef {
+    char *old_column_name;
+    ColumnDefNode *new_column_def;
+} ChangeColumnDef;
+
+
+/* AlterTableAction */
+typedef struct AlterTableAction {
+    AlterTableActionType type;
+    union {
+        AddColumnDef *add_column;
+        DropColumnDef *drop_column;
+        ChangeColumnDef *change_column;
+    } action;
+} AlterTableAction;
+
+
+/* AlterTableNode */
+typedef struct AlterTableNode {
+    char *table_name;
+    AlterTableAction *action;
+} AlterTableNode;
+
 /* Statement */
 typedef struct Statement {
   StatementType statement_type;
@@ -512,6 +553,7 @@ typedef struct Statement {
         DeleteNode *delete_node;
         DescribeNode *describe_node;
         ShowNode *show_node;
+        AlterTableNode *alter_table_node;
   };
 } Statement;
 

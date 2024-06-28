@@ -537,6 +537,48 @@ void free_table_ref_set_node(TableRefSetNode *table_ref_set_node) {
     }
 }
 
+
+/* Free AddColumnDef. */
+void free_add_column_def(AddColumnDef *add_column_def) {
+    if (add_column_def) {
+        free_column_def_node(add_column_def->column_def);
+    }
+}
+
+/* Free DropColumnDef. */
+void free_drop_column_def(DropColumnDef *drop_column_def) {
+    if (drop_column_def) {
+        if (drop_column_def->column_name)
+            db_free(drop_column_def->column_name);
+    }
+}
+
+/* Free ChangeColumnDef. */
+void free_change_column_def(ChangeColumnDef *change_column_def) {
+    if (change_column_def) {
+        if (change_column_def->old_column_name)
+            db_free(change_column_def->old_column_name);
+        free_column_def_node(change_column_def->new_column_def);
+    }
+}
+
+/* Free AlterTableAction. */
+void free_alter_table_action(AlterTableAction *action) {
+    if (action) {
+        switch (action->type) {
+            case ALTER_TO_ADD_COLUMN:
+                free_add_column_def(action->action.add_column);
+                break;
+            case ALTER_TO_DROP_COLUMN:
+                free_drop_column_def(action->action.drop_column);
+                break;
+            case ALTER_TO_CHANGE_COLUMN:
+                free_change_column_def(action->action.change_column);
+                break;
+        }
+    }
+}
+
 /* Free FromClauseNode. */
 void free_from_clause_node(FromClauseNode *from_clause_node) {
     if (from_clause_node) {
@@ -570,6 +612,7 @@ void free_selection_node(SelectionNode *selection_node) {
         db_free(selection_node);
     }
 }
+
 
 /* Free SelectNode. */
 void free_select_node(SelectNode *select_node) {
@@ -647,6 +690,15 @@ void free_show_tables_node(ShowNode *show_node) {
         db_free(show_node);
 }
 
+/* Free AlterTableNode. */
+void free_alter_table_node(AlterTableNode *alter_table_node) {
+    if (alter_table_node) {
+        if (alter_table_node->table_name)
+            db_free(alter_table_node->table_name);
+        free_alter_table_action(alter_table_node->action);
+    }
+}
+
 /* Free ASTNode. */
 void free_statement(Statement *statement) {
     switch (statement->statement_type) {
@@ -677,6 +729,9 @@ void free_statement(Statement *statement) {
             break;
         case SHOW_STMT:
             free_show_tables_node(statement->show_node);
+            break;
+        case ALTER_TABLE_STMT:
+            free_alter_table_node(statement->alter_table_node);
             break;
         default:
             UNEXPECTED_VALUE(statement->statement_type);

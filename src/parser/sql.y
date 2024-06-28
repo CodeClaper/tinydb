@@ -53,6 +53,10 @@ int yylex();
    FromClauseNode               *from_clause_node;
    WhereClauseNode              *where_clause_node;
    TableExpNode                 *table_exp_node; 
+   AddColumnDef                 *add_column_def;
+   DropColumnDef                *drop_column_def;
+   ChangeColumnDef              *change_column_def;
+   AlterTableAction             *alter_table_action;
    CreateTableNode              *create_table_node;
    DropTableNode                *drop_table_node;
    SelectNode                   *select_node;
@@ -61,6 +65,7 @@ int yylex();
    DeleteNode                   *delete_node;
    DescribeNode                 *describe_node;
    ShowNode                     *show_node;
+   AlterTableNode               *alter_table_node;
    Statement                    *statement;
    List                         *list;
 };
@@ -95,6 +100,7 @@ int yylex();
 %token <keyword> CHAR INT LONG VARCHAR STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> NOT
+%token <keyword> ALTER COLUMN ADD CHANGE
 %token <keyword> SYSTEM CONFIG MEMORY
 %token <strVal> IDENTIFIER
 %token <intVal> INTVALUE
@@ -144,6 +150,10 @@ int yylex();
 %type <where_clause_node> where_clause
 %type <where_clause_node> opt_where_clause
 %type <table_exp_node> table_exp   
+%type <add_column_def> add_column_def
+%type <drop_column_def> drop_column_def
+%type <change_column_def> change_column_def
+%type <alter_table_action> alter_table_action
 %type <select_node> select_statement
 %type <insert_node> insert_statement
 %type <update_node> update_statement
@@ -152,6 +162,7 @@ int yylex();
 %type <drop_table_node> drop_table_statement
 %type <describe_node> describe_statement
 %type <show_node> show_statement
+%type <alter_table_node> alter_table_statement 
 %type <statement> statement;
 %type <list> statements;
 %parse-param {List *states}
@@ -242,6 +253,13 @@ statement:
             Statement *statement = make_statement();
             statement->statement_type = SHOW_STMT;
             statement->show_node = $1;
+            $$ = statement;
+        }
+    | alter_table_statement
+        {
+            Statement *statement = make_statement();
+            statement->statement_type = ALTER_TABLE_STMT;
+            statement->alter_table_node = $1;
             $$ = statement;
         }
     ;
@@ -348,6 +366,63 @@ show_statement:
     | SHOW MEMORY end
         {
             $$ = make_show_node(SHOW_MEMORY);
+        }
+    ;
+/* Alter Table Statement. */
+alter_table_statement:
+    ALTER TABLE table alter_table_action end
+        {
+            $$ = make_alter_table_node();
+            $$->table_name = $3;
+            $$->action = $4;
+        }
+    ;
+alter_table_action:
+    add_column_def
+        {
+            AlterTableAction *action = make_alter_table_action();
+            action->type = ALTER_TO_ADD_COLUMN;
+            action->action.add_column = $1;
+            $$ = action;
+        }
+    | drop_column_def
+        {
+            AlterTableAction *action = make_alter_table_action();
+            action->type = ALTER_TO_DROP_COLUMN;
+            action->action.drop_column = $1;
+            $$ = action;
+        }
+    | change_column_def
+        {
+            AlterTableAction *action = make_alter_table_action();
+            action->type = ALTER_TO_CHANGE_COLUMN;
+            action->action.change_column = $1;
+            $$ = action;
+        }
+    ;
+add_column_def:
+    ADD COLUMN column_def
+        {
+            AddColumnDef *node = make_add_column_def();
+            node->column_def = $3;
+            $$ = node;
+        }
+    ;
+drop_column_def:
+    DROP COLUMN column 
+        {
+            DropColumnDef *node = make_drop_column_def();
+            node->column_name = $3;
+            $$ = node;
+        }
+    ;
+change_column_def:
+    CHANGE column column_def
+        {
+            ChangeColumnDef *node = make_change_column_def();
+            node->old_column_name = $2;
+            node->new_column_def = $3;
+            $$ = node;
         }
     ;
 selection:

@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 #include "intpr.h"
 #include "data.h"
 #include "mmu.h"
@@ -223,6 +224,31 @@ ValuesOrQuerySpecNode *make_values_or_query_spec_node() {
     return node;
 }
 
+
+/* Make An AddColumnDef. */
+AddColumnDef *make_add_column_def() {
+    AddColumnDef *add_column_def = instance(AddColumnDef);
+    return add_column_def;
+}
+
+/* Make a DropColumnDef. */
+DropColumnDef *make_drop_column_def() {
+    DropColumnDef *drop_column_def = instance(DropColumnDef);
+    return drop_column_def;
+}
+
+/* Make a change_column_def. */
+ChangeColumnDef *make_change_column_def() {
+    ChangeColumnDef *change_column_def = instance(ChangeColumnDef);
+    return change_column_def;
+}
+
+/* Make an AlterTableAction. */
+AlterTableAction *make_alter_table_action() {
+    AlterTableAction *action = instance(AlterTableAction);
+    return action;
+}
+
 /* make a select node. */
 SelectNode *make_select_node() {
     SelectNode *select_node = instance(SelectNode);
@@ -270,6 +296,12 @@ ShowNode *make_show_node(ShowNodeType type) {
     ShowNode *show_node = instance(ShowNode);
     show_node->type = type;
     return show_node;
+}
+
+/* Make a AlterTableNode. */
+AlterTableNode *make_alter_table_node() {
+    AlterTableNode *node = instance(AlterTableNode);
+    return node;
 }
 
 /* make statement. */

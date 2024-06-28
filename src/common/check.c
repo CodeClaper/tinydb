@@ -1125,7 +1125,7 @@ bool check_create_table_node(CreateTableNode *create_table_node) {
 }
 
 
-/* Chech allowed to drop table. */
+/* Check allowed to drop table. */
 bool check_drop_table(char *table_name) {
 
     /* Check table exists. */
@@ -1149,4 +1149,9 @@ bool check_drop_table(char *table_name) {
 
     free_list_deep(table_list);
     return ret;
+}
+
+/* Check for AlterTableNode. */
+bool check_alter_table(AlterTableNode *alter_table) {
+    return check_table(alter_table->table_name);
 }

@@ -113,13 +113,17 @@ extern int yydebug;
     IN = 314,                      /* IN  */
     LIKE = 315,                    /* LIKE  */
     NOT = 316,                     /* NOT  */
-    SYSTEM = 317,                  /* SYSTEM  */
-    CONFIG = 318,                  /* CONFIG  */
-    MEMORY = 319,                  /* MEMORY  */
-    IDENTIFIER = 320,              /* IDENTIFIER  */
-    INTVALUE = 321,                /* INTVALUE  */
-    FLOATVALUE = 322,              /* FLOATVALUE  */
-    STRINGVALUE = 323              /* STRINGVALUE  */
+    ALTER = 317,                   /* ALTER  */
+    COLUMN = 318,                  /* COLUMN  */
+    ADD = 319,                     /* ADD  */
+    CHANGE = 320,                  /* CHANGE  */
+    SYSTEM = 321,                  /* SYSTEM  */
+    CONFIG = 322,                  /* CONFIG  */
+    MEMORY = 323,                  /* MEMORY  */
+    IDENTIFIER = 324,              /* IDENTIFIER  */
+    INTVALUE = 325,                /* INTVALUE  */
+    FLOATVALUE = 326,              /* FLOATVALUE  */
+    STRINGVALUE = 327              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -187,13 +191,17 @@ extern int yydebug;
 #define IN 314
 #define LIKE 315
 #define NOT 316
-#define SYSTEM 317
-#define CONFIG 318
-#define MEMORY 319
-#define IDENTIFIER 320
-#define INTVALUE 321
-#define FLOATVALUE 322
-#define STRINGVALUE 323
+#define ALTER 317
+#define COLUMN 318
+#define ADD 319
+#define CHANGE 320
+#define SYSTEM 321
+#define CONFIG 322
+#define MEMORY 323
+#define IDENTIFIER 324
+#define INTVALUE 325
+#define FLOATVALUE 326
+#define STRINGVALUE 327
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -237,6 +245,10 @@ union YYSTYPE
    FromClauseNode               *from_clause_node;
    WhereClauseNode              *where_clause_node;
    TableExpNode                 *table_exp_node; 
+   AddColumnDef                 *add_column_def;
+   DropColumnDef                *drop_column_def;
+   ChangeColumnDef              *change_column_def;
+   AlterTableAction             *alter_table_action;
    CreateTableNode              *create_table_node;
    DropTableNode                *drop_table_node;
    SelectNode                   *select_node;
@@ -245,10 +257,11 @@ union YYSTYPE
    DeleteNode                   *delete_node;
    DescribeNode                 *describe_node;
    ShowNode                     *show_node;
+   AlterTableNode               *alter_table_node;
    Statement                    *statement;
    List                         *list;
 
-#line 252 "y.tab.h"
+#line 265 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

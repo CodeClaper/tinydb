@@ -114,6 +114,18 @@ QuerySpecNode *make_query_spec_node();
 /* Make a ValuesOrQuerySpecNode. */
 ValuesOrQuerySpecNode *make_values_or_query_spec_node();
 
+/* Make An AddColumnDef. */
+AddColumnDef *make_add_column_def();
+
+/* Make a DropColumnDef. */
+DropColumnDef *make_drop_column_def();
+
+/* Make a change_column_def. */
+ChangeColumnDef *make_change_column_def();
+
+/* Make an AlterTableAction. */
+AlterTableAction *make_alter_table_action();
+
 /* Make a select node. */
 SelectNode *make_select_node();
 
@@ -137,6 +149,9 @@ DescribeNode *make_describe_node();
 
 /* make a shwo table node. */
 ShowNode *make_show_node(ShowNodeType type);
+
+/* Make a AlterTableNode. */
+AlterTableNode *make_alter_table_node();
 
 /* make a statement. */
 Statement *make_statement();

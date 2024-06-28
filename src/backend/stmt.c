@@ -19,6 +19,7 @@
 #include "drop.h"
 #include "desc.h"
 #include "show.h"
+#include "alter.h"
 #include "trans.h"
 #include "utils.h"
 #include "session.h"
@@ -59,6 +60,12 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == DROP_TABLE_STMT, "System error, drop statement type error.\n");
     char *table_name = stmt->drop_table_node->table_name;
     exec_drop_table_statement(table_name, result);
+}
+
+/* Alter table statement. */
+static void statement_alter_table(Statement *stmt, DBResult *result) {
+    assert_true(stmt->statement_type == ALTER_TABLE_STMT, "System error, alter table statement type error.\n");
+    exec_alter_statement(stmt->alter_table_node, result);
 }
 
 /*Insert Statment*/
@@ -156,6 +163,9 @@ static void exec_statement(Statement *statement, DBResult *result) {
             case DROP_TABLE_STMT:
                 statement_drop_table(statement, result);
                 break;
+            case ALTER_TABLE_STMT:
+                statement_alter_table(statement, result);
+                break;
             default:
                 UNEXPECTED_VALUE(statement->statement_type);
                 break;
@@ -207,12 +217,9 @@ void execute(char *sql) {
             /* Catch routine. */
             /* If the set is empty, which means sql syntax error, put an error result to the set. */
             if (list_empty(result_list)) {
-
                 DBResult *err_result = new_db_result();
-
                 /* For error catch, result is false. */
                 err_result->success = false;
-
                 append_list(result_list, err_result);
             }
 

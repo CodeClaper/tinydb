@@ -18,3 +18,6 @@ bool check_create_table_node(CreateTableNode *create_table_node);
 
 /* Chech allowed to drop table. */
 bool check_drop_table(char *table_name);
+
+/* Check for AlterTableNode. */
+bool check_alter_table(AlterTableNode *alter_table);
