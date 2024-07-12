@@ -501,15 +501,29 @@ typedef struct ShowNode {
     ShowNodeType type;
 } ShowNode;
 
+/* AlterTableActionType */
 typedef enum AlterTableActionType {
     ALTER_TO_ADD_COLUMN,
     ALTER_TO_DROP_COLUMN,
     ALTER_TO_CHANGE_COLUMN
 } AlterTableActionType;
 
+/* PositionType */
+typedef enum PositionType {
+    POS_BEFORE,
+    POS_AFTER
+} PositionType;
+
+/* ColumnPositionDef */
+typedef struct ColumnPositionDef {
+    PositionType type;
+    char *column;
+} ColumnPositionDef;
+
 /* AddColumnDef */
 typedef struct AddColumnDef {
     ColumnDefNode *column_def;
+    ColumnPositionDef *position_def;
 } AddColumnDef;
 
 /* DropColumnDef. */

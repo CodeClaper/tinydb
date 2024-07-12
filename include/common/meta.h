@@ -30,6 +30,9 @@ uint32_t calc_table_row_length2(MetaTable *meta_table);
 /* Calculate primary key lenght. if not exist primary key , return -1; */
 uint32_t calc_primary_key_length(Table *table);
 
+/* Calculate primary key lenght. if not exist primary key , return -1; */
+uint32_t calc_primary_key_length2(MetaTable *meta_table);
+
 /* Genrate table meta info. */
 MetaTable *gen_meta_table(Table *table, char *table_name);
 

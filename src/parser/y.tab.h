@@ -117,13 +117,15 @@ extern int yydebug;
     COLUMN = 318,                  /* COLUMN  */
     ADD = 319,                     /* ADD  */
     CHANGE = 320,                  /* CHANGE  */
-    SYSTEM = 321,                  /* SYSTEM  */
-    CONFIG = 322,                  /* CONFIG  */
-    MEMORY = 323,                  /* MEMORY  */
-    IDENTIFIER = 324,              /* IDENTIFIER  */
-    INTVALUE = 325,                /* INTVALUE  */
-    FLOATVALUE = 326,              /* FLOATVALUE  */
-    STRINGVALUE = 327              /* STRINGVALUE  */
+    BEFORE = 321,                  /* BEFORE  */
+    AFTER = 322,                   /* AFTER  */
+    SYSTEM = 323,                  /* SYSTEM  */
+    CONFIG = 324,                  /* CONFIG  */
+    MEMORY = 325,                  /* MEMORY  */
+    IDENTIFIER = 326,              /* IDENTIFIER  */
+    INTVALUE = 327,                /* INTVALUE  */
+    FLOATVALUE = 328,              /* FLOATVALUE  */
+    STRINGVALUE = 329              /* STRINGVALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -195,13 +197,15 @@ extern int yydebug;
 #define COLUMN 318
 #define ADD 319
 #define CHANGE 320
-#define SYSTEM 321
-#define CONFIG 322
-#define MEMORY 323
-#define IDENTIFIER 324
-#define INTVALUE 325
-#define FLOATVALUE 326
-#define STRINGVALUE 327
+#define BEFORE 321
+#define AFTER 322
+#define SYSTEM 323
+#define CONFIG 324
+#define MEMORY 325
+#define IDENTIFIER 326
+#define INTVALUE 327
+#define FLOATVALUE 328
+#define STRINGVALUE 329
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -249,6 +253,7 @@ union YYSTYPE
    DropColumnDef                *drop_column_def;
    ChangeColumnDef              *change_column_def;
    AlterTableAction             *alter_table_action;
+   ColumnPositionDef            *column_position_def;
    CreateTableNode              *create_table_node;
    DropTableNode                *drop_table_node;
    SelectNode                   *select_node;
@@ -261,7 +266,7 @@ union YYSTYPE
    Statement                    *statement;
    List                         *list;
 
-#line 265 "y.tab.h"
+#line 270 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

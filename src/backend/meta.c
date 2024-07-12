@@ -393,6 +393,21 @@ uint32_t calc_primary_key_length(Table *table) {
     return -1;
 }
 
+
+/* Calculate primary key lenght. 
+ * Return primary-key column length.
+ * Panic if not found. */
+uint32_t calc_primary_key_length2(MetaTable *meta_table) {
+    uint32_t i;
+    for (i = 0; i < meta_table->all_column_size; i++) {
+       MetaColumn *meta_column = meta_table->meta_column[i];
+       if (meta_column->is_primary)
+           return meta_column->column_length;
+    }
+    panic("Not found primary key.");
+    return -1;
+}
+
 /* Get index column meta info */
 MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index, uint32_t offset) {
     void *destination = get_meta_column_pointer(root_node, index);

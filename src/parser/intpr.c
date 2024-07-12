@@ -249,6 +249,12 @@ AlterTableAction *make_alter_table_action() {
     return action;
 }
 
+/* Make a ColumnPositionDef. */
+ColumnPositionDef *make_column_position_def() {
+    ColumnPositionDef *pos = instance(ColumnPositionDef);
+    return pos;
+}
+
 /* make a select node. */
 SelectNode *make_select_node() {
     SelectNode *select_node = instance(SelectNode);

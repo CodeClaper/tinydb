@@ -14,5 +14,10 @@ Table *open_table(char *table_name);
 /* Create a new table. */
 bool create_table(MetaTable *meta_table);
 
+/* Add new MetaColumn to table.
+ * This function is actually bottom-level routine for alter-table-add-column action.
+ * */
+bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPositionDef *pos);
+
 /*Delete an existed table. */
 bool drop_table(char *table_name);

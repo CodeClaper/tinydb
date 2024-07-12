@@ -103,3 +103,5 @@ void *serialize_meta_column(MetaColumn *meta_column);
 /* Serialize row data. */
 void *serialize_row_data(Row *row, Table *table);
 
+/* Appedn new column. */
+void append_new_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos);

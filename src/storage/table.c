@@ -134,6 +134,40 @@ bool create_table(MetaTable *meta_table) {
     return true;
 }
 
+/* Get Column Position. */
+static int get_column_position(MetaTable *meta_table, ColumnPositionDef *pos) {
+    
+    /* If not ColumnPositionDef, append column at last. */
+    if (is_null(pos))
+        return meta_table->column_size;
+
+    int i;
+    for (i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *current = meta_table->meta_column[i];
+        if (streq(current->column_name, pos->column)) {
+            switch (pos->type) {
+                case POS_BEFORE:
+                    return i;
+                case POS_AFTER:
+                    return i + 1;
+            }
+        }
+    }
+    db_log(ERROR, "Column '%s' not exists in table '%s'.", pos->column, meta_table->table_name);
+    return -1;
+}
+
+/* Add new MetaColumn to table.
+ * This function is actually bottom-level routine for alter-table-add-column action.
+ * */
+bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPositionDef *pos) {
+    Table *table = open_table(table_name);
+    MetaTable *meta_table = table->meta_table;
+    int index = get_column_position(meta_table, pos);
+    append_new_column(table->root_page_num, table, new_meta_column, index);
+    return true;
+}
+
 /* Open a table file. 
  * Return Table or NULL if not exists. */
 Table *open_table(char *table_name) {

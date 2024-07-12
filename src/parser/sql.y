@@ -57,6 +57,7 @@ int yylex();
    DropColumnDef                *drop_column_def;
    ChangeColumnDef              *change_column_def;
    AlterTableAction             *alter_table_action;
+   ColumnPositionDef            *column_position_def;
    CreateTableNode              *create_table_node;
    DropTableNode                *drop_table_node;
    SelectNode                   *select_node;
@@ -101,6 +102,7 @@ int yylex();
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> NOT
 %token <keyword> ALTER COLUMN ADD CHANGE
+%token <keyword> BEFORE AFTER
 %token <keyword> SYSTEM CONFIG MEMORY
 %token <strVal> IDENTIFIER
 %token <intVal> INTVALUE
@@ -154,6 +156,7 @@ int yylex();
 %type <drop_column_def> drop_column_def
 %type <change_column_def> change_column_def
 %type <alter_table_action> alter_table_action
+%type <column_position_def> column_position_def
 %type <select_node> select_statement
 %type <insert_node> insert_statement
 %type <update_node> update_statement
@@ -401,10 +404,11 @@ alter_table_action:
         }
     ;
 add_column_def:
-    ADD COLUMN column_def
+    ADD COLUMN column_def column_position_def
         {
             AddColumnDef *node = make_add_column_def();
             node->column_def = $3;
+            node->position_def = $4;
             $$ = node;
         }
     ;
@@ -423,6 +427,26 @@ change_column_def:
             node->old_column_name = $2;
             node->new_column_def = $3;
             $$ = node;
+        }
+    ;
+column_position_def:
+    /* empty */
+    {
+        $$ = NULL;
+    }
+    | BEFORE IDENTIFIER 
+        {
+            ColumnPositionDef *pos = make_column_position_def();
+            pos->type = POS_BEFORE;
+            pos->column = $2;
+            $$ = pos;
+        }
+    | AFTER IDENTIFIER
+        {
+            ColumnPositionDef *pos = make_column_position_def();
+            pos->type = POS_AFTER;
+            pos->column = $2;
+            $$ = pos;
         }
     ;
 selection:

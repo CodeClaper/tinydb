@@ -146,6 +146,16 @@ void set_default_value_cell(void *node, void *destination, uint32_t default_valu
         panic("Try to fetch default value cell in non-root node.");
 }
 
+/* Get leaf node header pointer*/
+static void *get_leaf_node_header_pointer(void *node, uint32_t default_value_len) {
+    if (is_root_node(node)) {
+        uint32_t column_size = get_column_size(node);
+        return (node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len);
+    } else {
+        return (node + CELL_NUM_OFFSET);
+    }
+}
+
 /* Get leaf node cell number. */
 uint32_t get_leaf_node_cell_num(void *node, uint32_t default_value_len) {
     if (is_root_node(node)) {
@@ -937,6 +947,190 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     }
 }
 
+/* Check if overflow after appending new column for root leaf node. */
+static bool overflow_root_leaf_node_new_column(void *root_node, MetaColumn *new_column, uint32_t key_len, uint32_t value_len) {
+    /* Row value lenght after adding new column. */
+    value_len += new_column->column_length;
+    uint32_t row_len = key_len + value_len;
+    /* Column size increases one. */
+    uint32_t column_size = get_column_size(root_node) + 1;
+    uint32_t cell_num = get_leaf_node_cell_num(root_node, value_len);
+    uint32_t after_len = ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + row_len * cell_num; 
+    return after_len > PAGE_SIZE;
+}
+
+/* Get new cell pointer After appending column. */
+static void *cell_pointer_after_append(void *root_node, MetaColumn *new_column, int index, uint32_t key_len, uint32_t value_len) {
+    /* Row value lenght after adding new column. */
+    value_len += new_column->column_length;
+    uint32_t row_len = key_len + value_len;
+    /* Column size increases one. */
+    uint32_t column_size = get_column_size(root_node) + 1;
+    return (root_node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + row_len * index); 
+}
+
+/* Get default value pointer after appending column. */
+static void *default_value_pointer_after_append(void *root_node) {
+    /* Column size increases one. */
+    uint32_t column_size = get_column_size(root_node) + 1;
+    return (root_node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size); 
+}
+
+/* Calcualte the offset where new column appending at. */
+static uint32_t calc_offset_new_column(MetaTable *meta_table, int pos) {
+    /*  Calcualte offset. */
+    uint32_t offset = 0;
+    for (int i = 0; i < pos; i++) {
+        MetaColumn *current = meta_table->meta_column[i];
+        offset += current->column_length;
+    }
+    return offset;
+}
+
+/* Generate new cell after appending column. */
+static void *gen_new_cell_after_append_column(void *old_cell, MetaTable *meta_table, MetaColumn *new_meta_column, int pos) {
+
+    Assert(pos > -1);
+
+    uint32_t value_len = calc_table_row_length2(meta_table);
+    uint32_t key_len = calc_primary_key_length2(meta_table);
+    uint32_t cell_len = key_len + value_len;
+    
+    /* Get new column offset. */
+    uint32_t offset = calc_offset_new_column(meta_table, pos);
+    Assert(cell_len > offset);
+    
+    /* Move after offset memory. */
+    memcpy(old_cell + offset + new_meta_column->column_length, 
+           old_cell + offset, 
+           cell_len - offset);
+
+    /* Assign new column default value. */
+    assign_row_value(old_cell + offset, 
+                     new_meta_column->default_value, 
+                     new_meta_column);
+
+    return old_cell;
+}
+
+/* Genrate new default value. */
+static void *gen_new_default_value_after_append_column(void *default_value, MetaTable *meta_table, MetaColumn *new_meta_column, int pos) {
+    Assert(pos > -1);
+
+    uint32_t value_len = calc_table_row_length2(meta_table);
+
+    /* Get new column offset. */
+    uint32_t offset = calc_offset_new_column(meta_table, pos);
+
+    /* Move after offset memory. */
+    memcpy(default_value + offset + new_meta_column->column_length,
+           default_value + offset,
+           value_len - offset);
+
+    /* Assign new column default value. */
+    switch (new_meta_column->default_value_type) {
+        case DEFAULT_VALUE:
+            memcpy(default_value + offset, new_meta_column->default_value, new_meta_column->column_length);
+            break;
+        case DEFAULT_VALUE_NONE:
+        case DEFAULT_VALUE_NULL:
+            memset(default_value + offset, 0, new_meta_column->column_length);
+            break;
+    }
+
+    return default_value;
+}
+
+/* Append root leaf node new column. */
+static void append_root_leaf_node_column(void *root_node, MetaTable *meta_table, MetaColumn *new_column, int pos) {
+    /* Just for check. */
+    Assert(is_root_node(root_node));
+    Assert(get_node_type(root_node) == LEAF_NODE);
+
+    uint32_t value_len = calc_table_row_length2(meta_table);
+    uint32_t key_len = calc_primary_key_length2(meta_table);
+    uint32_t cell_len = key_len + value_len;
+    
+    void *destination = serialize_meta_column(new_column);
+
+    if (overflow_root_leaf_node_new_column(root_node, new_column, key_len, value_len)) {
+
+    } else {
+        /* *******************************************************************************************
+         * When we appending new column, we need to adjust the Page cell from bottom to top.
+         * Otherwise, the front cell will override the back cell.
+         * So we first add default or NULL value in reserved order, then append new meta column info.
+         * ******************************************************************************************
+         * */
+
+        /* Move leaf node body. */
+        uint32_t cell_num = get_leaf_node_cell_num(root_node, value_len);
+        for (int i = cell_num - 1; i >= 0; i--) {
+            void *old_cell = get_leaf_node_cell(root_node, key_len, value_len, i);
+            void *new_cell = gen_new_cell_after_append_column(old_cell, meta_table, new_column, pos);
+            memcpy(cell_pointer_after_append(root_node, new_column, i, key_len, value_len), 
+                   new_cell,
+                   cell_len + new_column->column_length);
+        }
+
+        /* Move leaf node header. */
+        memcpy(get_leaf_node_header_pointer(root_node, value_len) + ROOT_NODE_META_COLUMN_SIZE + new_column->column_length, 
+               get_leaf_node_header_pointer(root_node, value_len), 
+               CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE);
+
+        /* Move default value. */
+        void *old_default_value = get_default_value_cell(root_node);
+        void *new_default_value = gen_new_default_value_after_append_column(old_default_value, meta_table, new_column, pos);
+        memcpy(default_value_pointer_after_append(root_node), 
+               new_default_value,
+               value_len + new_column->column_length);
+
+        /* Move meta column info. */
+        uint32_t column_size = get_column_size(root_node);
+        for (int i = column_size; i >= pos; i--) {
+            if (i == pos) 
+                memcpy(get_meta_column_pointer(root_node, i), 
+                       destination, 
+                       ROOT_NODE_META_COLUMN_SIZE);
+            else if (i > pos) 
+                memcpy(get_meta_column_pointer(root_node, i), 
+                       get_meta_column_pointer(root_node, i - 1), 
+                       ROOT_NODE_META_COLUMN_SIZE);
+        }
+        
+        /* Increase column size. */
+        set_column_size(root_node, column_size + 1);
+    }
+}
+
+/* Append new column for leaf node. */
+static void append_leaf_node_column(void *leaf_node, MetaTable *meta_table, MetaColumn *new_column, int pos) {
+    if (is_root_node(leaf_node))
+        append_root_leaf_node_column(leaf_node, meta_table, new_column, pos);
+}
+
+/* Append new column. 
+ * This function supports page-level alter-table-add-column routine.
+ * And it will do two things:
+ * (1) Add new meta column info to the root node.
+ * (2) Add default value or NULL value (if missing default value) to the whole cells.
+ * */
+void append_new_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos) {
+    MetaTable *meta_table = table->meta_table;
+    void *node = get_page(meta_table->table_name, table->pager, page_num);
+    NodeType node_type = get_node_type(node);
+    switch (get_node_type(node)) {
+        case LEAF_NODE:
+            append_leaf_node_column(node, meta_table, new_column, pos);
+            break;
+        case INTERNAL_NODE:
+        case UNKNOWN_NODE:
+            UNEXPECTED_VALUE(node_type);
+            break;
+    }
+    flush_page(meta_table->table_name, table->pager, page_num);
+}
+
 /* If row is deleted*/
 bool cursor_is_deleted(Cursor *cursor) {
 
@@ -1336,6 +1530,8 @@ static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
             return NULL;
         case DEFAULT_VALUE:
             return meta_column->default_value;
+        default:
+            UNEXPECTED_VALUE(meta_column->default_value_type);
     }
 }
 
@@ -1369,11 +1565,15 @@ static void assign_row_value(void *destination, void *value, MetaColumn *meta_co
         memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
         if (!nflag)
             memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, value, meta_column->column_length);
+        else
+            memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, meta_column->column_length);
     } else {
         bool nflag = value == NULL ? true : false;
         memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
         if (!nflag)
             assign_row_array_value(destination, value, meta_column);
+        else
+            memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, meta_column->column_length);
     } 
 }
 

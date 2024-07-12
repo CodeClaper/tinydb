@@ -126,6 +126,9 @@ ChangeColumnDef *make_change_column_def();
 /* Make an AlterTableAction. */
 AlterTableAction *make_alter_table_action();
 
+/* Make a ColumnPositionDef. */
+ColumnPositionDef *make_column_position_def();
+
 /* Make a select node. */
 SelectNode *make_select_node();
 
