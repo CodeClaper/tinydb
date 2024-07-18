@@ -413,7 +413,7 @@ add_column_def:
         }
     ;
 drop_column_def:
-    DROP COLUMN column 
+    DROP COLUMN IDENTIFIER 
         {
             DropColumnDef *node = make_drop_column_def();
             node->column_name = $3;
@@ -421,7 +421,7 @@ drop_column_def:
         }
     ;
 change_column_def:
-    CHANGE column column_def
+    CHANGE IDENTIFIER column_def
         {
             ChangeColumnDef *node = make_change_column_def();
             node->old_column_name = $2;
