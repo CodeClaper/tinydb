@@ -53,6 +53,27 @@ def test_query_data_after_add_column2():
     assert ret["success"] == True
     assert ret["data"][0] ==  {'age': 10, 'id': 'S0001', 'name': 'zhangchuran', 'sex': 'M', 'address': None}
 
+## test add column that already exists.
+def test_add_column_ready_exist():
+    sql = "alter table Student add column name varchar(32) not null;"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Table 'Student' already exists column 'name'."
+
+## test add column with postion that its column not exists.
+def test_add_column_not_exist_postion():
+    sql = "alter table Student add column phone varchar(13) comment 'your phone number or your parent`s.' after parentName;"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Unknown column 'parentName' in table 'Student'."
+
+## test add primary-key column 
+def test_add_primary_key_column():
+    sql = "alter table Student add column idCard varchar(48) primary key;"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Not support add primary-key column through alter table."
+
 ## drop mock table
 def test_drop_mock_table():
     sql = "drop table Student"

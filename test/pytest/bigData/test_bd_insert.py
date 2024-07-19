@@ -35,8 +35,16 @@ def test_desc_tables():
     assert ret["success"] == True
     assert ret["data"][2] == { "field": "sex", "key": None, "type": "char", "length": 1, "array": False, "default": "M", "comment": "M if man Woman if W" }
 
+## count
+def test_select_count():
+    sql = "select count(sex) from Student;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"][0] == { "count": 999 }
+
+
 # drop mock table
-#def test_drop_mock_table():
-#    sql = "drop table Student"
-#    ret = client.execute(sql)
-#    assert ret["success"] == True
+def test_drop_mock_table():
+    sql = "drop table Student"
+    ret = client.execute(sql)
+    assert ret["success"] == True
