@@ -8,7 +8,7 @@ all:
 check: check-gtest check-pytest
 
 check-pytest:
-	pytest -v test/pytest/unit/
+	pytest -v 
 
 check-gtest:
 	@$(MAKE) -C test/gtest check
