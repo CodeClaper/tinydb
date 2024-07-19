@@ -1033,6 +1033,47 @@ static bool check_values_or_query_spec(InsertNode *insert_node, ValuesOrQuerySpe
 
 }
 
+static inline char *get_column_name_from_add_column_def(AddColumnDef *add_column) {
+    return add_column->column_def->column->column;
+}
+
+/* Check alter table add-column action*/
+static bool check_alter_table_add_column_action(char *table_name, AddColumnDef *add_column) {
+    char *column_name = get_column_name_from_add_column_def(add_column);
+    /* Check add column if exists. */
+    if (if_exists_column_in_table(column_name, table_name)) {
+        db_log(ERROR, "Table '%s' already exists column '%s'.", 
+               table_name, 
+               column_name);
+        return false;
+    }
+
+    /* Check if the position column def exists. */
+    if (!is_null(add_column->position_def) 
+        && !if_exists_column_in_table(add_column->position_def->column, table_name)) {
+        db_log(ERROR, "Unknown column '%s' in table '%s'.", 
+               add_column->position_def->column, 
+               table_name);
+        return false;
+    }
+
+    /* Check if add primary-key column, not support yet.*/
+    return true;    
+}
+
+/* Check alter table action. */
+static bool check_alter_table_action(char *table_name, AlterTableAction *action) {
+    switch (action->type) {
+        case ALTER_TO_ADD_COLUMN:
+            return check_alter_table_add_column_action(table_name, action->action.add_column);
+        case ALTER_TO_DROP_COLUMN:
+        case ALTER_TO_CHANGE_COLUMN:
+            db_log(ERROR, "Not supprot yet");
+            return false;
+    }
+    return true;
+}
+
 /* Check table. */
 static bool check_table(char *table_name) {
     if (check_table_exist(table_name))
@@ -1153,5 +1194,6 @@ bool check_drop_table(char *table_name) {
 
 /* Check for AlterTableNode. */
 bool check_alter_table(AlterTableNode *alter_table) {
-    return check_table(alter_table->table_name);
+    return check_table(alter_table->table_name)
+            && check_alter_table_action(alter_table->table_name, alter_table->action);
 }

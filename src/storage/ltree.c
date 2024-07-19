@@ -1293,16 +1293,13 @@ static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn 
 
     uint32_t value_len = calc_table_row_length(table);
     uint32_t key_len = calc_primary_key_length(table);
-    uint32_t cell_len = key_len + value_len;
     
     if (overflow_leaf_node_new_column(leaf_node, new_column, key_len, value_len)) 
         split_leaf_node_append_column(page_num, table, new_column, pos);
-    else {
-        if (is_root_node(leaf_node))
-            append_root_leaf_node_column(page_num, table, new_column, pos);
-        else 
-            append_normal_leaf_node_column(page_num, table, new_column, pos);
-    }
+    else if (is_root_node(leaf_node))
+        append_root_leaf_node_column(page_num, table, new_column, pos);
+    else 
+        append_normal_leaf_node_column(page_num, table, new_column, pos);
 }
 
 /* Append new column for root internal node. */

@@ -8,6 +8,7 @@
 #include "buffer.h"
 #include "create.h"
 #include "utils.h"
+#include "free.h"
 #include "log.h"
 
 /* Try to catpture table.
@@ -27,6 +28,8 @@ static void add_new_column(AddColumnDef *add_column_def, char *table_name, DBRes
     /* Capture table exclusively. */
     capture_table(table_name);
     MetaColumn *new_meta_column = combine_user_meta_column(add_column_def->column_def, table_name);        
+    if (new_meta_column->is_primary)
+        db_log(ERROR, "Not support add primary-key column through alter table.");
     if (add_new_meta_column(table_name, new_meta_column, add_column_def->position_def)) {
         result->success = true;
         result->message = format("Add column '%s' for table '%s' successfully.", 
@@ -36,6 +39,7 @@ static void add_new_column(AddColumnDef *add_column_def, char *table_name, DBRes
                new_meta_column->column_name, 
                table_name);
     }
+    free_meta_column(new_meta_column);
     /* Release table. */
     release_table(table_name);
 }

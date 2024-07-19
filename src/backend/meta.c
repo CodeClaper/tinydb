@@ -9,6 +9,7 @@
 #include <time.h>
 #include "meta.h"
 #include "data.h"
+#include "table.h"
 #include "mmu.h"
 #include "copy.h"
 #include "free.h"
@@ -550,4 +551,16 @@ char *get_default_value_name(MetaColumn *meta_column) {
             return stringify_value(meta_column->default_value, meta_column->column_type);
     }
     return NULL;
+}
+
+/* Check if table exists the column. */
+bool if_exists_column_in_table(char *column_name, char *table_name) {
+    Table *table = open_table(table_name);
+    MetaTable *meta_table = table->meta_table;
+    uint32_t i;
+    for (i = 0; i < meta_table->column_size; i++) {
+        if (streq(column_name, meta_table->meta_column[i]->column_name))
+            return true;
+    }
+    return false;
 }

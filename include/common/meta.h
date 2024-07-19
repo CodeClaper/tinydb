@@ -50,3 +50,6 @@ char *stringify_value(void *value, DataType data_type);
 
 /* Get default value name from MetaColumn. */
 char *get_default_value_name(MetaColumn *meta_column);
+
+/* Check if table exists the column. */
+bool if_exists_column_in_table(char *column_name, char *table_name);
