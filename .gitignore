@@ -110,6 +110,7 @@ m4/lt~obsolete.m4
 
 test/pytest/support/__pycache__
 test/pytest/unit/__pycache__
+test/pytest/bigData/__pycache__
 .pytest_cache/
 .cache/
 compile_commands.json
