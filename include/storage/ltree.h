@@ -77,7 +77,7 @@ void *get_array_value(void *destination, uint32_t index, uint32_t span);
 void initial_leaf_node(void *leaf_node, uint32_t default_value_len, bool is_root);
 
 /* Insert new internal node cell. */
-void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_child_page_num);
+void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_child_page_num, uint32_t key_len, uint32_t value_len);
 
 /* Insert a new leaf node cell. */
 void insert_leaf_node_cell(Cursor *cursor, Row *row);

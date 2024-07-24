@@ -67,8 +67,8 @@ uint32_t calc_column_len(ColumnDefNode *column_def, uint32_t array_cap) {
     }
     /* If type is array, single data type length multiply by array cap. */
     return array_cap == 0 
-        ? (column_length + LEAF_NODE_CELL_NULL_FLAG_SIZE)
-        : (column_length * array_cap + LEAF_NODE_ARRAY_NUM_SIZE + LEAF_NODE_CELL_NULL_FLAG_SIZE);
+            ? (column_length + LEAF_NODE_CELL_NULL_FLAG_SIZE)
+            : (column_length * array_cap + LEAF_NODE_ARRAY_NUM_SIZE + LEAF_NODE_CELL_NULL_FLAG_SIZE);
 }
 
 /* Column Operation. */

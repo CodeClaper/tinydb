@@ -628,13 +628,13 @@ static bool check_table_ref_set(TableRefSetNode *table_ref_set) {
             TableRefNode *table_ref2 = table_ref_set->set[j];
             /* Check duplicate table. */
             if (streq(table_ref->table, table_ref2->table)) {
-                db_log(ERROR, "Duaplicate table '%s'. ", table_ref->table);
+                db_log(ERROR, "Duplicate table '%s'. ", table_ref->table);
                 return false;
             }
             /* Check duplicate table alias name. */
             if (table_ref->range_variable && table_ref2->range_variable 
                 && streq(table_ref->range_variable, table_ref2->range_variable)) {
-                db_log(ERROR, "Duaplicate table alias name: '%s'. ", table_ref->range_variable);
+                db_log(ERROR, "Duplicate table alias name: '%s'. ", table_ref->range_variable);
                 return false;
             }
         }

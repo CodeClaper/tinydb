@@ -100,9 +100,17 @@ void set_node_type(void *node, NodeType node_type) {
 }
 
 /* If root node */
-static bool is_root_node(void *node) {
+static inline bool is_root_node(void *node) {
     uint8_t value  = *(uint8_t *)(node + IS_ROOT_OFFSET);
     return (bool) value;
+}
+
+static inline bool is_internal_node(void *node) {
+    return get_node_type(node) == INTERNAL_NODE;
+}
+
+static inline bool is_leaf_node(void *node) {
+    return get_node_type(node) == LEAF_NODE;
 }
 
 /* Set if root node */
@@ -233,16 +241,6 @@ void set_leaf_node_cell_key(void *node, uint32_t index, uint32_t key_len, uint32
     }
 }
 
-
-/* Get leaf node body pointer. */
-static void *get_leaf_node_body_pointer(void *node, uint32_t key_len, uint32_t value_len) {
-    if (is_root_node(node)) {
-        uint32_t column_size = get_column_size(node);
-        return (node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE); 
-    } else {
-        return (node + LEAF_NODE_HEAD_SIZE);
-    }
-}
 
 /* Get leaf node cell value pointer. */
 void *get_leaf_node_cell_value(void *node, uint32_t key_len, uint32_t value_len, uint32_t index) {
@@ -447,8 +445,10 @@ static void *get_max_key(Table *table, void *node, uint32_t key_len, uint32_t va
             void *right_node = get_page(table->meta_table->table_name, table->pager, right_child_page_num);
             return get_max_key(table, right_node, key_len, value_len);
         }
-        case LEAF_NODE:
-            return get_leaf_node_cell_key(node, get_leaf_node_cell_num(node, value_len) - 1,  key_len, value_len);
+        case LEAF_NODE: {
+            uint32_t cell_num = get_leaf_node_cell_num(node, value_len);
+            return get_leaf_node_cell_key(node, cell_num - 1, key_len, value_len);
+        }
         default:
             UNEXPECTED_VALUE(get_node_type(node));
             return NULL;
@@ -470,8 +470,12 @@ void initial_internal_node(void *internal_node, bool is_root) {
 }
 
 /* Update internal node node key. */
-static void update_internal_node_key(Table *table, void *internal_node, void *old_key, void *new_key, uint32_t key_len, uint32_t value_len, DataType key_data_type) {
+static void update_internal_node_key(Table *table, void *internal_node, void *old_key, void *new_key, 
+                                     uint32_t key_len, uint32_t value_len, DataType key_data_type) {
     uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);  
+
+    Assert(keys_num > 0);
+
     /* Get max key and absolute max key in internal node cell. */
     void *max_key = get_internal_node_key(internal_node, keys_num - 1, key_len, value_len);
     void *absolute_max_key = get_max_key(table, internal_node, key_len, value_len);
@@ -490,11 +494,12 @@ static void update_internal_node_key(Table *table, void *internal_node, void *ol
     }
     
     /* If internal has parent node, and change its absolute max key, also need to change its parent key. */
-    if (!is_root_node(internal_node) && (equal(old_key, absolute_max_key, key_data_type) || equal(new_key, absolute_max_key, key_data_type))) {
-        uint32_t parent_page_num = get_parent_pointer(internal_node);
-        void *parent_node = get_page(table->meta_table->table_name, table->pager, parent_page_num);
-        update_internal_node_key(table, parent_node, old_key, new_key, key_len, value_len, key_data_type);
-        flush_page(table->meta_table->table_name, table->pager, parent_page_num);
+    if (!is_root_node(internal_node) && (equal(old_key, absolute_max_key, key_data_type) 
+        || equal(new_key, absolute_max_key, key_data_type))) {
+            uint32_t parent_page_num = get_parent_pointer(internal_node);
+            void *parent_node = get_page(table->meta_table->table_name, table->pager, parent_page_num);
+            update_internal_node_key(table, parent_node, old_key, new_key, key_len, value_len, key_data_type);
+            flush_page(table->meta_table->table_name, table->pager, parent_page_num);
     }
 }
 
@@ -586,7 +591,9 @@ static void copy_root_to_internal_node(void *root, void *internal_node, uint32_t
 
     /* Copy Body. */
     for (int i = 0; i < keys_num; i++) {
-        memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), get_internal_node_cell(root, i, key_len, value_len), cell_len);
+        memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), 
+               get_internal_node_cell(root, i, key_len, value_len), 
+               cell_len);
     }
 }
 
@@ -708,9 +715,13 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
             set_internal_node_child(destination_node, index, new_child_page_num, key_len, value_len);
         } else if (i > new_child_max_key_index) {
             /* Right cells make cell space. */
-            memcpy(get_internal_node_cell(destination_node, index, key_len, value_len), get_internal_node_cell(old_internal_node, i - 1, key_len, value_len), cell_len);
+            memcpy(get_internal_node_cell(destination_node, index, key_len, value_len), 
+                   get_internal_node_cell(old_internal_node, i - 1, key_len, value_len), 
+                   cell_len);
         } else {
-            memcpy(get_internal_node_cell(destination_node, index, key_len, value_len), get_internal_node_cell(old_internal_node, i, key_len, value_len), cell_len);
+            memcpy(get_internal_node_cell(destination_node, index, key_len, value_len), 
+                   get_internal_node_cell(old_internal_node, i, key_len, value_len), 
+                   cell_len);
         }
     }
 
@@ -731,6 +742,7 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
     /* If old internal is root, need to create new root. */
     if (is_root_node(old_internal_node)) {
         create_new_root_node(table, next_unused_page_num, key_len, value_len);
+        flush_page(table->meta_table->table_name, table->pager, old_internal_page_num);
     } else {
         /* Otherwise, it`s a normal internal node. 
          * Maybe the max key change, need update max key in parent internal node. */
@@ -740,7 +752,7 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
         update_internal_node_key(table, parent, old_max_key, new_max_key, key_len, value_len, primary_key_meta_column->column_type);
 
         /* And insert a new cell about the new leaf node to the parent internal node. */
-        insert_internal_node_cell(table, parent_page_num, next_unused_page_num);
+        insert_internal_node_cell(table, parent_page_num, next_unused_page_num, key_len, value_len);
         flush_page(table->meta_table->table_name, table->pager, old_internal_page_num);
         flush_page(table->meta_table->table_name, table->pager, next_unused_page_num);
         flush_page(table->meta_table->table_name, table->pager, parent_page_num);
@@ -748,16 +760,13 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
 }
 
 /* Insert new internal node cell. */
-void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_child_page_num) {
+void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_child_page_num, 
+                               uint32_t key_len, uint32_t value_len) {
     
     /* Get current internal node. */
     void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
     /* Get the new child node. */
     void *new_child_node = get_page(table->meta_table->table_name, table->pager, new_child_page_num);
-
-    /* Get key, vlaue length. */
-    uint32_t value_len = calc_table_row_length(table);
-    uint32_t key_len = calc_primary_key_length(table);
 
     /* Get primary key column meta info. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
@@ -796,7 +805,9 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
                 int i;
                 for (i = keys_num; i > new_child_max_key_index + 1; i--) {
                     uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
-                    memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), get_internal_node_cell(internal_node, i - 1, key_len, value_len), cell_len); 
+                    memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), 
+                           get_internal_node_cell(internal_node, i - 1, key_len, value_len), 
+                           cell_len); 
                 } 
                 set_internal_node_key(internal_node, new_child_max_key_index + 1, new_child_max_key, key_len, value_len);
                 set_internal_node_child(internal_node,  new_child_max_key_index + 1, new_child_page_num, key_len, value_len);
@@ -805,7 +816,9 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
                 int i;
                 for (i = keys_num; i > new_child_max_key_index; i--) {
                     uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
-                    memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), get_internal_node_cell(internal_node, i - 1, key_len, value_len), cell_len); 
+                    memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), 
+                           get_internal_node_cell(internal_node, i - 1, key_len, value_len), 
+                           cell_len); 
                 } 
                 set_internal_node_key(internal_node, new_child_max_key_index, new_child_max_key, key_len, value_len);
                 set_internal_node_child(internal_node,  new_child_max_key_index, new_child_page_num, key_len, value_len);
@@ -909,10 +922,11 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         uint32_t parent_page_num = get_parent_pointer(old_node);
         void *parent = get_page(table_name, cursor->table->pager, parent_page_num);
         void *new_max_key = get_max_key(cursor->table, old_node, key_len, value_len);
-        update_internal_node_key(cursor->table, parent, old_max_key, new_max_key, key_len, value_len, primary_key_meta_column->column_type);
+        update_internal_node_key(cursor->table, parent, old_max_key, new_max_key, 
+                                 key_len, value_len, primary_key_meta_column->column_type);
         
         /* And insert a new cell about the new leaf node to the parent internal node. */
-        insert_internal_node_cell(cursor->table, parent_page_num, next_unused_page_num);
+        insert_internal_node_cell(cursor->table, parent_page_num, next_unused_page_num, key_len, value_len);
         flush_page(table_name, cursor->table->pager, cursor->page_num);
         flush_page(table_name, cursor->table->pager, next_unused_page_num);
         flush_page(table_name, cursor->table->pager, parent_page_num);
@@ -999,7 +1013,8 @@ static bool overflow_root_internal_node_new_column(void *root_node, MetaColumn *
     uint32_t column_size = get_column_size(root_node);
     uint32_t keys_num = get_internal_node_keys_num(root_node, value_len);
     value_len += new_column->column_length;
-    return COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * (column_size + 1) + value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + cell_len * keys_num > PAGE_SIZE;
+    uint32_t after_len = COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * (column_size + 1) + value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + cell_len * keys_num;
+    return after_len > PAGE_SIZE;
 }
 
 /* Get new cell pointer After appending column. */
@@ -1158,24 +1173,97 @@ static void split_leaf_node_append_column(uint32_t page_num, Table *table, MetaC
         append_new_column(table->root_page_num, table, new_column, pos);
     }
     else {
+        /* append leaf node column. */
+        append_leaf_node_column(page_num, table, new_column, pos);
+        append_leaf_node_column(next_unused_page_num, table, new_column, pos);
+
+        value_len += new_column->column_length;
+
         /* Otherwise, it`s a normal leaf node. 
          * Maybe the max key change, need update max key in parent internal node. */
         uint32_t parent_page_num = get_parent_pointer(leaf_node);
         void *parent = get_page(table_name, table->pager, parent_page_num);
         void *new_max_key = get_max_key(table, leaf_node, key_len, value_len);
-        update_internal_node_key(table, parent, old_max_key, new_max_key, key_len, value_len, primary_key_meta_column->column_type);
+
+        update_internal_node_key(table, parent, old_max_key, 
+                                 new_max_key, key_len, 
+                                 value_len,  
+                                 primary_key_meta_column->column_type);
         
         /* And insert a new cell about the new leaf node to the parent internal node. */
-        insert_internal_node_cell(table, parent_page_num, next_unused_page_num);
+        insert_internal_node_cell(table, parent_page_num, next_unused_page_num, key_len, value_len);
 
-        /* append leaf node column. */
-        append_leaf_node_column(page_num, table, new_column, pos);
-        append_leaf_node_column(next_unused_page_num, table, new_column, pos);
 
         flush_page(table_name, table->pager, page_num);
         flush_page(table_name, table->pager, next_unused_page_num);
         flush_page(table_name, table->pager, parent_page_num);
     }
+}
+
+/* Split root internla node when appending column. */
+static void split_root_internal_node_append_column(uint32_t page_num, Table *table, uint32_t key_len, uint32_t value_len) {
+
+    db_log(INFO, "root internal node split ...");
+
+    uint32_t keys_num, next_unused_page_num, cell_len;
+    
+    /* Get old internal node. */
+    void *old_internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
+
+    /* Get keys number, key length, value length. cell_len */
+    value_len = calc_table_row_length(table);
+    key_len = calc_primary_key_length(table);
+    keys_num = get_internal_node_keys_num(old_internal_node, value_len);
+    cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
+
+    /* Create new internal node and initialize. */
+    next_unused_page_num = next_avaliable_page_num(table->pager);
+    void *new_internal_node = get_page(table->meta_table->table_name, table->pager, next_unused_page_num);
+    initial_internal_node(new_internal_node, false);
+    set_parent_pointer(new_internal_node, get_parent_pointer(old_internal_node));
+    set_internal_node_keys_num(new_internal_node, value_len, 0);
+    set_internal_node_right_child(new_internal_node, value_len, 0);
+    
+    uint32_t RIGHT_SPLIT_COUNT = keys_num / 2;
+    uint32_t LEFT_SPLIT_COUNT = keys_num - RIGHT_SPLIT_COUNT;
+
+    int i;
+    for (i = keys_num - 1; i >= 0; i--) {
+        /* Define which node. */ 
+        void *destination_node = i >= LEFT_SPLIT_COUNT 
+                ? new_internal_node 
+                : old_internal_node;
+        
+        /* New position. */
+        uint32_t index = i % LEFT_SPLIT_COUNT;
+
+        /* Copy memory. */
+        memcpy(get_internal_node_cell(destination_node, index, key_len, value_len), 
+               get_internal_node_cell(old_internal_node, i, key_len, value_len), 
+               cell_len);
+    }
+
+    /* For new internal node, it uses old internall node right node as right node. */
+    set_internal_node_keys_num(new_internal_node, value_len, RIGHT_SPLIT_COUNT);
+    set_internal_node_right_child(new_internal_node, value_len, 
+                                  get_internal_node_right_child(old_internal_node, value_len));
+
+    /* Rest parent for new internal node.*/
+    redefine_parent(table, next_unused_page_num);
+
+    /* For old internal node, it uses its last cell as it right child. */
+    set_internal_node_keys_num(old_internal_node, value_len, LEFT_SPLIT_COUNT);
+    set_internal_node_right_child(old_internal_node, value_len, 
+                                  get_internal_node_child(old_internal_node, LEFT_SPLIT_COUNT - 1, key_len, value_len));
+    set_internal_node_keys_num(old_internal_node, value_len, LEFT_SPLIT_COUNT - 1);
+
+    redefine_parent(table, page_num);
+
+    /* Flush page.*/
+    flush_page(table->meta_table->table_name, table->pager, page_num);
+
+    /* Create new root. */
+    create_new_root_node(table, next_unused_page_num, key_len, value_len);
 }
 
 /* Append root leaf node new column. */
@@ -1266,18 +1354,19 @@ static void append_normal_leaf_node_column(uint32_t page_num, Table *table, Meta
 
     /* Move leaf node body. */
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node, value_len);
-    for (int i = cell_num - 1; i >= 0; i--) {
+    int i;
+    for (i = cell_num - 1; i >= 0; i--) {
         void *old_cell = get_leaf_node_cell(leaf_node, key_len, value_len, i);
         void *new_cell = gen_new_cell_after_append_column(old_cell, meta_table, new_column, pos);
         memmove(cell_pointer_after_append(leaf_node, new_column, i, key_len, value_len), 
-               new_cell,
-               cell_len + new_column->column_length);
+                new_cell,
+                cell_len + new_column->column_length);
     }
 
     /* Move leaf node header. */
     memmove(get_leaf_node_header_pointer(leaf_node, value_len) + ROOT_NODE_META_COLUMN_SIZE + new_column->column_length, 
-           get_leaf_node_header_pointer(leaf_node, value_len), 
-           CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE);
+            get_leaf_node_header_pointer(leaf_node, value_len), 
+            CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE);
 
     /* flush page. */
     flush_page(table->meta_table->table_name, table->pager, page_num);
@@ -1313,9 +1402,9 @@ static void append_root_internal_node_column(uint32_t page_num, Table *table, Me
     
     void *destination = serialize_meta_column(new_column);
     if (overflow_root_internal_node_new_column(root_node, new_column, key_len, value_len)) {
-        panic("Not support root internal node split");
+        split_root_internal_node_append_column(page_num, table, key_len, value_len);
+        append_new_column(table->root_page_num, table, new_column, pos);
     } else {
-
         /* Move body */
         uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
         uint32_t keys_num = get_internal_node_keys_num(root_node, value_len);
@@ -1353,15 +1442,21 @@ static void append_root_internal_node_column(uint32_t page_num, Table *table, Me
 
         /* Append new column for children. */
         value_len += new_column->column_length;
-        uint32_t i;
-        for (i = 0; i < keys_num; i++) {
+
+        /* Notice: Keep the FRTL (From Right to Left) princile.
+         * we then maybe need the get_max_key function work, 
+         * it will try to fetch the rightmost cell in internal node, 
+         * so make sure right cells has been appended new column.
+         * */
+        uint32_t right_child_page_num = get_internal_node_right_child(root_node, value_len);
+        append_new_column(right_child_page_num, table, new_column, pos);
+
+        int i;
+        for (i = keys_num - 1; i >= 0; i--) {
             uint32_t child_page_num = get_internal_node_child(root_node, i, key_len, value_len);
             append_new_column(child_page_num, table, new_column, pos);
         }
 
-        /* And right child. */
-        uint32_t right_child_page_num = get_internal_node_right_child(root_node, value_len);
-        append_new_column(right_child_page_num, table, new_column, pos);
     }
 }
 
@@ -1462,8 +1557,7 @@ void update_row_data(Row *row, Cursor *cursor) {
 
 /* Get replace child node. */
 static void *get_replaced_child_node(Table *table, void *node, uint32_t default_value_len) {
-
-    if (get_node_type(node) == INTERNAL_NODE) {
+    if (is_internal_node(node)) {
         uint32_t keys_num = get_internal_node_keys_num(node, default_value_len);
         uint32_t right_child_page_num = get_internal_node_right_child(node, default_value_len);
 
@@ -1483,9 +1577,10 @@ static void *get_replaced_child_node(Table *table, void *node, uint32_t default_
 }
 
 /* When root is empty to do. */
-static void empty_root_node(Table *table) {
+static void make_empty_root_node(Table *table) {
     void *root = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
-    assert_true(get_node_type(root) == INTERNAL_NODE, "Sysmtem error, when empty root node, it must be internal type.");
+    assert_true(get_node_type(root) == INTERNAL_NODE, 
+                "Sysmtem error, when empty root node, it must be internal type.");
     set_node_type(root, LEAF_NODE);
     uint32_t value_len = calc_table_row_length(table);
     set_leaf_node_cell_num(root, value_len, 0);
@@ -1521,7 +1616,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
         else if (key_num == 0) {
             set_internal_node_right_child(internal_node, value_len, 0);
             if (is_root_node(internal_node))
-                empty_root_node(table);
+                make_empty_root_node(table);
             else {
                 uint32_t parent_page_num = get_parent_pointer(internal_node);
                 delete_internal_node_cell(table, parent_page_num, key, key_data_type);
@@ -1567,7 +1662,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
                      * If not is was empty root, deal with empty root. */
                     uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
                     if (right_child_page_num == 0) 
-                        empty_root_node(table);
+                        make_empty_root_node(table);
                 }
             }
             
@@ -1581,9 +1676,13 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
              * If the last cell, set NULL. */
             for (uint32_t i = key_index; i < key_num; i++) {
                 if (i != key_num - 1) 
-                    memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), get_internal_node_cell(internal_node, i + 1, key_len, value_len), cell_len);
+                    memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), 
+                           get_internal_node_cell(internal_node, i + 1, key_len, value_len), 
+                           cell_len);
                 else 
-                    memset(get_internal_node_cell(internal_node, i, key_len, value_len), 0, cell_len);
+                    memset(get_internal_node_cell(internal_node, i, key_len, value_len), 
+                           0, 
+                           cell_len);
             }
             /* Decrease cell number. */
             set_internal_node_keys_num(internal_node, value_len, --key_num);
@@ -1696,7 +1795,9 @@ void root_fall_back_root_node(Table *table) {
                 uint32_t i;
                 for (i = 0; i < cells_num; i++) {
                     set_leaf_node_cell_key(root, i, key_len, value_len, get_leaf_node_cell_key(replace_node, i, key_len, value_len)); 
-                    memcpy(get_leaf_node_cell_value(root, key_len, value_len, i), get_leaf_node_cell_value(replace_node, key_len , value_len, i), value_len);
+                    memcpy(get_leaf_node_cell_value(root, key_len, value_len, i), 
+                           get_leaf_node_cell_value(replace_node, key_len , value_len, i), 
+                           value_len);
                 }
                 set_leaf_node_cell_num(root, value_len, cells_num);
                 break;
@@ -1708,7 +1809,9 @@ void root_fall_back_root_node(Table *table) {
                 assert_false(overflow_internal_node(root, keys_num, key_len, value_len), "Internal node overflow when root fall back.\n");
                 uint32_t i;
                 for (i = 0; i < keys_num; i++) {
-                    memcpy(get_internal_node_cell(root, i, key_len, value_len), get_internal_node_cell(replace_node, i, key_len, value_len), cell_len);
+                    memcpy(get_internal_node_cell(root, i, key_len, value_len), 
+                           get_internal_node_cell(replace_node, i, key_len, value_len), 
+                           cell_len);
                     uint32_t child_node_num = get_internal_node_child(replace_node, i, key_len, value_len);
                     void *child_node = get_page(table->meta_table->table_name, table->pager, child_node_num);
                     set_parent_pointer(child_node, table->root_page_num);
@@ -1832,7 +1935,9 @@ static void assign_row_array_value(void *destination, ArrayValue *array_value, M
     uint32_t i;
     for (i = 0; i < array_value->size; i++) {
         void *value = array_value->set[i];
-        memcpy((destination + LEAF_NODE_CELL_NULL_FLAG_SIZE + LEAF_NODE_ARRAY_NUM_SIZE + span * i), value, span);        
+        memcpy((destination + LEAF_NODE_CELL_NULL_FLAG_SIZE + LEAF_NODE_ARRAY_NUM_SIZE + span * i), 
+               value, 
+               span);        
     }
 }
 

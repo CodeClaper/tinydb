@@ -136,6 +136,7 @@ bool db_receive(int server_fd) {
     while(true) {
         ssize_t r;
         char buff[BUFF_SIZE];
+        memset(buff, 0, BUFF_SIZE);
         if ((r = recv(server_fd, buff, BUFF_SIZE, 0)) > 0) {
             if (strcmp(buff, "OVER") == 0) 
                 return true;
