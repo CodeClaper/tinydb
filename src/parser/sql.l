@@ -5,6 +5,7 @@
 #include <string.h>
 #include "data.h"
 #include "mmu.h"
+#include "utils.h"
 #include "intpr.h"
 #include "log.h"
 #include "y.tab.h"
@@ -89,6 +90,10 @@ REF                     return REF;
 TRUE                    return TRUE;
 FALSE                   return FALSE;
 [a-zA-Z][a-zA-Z0-9_]*   { yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
+`[a-zA-Z][a-zA-Z0-9_]*` { 
+                            yylval.strVal = replace_all(yytext, "`", ""); 
+                            return IDENTIFIER;
+                        } 
 [0-9]+                  { yylval.intVal = parse_long(yytext); return INTVALUE;}
 [0-9]+	|
 [0-9]+"."[0-9]* |
