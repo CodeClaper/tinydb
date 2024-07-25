@@ -981,6 +981,10 @@ static bool check_insert_node_for_values(InsertNode *insert_node, List *value_li
             ColumnNode *column_node = lfirst(lc1);
             ValueItemNode *value_item_node = lfirst(lc2);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
+            if (is_null(meta_column)) {
+                db_log(ERROR, "Unknown column '%s'", column_node->column_name);
+                return false;
+            }
             if (!check_value_item_node(meta_table, meta_column->column_name, value_item_node))
                 return false;
         }

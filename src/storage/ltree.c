@@ -649,8 +649,6 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num, ui
  * And half hight cells in the old internal node will be moved into the new one. */
 static void insert_and_split_internal_node(Table *table, uint32_t old_internal_page_num, uint32_t new_child_page_num) {
 
-    db_log(INFO, "internal split ...");
-
     uint32_t keys_num, next_unused_page_num, key_len, value_len, cell_len;
     
     /* Get old internal node. */
@@ -834,8 +832,6 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
 /* When page full, it will generate a new leaf node. 
  * And half high cell in the old leaf will be moved to new leaf node. */
 static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
-
-    db_log(INFO, "leaf split ...");
 
     /* Get cell key, value and cell lenght. */
     uint32_t key_len, value_len, cell_length;
@@ -1105,7 +1101,6 @@ static void *gen_new_default_value_after_append_column(void *default_value, Meta
 
 /* Split leaf node. */
 static void split_leaf_node_append_column(uint32_t page_num, Table *table, MetaColumn *new_column, uint32_t pos) {
-    db_log(INFO, "leaf split");
     
     /* Get leaf node. */
     void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
@@ -1202,8 +1197,6 @@ static void split_leaf_node_append_column(uint32_t page_num, Table *table, MetaC
 
 /* Split root internla node when appending column. */
 static void split_root_internal_node_append_column(uint32_t page_num, Table *table, uint32_t key_len, uint32_t value_len) {
-
-    db_log(INFO, "root internal node split ...");
 
     uint32_t keys_num, next_unused_page_num, cell_len;
     
@@ -1971,6 +1964,10 @@ void *serialize_row_data(Row *row, Table *table) {
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
         void *value = get_value_from_row(row, meta_column);
+        if (meta_column->not_null && is_null(value)) {
+            db_log(ERROR, "Column '%s' does`t have a default value.", meta_column->column_name);
+            return NULL;
+        }
         /* Assign row value to destination. */
         assign_row_value(destination + offset, value, meta_column);
         offset += meta_column->column_length;
