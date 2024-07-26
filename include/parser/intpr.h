@@ -81,9 +81,6 @@ CreateTableNode *make_create_table_node();
 /* Make a DropTableNode. */
 DropTableNode *make_drop_table_node();
 
-/* Make a ArrayValue. */
-ArrayValue *make_array_value();
-
 /* Make a ReferValue. */
 ReferValue *make_refer_value();
 

@@ -25,8 +25,7 @@ Row *new_row(void *key, char *table_name) {
 ArrayValue *new_array_value(DataType data_type, uint32_t size) {
     ArrayValue *array_value = instance(ArrayValue);
     array_value->type = data_type;
-    array_value->size = size;
-    array_value->set = db_malloc(sizeof(void *) * size, "pointer");
+    array_value->list = create_list(NODE_VOID);
     return array_value;
 }
 

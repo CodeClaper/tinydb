@@ -159,6 +159,7 @@ static uint32_t get_column_def_size(CreateTableNode *create_table_node) {
         if (base_table_element->type == TELE_COLUMN_DEF)
             size++;
     }
+
     return size;
 }
 

@@ -217,14 +217,13 @@ bool built_in_primary_key(MetaTable *meta_table) {
 /* Assign value from array. */
 void *assign_value_from_array(List *value_list, MetaColumn *meta_column) {
     ArrayValue *array_value = instance(ArrayValue);
-    array_value->size = len_list(value_list);
     array_value->type = meta_column->column_type;
-    array_value->set = db_malloc(sizeof(void *) * array_value->size, "pointer");
+    array_value->list = create_list(NODE_VOID);
 
-    uint32_t i;
-    for (i = 0; i < array_value->size; i++) {
-        ValueItemNode *value_item = lfirst(list_nth_cell(value_list, i));
-        array_value->set[i] = assign_value_from_value_item_node(value_item, meta_column);
+    ListCell *lc;
+    foreach (lc, value_list) {
+        ValueItemNode *value_item = lfirst(lc);
+        append_list(array_value->list, assign_value_from_value_item_node(value_item, meta_column));
     }
 
     return array_value;

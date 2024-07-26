@@ -314,9 +314,8 @@ typedef struct ReferValue {
 
 /* ArrayValue. */
 typedef struct ArrayValue {
-    uint32_t size;
     DataType type;
-    void **set;
+    List *list;
 } ArrayValue;
 
 /* AtomType. */

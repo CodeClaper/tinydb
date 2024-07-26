@@ -432,12 +432,12 @@ ArrayValue *copy_array_value(ArrayValue *array_value) {
     if (!array_value) 
         return NULL;
     ArrayValue *array_value_dup = instance(ArrayValue);
-    array_value_dup->size = array_value->size;
     array_value_dup->type = array_value->type;
-    array_value_dup->set = db_malloc(sizeof(void *) * array_value_dup->size, "pointer");
-    uint32_t i;
-    for (i = 0; i < array_value_dup->size; i++) {
-        array_value_dup->set[i] = copy_value(array_value->set[i], array_value_dup->type);
+    array_value_dup->list = create_list(NODE_VOID);
+
+    ListCell *lc;
+    foreach (lc, array_value->list) {
+        append_list(array_value_dup->list, copy_value(lfirst(lc), array_value_dup->type));
     }
     return array_value_dup;
 }

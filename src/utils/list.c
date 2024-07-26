@@ -391,6 +391,13 @@ void free_list_deep(List *list) {
                 }
                 break;
             }
+            case NODE_VOID: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    db_free(lfirst(lc));
+                }
+                break;
+            }
             case NODE_STRING: {
                 ListCell *lc;
                 foreach (lc, list) {

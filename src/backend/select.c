@@ -533,7 +533,7 @@ static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_colum
     uint32_t i;
     for (i = 0; i < array_num; i++) {
         void *value = get_array_value(destination, i, span);
-        array_value->set[i] = copy_value(value, meta_column->column_type);
+        append_list(array_value->list, copy_value(value, meta_column->column_type));
     }
     return array_value;
 }
@@ -563,8 +563,8 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
 
         /* Generate a key value pair. */
         KeyValue *key_value = is_null_cell(destination + offset) 
-            ? new_key_value(db_strdup(meta_column->column_name), NULL, meta_column->column_type)
-            : new_key_value(db_strdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
+                            ? new_key_value(db_strdup(meta_column->column_name), NULL, meta_column->column_type)
+                            : new_key_value(db_strdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
         key_value->is_array = meta_column->array_dim > 0;
         key_value->table_name = db_strdup(meta_table->table_name);
     

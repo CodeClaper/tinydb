@@ -441,12 +441,8 @@ void free_refer_value(ReferValue *refer_value) {
 /* Free ArrayValue. */
 void free_array_value(ArrayValue *array_value) {
     if (array_value) {
-        if (array_value->set) {
-            uint32_t i;
-            for (i = 0; i < array_value->size; i++) {
-                free_value(array_value->set[i], array_value->type);
-            }
-            db_free(array_value->set);
+        if (array_value->list) {
+            free_list_deep(array_value->list);
         }
         db_free(array_value);
     }

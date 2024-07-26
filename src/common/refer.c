@@ -280,16 +280,18 @@ static bool update_single_key_value_refer(KeyValue *key_value, ReferUpdateEntity
 
 /* Update array key value refer. */
 static bool update_array_key_value_refer(KeyValue *key_value, ReferUpdateEntity *refer_update_entity) {
-    ArrayValue *array_value = (ArrayValue *)key_value->value;
     bool flag = false;
-    uint32_t i;
-    for (i = 0; i < array_value->size; i++) {
-        if (refer_equals(array_value->set[i], refer_update_entity->old_refer)) {
-            free_refer(array_value->set[i]);
-            array_value->set[i] = copy_refer(refer_update_entity->new_refer);
+    ArrayValue *array_value = (ArrayValue *)key_value->value;
+
+    ListCell *lc;
+    foreach (lc, array_value->list) {
+        if (refer_equals(lfirst(lc), refer_update_entity->old_refer)) {
+            free_refer(lfirst(lc));
+            lfirst(lc) = copy_refer(refer_update_entity->new_refer);
             flag = true;
         }
     }
+
     return flag;
 }
 

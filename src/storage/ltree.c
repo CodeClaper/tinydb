@@ -1,5 +1,5 @@
 /**
- * ========================== Disk Mapping B+TREE ======================================
+ * ========================== Disk Mapping B+TREE ==============================================================================
  * The ltree module is the core mudule for TinyDB.
  * - A database file is divided into a whole number pages.
  * - A page includes meta data and cells.
@@ -15,13 +15,20 @@
  * - The prince: always keep visible row lie at the forefront of same key cells.
  * 
  * DATA STRUCTRURE:
- *   cell structure:
- *   ----------------------------------------------------------------------------------------------
- *   | null_flag(8 bit)| array cap(32 bit) | col1 value| col2 value| col3 value|... |  cell key   |
- *   ----------------------------------------------------------------------------------------------
- *   |                             row value                                        |  row key    |
- *   ----------------------------------------------------------------------------------------------
- * =================================================================================================
+ *   (1) leaf cell structure:
+ *   ---------------------------------------------------------------------------------------------------------------------
+ *   | null_flag(8 bit)| array cap(32 bit, only exists for array) | col1 value| col2 value| col3 value|...  |  cell key  |
+ *   ---------------------------------------------------------------------------------------------------------------------
+ *   |                             cell value                                                                |  cell key   |
+ *   ----------------------------------------------------------------------------------------------------------------------
+ *   (2) leaf node structure:
+ *   ----------------------------------------------------------------------------------------------------------------------
+ *   |   
+ *   ----------------------------------------------------------------------------------------------------------------------
+ *   |
+ *   ----------------------------------------------------------------------------------------------------------------------
+ * 
+ * ====================================================================================================================================
  */
 
 #include <stdbool.h>
@@ -1916,21 +1923,24 @@ static void *get_value_from_row(Row *row, MetaColumn *meta_column) {
  * */
 static void assign_row_array_value(void *destination, ArrayValue *array_value, MetaColumn *meta_column) {
 
+    uint32_t len = len_list(array_value->list);
     /* User insert arrary values number integer multiple of array dim. */
-    Assert(array_value->size % meta_column->array_dim == 0);
+    Assert(len % meta_column->array_dim == 0);
 
     /* Assign array number. */
-    assign_array_number(destination, array_value->size);
+    assign_array_number(destination, len);
 
     /* span: every value in array data lenght. */
     uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE - LEAF_NODE_CELL_NULL_FLAG_SIZE) / meta_column->array_cap;
 
-    uint32_t i;
-    for (i = 0; i < array_value->size; i++) {
-        void *value = array_value->set[i];
+    uint32_t i = 0;
+    ListCell *lc;
+    foreach (lc, array_value->list) {
+        void *value = lfirst(lc);
         memcpy((destination + LEAF_NODE_CELL_NULL_FLAG_SIZE + LEAF_NODE_ARRAY_NUM_SIZE + span * i), 
                value, 
                span);        
+        i++;
     }
 }
 

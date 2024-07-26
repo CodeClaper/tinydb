@@ -44,11 +44,11 @@ static void json_array_key_value(KeyValue *key_value) {
         switch (key_value->data_type) {
             case T_BOOL: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    bool value = *(bool *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    bool value = *(bool *)lfirst(lc);
                     db_send(value ? "true" : "false");
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send( ",");
                 }
                 db_send("]");
@@ -56,12 +56,12 @@ static void json_array_key_value(KeyValue *key_value) {
             }
             case T_INT: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    int32_t value = *(int32_t *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    int32_t value = *(int32_t *)lfirst(lc);
                     char *strVal = itos(value);
                     db_send(strVal);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send(",");
                     db_free(strVal);
                 }
@@ -70,12 +70,12 @@ static void json_array_key_value(KeyValue *key_value) {
             }
             case T_LONG: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    int64_t value = *(int64_t *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    int64_t value = *(int64_t *)lfirst(lc);
                     char *strVal = ltos(value);
                     db_send(strVal);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send(",");
                     db_free(strVal);
                 }
@@ -86,11 +86,11 @@ static void json_array_key_value(KeyValue *key_value) {
             case T_VARCHAR:
             case T_CHAR: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    char *value = (char *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    char *value = (char *)lfirst(lc);
                     db_send("\"%s\"", value);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send(",");
                 }
                 db_send("]");
@@ -98,12 +98,12 @@ static void json_array_key_value(KeyValue *key_value) {
             }
             case T_FLOAT: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    float value = *(float *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    float value = *(float *)lfirst(lc);
                     char *strVal = ftos(value);
                     db_send(strVal);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                          db_send(",");
                     db_free(strVal);
                 }
@@ -112,12 +112,12 @@ static void json_array_key_value(KeyValue *key_value) {
             }
             case T_DOUBLE: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    double value = *(double *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    double value = *(double *)lfirst(lc);
                     char *strVal = dtos(value);
                     db_send(strVal);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send(",");
                     db_free(strVal);
                 }
@@ -126,12 +126,12 @@ static void json_array_key_value(KeyValue *key_value) {
             }
             case T_TIMESTAMP: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    time_t value = *(time_t *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    time_t value = *(time_t *)lfirst(lc);
                     char *strVal = ttos(value, "%Y-%m-%d %H:%M:%S");
                     db_send("\"%s\"", strVal);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send(",");
                     db_free(strVal);
                 }
@@ -140,12 +140,12 @@ static void json_array_key_value(KeyValue *key_value) {
             }
             case T_DATE: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    time_t value = *(time_t *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    time_t value = *(time_t *)lfirst(lc);
                     char *strVal = ttos(value, "%Y-%m-%d");
                     db_send("\"%s\"", strVal);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send(",");
                     db_free(strVal);
                 }
@@ -154,12 +154,12 @@ static void json_array_key_value(KeyValue *key_value) {
             }
             case T_REFERENCE: {
                 db_send("\"%s\": [", key);
-                uint32_t i;
-                for (i = 0; i < array_value->size; i++) {
-                    Refer *refer = (Refer *)array_value->set[i];
+                ListCell *lc;
+                foreach (lc, array_value->list) {
+                    Refer *refer = (Refer *)lfirst(lc);
                     Row *subrow = define_visible_row(refer);
                     json_row(subrow);
-                    if (i < array_value->size - 1)
+                    if (last_cell(array_value->list) != lc)
                         db_send(",");
                     free_row(subrow);
                 }

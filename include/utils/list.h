@@ -13,6 +13,7 @@ typedef enum NodeTag {
     NODE_BOOL,
     NODE_FLOAT,
     NODE_DOUBLE,
+    NODE_VOID,
     NODE_STRING,
     NODE_LIST,
     NODE_KEY_VALUE,
