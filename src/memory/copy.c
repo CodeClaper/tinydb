@@ -481,22 +481,6 @@ TableRefNode *copy_table_ref_node(TableRefNode *table_ref) {
     return table_ref_copy;
 }
 
-/* Copy TableRefSetNode. */
-TableRefSetNode *copy_table_ref_set_node(TableRefSetNode *table_ref_set) {
-    if (!table_ref_set)
-        return NULL;
-
-    TableRefSetNode *table_ref_set_copy = instance(TableRefSetNode);
-    table_ref_set_copy->size = table_ref_set->size;
-    table_ref_set_copy->set = db_malloc(sizeof(TableRefNode *) * table_ref_set_copy->size, "pointer");
-
-    uint32_t i;
-    for (i = 0; i < table_ref_set_copy->size; i++) {
-        table_ref_set_copy->set[i] = copy_table_ref_node(table_ref_set->set[i]);
-    }
-
-    return table_ref_set_copy;
-}
 
 /* Copy FromClauseNode. */
 FromClauseNode *copy_from_clause_node(FromClauseNode *from_clause_node) {
@@ -504,7 +488,7 @@ FromClauseNode *copy_from_clause_node(FromClauseNode *from_clause_node) {
         return NULL;
 
     FromClauseNode *from_clause_copy = instance(FromClauseNode);
-    from_clause_copy->from = copy_table_ref_set_node(from_clause_node->from);
+    from_clause_copy->from = list_copy_deep(from_clause_node->from);
     return from_clause_copy;
 }
 

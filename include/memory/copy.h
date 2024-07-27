@@ -55,6 +55,9 @@ LimitNode *copy_limit_node(LimitNode *limit_node);
 /* Copy ReferValue. */
 ReferValue *copy_refer_value(ReferValue *refer_value);
 
+/* Copy TableRefNode. */
+TableRefNode *copy_table_ref_node(TableRefNode *table_ref);
+
 /* Copy TableExpNode. */
 TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node);
 

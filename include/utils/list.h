@@ -27,7 +27,9 @@ typedef enum NodeTag {
     NODE_COLUMN_DEF_NAME,
     NODE_SCALAR_EXP,
     NODE_VALUE_ITEM,
-    NODE_BASE_TABLE_ELEMENT
+    NODE_BASE_TABLE_ELEMENT,
+    NODE_TABLE_REFER,
+    NODE_ASSIGNMENT
 } NodeTag;
 
 /* Cell in List.*/
@@ -97,7 +99,7 @@ static inline ListCell *third_last_cell(List *list) {
             : NULL;
 }
 
-/* Locate the n'th cell (starting from 0) of the list.
+/* Locate the n'th cell (starts from 0) of the list.
  * It is an assertion failure if there is no such cell.
  * */
 static inline ListCell *list_nth_cell(List *list, int nth) {

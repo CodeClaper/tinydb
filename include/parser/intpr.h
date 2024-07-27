@@ -24,12 +24,6 @@ ScalarExpNode *make_scalar_exp_node();
 /* Make a TableRefNode. */
 TableRefNode *make_table_ref_node();
 
-/* Make a TableRefSetNode. */
-TableRefSetNode *make_table_ref_set_node();
-
-/* Add a TableRefNode to TableRefSetNode. */
-void add_table_ref_to_set(TableRefSetNode *table_ref_set, TableRefNode *table_ref);
-
 /* Make a FromClauseNode. */
 FromClauseNode *make_from_clause_node();
 
@@ -68,12 +62,6 @@ LimitNode *make_limit_node();
 
 /* make an assignment node. */
 AssignmentNode *make_assignment_node();
-
-/* make an assignment set node. */
-AssignmentSetNode *make_assignment_set_node();
-
-/* add assignment to set. */
-void add_assignment_to_set(AssignmentSetNode *assignment_set_node, AssignmentNode *assignment_node);
 
 /* make a create table node. */
 CreateTableNode *make_create_table_node();

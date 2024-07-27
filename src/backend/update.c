@@ -28,7 +28,6 @@
 #include "jsonwriter.h"
 #include "log.h"
 
-
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node, MetaColumn *meta_column) {
     ListCell *lc;
@@ -93,17 +92,17 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     /* Delete row for update. */
     delete_row_for_update(row, table);
 
-    /* For update row funciton, the arg is AssignmentSetNode data type arguement. */
-    AssignmentSetNode *assignment_set_node = (AssignmentSetNode *) arg;
+    /* For update row funciton, the arg is the List of Assignment. */
+    List *assignment_list = (List *) arg;
 
     /* Use old primary key as default. */
     void *old_key = row->key;
     void *new_key = old_key;
 
     /* Handle each of assignment. */
-    uint32_t i;
-    for (i = 0; i < assignment_set_node->num; i++) {
-        AssignmentNode *assign_node = *(assignment_set_node->assignment_node + i);
+    ListCell *lc;
+    foreach (lc, assignment_list) {
+        AssignmentNode *assign_node = lfirst(lc);
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
         update_cell(row, assign_node, meta_column);
         if (meta_column->is_primary) { 
@@ -164,7 +163,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     ConditionNode *condition_node = get_condition_from_where(update_node->where_clause);
 
     /* Query with update row operation. */
-    query_with_condition(condition_node, select_result, update_row, update_node->assignment_set_node);
+    query_with_condition(condition_node, select_result, update_row, update_node->assignment_list);
 
     result->success = true;
     result->rows = select_result->row_size;

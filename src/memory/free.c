@@ -344,17 +344,7 @@ void free_assignment_node(AssignmentNode *assignment_node) {
     }
 }
 
-/* Free assignment set node. */
-void free_assignment_set_node(AssignmentSetNode *assignment_set_node) {
-    if (assignment_set_node) {
-        for (uint32_t i = 0; i < assignment_set_node->num; i++) {
-            free_assignment_node(*(assignment_set_node->assignment_node + i));
-        }
-        db_free(assignment_set_node->assignment_node);
-        db_free(assignment_set_node);
-    }
-}
-
+/* Free ComparisonNode. */
 void free_comparison_node(ComparisonNode *comparison_node) {
     if (comparison_node) {
         free_column_node(comparison_node->column);
@@ -363,6 +353,7 @@ void free_comparison_node(ComparisonNode *comparison_node) {
     }
 }
 
+/* Free InNode. */
 void free_in_node(InNode *in_node) {
     if (in_node) {
         free_column_node(in_node->column);
@@ -370,6 +361,7 @@ void free_in_node(InNode *in_node) {
     }
 }
 
+/* Free LikeNode. */
 void free_like_node(LikeNode *like_node) {
     if (like_node) {
         free_column_node(like_node->column);
@@ -377,6 +369,8 @@ void free_like_node(LikeNode *like_node) {
     }
 }
 
+
+/* Free PredicateNode. */
 void free_predicate_node(PredicateNode *predicate_node) {
     if (predicate_node) {
         switch (predicate_node->type) {
@@ -520,20 +514,6 @@ void free_table_ref_node(TableRefNode *table_ref_node) {
     }
 }
 
-/* Free TableRefSetNode. */
-void free_table_ref_set_node(TableRefSetNode *table_ref_set_node) {
-    if (table_ref_set_node) {
-        if (table_ref_set_node->set) {
-            for (uint32_t i = 0; i < table_ref_set_node->size; i++) {
-                free_table_ref_node(table_ref_set_node->set[i]);
-            }
-            db_free(table_ref_set_node->set);
-        }
-        db_free(table_ref_set_node);
-    }
-}
-
-
 /* Free AddColumnDef. */
 void free_add_column_def(AddColumnDef *add_column_def) {
     if (add_column_def) {
@@ -578,7 +558,7 @@ void free_alter_table_action(AlterTableAction *action) {
 /* Free FromClauseNode. */
 void free_from_clause_node(FromClauseNode *from_clause_node) {
     if (from_clause_node) {
-        free_table_ref_set_node(from_clause_node->from);
+        free_list_deep(from_clause_node->from);
         db_free(from_clause_node);
     }
 }
@@ -636,7 +616,7 @@ void free_update_node(UpdateNode *update_node) {
     if (update_node) {
         if (update_node->table_name)
             db_free(update_node->table_name);
-        free_assignment_set_node(update_node->assignment_set_node);
+        free_list_deep(update_node->assignment_list);
         free_where_clause_node(update_node->where_clause);
         db_free(update_node);
     } 

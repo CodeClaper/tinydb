@@ -81,8 +81,14 @@ void free_base_table_element_node(BaseTableElementNode *base_table_element);
 /* Free select items node. */
 void free_select_items_node(SelectItemsNode *select_items_node);
 
+/* Free assignment node. */
+void free_assignment_node(AssignmentNode *assignment_node);
+
 /* Free condition node. */
 void free_condition_node(ConditionNode *condition_node);
+
+/* Free TableRefNode. */
+void free_table_ref_node(TableRefNode *table_ref_node);
 
 /* Free TableExpNode. */
 void free_table_exp_node(TableExpNode *table_exp_node);

@@ -235,7 +235,6 @@ union YYSTYPE
    FunctionNode                 *function_node;
    CalculateNode                *calculate_node;
    AssignmentNode               *assignment_node;
-   AssignmentSetNode            *assignment_set_node;
    ConditionNode                *condition_node;
    PredicateNode                *predicate_node;
    ComparisonNode               *comparison_node;
@@ -243,7 +242,6 @@ union YYSTYPE
    InNode                       *in_node;
    LimitNode                    *limit_node;
    TableRefNode                 *table_ref_node;
-   TableRefSetNode              *table_ref_set_node;
    QuerySpecNode                *query_spec_node;
    ValuesOrQuerySpecNode        *values_or_query_spec_node;
    FromClauseNode               *from_clause_node;
@@ -266,7 +264,7 @@ union YYSTYPE
    Statement                    *statement;
    List                         *list;
 
-#line 270 "y.tab.h"
+#line 268 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

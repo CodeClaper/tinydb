@@ -1990,15 +1990,15 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
     if (select_node->table_exp->from_clause == NULL) 
         return new_select_result(NULL);
 
-    TableRefSetNode *table_ref_set = select_node->table_exp->from_clause->from;
+    List *list = select_node->table_exp->from_clause->from;
     SelectResult *result = NULL;
 
-    Assert(table_ref_set->size > 0);
+    Assert(len_list(list) > 0);
 
-    uint32_t i; 
-    for (i = 0; i < table_ref_set->size; i++) {
+    ListCell *lc;
+    foreach (lc, list) {
 
-        TableRefNode *table_ref = table_ref_set->set[i];
+        TableRefNode *table_ref = lfirst(lc);
         SelectResult *current_result = new_select_result(table_ref->table);
 
         /* If use not define tale alias name, use table name as range variable automatically. */
@@ -2006,7 +2006,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
                                         ? db_strdup(table_ref->range_variable) 
                                         : db_strdup(table_ref->table);
         current_result->derived = result;
-        current_result->last_derived = (i == table_ref_set->size - 1);
+        current_result->last_derived = (last_cell(list) == lc);
 
         /* Select with condition to define which rows. */
         ConditionNode *condition = get_table_exp_condition(select_node->table_exp);

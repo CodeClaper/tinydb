@@ -336,7 +336,6 @@ List *list_copy_deep(List *old_list) {
             }
             break;
         }
-
         case NODE_SCALAR_EXP: {
             ListCell *lc;
             foreach (lc, old_list) {
@@ -350,6 +349,14 @@ List *list_copy_deep(List *old_list) {
             foreach (lc, old_list) {
                 ValueItemNode *replica = copy_value_item_node(lfirst(lc));
                 append_list_ptr(new_list, replica);
+            }
+            break;
+        }
+        case NODE_TABLE_REFER: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                TableRefNode *replica = copy_table_ref_node(lfirst(lc));
+                append_list(new_list, replica);
             }
             break;
         }
@@ -486,6 +493,20 @@ void free_list_deep(List *list) {
                 ListCell *lc;
                 foreach (lc, list) {
                     free_base_table_element_node(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_TABLE_REFER: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_table_ref_node(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_ASSIGNMENT: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_assignment_node(lfirst(lc));
                 }
                 break;
             }

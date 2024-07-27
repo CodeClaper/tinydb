@@ -39,7 +39,6 @@ int yylex();
    FunctionNode                 *function_node;
    CalculateNode                *calculate_node;
    AssignmentNode               *assignment_node;
-   AssignmentSetNode            *assignment_set_node;
    ConditionNode                *condition_node;
    PredicateNode                *predicate_node;
    ComparisonNode               *comparison_node;
@@ -47,7 +46,6 @@ int yylex();
    InNode                       *in_node;
    LimitNode                    *limit_node;
    TableRefNode                 *table_ref_node;
-   TableRefSetNode              *table_ref_set_node;
    QuerySpecNode                *query_spec_node;
    ValuesOrQuerySpecNode        *values_or_query_spec_node;
    FromClauseNode               *from_clause_node;
@@ -136,7 +134,7 @@ int yylex();
 %type <in_node> in_predicate
 %type <limit_node> opt_limit
 %type <assignment_node> assignment
-%type <assignment_set_node> assignments
+%type <list> assignments
 %type <data_type_node> data_type
 %type <intVal> array_dim_clause
 %type <compare_type> compare
@@ -145,7 +143,7 @@ int yylex();
 %type <function_node> function
 %type <calculate_node> calculate
 %type <table_ref_node> table_ref
-%type <table_ref_set_node> table_ref_commalist
+%type <list> table_ref_commalist
 %type <query_spec_node> query_spec
 %type <values_or_query_spec_node> values_or_query_spec
 %type <from_clause_node> from_clause
@@ -330,7 +328,7 @@ update_statement:
         {
             UpdateNode *node = make_update_node();
             node->table_name = $2;
-            node->assignment_set_node = $4;
+            node->assignment_list = $4;
             node->where_clause = $5;
             $$ = node;
         }
@@ -488,13 +486,13 @@ from_clause:
 table_ref_commalist:
     table_ref 
         {
-            TableRefSetNode *table_ref_set = make_table_ref_set_node();
-            add_table_ref_to_set(table_ref_set, $1);
-            $$ = table_ref_set;
+            List *list = create_list(NODE_TABLE_REFER);
+            append_list(list, $1);
+            $$ = list;
         }
     | table_ref_commalist ',' table_ref 
         {
-            add_table_ref_to_set($1, $3);
+            append_list($1, $3);
             $$ = $1;
         }
     ;
@@ -1043,13 +1041,13 @@ BOOLVALUE:
 assignments:
     assignment
         {
-            AssignmentSetNode *node = make_assignment_set_node();
-            add_assignment_to_set(node, $1);
-            $$ = node;
+            List *list = create_list(NODE_ASSIGNMENT);
+            append_list(list, $1);
+            $$ = list;
         }
     | assignments ',' assignment
         {
-            add_assignment_to_set($1, $3);
+            append_list($1, $3);
             $$ = $1;
         }
     ;

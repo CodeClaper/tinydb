@@ -69,13 +69,14 @@ static void *get_value_from_atom(AtomNode *atom_node) {
     } 
 }
 
-/* Find meta column in table ref set.
+/* Find meta column in table ref list.
  * Return meta column or NULL if not found.
  * */
-static MetaColumn *find_meta_column_in_table_ref_set(TableRefSetNode *table_ref_set, char *column_name) {
-    uint32_t i;
-    for (i = 0; i< table_ref_set->size; i++) {
-        TableRefNode *table_ref = table_ref_set->set[i];
+static MetaColumn *find_meta_column_in_table_ref_list(List *list, char *column_name) {
+
+    ListCell *lc;
+    foreach (lc, list) {
+        TableRefNode *table_ref = lfirst(lc);
         Table *table = open_table(table_ref->table);
         if (!table) {
             db_log(ERROR, "Table '%s' not exist.", table_ref->table);
@@ -85,16 +86,18 @@ static MetaColumn *find_meta_column_in_table_ref_set(TableRefSetNode *table_ref_
         if (meta_column)
             return meta_column;
     }
+
     return NULL;
 }
 
 static bool include_column_for_query_spece(MetaColumn *meta_column, QuerySpecNode *query_spec) {
     SelectionNode *selection = query_spec->selection;
-    TableRefSetNode *table_ref_set = query_spec->table_exp->from_clause->from;
+    List *list = query_spec->table_exp->from_clause->from;
     if (selection->all_column) {
-        MetaColumn *target_meta_column = find_meta_column_in_table_ref_set(table_ref_set, meta_column->column_name);
+        MetaColumn *target_meta_column = find_meta_column_in_table_ref_list(list, meta_column->column_name);
         if (!target_meta_column) {
-            db_log(ERROR, "Lack column '%s' in query spec. ", meta_column->column_name);
+            db_log(ERROR, "Lack column '%s' in query spec. ", 
+                   meta_column->column_name);
             return false;
         }
         if (meta_column->column_type != target_meta_column->column_type) {
@@ -115,10 +118,10 @@ static bool include_column_for_query_spece(MetaColumn *meta_column, QuerySpecNod
             char *column_name = scalar_exp->column->column_name;
             if (alias_name) {
                 if (streq(meta_column->column_name, alias_name)) 
-                    target_meta_column = find_meta_column_in_table_ref_set(table_ref_set, column_name);
+                    target_meta_column = find_meta_column_in_table_ref_list(list, column_name);
             } else {
                if (streq(meta_column->column_name, column_name)) 
-                    target_meta_column = find_meta_column_in_table_ref_set(table_ref_set, column_name);
+                    target_meta_column = find_meta_column_in_table_ref_list(list, column_name);
             }
         }
         if (!target_meta_column) {
@@ -616,16 +619,17 @@ static bool check_table_ref(TableRefNode *table_ref) {
     return true;
 }
 
-/* Check TableRefSetNode. */
-static bool check_table_ref_set(TableRefSetNode *table_ref_set) {
+/* Check TableRef List. */
+static bool check_table_ref_list(List *list) {
+    uint32_t len = len_list(list);
     uint32_t i, j;
-    for (i = 0; i < table_ref_set->size; i++) {
-        TableRefNode *table_ref = table_ref_set->set[i];
+    for (i = 0; i < len; i++) {
+        TableRefNode *table_ref = lfirst(list_nth_cell(list, i));
         if (!check_table_ref(table_ref))
             return false;
 
-        for (j = i + 1; j < table_ref_set->size; j++) {
-            TableRefNode *table_ref2 = table_ref_set->set[j];
+        for (j = i + 1; j < len; j++) {
+            TableRefNode *table_ref2 = lfirst(list_nth_cell(list, j));
             /* Check duplicate table. */
             if (streq(table_ref->table, table_ref2->table)) {
                 db_log(ERROR, "Duplicate table '%s'. ", table_ref->table);
@@ -645,7 +649,7 @@ static bool check_table_ref_set(TableRefSetNode *table_ref_set) {
 
 /* Check FromClauseNode. */
 static bool check_from_clause(FromClauseNode *from_clause) {
-    return from_clause == NULL || check_table_ref_set(from_clause->from);
+    return from_clause == NULL || check_table_ref_list(from_clause->from);
 }
 
 /* Check WhereClauseNode. */
@@ -667,7 +671,7 @@ static bool check_table_exp(TableExpNode *table_exp, AliasMap alias_map) {
 static bool check_assignment_set_node(UpdateNode *update_node) { 
 
     Table *table = open_table(update_node->table_name);
-    AssignmentSetNode *assignment_set_node = update_node->assignment_set_node;
+    List *assignment_list = update_node->assignment_list;
     SelectResult *select_result = new_select_result(update_node->table_name);
     ConditionNode *condition_node = get_condition_from_where_clause(update_node->where_clause);
     query_with_condition(condition_node, select_result, count_row, NULL);
@@ -676,12 +680,13 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
     void *new_key = NULL;
     MetaColumn *primary_meta_column = NULL;
 
-    uint32_t i;
-    for (i = 0; i < assignment_set_node->num; i++) {
-        AssignmentNode *assignment_node = *(assignment_set_node->assignment_node + i);
+    ListCell *lc;
+    foreach (lc, assignment_list) {
+        AssignmentNode *assignment_node = lfirst(lc);
         ColumnNode *column_node = assignment_node->column;
         ValueItemNode *value_node = assignment_node->value;
-        assert_not_null(column_node, "System error, there is no column node in assignment set node.\n");
+        assert_not_null(column_node, 
+                       "System error, there is no column node in assignment set node.\n");
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
 
         if (meta_column->is_primary) {
@@ -691,8 +696,8 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
         }
 
         /* Check column, check type, check if value valid. */
-        if (!(check_column_node(column_node, table->meta_table) 
-            && check_value_item_node(table->meta_table, meta_column->column_name, value_node))) {
+        if (!(check_column_node(column_node, table->meta_table) && 
+            check_value_item_node(table->meta_table, meta_column->column_name, value_node))) {
                 free_select_result(select_result);
                 if (change_priamry)
                     free_value(new_key, primary_meta_column->column_type);
@@ -717,12 +722,13 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
             Row *default_row = define_row(new_refer);
             free_cursor(new_cursor);
             free_refer(new_refer);
-            if (!row_is_deleted(default_row) 
-                && equal(default_row->key, new_key, primary_meta_column->column_type)) {
+            if (!row_is_deleted(default_row) && 
+                equal(default_row->key, new_key, primary_meta_column->column_type)) {
                     free_row(default_row);
                     select_result->row_size = 0;
                     free_select_result(select_result);
-                    db_log(ERROR, "Key '%s' already exists, not allowd duplicate key. ", get_key_str(new_key, primary_meta_column->column_type));
+                    db_log(ERROR, "Key '%s' already exists, not allowd duplicate key. ",
+                           get_key_str(new_key, primary_meta_column->column_type));
                     free_value(new_key, primary_meta_column->column_type);
                     return false;
             }
@@ -741,7 +747,8 @@ static bool check_duplicate_table(char *table_name) {
     if (check_table_exist(table_name)) {
         db_log(ERROR, "Table '%s' already exists.", table_name); 
         return false;
-    } else 
+    } 
+    else 
         return true;
 }
 
@@ -1115,16 +1122,16 @@ bool check_select_node(SelectNode *select_node) {
     if (from_clause == NULL)
         return true;
 
-    if (from_clause->from->size > MAX_MULTI_TABLE_NUM) {
+    if (len_list(from_clause->from) > MAX_MULTI_TABLE_NUM) {
         db_log(ERROR, "Exceed max table numbers.");
         return false;
     }
 
-    uint32_t i;
-    for (i = 0; i < from_clause->from->size; i++) {
-        TableRefNode *table_ref = from_clause->from->set[i];
-        alias_map.map[i].name = table_ref->table;
-        alias_map.map[i].alias = table_ref->range_variable;
+    ListCell *lc;
+    foreach (lc, from_clause->from) {
+        TableRefNode *table_ref = lfirst(lc);
+        alias_map.map[alias_map.size].name = table_ref->table;
+        alias_map.map[alias_map.size].alias = table_ref->range_variable;
         alias_map.size++;
     }
 

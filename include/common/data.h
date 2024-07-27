@@ -368,12 +368,6 @@ typedef struct {
     ValueItemNode *value;
 } AssignmentNode;
 
-/* AssignmentSetNode */
-typedef struct {
-    AssignmentNode **assignment_node;
-    uint32_t num;
-} AssignmentSetNode;
-
 /* ConditionNode */
 typedef struct ConditionNode {
     ConnType conn_type;
@@ -430,15 +424,9 @@ typedef struct TableRefNode {
     char *range_variable;
 } TableRefNode;
 
-/* TableRefSetNode. */
-typedef struct TableRefSetNode {
-    uint32_t size;
-    TableRefNode **set;
-} TableRefSetNode;
-
 /* FromClauseNode. */
 typedef struct FromClauseNode {
-    TableRefSetNode *from;
+    List *from;
 } FromClauseNode;
 
 /* WhereClauseNode. */
@@ -480,7 +468,7 @@ typedef struct InsertNode {
 /* UpdateNode */
 typedef struct UpdateNode {
     char *table_name;
-    AssignmentSetNode *assignment_set_node;
+    List *assignment_list;
     WhereClauseNode *where_clause;
 } UpdateNode;
 
