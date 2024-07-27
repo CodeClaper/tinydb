@@ -151,6 +151,12 @@ def test_query_after_insert_part_columns():
         "createdTime": None
     }]
 
+## specify part columns when insert
+def test_insert_part_columns2():
+    sql = "insert into `Student` (`id`, `name`, `phone`) values('S005', 'Tail', '183728494929');" 
+    ret = client.execute(sql)
+    assert ret["success"] == True
+
 ## drop table
 def test_drop_table():
     sql = "drop table Parent;\n"\
