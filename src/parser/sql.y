@@ -184,81 +184,81 @@ statements:
 statement: 
     begin_transaction_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = BEGIN_TRANSACTION_STMT;
             $$ = statement;
         }
     | commit_transaction_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = COMMIT_TRANSACTION_STMT;
             $$ = statement;
         }
     | rollback_transaction_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = ROLLBACK_TRANSACTION_STMT;
             $$ = statement;
         }
     | create_table_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = CREATE_TABLE_STMT;
             statement->create_table_node = $1;
             $$ = statement;
         }
     | drop_table_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = DROP_TABLE_STMT;
             statement->drop_table_node = $1;
             $$ = statement;
         }
     | select_statement 
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = SELECT_STMT;
             statement->select_node = $1;
             $$ = statement;
         }
     | insert_statement 
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = INSERT_STMT;
             statement->insert_node = $1;
             $$ = statement;
         }
     | update_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = UPDATE_STMT;
             statement->update_node = $1;
             $$ = statement;
         }
     | delete_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = DELETE_STMT;
             statement->delete_node = $1;
             $$ = statement;
         }
     | describe_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = DESCRIBE_STMT;
             statement->describe_node = $1;
             $$ = statement;
         }
     | show_statement 
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = SHOW_STMT;
             statement->show_node = $1;
             $$ = statement;
         }
     | alter_table_statement
         {
-            Statement *statement = make_statement();
+            Statement *statement = instance(Statement);
             statement->statement_type = ALTER_TABLE_STMT;
             statement->alter_table_node = $1;
             $$ = statement;
@@ -277,7 +277,7 @@ rollback_transaction_statement:
 create_table_statement: 
     CREATE TABLE table '(' base_table_element_commalist ')' end
         {
-            CreateTableNode *create_table_node = make_create_table_node();
+            CreateTableNode *create_table_node = instance(CreateTableNode);
             create_table_node->table_name = $3;
             create_table_node->base_table_element_commalist = $5;
             $$ = create_table_node;
@@ -287,7 +287,7 @@ create_table_statement:
 drop_table_statement:
     DROP TABLE table end
         {
-            DropTableNode *drop_table_node = make_drop_table_node();
+            DropTableNode *drop_table_node = instance(DropTableNode);
             drop_table_node->table_name = $3;
             $$ = drop_table_node;
         }
@@ -296,7 +296,7 @@ drop_table_statement:
 select_statement:
     SELECT selection table_exp end
         {
-            SelectNode *select_node = make_select_node();
+            SelectNode *select_node = instance(SelectNode);
             select_node->selection = $2;
             select_node->table_exp = $3;
             $$ = select_node;
@@ -306,7 +306,7 @@ select_statement:
 insert_statement: 
     INSERT INTO table values_or_query_spec end
         {
-            InsertNode *node = make_insert_node();
+            InsertNode *node = instance(InsertNode);
             node->all_column = true;
             node->table_name = $3;
             node->values_or_query_spec = $4;
@@ -314,7 +314,7 @@ insert_statement:
         }
     | INSERT INTO table '(' columns ')' values_or_query_spec end
         {
-            InsertNode *node = make_insert_node();
+            InsertNode *node = instance(InsertNode);
             node->all_column = false;
             node->table_name = $3;
             node->column_list = $5;
@@ -326,7 +326,7 @@ insert_statement:
 update_statement:
     UPDATE table SET assignments opt_where_clause end
         {
-            UpdateNode *node = make_update_node();
+            UpdateNode *node = instance(UpdateNode);
             node->table_name = $2;
             node->assignment_list = $4;
             node->where_clause = $5;
@@ -337,13 +337,13 @@ update_statement:
 delete_statement:
     DELETE FROM table end
         {
-            DeleteNode *node = make_delete_node();
+            DeleteNode *node = instance(DeleteNode);
             node->table_name = $3;
             $$ = node;
         }
     | DELETE FROM table WHERE condition end
         {
-            DeleteNode *node = make_delete_node();
+            DeleteNode *node = instance(DeleteNode);
             node->table_name = $3;
             node->condition_node = $5;
             $$ = node;
@@ -353,7 +353,7 @@ delete_statement:
 describe_statement:
     DESCRIBE table end
         {
-            DescribeNode *node = make_describe_node();
+            DescribeNode *node = instance(DescribeNode);
             node->table_name = $2;
             $$ = node;
         }
@@ -362,18 +362,22 @@ describe_statement:
 show_statement:
     SHOW TABLES end
         {
-            $$ = make_show_node(SHOW_TABLES);
+            ShowNode *node = instance(ShowNode);   
+            node->type = SHOW_TABLES;
+            $$ = node;
         }
     | SHOW MEMORY end
         {
-            $$ = make_show_node(SHOW_MEMORY);
+            ShowNode *node = instance(ShowNode);   
+            node->type = SHOW_MEMORY;
+            $$ = node;
         }
     ;
 /* Alter Table Statement. */
 alter_table_statement:
     ALTER TABLE table alter_table_action end
         {
-            $$ = make_alter_table_node();
+            $$ = instance(AlterTableNode);
             $$->table_name = $3;
             $$->action = $4;
         }
@@ -381,21 +385,21 @@ alter_table_statement:
 alter_table_action:
     add_column_def
         {
-            AlterTableAction *action = make_alter_table_action();
+            AlterTableAction *action = instance(AlterTableAction);
             action->type = ALTER_TO_ADD_COLUMN;
             action->action.add_column = $1;
             $$ = action;
         }
     | drop_column_def
         {
-            AlterTableAction *action = make_alter_table_action();
+            AlterTableAction *action = instance(AlterTableAction);
             action->type = ALTER_TO_DROP_COLUMN;
             action->action.drop_column = $1;
             $$ = action;
         }
     | change_column_def
         {
-            AlterTableAction *action = make_alter_table_action();
+            AlterTableAction *action = instance(AlterTableAction);
             action->type = ALTER_TO_CHANGE_COLUMN;
             action->action.change_column = $1;
             $$ = action;
@@ -404,7 +408,7 @@ alter_table_action:
 add_column_def:
     ADD COLUMN column_def column_position_def
         {
-            AddColumnDef *node = make_add_column_def();
+            AddColumnDef *node = instance(AddColumnDef);
             node->column_def = $3;
             node->position_def = $4;
             $$ = node;
@@ -413,7 +417,7 @@ add_column_def:
 drop_column_def:
     DROP COLUMN IDENTIFIER 
         {
-            DropColumnDef *node = make_drop_column_def();
+            DropColumnDef *node = instance(DropColumnDef);
             node->column_name = $3;
             $$ = node;
         }
@@ -421,7 +425,7 @@ drop_column_def:
 change_column_def:
     CHANGE IDENTIFIER column_def
         {
-            ChangeColumnDef *node = make_change_column_def();
+            ChangeColumnDef *node = instance(ChangeColumnDef);
             node->old_column_name = $2;
             node->new_column_def = $3;
             $$ = node;
@@ -434,14 +438,14 @@ column_position_def:
     }
     | BEFORE IDENTIFIER 
         {
-            ColumnPositionDef *pos = make_column_position_def();
+            ColumnPositionDef *pos = instance(ColumnPositionDef);
             pos->type = POS_BEFORE;
             pos->column = $2;
             $$ = pos;
         }
     | AFTER IDENTIFIER
         {
-            ColumnPositionDef *pos = make_column_position_def();
+            ColumnPositionDef *pos = instance(ColumnPositionDef);
             pos->type = POS_AFTER;
             pos->column = $2;
             $$ = pos;
@@ -450,14 +454,14 @@ column_position_def:
 selection:
     scalar_exp_commalist
         {
-            SelectionNode *selection_node = make_selection_node();
+            SelectionNode *selection_node = instance(SelectionNode);
             selection_node->all_column = false;
             selection_node->scalar_exp_list = $1;
             $$ = selection_node;
         }
     | '*'
         {
-            SelectionNode *selection_node = make_selection_node();
+            SelectionNode *selection_node = instance(SelectionNode);
             selection_node->all_column = true;
             $$ = selection_node;
         }
@@ -465,7 +469,7 @@ selection:
 table_exp:
     from_clause opt_where_clause
         {
-            TableExpNode *table_exp = make_table_exp_node();
+            TableExpNode *table_exp = instance(TableExpNode);
             table_exp->from_clause = $1;
             table_exp->where_clause = $2;
             $$ = table_exp;
@@ -478,7 +482,7 @@ from_clause:
         }
     | FROM table_ref_commalist
         {
-            FromClauseNode *from_clause = make_from_clause_node();
+            FromClauseNode *from_clause = instance(FromClauseNode);
             from_clause->from = $2;
             $$ = from_clause;
         }
@@ -499,20 +503,20 @@ table_ref_commalist:
 table_ref:
     table
         {
-            TableRefNode *table_ref = make_table_ref_node();
+            TableRefNode *table_ref = instance(TableRefNode);
             table_ref->table = $1;
             $$ = table_ref;
         }
     | table range_variable 
         {
-            TableRefNode *table_ref = make_table_ref_node();
+            TableRefNode *table_ref = instance(TableRefNode);
             table_ref->table = $1;
             table_ref->range_variable = $2;
             $$ = table_ref;
         }
     | table AS range_variable 
         {
-            TableRefNode *table_ref = make_table_ref_node();
+            TableRefNode *table_ref = instance(TableRefNode);
             table_ref->table = $1;
             table_ref->range_variable = $3;
             $$ = table_ref;
@@ -543,7 +547,7 @@ opt_where_clause:
 where_clause:
     WHERE condition
         {
-            WhereClauseNode *where_clause_node = make_where_clause_node();
+            WhereClauseNode *where_clause_node = instance(WhereClauseNode);
             where_clause_node->condition = $2;
             $$ = where_clause_node;
         }
@@ -551,14 +555,14 @@ where_clause:
 values_or_query_spec:
     VALUES '(' value_items')'
         {
-            ValuesOrQuerySpecNode *values_or_query_spec = make_values_or_query_spec_node();
+            ValuesOrQuerySpecNode *values_or_query_spec = instance(ValuesOrQuerySpecNode);
             values_or_query_spec->type = VQ_VALUES;
             values_or_query_spec->values = $3;
             $$ = values_or_query_spec;
         }
     | query_spec 
         {
-            ValuesOrQuerySpecNode *values_or_query_spec = make_values_or_query_spec_node();
+            ValuesOrQuerySpecNode *values_or_query_spec = instance(ValuesOrQuerySpecNode);
             values_or_query_spec->type = VQ_QUERY_SPEC;
             values_or_query_spec->query_spec = $1;
             $$ = values_or_query_spec;
@@ -567,7 +571,7 @@ values_or_query_spec:
 query_spec:
     SELECT selection table_exp
         {
-            QuerySpecNode *query_spec = make_query_spec_node();
+            QuerySpecNode *query_spec = instance(QuerySpecNode);
             query_spec->selection = $2;
             query_spec->table_exp = $3;
             $$ = query_spec;
@@ -589,28 +593,28 @@ scalar_exp_commalist:
 scalar_exp:
     calculate
         {
-            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            ScalarExpNode *scalar_exp_node = instance(ScalarExpNode);
             scalar_exp_node->type = SCALAR_CALCULATE;
             scalar_exp_node->calculate = $1;
             $$ = scalar_exp_node;
         }
     | column
         {
-            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            ScalarExpNode *scalar_exp_node = instance(ScalarExpNode);
             scalar_exp_node->type = SCALAR_COLUMN;
             scalar_exp_node->column = $1;
             $$ = scalar_exp_node;
         }
     | function
         {
-            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            ScalarExpNode *scalar_exp_node = instance(ScalarExpNode);
             scalar_exp_node->type = SCALAR_FUNCTION;
             scalar_exp_node->function = $1;
             $$ = scalar_exp_node;
         }
     | value_item 
         {
-            ScalarExpNode *scalar_exp_node = make_scalar_exp_node();
+            ScalarExpNode *scalar_exp_node = instance(ScalarExpNode);
             scalar_exp_node->type = SCALAR_VALUE;
             scalar_exp_node->value = $1;
             $$ = scalar_exp_node;
@@ -628,7 +632,7 @@ scalar_exp:
 calculate:
     scalar_exp '+' scalar_exp
         {
-            CalculateNode *calculate_node = make_calculate_node();
+            CalculateNode *calculate_node = instance(CalculateNode);
             calculate_node->type = CAL_ADD;
             calculate_node->left = $1;
             calculate_node->right = $3;
@@ -636,7 +640,7 @@ calculate:
         }
     | scalar_exp '-' scalar_exp
         {
-            CalculateNode *calculate_node = make_calculate_node();
+            CalculateNode *calculate_node = instance(CalculateNode);
             calculate_node->type = CAL_SUB;
             calculate_node->left = $1;
             calculate_node->right = $3;
@@ -644,7 +648,7 @@ calculate:
         }
     | scalar_exp '*' scalar_exp
         {
-            CalculateNode *calculate_node = make_calculate_node();
+            CalculateNode *calculate_node = instance(CalculateNode);
             calculate_node->type = CAL_MUL;
             calculate_node->left = $1;
             calculate_node->right = $3;
@@ -652,7 +656,7 @@ calculate:
         }
     | scalar_exp '/' scalar_exp
         {
-            CalculateNode *calculate_node = make_calculate_node();
+            CalculateNode *calculate_node = instance(CalculateNode);
             calculate_node->type = CAL_DIV;
             calculate_node->left = $1;
             calculate_node->right = $3;
@@ -688,17 +692,19 @@ base_table_element_commalist:
 base_table_element:
     column_def
         {
-            $$ = make_base_table_element_node();
-            $$->column_def = $1;
-            $$->table_contraint_def = NULL;
-            $$->type = TELE_COLUMN_DEF;
+            BaseTableElementNode *node = instance(BaseTableElementNode);
+            node->column_def = $1;
+            node->table_contraint_def = NULL;
+            node->type = TELE_COLUMN_DEF;
+            $$ = node;
         }
     | table_contraint_def
         {
-            $$ = make_base_table_element_node();
-            $$->column_def = NULL;
-            $$->table_contraint_def = $1;
-            $$->type = TELE_TABLE_CONTRAINT_DEF;
+            BaseTableElementNode *node = instance(BaseTableElementNode);
+            node->column_def = NULL;
+            node->table_contraint_def = $1;
+            node->type = TELE_TABLE_CONTRAINT_DEF;
+            $$ = node;
         }
     ;
 column_defs:
@@ -717,7 +723,7 @@ column_defs:
 column_def:
     column_def_name data_type array_dim_clause column_def_opt_list
         {
-            ColumnDefNode *column_def = make_column_def_node();
+            ColumnDefNode *column_def = instance(ColumnDefNode);
             column_def->column = $1;
             column_def->data_type = $2;
             column_def->array_dim = $3;
@@ -741,7 +747,7 @@ column_def_name_commalist:
 column_def_name:
     IDENTIFIER
         {
-            ColumnDefName *column_def_name = make_column_def_name();
+            ColumnDefName *column_def_name = instance(ColumnDefName);
             column_def_name->column = $1;
             $$ = column_def_name;
         }
@@ -749,60 +755,71 @@ column_def_name:
 data_type:
     INT          
         { 
-            $$ = make_data_type_node();
-            $$->type = T_INT; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_INT; 
+            $$ = node;
         }
     | LONG       
         { 
-            $$ = make_data_type_node();
-            $$->type = T_LONG;  
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_LONG;  
+            $$ = node;
         }
     | CHAR       
         { 
-            $$ = make_data_type_node();
-            $$->type = T_CHAR; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_CHAR; 
+            $$ = node;
         }
     | VARCHAR '(' INTVALUE ')'
         {
-            $$ = make_data_type_node();
-            $$->type = T_VARCHAR; 
-            $$->len = $3;
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_VARCHAR; 
+            node->len = $3;
+            $$ = node;
         }
     | STRING     
         { 
-            $$ = make_data_type_node();
-            $$->type = T_STRING; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_STRING; 
+            $$ = node;
         }
     | BOOL       
         { 
-            $$ = make_data_type_node();
-            $$->type = T_BOOL; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_BOOL; 
+            $$ = node;
         }
     | FLOAT      
         { 
-            $$ = make_data_type_node();
-            $$->type = T_FLOAT; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_FLOAT; 
+            $$ = node;
         }  
     | DOUBLE     
         { 
-            $$ = make_data_type_node();
-            $$->type = T_DOUBLE; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_DOUBLE; 
+            $$ = node;
         }
     | TIMESTAMP  
         { 
-            $$ = make_data_type_node();
-            $$->type = T_TIMESTAMP; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_TIMESTAMP; 
+            $$ = node;
         }
     | DATE       
         { 
-            $$ = make_data_type_node();
-            $$->type = T_DATE; 
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_DATE; 
+            $$ = node;
         }
     | table 
         {
-            $$ = make_data_type_node();
-            $$->type = T_REFERENCE;
-            $$->table_name = $1;
+            DataTypeNode *node = instance(DataTypeNode);                
+            node->type = T_REFERENCE;
+            node->table_name = $1;
+            $$ = node;
         }
     ;
 array_dim_clause:
@@ -838,87 +855,99 @@ column_def_opt_list:
 column_def_opt:
     NOT NULLX
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_NOT_NULL; 
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_NOT_NULL; 
+            $$ = node;
         }
     | UNIQUE
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_UNIQUE; 
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_UNIQUE; 
+            $$ = node;
         }
     | PRIMARY KEY
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_PRIMARY_KEY; 
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_PRIMARY_KEY; 
+            $$ = node;
         }
     | DEFAULT value_item
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_DEFAULT_VALUE;
-            $$->value = $2;
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_DEFAULT_VALUE;
+            node->value = $2;
+            $$ = node;
         }
     | DEFAULT NULLX
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_DEFAULT_NULL;
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_DEFAULT_NULL;
+            $$ = node;
         }
     | COMMENT STRINGVALUE
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_COMMENT;
-            $$->comment = $2;
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_COMMENT;
+            node->comment = $2;
+            $$ = node;
         }
     | CHECK '(' condition ')'
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_CHECK_CONDITION;
-            $$->condition = $3;
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_CHECK_CONDITION;
+            node->condition = $3;
+            $$ = node;
         }
     | REFERENCES table
         {
-            $$ = make_column_def_opt_node();
-            $$->opt_type = OPT_REFERENECS;
-            $$->refer_table = $2;
+            ColumnDefOptNode *node = instance(ColumnDefOptNode);
+            node->opt_type = OPT_REFERENECS;
+            node->refer_table = $2;
+            $$ = node;
         }
     ;
 table_contraint_def:
     UNIQUE '(' column_def_name_commalist ')'
         {
-            $$ = make_table_contraint_def_node();
-            $$->type = TCONTRAINT_UNIQUE;
-            $$->column_commalist = $3;
+            TableContraintDefNode *node = instance(TableContraintDefNode);
+            node->type = TCONTRAINT_UNIQUE;
+            node->column_commalist = $3;
+            $$ = node;
         }
     | PRIMARY KEY '(' column_def_name_commalist ')'
         {
-            $$ = make_table_contraint_def_node();
-            $$->type = TCONTRAINT_PRIMARY_KEY;
-            $$->column_commalist = $4;
+            TableContraintDefNode *node = instance(TableContraintDefNode);
+            node->type = TCONTRAINT_PRIMARY_KEY;
+            node->column_commalist = $4;
+            $$ = node;
         }
     | FOREIGN KEY '(' column_def_name_commalist ')' REFERENCES table
         {
-            $$ = make_table_contraint_def_node();
-            $$->type = TCONTRAINT_FOREIGN_KEY;
-            $$->column_commalist = $4;
-            $$->table = $7;
+            TableContraintDefNode *node = instance(TableContraintDefNode);
+            node->type = TCONTRAINT_FOREIGN_KEY;
+            node->column_commalist = $4;
+            node->table = $7;
+            $$ = node;
         }
     | CHECK '(' condition ')'
         {
-            $$ = make_table_contraint_def_node();
-            $$->type = TCONTRAINT_CHECK;
-            $$->condition = $3;
+            TableContraintDefNode *node = instance(TableContraintDefNode);
+            node->type = TCONTRAINT_CHECK;
+            node->condition = $3;
+            $$ = node;
         }
     ;
 column: 
     IDENTIFIER
         {
-            ColumnNode *column_node = make_column_node();
+            ColumnNode *column_node = instance(ColumnNode);
             column_node->column_name = $1;
             column_node->has_sub_column = false;
             $$ = column_node;
         }
     | '(' IDENTIFIER ')' '.'  column 
         {
-            ColumnNode *column_node = make_column_node();
+            ColumnNode *column_node = instance(ColumnNode);
             column_node->column_name = $2;
             column_node->sub_column = $5;
             column_node->has_sub_column = true;
@@ -926,7 +955,7 @@ column:
         }
     | IDENTIFIER '{' scalar_exp_commalist '}'
         {
-            ColumnNode *column_node = make_column_node();
+            ColumnNode *column_node = instance(ColumnNode);
             column_node->column_name = $1;
             column_node->scalar_exp_list = $3;
             column_node->has_sub_column = true;
@@ -954,20 +983,20 @@ value_items:
 value_item:
     atom
         {
-            ValueItemNode *node = make_value_item_node();
+            ValueItemNode *node = instance(ValueItemNode);
             node->type = V_ATOM;
             node->value.atom = $1;
             $$ = node;
         }
     | NULLX
         {
-            ValueItemNode *node = make_value_item_node();
+            ValueItemNode *node = instance(ValueItemNode);
             node->type = V_NULL;
             $$ = node;
         }
     | '[' value_items ']'
         {
-            ValueItemNode *node = make_value_item_node();
+            ValueItemNode *node = instance(ValueItemNode);
             node->type = V_ARRAY;
             node->value.value_list = $2;
             $$ = node;
@@ -976,35 +1005,35 @@ value_item:
 atom:
     INTVALUE
         {
-            AtomNode *node = make_atom_node();
+            AtomNode *node = instance(AtomNode);
             node->value.intval = $1;
             node->type = A_INT;
             $$ = node;
         }
     | BOOLVALUE
         {
-            AtomNode *node = make_atom_node();
+            AtomNode *node = instance(AtomNode);
             node->value.boolval = $1;
             node->type = A_BOOL;
             $$ = node;
         }
     | STRINGVALUE 
         {
-            AtomNode *node = make_atom_node();
+            AtomNode *node = instance(AtomNode);
             node->value.strval = $1;
             node->type = A_STRING;
             $$ = node;
         }
     | FLOATVALUE 
         {
-            AtomNode *node = make_atom_node();
+            AtomNode *node = instance(AtomNode);
             node->value.floatval = $1;
             node->type = A_FLOAT;
             $$ = node;
         }
     | REFERVALUE
         {
-            AtomNode *node = make_atom_node();
+            AtomNode *node = instance(AtomNode);
             node->value.referval = $1;
             node->type = A_REFERENCE;
             $$ = node;
@@ -1014,7 +1043,7 @@ REFERVALUE:
     /* Directly insert way. */
     '(' value_items ')'
         {
-            ReferValue *refer = make_refer_value();
+            ReferValue *refer = instance(ReferValue);
             refer->type = DIRECTLY;
             refer->nest_value_list = $2;
             $$ = refer;
@@ -1022,7 +1051,7 @@ REFERVALUE:
     /* Indirectly fetch already row refer. */
     | REF '(' condition ')' 
         {
-            ReferValue *refer = make_refer_value();
+            ReferValue *refer = instance(ReferValue);
             refer->type = INDIRECTLY;
             refer->condition = $3;
             $$ = refer;
@@ -1054,7 +1083,7 @@ assignments:
 assignment:
 	column EQ value_item
         {
-            AssignmentNode *node = make_assignment_node();
+            AssignmentNode *node = instance(AssignmentNode);
             node->column = $1;
             node->value = $3;
             $$ = node;
@@ -1063,7 +1092,7 @@ assignment:
 condition: 
     condition OR condition
         {
-            ConditionNode *condition = make_condition_node();
+            ConditionNode *condition = instance(ConditionNode);
             condition->conn_type = C_OR;
             condition->left = $1;
             condition->right = $3;
@@ -1071,7 +1100,7 @@ condition:
         }
     | condition AND condition
         {
-            ConditionNode *condition = make_condition_node();
+            ConditionNode *condition = instance(ConditionNode);
             condition->conn_type = C_AND;
             condition->left = $1;
             condition->right = $3;
@@ -1083,7 +1112,7 @@ condition:
         }
     | predicate
         {
-            ConditionNode *condition = make_condition_node();
+            ConditionNode *condition = instance(ConditionNode);
             condition->conn_type = C_NONE;
             condition->predicate = $1;
             $$ = condition;
@@ -1092,21 +1121,21 @@ condition:
 predicate:
     comparison_predicate
         {
-            PredicateNode *predicate = make_predicate_node();
+            PredicateNode *predicate = instance(PredicateNode);
             predicate->type = PRE_COMPARISON;
             predicate->comparison = $1;
             $$ = predicate;
         }
     | like_predicate
         {
-            PredicateNode *predicate = make_predicate_node();
+            PredicateNode *predicate = instance(PredicateNode);
             predicate->type = PRE_LIKE;
             predicate->like = $1;
             $$ = predicate;
         }
     | in_predicate
         {
-            PredicateNode *predicate = make_predicate_node();
+            PredicateNode *predicate = instance(PredicateNode);
             predicate->type = PRE_IN;
             predicate->in = $1;
             $$ = predicate;
@@ -1115,7 +1144,7 @@ predicate:
 comparison_predicate:
     column compare scalar_exp
         {
-            ComparisonNode *comparison_node = make_comparison_node();
+            ComparisonNode *comparison_node = instance(ComparisonNode);
             comparison_node->column = $1;
             comparison_node->type = $2;
             comparison_node->value = $3;
@@ -1125,7 +1154,7 @@ comparison_predicate:
 like_predicate:
     column LIKE value_item
         {
-            LikeNode *like_node = make_like_node();
+            LikeNode *like_node = instance(LikeNode);
             like_node->column = $1;
             like_node->value = $3;
             $$ = like_node;
@@ -1134,7 +1163,7 @@ like_predicate:
 in_predicate: 
     column IN '(' value_items ')'
         {
-            InNode *in_node = make_in_node();
+            InNode *in_node = instance(InNode);
             in_node->column = $1;
             in_node->value_list = $4;
             $$ = in_node;
@@ -1147,14 +1176,14 @@ opt_limit:
         }
     | LIMIT INTVALUE
         {
-            LimitNode *limit_node = make_limit_node();
+            LimitNode *limit_node = instance(LimitNode);
             limit_node->start = 0;
             limit_node->end = $2;
             $$ = limit_node;
         }
     | LIMIT INTVALUE ',' INTVALUE
         {
-            LimitNode *limit_node = make_limit_node();
+            LimitNode *limit_node = instance(LimitNode);
             limit_node->start = $2;
             limit_node->end = $4;
             $$ = limit_node;
@@ -1171,35 +1200,35 @@ compare:
 function:       
     MAX '(' non_all_function_value ')'
         {
-            FunctionNode *function_node = make_function_node();        
+            FunctionNode *function_node = instance(FunctionNode);        
             function_node->type = F_MAX;
             function_node->value = $3;
             $$ = function_node;
         }
     | MIN '(' non_all_function_value ')'
         {
-            FunctionNode *function_node = make_function_node();        
+            FunctionNode *function_node = instance(FunctionNode);        
             function_node->type = F_MIN;
             function_node->value = $3;
             $$ = function_node;
         }
     | COUNT '(' function_value ')'
         {
-            FunctionNode *function_node = make_function_node();        
+            FunctionNode *function_node = instance(FunctionNode);        
             function_node->type = F_COUNT;
             function_node->value = $3;
             $$ = function_node;
         }
     | SUM '(' function_value ')'
         {
-            FunctionNode *function_node = make_function_node();        
+            FunctionNode *function_node = instance(FunctionNode);        
             function_node->type = F_SUM;
             function_node->value = $3;
             $$ = function_node;
         }
     | AVG '(' function_value ')'
         {
-            FunctionNode *function_node = make_function_node();        
+            FunctionNode *function_node = instance(FunctionNode);        
             function_node->type = F_AVG;
             function_node->value = $3;
             $$ = function_node;
@@ -1208,21 +1237,21 @@ function:
 function_value:
     INTVALUE
         {
-            FunctionValueNode *node = make_function_value_node();
+            FunctionValueNode *node = instance(FunctionValueNode);
             node->i_value = $1;
             node->value_type = V_INT;
             $$ = node;
         }
     | column 
         {
-            FunctionValueNode *node = make_function_value_node();
+            FunctionValueNode *node = instance(FunctionValueNode);
             node->column = $1;
             node->value_type = V_COLUMN;
             $$ = node;
         }
     | '*'
         {
-            FunctionValueNode *node = make_function_value_node();
+            FunctionValueNode *node = instance(FunctionValueNode);
             node->value_type = V_ALL;
             $$ = node;
         }
@@ -1230,14 +1259,14 @@ function_value:
 non_all_function_value:
     INTVALUE
         {
-            FunctionValueNode *node = make_function_value_node();
+            FunctionValueNode *node = instance(FunctionValueNode);
             node->i_value = $1;
             node->value_type = V_INT;
             $$ = node;
         }
     | column 
         {
-            FunctionValueNode *node = make_function_value_node();
+            FunctionValueNode *node = instance(FunctionValueNode);
             node->column = $1;
             node->value_type = V_COLUMN;
             $$ = node;
