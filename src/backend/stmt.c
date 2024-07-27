@@ -72,6 +72,7 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
 static void statement_alter_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == ALTER_TABLE_STMT,
                "System error, alter table statement type error.");
+    auto_begin_transaction();
     exec_alter_statement(stmt->alter_table_node, result);
 }
 

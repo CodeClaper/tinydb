@@ -1096,13 +1096,16 @@ static void *gen_new_default_value_at_append_column(void *default_value, MetaTab
 
     /* Assign new column default value. */
     switch (new_meta_column->default_value_type) {
-        case DEFAULT_VALUE:
-            assert_not_null(new_meta_column->default_value, 
-                            "Default value is NULL.");
-            memcpy(default_value + offset, 
-                   new_meta_column->default_value, 
-                   new_meta_column->column_length);
+        case DEFAULT_VALUE: {
+            /* Maybe default value is null, when refer value not found any match row. */
+            if (!is_null(new_meta_column->default_value))
+                memcpy(default_value + offset, 
+                       new_meta_column->default_value, 
+                       new_meta_column->column_length);
+            else
+                memset(default_value + offset, 0, new_meta_column->column_length);
             break;
+        }
         case DEFAULT_VALUE_NONE:
         case DEFAULT_VALUE_NULL:
             memset(default_value + offset, 0, new_meta_column->column_length);
