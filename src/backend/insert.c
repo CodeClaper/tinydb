@@ -1,6 +1,9 @@
 /*
  *================================== Insert Statement Module ===================================
- *   
+ * Insert Statement executor.
+ * support:
+ * (1) plain insert values statment, support for all column or special part column.
+ * (2) insert with subselect statment.
  *==============================================================================================
  * */
 #include <stdbool.h>
@@ -40,11 +43,11 @@
 
 /* Get value in insert node to assign column at index. */
 static void *get_insert_value(List *value_list, uint32_t index, MetaColumn *meta_column) {
-
     Assert(index < len_list(value_list));
 
     /* Get value item node at index. */
     ValueItemNode* value_item_node = lfirst(list_nth_cell(value_list, index));
+
     return assign_value_from_value_item_node(value_item_node, meta_column);
 }
 
@@ -304,16 +307,18 @@ Refer *insert_for_values(InsertNode *insert_node) {
     /* Check if table exists. */
     Table *table = open_table(insert_node->table_name);
     if (!table) {
-        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
+        db_log(ERROR, "Try to open table '%s' fail.", 
+               insert_node->table_name);
         return NULL;
     }
     
     /* Generate insert row. */
     Row *row = generate_insert_row(insert_node);
 
+    /* Make sure, not null. */
     Assert(row);
 
-    /* Do insert. */
+    /* Insert to page. */
     Refer *refer = insert_one_row(table, row);
 
     free_row(row);

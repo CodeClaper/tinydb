@@ -298,6 +298,9 @@ bool row_is_visible(Row *row) {
     /* Get current transaction. */
     TransactionHandle *trans_handle = find_transaction();
 
+    /* Make sure in transaction. */
+    assert_not_null(trans_handle, "Not found current transaction.");
+
     /* Get row created_xid and expired_xid. */
     KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
@@ -305,11 +308,17 @@ bool row_is_visible(Row *row) {
     int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
 
     /* Three satisfied conditions. */
-    if (row_created_xid == trans_handle->xid && row_expired_xid == 0)
+    if (row_created_xid == trans_handle->xid && 
+        row_expired_xid == 0)
         return true;
-    if (row_created_xid != trans_handle->xid && !is_active(row_created_xid) && row_expired_xid == 0)
+    if (row_created_xid != trans_handle->xid && 
+        !is_active(row_created_xid) && 
+        row_expired_xid == 0)
         return true;
-    if (row_expired_xid != 0 && row_expired_xid != trans_handle->xid && is_active(row_expired_xid) && row_created_xid != row_expired_xid)
+    if (row_expired_xid != 0 && 
+        row_expired_xid != trans_handle->xid && 
+        is_active(row_expired_xid) && 
+        row_created_xid != row_expired_xid)
         return true;
     
     return false;

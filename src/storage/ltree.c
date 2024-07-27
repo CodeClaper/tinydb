@@ -1079,8 +1079,10 @@ static void *gen_new_cell_after_append_column(void *old_cell, MetaTable *meta_ta
 }
 
 /* Genrate new default value. */
-static void *gen_new_default_value_after_append_column(void *default_value, MetaTable *meta_table, MetaColumn *new_meta_column, int pos) {
-    Assert(pos > -1);
+static void *gen_new_default_value_at_append_column(void *default_value, MetaTable *meta_table, MetaColumn *new_meta_column, int pos) {
+
+    /* Make sure. */
+    assert_true(pos > -1, "New column position index < 0");
 
     uint32_t value_len = calc_table_row_length2(meta_table);
 
@@ -1095,7 +1097,11 @@ static void *gen_new_default_value_after_append_column(void *default_value, Meta
     /* Assign new column default value. */
     switch (new_meta_column->default_value_type) {
         case DEFAULT_VALUE:
-            memcpy(default_value + offset, new_meta_column->default_value, new_meta_column->column_length);
+            assert_not_null(new_meta_column->default_value, 
+                            "Default value is NULL.");
+            memcpy(default_value + offset, 
+                   new_meta_column->default_value, 
+                   new_meta_column->column_length);
             break;
         case DEFAULT_VALUE_NONE:
         case DEFAULT_VALUE_NULL:
@@ -1305,7 +1311,7 @@ static void append_root_leaf_node_column(uint32_t page_num, Table *table, MetaCo
 
     /* Move default value. */
     void *old_default_value = get_default_value_cell(leaf_node);
-    void *new_default_value = gen_new_default_value_after_append_column(old_default_value, meta_table, new_column, pos);
+    void *new_default_value = gen_new_default_value_at_append_column(old_default_value, meta_table, new_column, pos);
     memmove(default_value_pointer_after_append(leaf_node), 
            new_default_value,
            value_len + new_column->column_length);
@@ -1416,7 +1422,7 @@ static void append_root_internal_node_column(uint32_t page_num, Table *table, Me
 
         /* Move default value. */
         void *old_default_value = get_default_value_cell(root_node);
-        void *new_default_value = gen_new_default_value_after_append_column(old_default_value, table->meta_table, new_column, pos);
+        void *new_default_value = gen_new_default_value_at_append_column(old_default_value, table->meta_table, new_column, pos);
         memmove(default_value_pointer_after_append(root_node),
                new_default_value,
                value_len + new_column->column_length);

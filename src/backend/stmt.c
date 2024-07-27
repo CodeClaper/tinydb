@@ -33,79 +33,93 @@
 
 /* Begin tranasction statement. */
 static void statement_begin_transaction(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == BEGIN_TRANSACTION_STMT, "System error, begin tranasction statement type error.\n");
+    assert_true(stmt->statement_type == BEGIN_TRANSACTION_STMT,
+               "System error, begin tranasction statement type error.");
     begin_transaction(result);
 }
 
 /* Commit tranasction statement. */
 static void statement_commit_transaction(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == COMMIT_TRANSACTION_STMT, "System error, commit tranasction statement type error.\n");
+    assert_true(stmt->statement_type == COMMIT_TRANSACTION_STMT, 
+               "System error, commit tranasction statement type error.");
     commit_transaction(result);
 }
 
 /* Rollback tranasction statement. */
 static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == ROLLBACK_TRANSACTION_STMT, "System error, rollback tranasction statement type error.\n");
+    assert_true(stmt->statement_type == ROLLBACK_TRANSACTION_STMT, 
+                "System error, rollback tranasction statement type error.");
     rollback_transaction(result);
 }
 
 /* Create table Statement. */
 static void statement_create_table(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == CREATE_TABLE_STMT, "System error, create statement type error.\n");
+    assert_true(stmt->statement_type == CREATE_TABLE_STMT, 
+                "System error, create statement type error.");
+    auto_begin_transaction();
     exec_create_table_statement(stmt->create_table_node, result);
 }
 
 /* Drop table statement. */
 static void statement_drop_table(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == DROP_TABLE_STMT, "System error, drop statement type error.\n");
+    assert_true(stmt->statement_type == DROP_TABLE_STMT,
+               "System error, drop statement type error.");
     char *table_name = stmt->drop_table_node->table_name;
     exec_drop_table_statement(table_name, result);
 }
 
 /* Alter table statement. */
 static void statement_alter_table(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == ALTER_TABLE_STMT, "System error, alter table statement type error.\n");
+    assert_true(stmt->statement_type == ALTER_TABLE_STMT,
+               "System error, alter table statement type error.");
     exec_alter_statement(stmt->alter_table_node, result);
 }
 
 /*Insert Statment*/
 static void statement_insert(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == INSERT_STMT, "System error, insert statement type error.\n");
+    assert_true(stmt->statement_type == INSERT_STMT,
+               "System error, insert statement type error.");
     auto_begin_transaction();
     List *list = exec_insert_statement(stmt->insert_node);
     if (list) {
         result->success = true;
         result->rows = len_list(list);
-        result->message = format("Insert %d rows data to table '%s' successfully.", result->rows, stmt->insert_node->table_name);
-        db_log(SUCCESS, "Insert %d row data to table '%s' successfully.", result->rows, stmt->insert_node->table_name);
+        result->message = format("Insert %d rows data to table '%s' successfully.",
+                                 result->rows, stmt->insert_node->table_name);
+        db_log(SUCCESS, "Insert %d row data to table '%s' successfully.",
+               result->rows, stmt->insert_node->table_name);
         free_list_deep(list);
     }
 }
 
 /*Select Statement*/
 static void statement_select(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == SELECT_STMT, "System error, select statement type error.\n");
+    assert_true(statement->statement_type == SELECT_STMT,
+               "System error, select statement type error.");
     auto_begin_transaction();
     exec_select_statement(statement->select_node, result); 
 }
 
 /*Update statemetn*/
 static void statement_update(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == UPDATE_STMT, "System error, update statement type error.\n");
+    assert_true(statement->statement_type == UPDATE_STMT,
+               "System error, update statement type error.");
     auto_begin_transaction();
     exec_update_statment(statement->update_node, result);
 }
 
 /*Delete Statement*/
 static void statement_delete(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == DELETE_STMT, "System error, delete statement type error.\n");
+    assert_true(statement->statement_type == DELETE_STMT,
+               "System error, delete statement type error.");
     auto_begin_transaction();
     exec_delete_statement(statement->delete_node, result);
 }
 
 /*Describe Statement*/
 static void statement_describe(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == DESCRIBE_STMT, "System error, describe statement type error.\n"); 
+    assert_true(statement->statement_type == DESCRIBE_STMT,
+               "System error, describe statement type error."); 
     List *list = exec_describe_statement(statement->describe_node);
     if (list) {
         /* Success resule. */
@@ -118,7 +132,8 @@ static void statement_describe(Statement *statement, DBResult *result) {
 
 /*Show tables Statment*/
 static void statement_show(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == SHOW_STMT, "System error, show statmement type error.\n"); 
+    assert_true(statement->statement_type == SHOW_STMT, 
+               "System error, show statmement type error."); 
     exec_show_statement(statement->show_node, result);
 }
 
