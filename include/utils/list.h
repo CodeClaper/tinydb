@@ -29,7 +29,8 @@ typedef enum NodeTag {
     NODE_VALUE_ITEM,
     NODE_BASE_TABLE_ELEMENT,
     NODE_TABLE_REFER,
-    NODE_ASSIGNMENT
+    NODE_ASSIGNMENT,
+    NODE_TABLE_BUFFER_ENTRY
 } NodeTag;
 
 /* Cell in List.*/

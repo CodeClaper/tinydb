@@ -171,6 +171,7 @@ void list_delete_nth_cell(List *list, int n) {
     Assert(n >= 0 && n < list->size);
     memcpy(list->elements + n, list->elements + n + 1, 
            sizeof(ListCell) * (list->size - n - 1));
+    list->size--;
 }
 
 /* Delete ListCell in List. */
@@ -507,6 +508,13 @@ void free_list_deep(List *list) {
                 ListCell *lc;
                 foreach (lc, list) {
                     free_assignment_node(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_TABLE_BUFFER_ENTRY: {
+                ListCell *lc;
+                foreach(lc, list) {
+                    free_table_buffer_entry(lfirst(lc));
                 }
                 break;
             }
