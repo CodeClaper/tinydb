@@ -14,7 +14,6 @@
 
 static TableCache *cache = NULL;
 
-static volatile s_lock slock =  SPIN_UN_LOCKED_STATUS;
 
 /* Initialise table cache. */
 void init_table_cache() {
@@ -78,8 +77,6 @@ void clear_table_cache(char *table_name) {
 /* Synchronous page data. */
 bool sync_page(char *table_name, uint32_t page_num, void *page) {
 
-    spin_lock_acquire(&slock);
-
     uint32_t i;
     for (i = 0; i < cache->size; i++) {
         Table *cur_table = *(cache->table_list + i);
@@ -91,30 +88,24 @@ bool sync_page(char *table_name, uint32_t page_num, void *page) {
             cur_table->pager->pages[page_num] = copy_block(page, PAGE_SIZE);
             if (old_page != page)
                 free_block(old_page);
-            spin_lock_release(&slock);
             return true;
         }
     }
     
-    spin_lock_release(&slock);
     return false;
 }
 
 /* Synchronous page size. */
 bool sync_page_size(char *table_name, uint32_t page_size) {
 
-    spin_lock_acquire(&slock);
-
     uint32_t i;
     for (i = 0; i < cache->size; i++) {
         Table *cur_table = *(cache->table_list + i);
         if (streq(cur_table->meta_table->table_name, table_name)) {
             cur_table->pager->size = page_size;
-            spin_lock_release(&slock);
             return true;
         }
     }
 
-    spin_lock_release(&slock);
     return false;
 }

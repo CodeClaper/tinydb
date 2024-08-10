@@ -16,7 +16,7 @@
 void init_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
     lock_entry->tid = 0;
-    spin_lock_init(&lock_entry->lock);
+    init_spin_lock(&lock_entry->lock);
 }
 
 /* Acqure the exclusive lock. */
@@ -27,7 +27,7 @@ void acquire_exlock(ExLockEntry *lock_entry) {
      * acuqiring the lock, return.*/
     if (current_tid == lock_entry->tid)
         return;
-    spin_lock_acquire(&lock_entry->lock);
+    acquire_spin_lock(&lock_entry->lock);
     lock_entry->tid = current_tid;
 }
 
@@ -38,7 +38,7 @@ void release_exlock(ExLockEntry *lock_entry) {
     /* Only the thread that has acuqired the lock can release the lock.*/
     if (current_tid != lock_entry->tid)
         return;
-    spin_lock_release(&lock_entry->lock);
+    release_spin_lock(&lock_entry->lock);
     lock_entry->tid = 0;
 }
 
@@ -50,6 +50,6 @@ void wait_for_exlock(ExLockEntry *lock_entry) {
      * acuqiring the lock, return.*/
     if (current_tid == lock_entry->tid)
         return;
-    spin_lock_wait_for(&lock_entry->lock);
+    wait_for_spin_lock(&lock_entry->lock);
 }
 

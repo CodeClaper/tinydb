@@ -11,12 +11,12 @@
 #include "spinlock.h"
 
 /* Init spin lock. */
-void spin_lock_init(volatile s_lock *lock) {
+void init_spin_lock(volatile s_lock *lock) {
     *lock = SPIN_UN_LOCKED_STATUS;
 }
 
 /* Acquire spin lock, if fail, it will block. */
-void spin_lock_acquire(volatile s_lock *lock) {
+void acquire_spin_lock(volatile s_lock *lock) {
 
     while (*lock) {
         usleep(DEFAULT_SPIN_INTERVAL);
@@ -26,12 +26,12 @@ void spin_lock_acquire(volatile s_lock *lock) {
 }
 
 /* Release spin lock. */
-void spin_lock_release(volatile s_lock *lock) {
+void release_spin_lock(volatile s_lock *lock) {
     *lock = SPIN_UN_LOCKED_STATUS;
 }
 
 /* Wait for spin lock released. */
-void spin_lock_wait_for(volatile s_lock *lock) {
+void wait_for_spin_lock(volatile s_lock *lock) {
     while (*lock) {
         usleep(DEFAULT_SPIN_INTERVAL);
     }
