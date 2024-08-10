@@ -141,6 +141,8 @@ TEST(list, list_delete_int) {
     ASSERT_FALSE(list_member_int(list, 6));
     ASSERT_TRUE(list_member_int(list, 5));
 
+    ASSERT_TRUE(len_list(list) == 7);
+
 }
 
 
