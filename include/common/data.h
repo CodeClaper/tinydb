@@ -618,12 +618,6 @@ typedef struct TableBufferEntry {
     int64_t tid;
 } TableBufferEntry;
 
-/* TableBuffer */
-typedef struct TableBuffer {
-    TableBufferEntry **buffer;
-    uint32_t size;
-} TableBuffer;
-
 /* Cursor */
 typedef struct Cursor {
     Table *table;

@@ -21,6 +21,7 @@
 #include "ltree.h"
 #include "pager.h"
 #include "log.h"
+#include "tablelock.h"
 #include "index.h"
 
 /* Get table list. */
@@ -177,6 +178,9 @@ Table *open_table(char *table_name) {
         // db_log(ERROR, "Table name must be supported.");
         return NULL;
     }
+
+    /* Check table if locked, if locked, block here unitl acquire the table. */
+    check_table_locked(table_name);
 
     /* Firstly, try to find in buffer. */
     Table *mtable = find_table_buffer(table_name);

@@ -6,6 +6,7 @@
 
 typedef int s_lock;
 
+
 /* Init spin lock. */
 void spin_lock_init(volatile s_lock *lock);
 
@@ -14,3 +15,6 @@ void spin_lock_acquire(volatile s_lock *lock);
 
 /* Release spin lock. */
 void spin_lock_release(volatile s_lock *lock);
+
+/* Wait for spin lock released. */
+void spin_lock_wait_for(volatile s_lock *lock);

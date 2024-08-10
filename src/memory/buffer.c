@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 #include "buffer.h"
 #include "data.h"
 #include "cache.h"
@@ -46,6 +45,21 @@ static bool save_or_update_table_buffer(Table *table) {
     append_list(buffer_list, entry);
 
     return true;
+}
+
+/* If other transaction acquire the table. */
+bool if_others_acquire_table(char *table_name) { 
+    /* Try to get current transaction. */
+    TransactionHandle *trans = find_transaction();
+
+    ListCell *lc;
+    foreach (lc, buffer_list) {
+        TableBufferEntry *entry = lfirst(lc);
+        if (streq(table_name, entry->table->meta_table->table_name) && entry->xid != trans->xid)
+            return true;
+    }
+
+    return false;
 }
 
 /* Find table in table buffer. */

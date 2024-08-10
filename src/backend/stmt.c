@@ -65,6 +65,7 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == DROP_TABLE_STMT,
                "System error, drop statement type error.");
     char *table_name = stmt->drop_table_node->table_name;
+    auto_begin_transaction();
     exec_drop_table_statement(table_name, result);
 }
 

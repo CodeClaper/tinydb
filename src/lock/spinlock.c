@@ -29,3 +29,10 @@ void spin_lock_acquire(volatile s_lock *lock) {
 void spin_lock_release(volatile s_lock *lock) {
     *lock = SPIN_UN_LOCKED_STATUS;
 }
+
+/* Wait for spin lock released. */
+void spin_lock_wait_for(volatile s_lock *lock) {
+    while (*lock) {
+        usleep(DEFAULT_SPIN_INTERVAL);
+    }
+}

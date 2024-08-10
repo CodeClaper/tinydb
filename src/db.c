@@ -25,6 +25,7 @@
 #include "refer.h"
 #include "cache.h"
 #include "buffer.h"
+#include "tablelock.h"
 #include "log.h"
 
 
@@ -53,6 +54,8 @@ static void db_start() {
     init_table_buffer();
     /* Initialise refer. */
     init_refer();
+    /* Initialise table lock. */
+    init_table_lock();
     /* Load configuration. */
     conf = load_conf();
 }
