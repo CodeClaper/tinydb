@@ -259,9 +259,6 @@ void execute(char *sql) {
     /* Free result_set. */
     free_list_deep(result_list);
 
-    /* Free buffer. */
-    remove_table_buffer();
-
     /* Commit transction manually. */
     auto_commit_transaction();
 

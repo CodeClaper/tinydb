@@ -609,13 +609,12 @@ typedef struct Table {
 typedef struct TableCache {
     Table **table_list;
     uint32_t size;
-}TableCache;
+} TableCache;
 
 /* TableBufferEntry */
 typedef struct TableBufferEntry {
     Table *table;
     int64_t xid;
-    int64_t tid;
 } TableBufferEntry;
 
 /* Cursor */

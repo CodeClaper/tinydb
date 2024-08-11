@@ -67,6 +67,7 @@
 #include "utils.h"
 #include "xlog.h"
 #include "type.h"
+#include "buffer.h"
 
 
 static pthread_mutex_t mutex;
@@ -241,6 +242,9 @@ void commit_transaction(DBResult *result) {
         db_log(ERROR, "System Logic error, transaction is auto committed but found in manual commit funciton.");
         return;
     }
+
+    /* Clear table buffer. */
+    remove_table_buffer();
     
     /* Commit Xlog. */
     commit_xlog();
@@ -262,10 +266,14 @@ void auto_commit_transaction() {
 
     /* Only deal with auto-commit transaction. */
     if (trans_handle && trans_handle->auto_commit) {
+
+        remove_table_buffer();
+
         int64_t xid = trans_handle->xid; 
 
         /* Destroy transaction. */
-        assert_true(destroy_transaction(trans_handle), "Destroy transaction handle error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
+        assert_true(destroy_transaction(trans_handle), 
+                   "Destroy transaction handle error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
 
         db_log(INFO, "Auto commit the transaction xid: %"PRId64" successfully.", xid);
     }
@@ -279,7 +287,9 @@ void rollback_transaction(DBResult *result) {
         commit_transaction(result);
         result->success = true;
         result->message = format("Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
-        db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
+        db_log(SUCCESS, 
+               "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
+               trans_handle->xid);
     } 
     else 
         db_log(ERROR, "Not found transaction to rollback.");

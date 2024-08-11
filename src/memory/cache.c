@@ -83,8 +83,7 @@ bool sync_page(char *table_name, uint32_t page_num, void *page) {
         if (streq(cur_table->meta_table->table_name, table_name)) {
             void *old_page = cur_table->pager->pages[page_num];
             /* Notice: must copy the page, 
-             * because the page will be freed at <remove_table_buffer>
-             * */
+             * because the page will be freed at <remove_table_buffer> */
             cur_table->pager->pages[page_num] = copy_block(page, PAGE_SIZE);
             if (old_page != page)
                 free_block(old_page);

@@ -12,7 +12,6 @@
 #include "asserts.h"
 #include "spinlock.h"
 
-
 /* Table Buffer. */
 static List *buffer_list;
 
@@ -34,7 +33,6 @@ static bool save_or_update_table_buffer(Table *table) {
     /* Generate TableBufferEntry. */
     TableBufferEntry *entry = instance(TableBufferEntry);
     entry->table = table;
-    entry->tid = trans->tid;
     entry->xid = trans->xid;
     
     /* Append to buffer. */
@@ -71,8 +69,7 @@ Table *find_table_buffer(char *table_name) {
         foreach (lc, buffer_list) {
             TableBufferEntry *entry = lfirst(lc);
             if (streq(table_name, entry->table->meta_table->table_name) 
-                && entry->xid == trans->xid 
-                && entry->tid == trans->tid) {
+                && entry->xid == trans->xid ) {
                     return entry->table;
             }  
         }
@@ -99,7 +96,7 @@ bool remove_table_buffer() {
     uint32_t i;
     for (i = 0; i < len_list(buffer_list); i++) {
         TableBufferEntry *entry = lfirst(list_nth_cell(buffer_list, i));
-        if (entry->xid == trans->xid && entry->tid == trans->tid) {
+        if (entry->xid == trans->xid) {
             free_table_buffer_entry(entry);
             list_delete(buffer_list, entry);
             i = 0; // Restart over.
