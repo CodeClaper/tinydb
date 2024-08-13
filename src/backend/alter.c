@@ -28,15 +28,15 @@
 static void capture_table(char *table_name) {
     try_acquire_table(table_name);
     /* Wait there is no threads manipulation the table. */
-   // while (if_others_acquire_table(table_name)) {
-   //     usleep(100);
-   // }
+    //while (if_others_acquire_table(table_name)) {
+    //    usleep(100);
+    //}
 }
 
 /* Release Table. */
 static void release_table(char *table_name) {
-    clear_table_cache(table_name);
-    clear_table_buffer(table_name);
+    remove_table_cache(table_name);
+    remove_table_buffer(table_name);
     try_release_table(table_name);
 }
 

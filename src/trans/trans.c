@@ -244,7 +244,7 @@ void commit_transaction(DBResult *result) {
     }
 
     /* Clear table buffer. */
-    remove_table_buffer();
+    clear_table_buffer();
     
     /* Commit Xlog. */
     commit_xlog();
@@ -267,7 +267,7 @@ void auto_commit_transaction() {
     /* Only deal with auto-commit transaction. */
     if (trans_handle && trans_handle->auto_commit) {
 
-        remove_table_buffer();
+        clear_table_buffer();
 
         int64_t xid = trans_handle->xid; 
 

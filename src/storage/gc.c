@@ -54,8 +54,8 @@ void loop_gc() {
         /* Free memory. */
         free_list_deep(table_list);
 
-        /* Remove Buffer. */
-        remove_table_buffer();
+        /* Clear Buffer. */
+        clear_table_buffer();
 
         /* Commit transction manually. */
         auto_commit_transaction();

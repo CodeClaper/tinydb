@@ -41,21 +41,6 @@ static bool save_or_update_table_buffer(Table *table) {
     return true;
 }
 
-/* If other transaction acquire the table. */
-bool if_others_acquire_table(char *table_name) { 
-    /* Try to get current transaction. */
-    TransactionHandle *trans = find_transaction();
-
-    ListCell *lc;
-    foreach (lc, buffer_list) {
-        TableBufferEntry *entry = lfirst(lc);
-        if (streq(table_name, entry->table->meta_table->table_name) && entry->xid != trans->xid)
-            return true;
-    }
-
-    return false;
-}
-
 /* Find table in table buffer. */
 Table *find_table_buffer(char *table_name) {
 
@@ -86,8 +71,8 @@ Table *find_table_buffer(char *table_name) {
 }
 
 
-/* Remove all of whole current transaction releated TableBufferEntries. */
-bool remove_table_buffer() {
+/* Clrear all of whole current transaction releated TableBufferEntries. */
+bool clear_table_buffer() {
     /* Try to get current transaction. */
     TransactionHandle *trans = find_transaction();
     if (is_null(trans))
@@ -106,8 +91,8 @@ bool remove_table_buffer() {
     return true;
 }
 
-/* Clear table buffer. */
-void clear_table_buffer(char *table_name) {
+/* Remove table buffer. */
+void remove_table_buffer(char *table_name) {
 
     uint32_t i;
     for (i = 0; i < len_list(buffer_list); i++) {
