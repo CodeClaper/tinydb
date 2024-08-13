@@ -10,15 +10,14 @@
 #include "log.h"
 #include "y.tab.h"
 int lineno = 1;
-int yyerror(void *scanner, List *states ,const char *s);
-int yylex(void *);
+int yyerror(const char *s);
+int yylex();
 
 /* macro to save the text and return a token */
 #define TOK(name) { return name; }
 %}
 
 %option caseless
-%option reentrant
 
 %%
 BEGIN                   return BEGINN;
@@ -109,14 +108,13 @@ FALSE                   return FALSE;
                           } 
                           return STRINGVALUE;
                         } 
-'[^'\n]*$	            { yyerror(yyscanner, NULL, "Unterminated string");  return YYerror;}
+'[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
 [ \t]                   /* igonore space */
 "--".*$		;	        /* comment */
 %%
 
-int yyerror(void *scanner, List *states, const char *s) {
-    struct yyguts_t * yyg = (struct yyguts_t*)scanner;
-	db_log(ERROR, "Sql syntax error near [%s].", yyg->yytext_r);
+int yyerror(const char *s) {
+	db_log(ERROR, "Sql syntax error near [%s].", yytext);
     return 0;
 }

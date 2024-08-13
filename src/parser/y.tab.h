@@ -211,7 +211,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 18 "sql.y"
+#line 19 "sql.y"
 
    char                         *strVal;
    int64_t                      intVal;
@@ -276,7 +276,7 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 
-int yyparse (void * scanner, List *states);
+int yyparse (List *states);
 
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */
