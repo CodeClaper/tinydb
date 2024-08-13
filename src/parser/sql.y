@@ -13,7 +13,6 @@
 int yywrap() {
     return 1;
 }
-int yylex();
 %} 
 %union 
 {
@@ -166,7 +165,9 @@ int yylex();
 %type <alter_table_node> alter_table_statement 
 %type <statement> statement;
 %type <list> statements;
+%parse-param {void * scanner}
 %parse-param {List *states}
+%lex-param {void * scanner}
 
 %%
 statements: 

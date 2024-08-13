@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "parser.h"
 #include "mmu.h"
 #include "data.h"
@@ -13,10 +14,12 @@
 #include "asserts.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
-extern int yylex(void);
-extern YY_BUFFER_STATE yy_scan_string(char *str);
-extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
-extern int yyparse(List *states);
+extern int yylex_init(void *scanner);
+extern int yylex(void *);
+extern YY_BUFFER_STATE yy_scan_string(char *str, void *scanner);
+extern int yyparse(void *scanner, List *states);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer, void *scanner);
+extern int yylex_destroy  (void *scanner);
 
 
 /* Parse sql and generate statement list. */
@@ -30,9 +33,21 @@ List *parse(char *sql) {
     size_t size = strlen(sql);
     char buff[size + 1];
     sprintf(buff, "%s%c", sql, '\n');
-    YY_BUFFER_STATE buffer = yy_scan_string(buff);
+
+    void *scanner;
+    yylex_init(&scanner);
+
+    YY_BUFFER_STATE buffer = yy_scan_string(buff, scanner);
 
     List *states = create_list(NODE_STATEMENT);
 
-    return yyparse(states) == 0 ? states : NULL;
+    if (yyparse(scanner, states) == 0) {
+        yy_delete_buffer(buffer, scanner);
+        yylex_destroy(scanner);
+        return states;
+    } else {
+        yy_delete_buffer(buffer, scanner);
+        yylex_destroy(scanner);
+        return NULL;
+    }
 }
