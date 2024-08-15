@@ -1,12 +1,11 @@
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "data.h"
 #include "defs.h"
 #include "mmu.h"
@@ -27,6 +26,7 @@
 #include "buffer.h"
 #include "tablelock.h"
 #include "log.h"
+#include "shmem.h"
 
 
 Conf *conf; /* Conf */
@@ -34,10 +34,12 @@ jmp_buf errEnv; /* jmp_buf for error. */
 
 /* DB Start. */
 static void db_start() {
-    /* Initialise memory manager unit. */
-    init_mmu();
+    /* Initialise shmem. */
+    init_shmem();
     /* Initialise memory manger. */
     init_mem();
+    /* Initialise memory manager unit. */
+    init_mmu();
     /* Initialise log. */
     init_log();
     /* Initialise session. */
@@ -56,6 +58,7 @@ static void db_start() {
     init_refer();
     /* Initialise table lock. */
     init_table_lock();
+
     /* Load configuration. */
     conf = load_conf();
 }
@@ -66,22 +69,23 @@ static void db_run() {
     int client_secket = -1;
     struct sockaddr_in *client_name = sys_malloc(sizeof(struct sockaddr_in));
     socklen_t client_name_len = sizeof(*client_name);
-    pthread_t new_thread;
+
+    /* Start up server. */
     server_socket = startup(conf->port);
     db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
 
-    /* start gc */
-    /* pthread_t gc_thread */
-    /*if (pthread_create(&gc_thread, NULL, (void *)loop_gc, NULL) != 0)*/
-        /*db_log(PANIC, "Create new thread fail.");*/
-
-    /* listen */
+    /* Listen client connecting. */
     while(true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
         if (client_secket == -1)
             db_log(PANIC, "Socket accept fail.");
-        if (pthread_create(&new_thread, NULL, (void *)accept_request, (void *)(intptr_t)client_secket) != 0)
-            db_log(PANIC, "Create new thread fail.");
+        
+        /* Create new child process. */
+        pid_t pid = fork();
+        if (pid < 0) 
+            db_log(PANIC, "Create new child process fail.");
+        else if (pid == 0)
+            accept_request((intptr_t)client_secket);
     }
 }
 

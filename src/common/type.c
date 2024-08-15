@@ -1,6 +1,7 @@
 #include "data.h"
 #include "type.h"
 #include "mmu.h"
+#include <time.h>
 
 /* Generate new KeyValue instance. */
 KeyValue *new_key_value(char *key, void *value, DataType data_type) {
@@ -50,6 +51,7 @@ DBResult *new_db_result() {
     result->data = NULL;
     result->rows = 0;
     result->duration = 0;
+    result->table = NULL;
     return result;
 }
 

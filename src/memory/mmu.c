@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <strings.h>
 #include <time.h>
 #include "mmu.h"
 #include "asserts.h"
@@ -33,6 +34,7 @@
 #include "data.h"
 #include "defs.h"
 #include "utils.h"
+#include "mem.h"
 
 #define MAXIMUM_CAPACITY 1<<31
 #define MININUM_CAPACITY 1<<10
@@ -322,69 +324,28 @@ void sys_free(void *ptr) {
 
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype) {
-    void *ret = malloc(size);
-    assert_not_null(ret, "Not enough memory to allocate.");
-    memset(ret, 0, size);
-#ifdef DEBUG
-    register_entry(ret, size, stype);
-#endif
-
-    return ret;
+    void *ptr = dalloc(size);
+    bzero(ptr, size);
+    return ptr;
 }
 
 /* Database level reallocate. */
 void *db_realloc(void *ptr, size_t size) {
-
-#ifdef DEBUG
-    MEntry *entry = search_entry(ptr);
-    if (ptr == NULL)
-        assert_not_null(entry, "System error, search Memory entry [%p] fail", ptr);
-#endif
-
-    /* When size is zero, realloc return null, which is not we need. */
-    if (size == 0) {
-        db_free(ptr);
-#ifdef DEBUG
-        return db_malloc(size, entry->stype);
-#else
-        return db_malloc(size, "pointer");
-#endif
-    }
-
-    void *ret = realloc(ptr, size);
-    if (ret == NULL)
-        assert_not_null(ret, "Not enough memory to rallocate at <db_realloc>.");
-
-#ifdef DEBUG
-    change_entry(ptr, ret, size, entry->stype);
-#endif
-
-    return ret;
+    return drealloc(ptr, size);
 }
+
 
 /* Database level db_strdup. */
 char *db_strdup(char *str) {
     if (is_null(str))
         return NULL;
-
-    char *ret = strdup(str);
-    assert_not_null(ret, "Not enough memory to strdup at <db_strdup>.");
-
-#ifdef DEBUG
-    register_entry(ret, strlen(str), str);
-#endif
-
-    return ret;
+    return dstrdup(str);
 }
+
 
 /* Database level mememory free. */
 void db_free(void *ptr) {
-    if (ptr)
-#ifdef DEBUG
-        remove_entry(ptr, false);
-#else
-        free(ptr);
-#endif
+    dfree(ptr);
 }
 
 /* Databese level mememory size. */

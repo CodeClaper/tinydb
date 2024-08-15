@@ -37,8 +37,7 @@ int startup(u_short port) {
 }
 
 /* Accept request.*/
-void accept_request(void *arg) {
-    int client = (intptr_t) arg;
+void accept_request(intptr_t client) {
     size_t chars_num;
     char buf[1024];
     Session *session = new_session(client);
