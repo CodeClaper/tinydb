@@ -515,7 +515,7 @@ TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node) {
 void *copy_block(void *value, size_t size) {
     if (value == NULL)
         return NULL;
-    void * block = db_malloc(size, "pointer");
+    void *block = db_malloc(size, "pointer");
     memcpy(block, value, size);
     return block;
 }

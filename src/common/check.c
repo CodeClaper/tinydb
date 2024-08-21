@@ -1102,7 +1102,7 @@ static bool if_table_used_refer(char *table_name, char *refer_table_name) {
     MetaTable *meta_table = table->meta_table;
 
     uint32_t i;
-    for(i = 0; i < meta_table->column_size; i++) {
+    for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *current_meta_column = meta_table->meta_column[i];
         if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
             db_log(ERROR , "Table '%s' is refered by column '%s' in table '%s', so can`t drop it.", refer_table_name, current_meta_column->column_name, table_name);

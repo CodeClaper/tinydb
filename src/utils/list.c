@@ -441,6 +441,13 @@ void free_list_deep(List *list) {
                 }
                 break;
             }
+            case NODE_TABLE: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    free_table(lfirst(lc));
+                }
+                break;
+            }
             case NODE_STATEMENT: {
                 ListCell *lc;
                 foreach (lc, list) {

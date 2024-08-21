@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <pthread.h>
 #include <unistd.h>
 #include "data.h"
@@ -86,6 +87,13 @@ static void db_run() {
             db_log(PANIC, "Create new child process fail.");
         else if (pid == 0)
             accept_request((intptr_t)client_secket);
+        else
+            close(client_secket);
+    
+        /* Kill child zombie process. */
+        while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
+            db_log(INFO, "Child process %d terminated.\n", pid);
+        }
     }
 }
 

@@ -10,7 +10,7 @@
 #include "trans.h"
 #include "utils.h"
 #include "asserts.h"
-#include "spinlock.h"
+#include "mem.h"
 
 /* Table Buffer. */
 static List *buffer_list;
@@ -32,7 +32,7 @@ static bool save_or_update_table_buffer(Table *table) {
 
     /* Generate TableBufferEntry. */
     TableBufferEntry *entry = instance(TableBufferEntry);
-    entry->table = table;
+    entry->table = copy_table(table);
     entry->xid = trans->xid;
     
     /* Append to buffer. */
@@ -87,7 +87,7 @@ bool clear_table_buffer() {
             i = 0; // Restart over.
         }
     }
-    
+
     return true;
 }
 

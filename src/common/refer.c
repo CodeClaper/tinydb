@@ -241,7 +241,8 @@ Cursor *convert_cursor(Refer *refer) {
 /* Check if table has column refer to. */
 static bool if_related_table(char *table_name, char *refer_table_name) {
     Table *table = open_table(table_name);
-    assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
+    Assert(table);
+    assert_not_null(table, "Table '%s' not exist. ", table_name);
     MetaTable *meta_table = table->meta_table;
 
     int i;

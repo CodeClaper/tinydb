@@ -52,4 +52,5 @@ void accept_request(intptr_t client) {
     close(client);
     destroy_session();
     db_log(INFO, "Client ID '%ld' disconnect.", pthread_self());
+    exit(0);
 }

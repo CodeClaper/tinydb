@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef enum MemType {
     MEM_LOCAL,
@@ -9,6 +10,7 @@ typedef struct ShMemFreeEntry {
     void *ptr;
     size_t size;
     bool isFree;
+    struct ShMemFreeEntry *next;
 } ShMemFreeEntry;
 
 

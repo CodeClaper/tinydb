@@ -605,12 +605,6 @@ typedef struct Table {
     MetaTable *meta_table;
 } Table;
 
-/* TableCache */
-typedef struct TableCache {
-    Table **table_list;
-    uint32_t size;
-} TableCache;
-
 /* TableBufferEntry */
 typedef struct TableBufferEntry {
     Table *table;
