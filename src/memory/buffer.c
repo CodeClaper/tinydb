@@ -32,7 +32,7 @@ static bool save_or_update_table_buffer(Table *table) {
 
     /* Generate TableBufferEntry. */
     TableBufferEntry *entry = instance(TableBufferEntry);
-    entry->table = copy_table(table);
+    entry->table = table;
     entry->xid = trans->xid;
     
     /* Append to buffer. */

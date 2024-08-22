@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include "log.h"
 #include "mmu.h"
 #include "defs.h"
@@ -179,7 +180,7 @@ void db_log(LogLevel lev, char *format, ...) {
     if (lev >= conf->log_level) {
         char *sys_time = get_sys_time("%Y-%m-%d %H:%M:%S");
         char buff[BUFF_SIZE * 2];
-        sprintf(buff, "[%s][%ld][%s]:\t%s\n", sys_time, pthread_self(), LOG_LEVEL_NAME_LIST[lev], message);
+        sprintf(buff, "[%s][%d][%s]:\t%s\n", sys_time, getpid(), LOG_LEVEL_NAME_LIST[lev], message);
         fprintf(stdout, "%s", buff);
         flush_log(buff);
         db_free(sys_time);
