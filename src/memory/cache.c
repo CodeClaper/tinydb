@@ -17,15 +17,15 @@ static List *TableCache;
 
 /* Initialise table cache. */
 void init_table_cache() {
-    switch_memtype(MEM_SHARED);
+    switch_shared();
     TableCache = create_list(NODE_TABLE);
-    switch_memtype(MEM_LOCAL);
+    switch_local();
 }
 
 /* Save or update table cache. */
 void save_or_update_table_cache(Table *table) {
 
-    switch_memtype(MEM_SHARED);
+    switch_shared();
 
     ListCell *lc;
     foreach (lc, TableCache) {
@@ -39,7 +39,7 @@ void save_or_update_table_cache(Table *table) {
     /* Insert new table cache. */
     append_list(TableCache, copy_table(table));
 
-    switch_memtype(MEM_LOCAL);
+    switch_local();
 }
 
 /* Find cache table by name, return null if not exist. */
@@ -64,10 +64,10 @@ void remove_table_cache(char *table_name) {
     foreach (lc, TableCache) {
         Table *current = lfirst(lc);
         if (streq(current->meta_table->table_name, table_name)) {
-            switch_memtype(MEM_SHARED);
+            switch_shared();
             list_delete(TableCache, current);
             free_table(current);
-            switch_memtype(MEM_LOCAL);
+            switch_local();
         }
     }
 }
@@ -80,13 +80,13 @@ bool sync_page(char *table_name, uint32_t page_num, void *page) {
         Table *cur_table = lfirst(lc);
         if (streq(cur_table->meta_table->table_name, table_name)) {
             void *old_page = cur_table->pager->pages[page_num];
-            switch_memtype(MEM_SHARED);
+            switch_shared();
             /* Notice: must copy the page, 
              * because the page will be freed at <remove_table_buffer> */
             cur_table->pager->pages[page_num] = copy_block(page, PAGE_SIZE);
             if (old_page != page)
                 free_block(old_page);
-            switch_memtype(MEM_LOCAL);
+            switch_local();
             return true;
         }
     }

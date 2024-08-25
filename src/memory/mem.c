@@ -37,11 +37,17 @@ void init_mem() {
     create_spin_lock();
 }
 
-/* Swith MemType. */
-inline void switch_memtype(MemType mtype) {
-    type = mtype;
+/* Swith Shared Memory. */
+inline void switch_shared() {
+    type = MEM_SHARED;
 }
 
+/* Switch Local Memory. */
+inline void switch_local() {
+    type = MEM_LOCAL;
+}
+
+/* Generate new ShMemFreeEntry. */
 static ShMemFreeEntry *new_free_entry(void *ptr, size_t size, bool isFree, ShMemFreeEntry *next) {
     ShMemFreeEntry *entry = shmem_alloc(sizeof(ShMemFreeEntry));
     entry->ptr = ptr;

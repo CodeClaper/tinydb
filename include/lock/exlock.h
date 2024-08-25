@@ -2,7 +2,7 @@
 
 typedef struct ExLockEntry {
     volatile s_lock lock;   /* The lock. */
-    volatile int64_t tid;    /* The thread id that acquiring the lock.*/
+    volatile pid_t pid;   /* The pid that acquiring the lock.*/
 }ExLockEntry;
 
 /* Init exclusive lock. */

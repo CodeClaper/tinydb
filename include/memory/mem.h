@@ -17,8 +17,11 @@ typedef struct ShMemFreeEntry {
 /* Init mem. */
 void init_mem();
 
-/* Swith MemType. */
-void switch_memtype(MemType mtype);
+/* Swith Shared Memory. */
+void switch_shared();
+
+/* Switch Local Memory. */
+void switch_local();
 
 /* Allocate memory. */
 void *dalloc(size_t size);

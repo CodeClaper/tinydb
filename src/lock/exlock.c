@@ -8,47 +8,48 @@
 ******************************************************************************/
 
 #include <pthread.h>
+#include <sched.h>
 #include <stdint.h>
+#include <unistd.h>
 #include "spinlock.h"
 #include "exlock.h"
 
 /* Init exclusive lock. */
 void init_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
-    lock_entry->tid = 0;
+    lock_entry->pid = 0;
     init_spin_lock(&lock_entry->lock);
 }
 
 /* Acqure the exclusive lock. */
 void acquire_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
-    int64_t current_tid = pthread_self();
-    /* If current thread is the one that aleary 
+    pid_t pid = getpid();
+    /* If current processor is the one that aleary 
      * acuqiring the lock, return.*/
-    if (current_tid == lock_entry->tid)
+    if (pid == lock_entry->pid)
         return;
     acquire_spin_lock(&lock_entry->lock);
-    lock_entry->tid = current_tid;
+    lock_entry->pid = pid;
 }
 
 /* Release the exclusive lock. */
 void release_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
-    int64_t current_tid = pthread_self();
-    /* Only the thread that has acuqired the lock can release the lock.*/
-    if (current_tid != lock_entry->tid)
+    int64_t pid = getpid();
+    /* Only the same processor that has acuqired the lock can release the lock.*/
+    if (pid != lock_entry->pid)
         return;
     release_spin_lock(&lock_entry->lock);
-    lock_entry->tid = 0;
+    lock_entry->pid = 0;
 }
 
 /* Wait for exlock released. */
 void wait_for_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
-    int64_t current_tid = pthread_self();
-    /* If current thread is the one that aleary 
-     * acuqiring the lock, return.*/
-    if (current_tid == lock_entry->tid)
+    int64_t pid = getpid();
+    /* If current processor is the one that aleary acuqiring the lock, return.*/
+    if (pid == lock_entry->pid)
         return;
     wait_for_spin_lock(&lock_entry->lock);
 }
