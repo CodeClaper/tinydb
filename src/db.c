@@ -6,7 +6,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <pthread.h>
+#include <time.h>
 #include <unistd.h>
+#include <signal.h>
 #include "data.h"
 #include "defs.h"
 #include "mmu.h"
@@ -32,6 +34,8 @@
 
 Conf *conf; /* Conf */
 jmp_buf errEnv; /* jmp_buf for error. */
+
+static void sigchild();
 
 /* DB Start. */
 static void db_start() {
@@ -81,6 +85,8 @@ static void db_run() {
         if (client_secket == -1)
             db_log(PANIC, "Socket accept fail.");
         
+        signal(SIGCHLD, sigchild);
+
         /* Create new child process. */
         pid_t pid = fork();
         if (pid < 0) 
@@ -89,17 +95,16 @@ static void db_run() {
             accept_request((intptr_t)client_secket);
         else
             close(client_secket);
-    
-        /* Kill child zombie process. */
-        while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
-            db_log(INFO, "Child process %d terminated.\n", pid);
-        }
     }
 }
 
 /* DB End */
 static void db_end() {
     end_session();
+}
+
+static void sigchild() {
+    while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
 /* The main entry. */
