@@ -324,9 +324,7 @@ void sys_free(void *ptr) {
 
 /* Database level mallocate. */
 void *db_malloc(size_t size, char *stype) {
-    void *ptr = dalloc(size);
-    bzero(ptr, size);
-    return ptr;
+    return dalloc(size);
 }
 
 /* Database level reallocate. */

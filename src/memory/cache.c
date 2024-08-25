@@ -33,6 +33,7 @@ void save_or_update_table_cache(Table *table) {
         if (streq(current->meta_table->table_name, table->meta_table->table_name)) {
             /* Delete old one, and add new. */
             list_delete(TableCache, current);
+            free_table(current);
         }
     }
     /* Insert new table cache. */
@@ -65,6 +66,7 @@ void remove_table_cache(char *table_name) {
         if (streq(current->meta_table->table_name, table_name)) {
             switch_memtype(MEM_SHARED);
             list_delete(TableCache, current);
+            free_table(current);
             switch_memtype(MEM_LOCAL);
         }
     }

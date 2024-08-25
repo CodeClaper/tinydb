@@ -161,7 +161,9 @@ void free_pager(Pager *pager) {
     if (pager) {
         uint32_t i;
         for (i = 0; i < pager->size; i++) {
-            db_free(pager->pages[i]);
+            /* Page maybe not loaded. */
+            if (pager->pages[i])
+                db_free(pager->pages[i]);
         }
         db_free(pager);
     }

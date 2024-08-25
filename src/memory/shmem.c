@@ -10,6 +10,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #include "shmem.h"
 #include "spinlock.h"
 #include "utils.h"
@@ -17,7 +18,7 @@
 
 static ShmemHeader *shmrd;
 
-static s_lock lock;
+static s_lock* lock;
 
 static void *BaseEnd;
 static void *BaseStart;
@@ -26,12 +27,14 @@ static void *BaseStart;
 
 static void create_shmem();
 
+static void create_shmem_lock();
+
+static void *shmem_alloc_inner_unlock(size_t size);
+
 /* Init the shared memory. */
 void init_shmem() {
-    init_spin_lock(&lock);
     create_shmem();
-    BaseStart = shmrd;
-    BaseEnd = shmrd + shmrd->total_size;
+    create_shmem_lock();
 }
 
 /* Create Shmem. */
@@ -48,15 +51,24 @@ static void create_shmem() {
     
     memcpy(shm_ptr, &init_shmrd, sizeof(ShmemHeader));
     shmrd = shm_ptr;
+
+    BaseStart = shmrd;
+    BaseEnd = shmrd + shmrd->total_size;
 }
 
-/* Allocate memory in Shmem for inner.. */
-static void *shmem_alloc_inner(size_t size) {
+/* Create spin lock */
+static void create_shmem_lock() {
+    lock = shmem_alloc_inner_unlock(sizeof(s_lock));
+    init_spin_lock(lock);
+}
+
+/* Allocate memory in Shmem for inner. 
+ * And it only work befor shmem lock ready. 
+ * */
+static void *shmem_alloc_inner_unlock(size_t size) {
     void *ptr;
 
     Assert(shmrd);
-
-    acquire_spin_lock(&lock);
 
     size_t current_offset = shmrd->offset + size;
     if (current_offset <= shmrd->total_size) 
@@ -67,7 +79,27 @@ static void *shmem_alloc_inner(size_t size) {
     else 
         ptr = NULL;
 
-    release_spin_lock(&lock);
+    return ptr;
+}
+
+/* Allocate memory in Shmem for inner. */
+static void *shmem_alloc_inner(size_t size) {
+    void *ptr;
+
+    Assert(shmrd);
+
+    acquire_spin_lock(lock);
+
+    size_t current_offset = shmrd->offset + size;
+    if (current_offset <= shmrd->total_size) 
+    {
+        ptr = shmrd + shmrd->offset;   
+        shmrd->offset = current_offset;
+    }
+    else 
+        ptr = NULL;
+
+    release_spin_lock(lock);
 
     return ptr;
 }

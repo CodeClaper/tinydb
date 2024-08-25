@@ -23,21 +23,21 @@ Pager *open_pager(char *table_file_path){
     Pager *pager = instance(Pager);
     int file_descriptor = open(table_file_path, O_RDWR, S_IRUSR | S_IWUSR);
     /*int file_descriptor = open(table_file_path, O_RDWR);*/
-    if (file_descriptor == -1) {
-        fprintf(stderr, "Open table file fail.\n");
-        exit(EXIT_FAILURE);
-    }
+    if (file_descriptor == -1) 
+        db_log(PANIC, "Open table file fail.");
+
     off_t file_length = lseek(file_descriptor, 0, SEEK_END);
     pager->file_descriptor = file_descriptor;
     pager->file_length = file_length;
     pager->size = (file_length / PAGE_SIZE);
 
-    if (file_length % PAGE_SIZE != 0) {
+    if (file_length % PAGE_SIZE != 0) 
         db_log(PANIC, "Db file is not a whole number pages");
-    }
+
     for(int i = 0; i < MAX_TABLE_PAGE; i++) {
         pager->pages[i] = NULL;
     }
+
     return pager;
 }
 
@@ -56,7 +56,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
         if (read_bytes == -1) {
-            db_log(PANIC, "Table file read error and errno", errno);
+            db_log(PANIC, "Table file read error and errno: %d", errno);
         }
         pager->pages[page_num] = page;
 

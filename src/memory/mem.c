@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/types.h>
 #include <time.h>
 #include "mem.h"
@@ -21,25 +20,25 @@
 
 static MemType type;
 
-static bool hasInit;
-
-static ShMemFreeEntry *header;
-static ShMemFreeEntry *tail;
+static ShMemFreeEntry *header = NULL;
 static size_t *capcity;
+static s_lock *lock;
 
 static void create_free_list();
-static void add_free_list(void *ptr, size_t size, bool isFree);
+static void create_spin_lock();
+static void append_free_list(void *ptr, size_t size, bool isFree);
+static bool is_free_entry_addr(void *ptr);
+static ShMemFreeEntry *find_free_entry(void *ptr);
 
 /* Init mem. */
 void init_mem() {
-    hasInit = false;
     type = MEM_LOCAL;
     create_free_list();
-    hasInit = true;
+    create_spin_lock();
 }
 
 /* Swith MemType. */
-void switch_memtype(MemType mtype) {
+inline void switch_memtype(MemType mtype) {
     type = mtype;
 }
 
@@ -58,27 +57,30 @@ static void create_free_list() {
     header = new_free_entry(NULL, 0, false, NULL);
     capcity = shmem_alloc(sizeof(size_t));
     *capcity = 0;
-    tail = header;
+}
+
+static void create_spin_lock() {
+    lock = shmem_alloc(sizeof(s_lock));
+    init_spin_lock(lock);
+}
+
+/* Mem if avaliable. */
+static inline bool mem_avaliable() {
+    return !is_null(header);
 }
 
 
 /* Allocate shared memory in FreeList.*/
 static void *dalloc_shared_in_free_list(size_t size) {
+
     void *ptr = NULL;
     
-    if (hasInit) {
+    if (mem_avaliable()) {
         ShMemFreeEntry *entry = header;
         while ((entry = entry->next)) {
-            if (entry->isFree && entry->size == size) {
+            if (entry->isFree && entry->size >= size) {
                 ptr = entry->ptr;
                 entry->isFree = false;
-                break;
-            } else if (entry->isFree && entry->size > size) {
-                size_t left_size = entry->size - size;
-                ptr = entry->ptr;
-                entry->isFree = false;
-                entry->size = size;
-                add_free_list(ptr + size, left_size, true);
                 break;
             }
         }
@@ -87,20 +89,43 @@ static void *dalloc_shared_in_free_list(size_t size) {
     return ptr;
 }
 
-static void add_free_list(void *ptr, size_t size, bool isFree) {
-    Assert(ptr);
+static void *get_free_list_tail() {
+    ShMemFreeEntry *entry = header;
+    while (entry->next) {
+        entry = entry->next;
+    }
+    return entry;
+}
 
-    if (!hasInit)
+/* Append free list. */
+static void append_free_list(void *ptr, size_t size, bool isFree) {
+    Assert(ptr);
+    Assert(!is_free_entry_addr(ptr));
+    
+    Assert(!find_free_entry(ptr));
+
+    if (!mem_avaliable())
         return;
 
-    ShMemFreeEntry *free_entry = new_free_entry(ptr, size, false, NULL);
+    ShMemFreeEntry *free_entry = new_free_entry(ptr, size, isFree, NULL);
+
+    ShMemFreeEntry *tail = get_free_list_tail();
 
     tail->next = free_entry;
-    tail = free_entry;
 
     (*capcity)++;
 }
 
+static bool is_free_entry_addr(void *ptr) {
+    ShMemFreeEntry *entry = header;
+    while ((entry = entry->next)) {
+        if (entry == ptr)
+            return true;
+    }
+    return false;
+}
+
+/* Find ShMemFreeEntry. */
 static ShMemFreeEntry *find_free_entry(void *ptr) {
 
     ShMemFreeEntry *entry = header;
@@ -109,28 +134,34 @@ static ShMemFreeEntry *find_free_entry(void *ptr) {
             return entry;
     }
     return NULL;
+
 }
 
 
 /* Allocate memory in local memory. */
 static void *dalloc_local(size_t size) {
-    return malloc(size);
+    void *ptr = malloc(size);
+    memset(ptr, 0, size);
+    return ptr;
 }
 
 
 /* Allocate memory in shared memory. */
 static void *dalloc_shared(size_t size) {
     Assert(size > 0);
+
     void *ptr;
     ptr = dalloc_shared_in_free_list(size);
     if (is_null(ptr)) {
         ptr = shmem_alloc(size);
-        add_free_list(ptr, size, false);
+        append_free_list(ptr, size, false);
     }
-    bzero(ptr, size);
+
+    /* Initialise data. */
+    memset(ptr, 0, size);
+
     return ptr;
 }
-
 
 
 /* Free memory in local memory.*/
@@ -138,14 +169,24 @@ static void dfree_local(void *ptr) {
     free(ptr);
 }
 
-
 /* Free memory in shared memory.*/
 static void dfree_shared(void *ptr) {
+
     Assert(ptr);
     Assert(shmem_addr_valid(ptr));
+
     ShMemFreeEntry *free_entry = find_free_entry(ptr);
+
     Assert(free_entry);
+    Assert(!free_entry->isFree);
+
     free_entry->isFree = true;
+}
+
+/* Try dfree_shared. */
+static void try_dfree_shared(void *ptr) {
+    if (shmem_addr_valid(ptr))
+        dfree_shared(ptr);
 }
 
 /* Reallocate local memory. */
@@ -162,15 +203,16 @@ static void *drealloc_shared(void *ptr, size_t size) {
     size_t bsize = free_entry->size;
     void *new_ptr = dalloc_shared(size);
     memcpy(new_ptr, ptr, size < bsize ? size : bsize);
-    dfree_shared(ptr);
+    try_dfree_shared(ptr);
     return new_ptr;
 }
 
-
-static char *pstrdup_shared(char *str) {
-    size_t len = strlen(str) + 1;
-    void *new_str = dalloc_shared(len);
+/* Strdup in shared memory.  */
+static char *dstrdup_shared(char *str) {
+    size_t size = strlen(str) + 1;
+    void *new_str = dalloc_shared(size);
     memcpy(new_str, str, strlen(str));
+    try_dfree_shared(str);
     return new_str;
 }
 
@@ -219,7 +261,7 @@ void *dstrdup(char *str) {
         case MEM_LOCAL:
             return strdup(str);
         case MEM_SHARED:
-            return pstrdup_shared(str);
+            return dstrdup_shared(str);
         default:
             UNEXPECTED_VALUE("Unknown MemType.");
     }

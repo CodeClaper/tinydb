@@ -7,9 +7,9 @@ typedef enum MemType {
 } MemType;
 
 typedef struct ShMemFreeEntry {
-    void *ptr;
     size_t size;
     bool isFree;
+    void *ptr;
     struct ShMemFreeEntry *next;
 } ShMemFreeEntry;
 
