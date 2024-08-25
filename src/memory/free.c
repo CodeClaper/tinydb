@@ -190,7 +190,6 @@ void free_table_buffer_entry(TableBufferEntry *entry) {
 void free_cursor(Cursor *cursor) {
     if (cursor) {
         /* Notice: Table is used for cache, not free here. */
-        /*free_table(cursor->table);*/
         db_free(cursor);
     }
 } 

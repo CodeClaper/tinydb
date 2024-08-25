@@ -74,6 +74,8 @@ static inline bool mem_avaliable() {
 static void *dalloc_shared_in_free_list(size_t size) {
 
     void *ptr = NULL;
+
+    acquire_spin_lock(lock);
     
     if (mem_avaliable()) {
         ShMemFreeEntry *entry = header;
@@ -85,6 +87,8 @@ static void *dalloc_shared_in_free_list(size_t size) {
             }
         }
     }
+
+    release_spin_lock(lock);
 
     return ptr;
 }
@@ -107,6 +111,8 @@ static void append_free_list(void *ptr, size_t size, bool isFree) {
     if (!mem_avaliable())
         return;
 
+    acquire_spin_lock(lock);
+
     ShMemFreeEntry *free_entry = new_free_entry(ptr, size, isFree, NULL);
 
     ShMemFreeEntry *tail = get_free_list_tail();
@@ -114,6 +120,8 @@ static void append_free_list(void *ptr, size_t size, bool isFree) {
     tail->next = free_entry;
 
     (*capcity)++;
+
+    release_spin_lock(lock);
 }
 
 static bool is_free_entry_addr(void *ptr) {
