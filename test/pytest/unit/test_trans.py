@@ -65,6 +65,14 @@ def test_auto_rollback():
     assert ret[0]["success"] == True
     assert ret[1]["success"] == False
 
+
+## test commit after auto rollback.
+def test_commit_after_auto_rollback():
+    sql = "commit;\n" 
+    ret = client.execute(sql)
+    assert ret["success"] == True
+
+
 ## test query data after commit
 def test_select_after_auto_rollback_routine():
     ret = client.execute("select * from Student where name = 'holy';")

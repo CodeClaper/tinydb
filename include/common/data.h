@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <sched.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -728,7 +729,7 @@ typedef struct {
 /* TransactionHandle */
 typedef struct TransactionHandle {
     int64_t xid; /* transaction id. */ 
-    int64_t tid; /* thread id. */
+    pid_t pid; /* processor id. */
     bool auto_commit; /* auto commit. */
     struct TransactionHandle *next; /* next */
 } TransactionHandle;
