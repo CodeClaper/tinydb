@@ -197,6 +197,7 @@ Pager *copy_pager(Pager *pager) {
     pager_copy->size = pager->size;
     pager_copy->file_length = pager->file_length;
     pager_copy->file_descriptor = pager->file_descriptor;
+    pager_copy->table_file_path = db_strdup(pager->table_file_path);
 
     int32_t i;
     for (i = 0; i < pager->size; i++) {

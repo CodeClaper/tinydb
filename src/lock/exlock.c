@@ -36,18 +36,19 @@ void acquire_exlock(ExLockEntry *lock_entry) {
 /* Release the exclusive lock. */
 void release_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
-    int64_t pid = getpid();
+    pid_t pid = getpid();
     /* Only the same processor that has acuqired the lock can release the lock.*/
-    if (pid != lock_entry->pid)
-        return;
+    Assert(pid == lock_entry->pid);
+
     release_spin_lock(&lock_entry->lock);
     lock_entry->pid = 0;
+
 }
 
 /* Wait for exlock released. */
 void wait_for_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
-    int64_t pid = getpid();
+    pid_t pid = getpid();
     /* If current processor is the one that aleary acuqiring the lock, return.*/
     if (pid == lock_entry->pid)
         return;

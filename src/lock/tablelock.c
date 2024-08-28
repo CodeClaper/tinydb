@@ -8,7 +8,6 @@
  *===============================================================================================
  */
 
-#include <assert.h>
 #include <string.h>
 #include <unistd.h>
 #include "tablelock.h"
@@ -74,7 +73,7 @@ void try_acquire_table(char *table_name) {
     }
     
     /* Make sure TableLockEntity exists. */
-    assert(lock_entry);
+    Assert(lock_entry);
     
     /* Try acquire exclusive lock, maybe block here. */
     acquire_exlock(lock_entry->entry_lock);

@@ -218,7 +218,7 @@ Table *open_table(char *table_name) {
 
 
     /* Save table cache. */
-    save_or_update_table_cache(table);
+    save_table_cache(table);
     
     /* Free memory. */
     db_free(file_path);

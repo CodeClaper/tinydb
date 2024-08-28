@@ -30,6 +30,7 @@
 #include "tablelock.h"
 #include "log.h"
 #include "shmem.h"
+#include "tablereg.h"
 
 
 Conf *conf; /* Conf */
@@ -45,6 +46,8 @@ static void db_start() {
     init_mem();
     /* Initialise memory manager unit. */
     init_mmu();
+    /* Init tablereg. */
+    init_table_reg();
     /* Initialise log. */
     init_log();
     /* Initialise session. */

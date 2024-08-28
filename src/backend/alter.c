@@ -21,16 +21,18 @@
 #include "utils.h"
 #include "free.h"
 #include "log.h"
+#include "tablereg.h"
 
 /* Try to catpture table.
  * If these other session on the table, wait and test. 
  * */
-static void capture_table(char *table_name) {
+static void try_capture_table(char *table_name) {
     try_acquire_table(table_name);
-    /* Wait there is no threads manipulation the table. */
-    //while (if_others_acquire_table(table_name)) {
-    //    usleep(100);
-    //}
+    
+    /* Wait until capture the table exclusively. */
+    while (if_shared_table(table_name)) {
+        usleep(100);
+    }
 }
 
 /* Release Table. */
@@ -43,7 +45,7 @@ static void release_table(char *table_name) {
 /* Add new Column. */
 static void add_new_column(AddColumnDef *add_column_def, char *table_name, DBResult *result) {
     /* Capture table exclusively. */
-    capture_table(table_name);
+    try_capture_table(table_name);
     MetaColumn *new_meta_column = combine_user_meta_column(add_column_def->column_def, table_name);        
     if (new_meta_column->is_primary)
         db_log(ERROR, "Not support add primary-key column through alter table.");
@@ -64,7 +66,7 @@ static void add_new_column(AddColumnDef *add_column_def, char *table_name, DBRes
 /* Drop old column. */
 static void drop_old_column(DropColumnDef *drop_column_def, char *table_name, DBResult *result) {
     /* Capture table exclusively. */
-    capture_table(table_name);
+    try_capture_table(table_name);
     /* Release table. */
     release_table(table_name);
 }
@@ -72,7 +74,7 @@ static void drop_old_column(DropColumnDef *drop_column_def, char *table_name, DB
 /* Change old column. */
 static void change_old_column(ChangeColumnDef *change_column_def, char *table_name, DBResult *result) {
     /* Capture table exclusively. */
-    capture_table(table_name);
+    try_capture_table(table_name);
     /* Release table. */
     release_table(table_name);
 }

@@ -22,8 +22,8 @@ void init_table_cache() {
     switch_local();
 }
 
-/* Save or update table cache. */
-void save_or_update_table_cache(Table *table) {
+/* Save table cache. */
+void save_table_cache(Table *table) {
 
     switch_shared();
 

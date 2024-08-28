@@ -11,6 +11,8 @@
 #include "utils.h"
 #include "asserts.h"
 #include "mem.h"
+#include "pager.h"
+#include "tablereg.h"
 
 /* Table Buffer. */
 static List *buffer_list;
@@ -20,8 +22,8 @@ void init_table_buffer() {
     buffer_list = create_list(NODE_TABLE_BUFFER_ENTRY);
 }
 
-/* Save or update table buffer. */
-static bool save_or_update_table_buffer(Table *table) {
+/* Save table buffer. */
+static bool save_table_buffer(Table *table) {
 
     assert_not_null(table, "Input table must not be NULL.");
 
@@ -29,7 +31,9 @@ static bool save_or_update_table_buffer(Table *table) {
     TransactionHandle *trans = find_transaction();
     if (!trans) 
         return false;
-
+    
+    reload_file_descriptor(table->pager);
+    
     /* Generate TableBufferEntry. */
     TableBufferEntry *entry = instance(TableBufferEntry);
     entry->table = table;
@@ -37,6 +41,9 @@ static bool save_or_update_table_buffer(Table *table) {
     
     /* Append to buffer. */
     append_list(buffer_list, entry);
+
+    /* Regist TableReg. */
+    try_register_table_reg(table->meta_table->table_name);
 
     return true;
 }
@@ -64,14 +71,14 @@ Table *find_table_buffer(char *table_name) {
     
     if (trans && cache_table) {
         /* Save table buffer. */
-        save_or_update_table_buffer(cache_table);
+        save_table_buffer(cache_table);
     } 
 
     return cache_table;
 }
 
 
-/* Clrear all of whole current transaction releated TableBufferEntries. */
+/* Clear all of TableBufferEntries releated whole current transaction. */
 bool clear_table_buffer() {
     /* Try to get current transaction. */
     TransactionHandle *trans = find_transaction();
@@ -87,6 +94,9 @@ bool clear_table_buffer() {
             i = 0; // Restart over.
         }
     }
+    
+    /* Destroy TableReg also. */
+    destroy_table_reg();
 
     return true;
 }
@@ -103,4 +113,5 @@ void remove_table_buffer(char *table_name) {
             i = 0; // Restart over.
         }  
     }
+
 }

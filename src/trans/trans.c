@@ -70,8 +70,6 @@
 #include "buffer.h"
 
 
-static pthread_mutex_t mutex;
-
 static TransactionTable *xtable; /* Store activ transactions. */
 
 /* Generate next xid. 
@@ -86,8 +84,6 @@ void init_transaction() {
     xtable->head = NULL;
     xtable->tail = NULL;
     xtable->size = 0;
-
-    pthread_mutex_init(&mutex, NULL);
 }
 
 /* Any running transaction. */
@@ -97,8 +93,6 @@ bool any_transaction_running() {
 
 /* Register transaction. */
 static void register_transaction(TransactionHandle *trans_handle) {
-
-    pthread_mutex_lock(&mutex);
 
     /* First registration. */
     if (xtable->size == 0) {
@@ -111,12 +105,10 @@ static void register_transaction(TransactionHandle *trans_handle) {
         xtable->size++;
     }
 
-    pthread_mutex_unlock(&mutex);
 }
 
 /* Destroy transaction. */
 static bool destroy_transaction(TransactionHandle *trans_handle) {
-    pthread_mutex_lock(&mutex);
 
     /* Maybe is the head. */
     if (xtable->head == trans_handle) {
@@ -126,7 +118,6 @@ static bool destroy_transaction(TransactionHandle *trans_handle) {
         trans_handle->next = NULL;
         free_transaction_handle(trans_handle);
         xtable->size--;
-        pthread_mutex_unlock(&mutex);
         return true;
     }
 
@@ -142,12 +133,10 @@ static bool destroy_transaction(TransactionHandle *trans_handle) {
             trans_handle->next = NULL;
             free_transaction_handle(trans_handle);
             xtable->size--;
-            pthread_mutex_unlock(&mutex);
             return true;
         }        
     }
 
-    pthread_mutex_unlock(&mutex);
     return false;
 }
 
@@ -193,7 +182,9 @@ void auto_begin_transaction() {
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = true;
 
-    db_log(INFO, "Auto begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
+    db_log(INFO, "Auto begin transaction xid: %"PRId64" and tid: %"PRId64".", 
+           trans_handle->xid, 
+           trans_handle->tid);
 
     /* Register the transaction. */
     register_transaction(trans_handle);
@@ -217,13 +208,17 @@ void begin_transaction(DBResult *result) {
     trans_handle->tid = pthread_self();
     trans_handle->auto_commit = false;
 
-    db_log(INFO, "Begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
+    db_log(INFO, "Begin transaction xid: %"PRId64" and tid: %"PRId64".", 
+           trans_handle->xid, 
+           trans_handle->tid);
 
     /* Register the transaction. */
     register_transaction(trans_handle);
 
     result->success = true;
-    result->message = format("Begin transaction xid: %"PRId64" and tid: %"PRId64".", trans_handle->xid, trans_handle->tid);
+    result->message = format("Begin transaction xid: %"PRId64" and tid: %"PRId64".", 
+                             trans_handle->xid, 
+                             trans_handle->tid);
 
     /* Send message. */
     db_log(SUCCESS, "Begin new transaction successfully.");
@@ -250,12 +245,17 @@ void commit_transaction(DBResult *result) {
     commit_xlog();
 
     /* Destroy transaction. */
-    assert_true(destroy_transaction(trans_handle), "Destroy transaction error, xid is %"PRId64" and thread tid %ld.", trans_handle->xid, trans_handle->tid);
+    assert_true(destroy_transaction(trans_handle), 
+                "Destroy transaction error, xid is %"PRId64" and thread tid %ld.", 
+                trans_handle->xid, 
+                trans_handle->tid);
     
-    db_log(INFO, "Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
+    db_log(INFO, "Commit the transaction xid: %"PRId64" successfully.", 
+           trans_handle->xid);
     
     result->success = true;
-    result->message = format("Commit the transaction xid: %"PRId64" successfully.", trans_handle->xid);
+    result->message = format("Commit the transaction xid: %"PRId64" successfully.", 
+                             trans_handle->xid);
 
     db_log(SUCCESS, "Commit the transaction successfully");
 }
@@ -273,7 +273,9 @@ void auto_commit_transaction() {
 
         /* Destroy transaction. */
         assert_true(destroy_transaction(trans_handle), 
-                   "Destroy transaction handle error, xid is %"PRId64" and tid is %ld.", trans_handle->xid, trans_handle->tid);
+                   "Destroy transaction handle error, xid is %"PRId64" and tid is %ld.", 
+                    trans_handle->xid, 
+                    trans_handle->tid);
 
         db_log(INFO, "Auto commit the transaction xid: %"PRId64" successfully.", xid);
     }
@@ -286,7 +288,8 @@ void rollback_transaction(DBResult *result) {
         execute_roll_back();
         commit_transaction(result);
         result->success = true;
-        result->message = format("Transaction xid: %"PRId64" rollbacked and commited successfully.", trans_handle->xid);
+        result->message = format("Transaction xid: %"PRId64" rollbacked and commited successfully.", 
+                                 trans_handle->xid);
         db_log(SUCCESS, 
                "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
                trans_handle->xid);

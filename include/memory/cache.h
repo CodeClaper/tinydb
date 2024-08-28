@@ -4,8 +4,8 @@
 /* Initialise table cache. */
 void init_table_cache();
 
-/* Save or update table cache. */
-void save_or_update_table_cache(Table *table);
+/* Save table cache. */
+void save_table_cache(Table *table);
 
 /* Find cache table by name, retrurn null if not exist. */
 Table *find_table_cache(char *table_name);
