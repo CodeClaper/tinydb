@@ -28,7 +28,7 @@ static bool save_table_buffer(Table *table) {
     assert_not_null(table, "Input table must not be NULL.");
 
     /* Try to get current transaction. */
-    TransactionHandle *trans = find_transaction();
+    TransEntry *trans = find_transaction();
     if (!trans) 
         return false;
     
@@ -52,7 +52,7 @@ static bool save_table_buffer(Table *table) {
 Table *find_table_buffer(char *table_name) {
 
     /* Try to get current transaction. */
-    TransactionHandle *trans = find_transaction();
+    TransEntry *trans = find_transaction();
 
     /* Firstly, find in buffer. */
     if (trans) {
@@ -81,7 +81,7 @@ Table *find_table_buffer(char *table_name) {
 /* Clear all of TableBufferEntries releated whole current transaction. */
 bool clear_table_buffer() {
     /* Try to get current transaction. */
-    TransactionHandle *trans = find_transaction();
+    TransEntry *trans = find_transaction();
     if (is_null(trans))
         return false;
 

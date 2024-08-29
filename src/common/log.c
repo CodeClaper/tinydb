@@ -202,7 +202,7 @@ void db_log(LogLevel lev, char *format, ...) {
             store_log_msg(message);
             /* Auto rollback*/
             if (conf->auto_rollback) {
-                TransactionHandle *transaction = find_transaction();
+                TransEntry *transaction = find_transaction();
                 if (transaction && !transaction->auto_commit)
                     execute_roll_back();
             }

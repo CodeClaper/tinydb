@@ -31,13 +31,13 @@ static pthread_mutex_t mutex;
 static XLogTable *xtable;
 
 /* Reverse insert operation. */
-static void reverse_insert(Refer *refer, TransactionHandle *transaction);
+static void reverse_insert(Refer *refer, TransEntry *transaction);
 
 /* Reverse delete operation. */
-static void reverse_delete(Refer *refer, TransactionHandle *transaction);
+static void reverse_delete(Refer *refer, TransEntry *transaction);
 
 /* Reverse update delete transaction. */
-static void reverse_update_delete(Refer *refer, TransactionHandle *transaction);
+static void reverse_update_delete(Refer *refer, TransEntry *transaction);
 
 /* Initialise XLOG. */
 void init_xlog() {
@@ -60,20 +60,20 @@ static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
 /* Insert into XLogEntry. */
 void insert_xlog_entry(Refer *refer, DDLType type) {
 
-    TransactionHandle *trans = find_transaction();
+    TransEntry *trans = find_transaction();
 
     /* Not handle auto-commit transaction. */
-    if (trans->auto_commit) return;
+    if (trans->auto_commit)
+        return;
 
     pthread_mutex_lock(&mutex);
 
-    TransactionHandle *handle = find_transaction();
-    XLogEntry *entry = new_xlog_entry(handle->xid, refer, type);
+    XLogEntry *entry = new_xlog_entry(trans->xid, refer, type);
 
     uint32_t i;
     for (i = 0; i < xtable->size; i++) {
         XLogEntry *head = xtable->list[i];
-        if (head->xid == handle->xid) {
+        if (head->xid == entry->xid) {
             entry->next = head;
             xtable->list[i] = entry;
             pthread_mutex_unlock(&mutex);
@@ -92,7 +92,7 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
 void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
     XLogEntry *current = NULL;
 
-    TransactionHandle *trans = find_transaction();
+    TransEntry *trans = find_transaction();
     for (uint32_t i = 0; i < xtable->size; i++) {
         XLogEntry *head = xtable->list[i];
         if (head->xid == trans->xid) {
@@ -117,12 +117,14 @@ void commit_xlog() {
     /* Lock */
     pthread_mutex_lock(&mutex);
 
-    TransactionHandle *handle = find_transaction();
+    TransEntry *trans = find_transaction();
+
+    Assert(trans);
 
     uint32_t i, j;
     for (i = 0; i < xtable->size; i++) {
         XLogEntry *head = xtable->list[i];
-        if (head->xid == handle->xid) {
+        if (head->xid == trans->xid) {
             /* Right move forward. */
             for (j = i; j < xtable->size - 1; j++) {
                 memcpy(xtable->list + j, xtable->list + j + 1, sizeof(XLogEntry *));
@@ -143,11 +145,9 @@ void commit_xlog() {
 
 /* Execute rollback. */
 void execute_roll_back() {
-    TransactionHandle *transaction = find_transaction();
-    if (transaction == NULL) {
-        db_log(SYS_ERROR, "Not found current transaction.");
-        return;
-    }
+    TransEntry *trans = find_transaction();
+
+    Assert(trans);
 
     XLogEntry *current = NULL;
 
@@ -155,7 +155,7 @@ void execute_roll_back() {
     /* Find current transaction xlog. */
     for (i = 0; i < xtable->size; i++) {
         XLogEntry *head = xtable->list[i];
-        if (head->xid == transaction->xid) {
+        if (head->xid == trans->xid) {
             current = head;
             break;
         }
@@ -169,16 +169,16 @@ void execute_roll_back() {
     for (; current != NULL; current = current->next) {
         switch (current->type) {
             case DDL_INSERT:
-                reverse_insert(current->refer, transaction);
+                reverse_insert(current->refer, trans);
                 break;
             case DDL_DELETE:
-                reverse_delete(current->refer, transaction);
+                reverse_delete(current->refer, trans);
                 break;
             case DDL_UPDATE_INSERT:
-                reverse_insert(current->refer, transaction);
+                reverse_insert(current->refer, trans);
                 break;
             case DDL_UPDATE_DELETE:
-                reverse_update_delete(current->refer, transaction);
+                reverse_update_delete(current->refer, trans);
                 break;
             default:
                 db_log(PANIC, "Unknown DDLType.");
@@ -187,7 +187,7 @@ void execute_roll_back() {
 }
 
 /* Reverse insert operation. */
-static void reverse_insert(Refer *refer, TransactionHandle *transaction) {
+static void reverse_insert(Refer *refer, TransEntry *transaction) {
     Row *row = define_row(refer);
 
     KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
@@ -206,7 +206,7 @@ static void reverse_insert(Refer *refer, TransactionHandle *transaction) {
  * rather than re-insert the row to keep the principle that visible row always 
  * lies in the forefront of the same key cells.
  * */
-static void reverse_delete(Refer *refer, TransactionHandle *transaction) {
+static void reverse_delete(Refer *refer, TransEntry *transaction) {
     Row *row = define_row(refer);
 
     assert_true(row_is_deleted(row), "System error, row not been deleted.");
@@ -228,7 +228,7 @@ static void reverse_delete(Refer *refer, TransactionHandle *transaction) {
 }
 
 /* Reverse update delete transaction. */
-static void reverse_update_delete(Refer *refer, TransactionHandle *transaction) {
+static void reverse_update_delete(Refer *refer, TransEntry *transaction) {
 
     Row *row = define_row(refer);
 

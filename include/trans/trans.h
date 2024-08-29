@@ -1,7 +1,7 @@
 #include "data.h"
 
 /* Initialise transaction. */
-void init_transaction();
+void init_trans();
 
 /* Any running transaction. */
 bool any_transaction_running();
@@ -14,7 +14,7 @@ void begin_transaction(DBResult *result);
 
 /* Get current thread transction handle. 
  * Return current thread transaction, return NULL if not found. */
-TransactionHandle *find_transaction();
+TransEntry *find_transaction();
 
 /* Commit transaction manually. */
 void commit_transaction(DBResult *result);

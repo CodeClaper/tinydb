@@ -55,7 +55,7 @@ static void db_start() {
     /* Initialise lock. */
     init_lock();
     /* Initialise transaction. */
-    init_transaction();
+    init_trans();
     /* Initialise xlog. */
     init_xlog();
     /* Initialise table cache. */

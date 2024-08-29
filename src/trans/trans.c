@@ -60,6 +60,7 @@
 #include "data.h"
 #include "trans.h"
 #include "mmu.h"
+#include "mem.h"
 #include "log.h"
 #include "copy.h"
 #include "free.h"
@@ -71,8 +72,26 @@
 #include "type.h"
 #include "buffer.h"
 
+static TransEntry *xheader; /* Store activ transactions. */
 
-static TransactionTable *xtable; /* Store activ transactions. */
+static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next);
+
+/* Initialise transaction. */
+void init_trans() {
+    xheader = new_trans_entry(0, 0, false, NULL);
+}
+
+static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next) {
+    switch_shared();
+    TransEntry *entry = instance(TransEntry);
+    entry->xid = xid;
+    entry->pid = pid;
+    entry->auto_commit = auto_commit;
+    entry->next = next;
+    switch_local();
+
+    return entry;
+}
 
 /* Generate next xid. 
  * return next xid, if return -1, there is an error. */
@@ -80,143 +99,111 @@ static int64_t next_xid() {
     return get_current_sys_time(NANOSECOND);
 }
 
-/* Initialise transaction. */
-void init_transaction() {
-    xtable = instance(TransactionTable);
-    xtable->head = NULL;
-    xtable->tail = NULL;
-    xtable->size = 0;
-}
-
 /* Any running transaction. */
 bool any_transaction_running() {
-    return xtable->size > 0;
+    return !is_null(xheader->next);
 }
 
-/* Register transaction. */
-static void register_transaction(TransactionHandle *trans_handle) {
 
-    /* First registration. */
-    if (xtable->size == 0) {
-        xtable->head = trans_handle;
-        xtable->tail = trans_handle;
-        xtable->size++;
-    } else {
-        xtable->tail->next = trans_handle;
-        xtable->tail = trans_handle;
-        xtable->size++;
+static void *get_trans_tail() {
+    TransEntry *entry = xheader;
+    while (entry->next) {
+        entry = entry->next;
     }
 
-}
-
-/* Destroy transaction. */
-static bool destroy_transaction(TransactionHandle *trans_handle) {
-
-    /* Maybe is the head. */
-    if (xtable->head == trans_handle) {
-        xtable->head = trans_handle->next;
-        if (xtable->size == 1)
-            xtable->tail = xtable->head;
-        trans_handle->next = NULL;
-        free_transaction_handle(trans_handle);
-        xtable->size--;
-        return true;
-    }
-
-    /* Loop for find. */
-    TransactionHandle *curr, *prev;
-    prev = xtable->head;
-    for (curr = xtable->head; curr != NULL; prev = curr, curr = curr->next) {
-        if (curr == trans_handle) {
-            if (xtable->tail == trans_handle)
-                xtable->tail = prev;
-            /* Skip current. */
-            prev->next = curr->next;
-            trans_handle->next = NULL;
-            free_transaction_handle(trans_handle);
-            xtable->size--;
-            return true;
-        }        
-    }
-
-    return false;
-}
-
-/* Check if a transaction active(uncommitted). */
-static bool is_active(int64_t xid) {
-    TransactionHandle *current;
-    for(current = xtable->head; current != NULL; current = current->next) {
-        if (current->xid == xid) 
-            return true;
-    }
-    return false;
+    return entry;
 }
 
 /* Find transaction handle by thread id. 
  * If not found, return NULL. */
-TransactionHandle *find_transaction() {
+TransEntry *find_transaction() {
 
     /* Current thread id. */
     pid_t pid = getpid();
 
-    TransactionHandle *current;
-    for (current = xtable->head; current != NULL; current = current->next) {
+    TransEntry *current = xheader;
+    while ((current = current->next)) {
         if (current->pid == pid) 
             return current;
     }
     return NULL;
 }
 
+
+/* Register transaction. */
+static void register_transaction(TransEntry *entry) {
+    TransEntry *tail = get_trans_tail();
+    Assert(tail);
+    tail->next = entry;
+}
+
+/* Destroy transaction. */
+static void destroy_transaction() {
+    switch_shared();
+
+    TransEntry *current = xheader;
+    TransEntry *pres = xheader;
+    while ((current = current->next)) {
+        if (current->pid == getpid()) {
+            pres->next = current->next;
+            db_free(current);
+        }
+        else
+            pres = current;
+    }
+    switch_local();
+}
+
+/* Check if a transaction active(uncommitted). */
+static bool is_active(int64_t xid) {
+    TransEntry *current;
+    for (current = xheader; current != NULL; current = current->next) {
+        if (current->xid == xid) 
+            return true;
+    }
+    return false;
+}
+
 /* New transaction which will be committed automatically. */
 void auto_begin_transaction() {
 
-    TransactionHandle *trans_handle;
-
-    trans_handle = find_transaction();
+    TransEntry *entry = find_transaction();
 
     /* Already exists transaction, no need to auto begin transaction. */
-    if (trans_handle) 
+    if (entry) 
         return;
 
     /* Generate new transaction. */
-    trans_handle = instance(TransactionHandle);
-    trans_handle->xid = next_xid();
-    trans_handle->pid = getpid();
-    trans_handle->auto_commit = true;
-
+    entry = new_trans_entry(next_xid(), getpid(), true, NULL);
     db_log(INFO, "Auto begin transaction xid: %"PRId64" and pid: %"PRId64".", 
-           trans_handle->xid, 
-           trans_handle->pid);
+           entry->xid, 
+           entry->pid);
 
     /* Register the transaction. */
-    register_transaction(trans_handle);
+    register_transaction(entry);
 
 }
 
 /* Begin a new transaction which need be committed manually. */
 void begin_transaction(DBResult *result) {
 
-    TransactionHandle *trans_handle = find_transaction();
+    TransEntry *entry = find_transaction();
 
-    Assert(!trans_handle);
+    Assert(!entry);
 
     /* Generate new transaction. */
-    trans_handle = instance(TransactionHandle);
-    trans_handle->xid = next_xid();
-    trans_handle->pid = getpid();
-    trans_handle->auto_commit = false;
-
+    entry = new_trans_entry(next_xid(), getpid(), false, NULL);
     db_log(INFO, "Begin transaction xid: %"PRId64" and pid: %"PRId64".", 
-           trans_handle->xid, 
-           trans_handle->pid);
+           entry->xid, 
+           entry->pid);
 
     /* Register the transaction. */
-    register_transaction(trans_handle);
+    register_transaction(entry);
 
     result->success = true;
     result->message = format("Begin transaction xid: %"PRId64" and pid: %"PRId64".", 
-                             trans_handle->xid, 
-                             trans_handle->pid);
+                             entry->xid, 
+                             entry->pid);
 
     /* Send message. */
     db_log(SUCCESS, "Begin new transaction successfully.");
@@ -225,10 +212,10 @@ void begin_transaction(DBResult *result) {
 /* Commit transaction manually. */
 void commit_transaction(DBResult *result) {
 
-    TransactionHandle *trans_handle = find_transaction();
+    TransEntry *entry = find_transaction();
 
-    Assert(trans_handle);
-    Assert(!trans_handle->auto_commit);
+    Assert(entry);
+    Assert(!entry->auto_commit);
 
     /* Clear table buffer. */
     clear_table_buffer();
@@ -237,37 +224,29 @@ void commit_transaction(DBResult *result) {
     commit_xlog();
 
     /* Destroy transaction. */
-    assert_true(destroy_transaction(trans_handle), 
-                "Destroy transaction error, xid is %"PRId64" and thread pid %ld.", 
-                trans_handle->xid, 
-                trans_handle->pid);
+    destroy_transaction(); 
     
     db_log(INFO, "Commit the transaction xid: %"PRId64" successfully.", 
-           trans_handle->xid);
+           entry->xid);
     
     result->success = true;
     result->message = format("Commit the transaction xid: %"PRId64" successfully.", 
-                             trans_handle->xid);
+                             entry->xid);
 
     db_log(SUCCESS, "Commit the transaction successfully");
 }
 
 /* Commit transaction automatically. */
 void auto_commit_transaction() {
-    TransactionHandle *trans_handle = find_transaction();
+    TransEntry *entry = find_transaction();
 
     /* Only deal with auto-commit transaction. */
-    if (trans_handle && trans_handle->auto_commit) {
+    if (entry && entry->auto_commit) {
 
         clear_table_buffer();
-
-        int64_t xid = trans_handle->xid; 
-
+        int64_t xid = entry->xid; 
         /* Destroy transaction. */
-        assert_true(destroy_transaction(trans_handle), 
-                   "Destroy transaction handle error, xid is %"PRId64" and pid is %ld.", 
-                    trans_handle->xid, 
-                    trans_handle->pid);
+        destroy_transaction();
 
         db_log(INFO, "Auto commit the transaction xid: %"PRId64" successfully.", xid);
     }
@@ -275,16 +254,16 @@ void auto_commit_transaction() {
 
 /* Tranasction rollback. */
 void rollback_transaction(DBResult *result) {
-    TransactionHandle *trans_handle = find_transaction();
-    if (trans_handle && !trans_handle->auto_commit) {
+    TransEntry *entry = find_transaction();
+    if (entry && !entry->auto_commit) {
         execute_roll_back();
         commit_transaction(result);
         result->success = true;
         result->message = format("Transaction xid: %"PRId64" rollbacked and commited successfully.", 
-                                 trans_handle->xid);
+                                 entry->xid);
         db_log(SUCCESS, 
                "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
-               trans_handle->xid);
+               entry->xid);
     } 
     else 
         db_log(ERROR, "Not found transaction to rollback.");
@@ -301,10 +280,9 @@ void rollback_transaction(DBResult *result) {
 bool row_is_visible(Row *row) {
 
     /* Get current transaction. */
-    TransactionHandle *trans_handle = find_transaction();
-
-    /* Make sure in transaction. */
-    assert_not_null(trans_handle, "Not found current transaction.");
+    TransEntry *entry = find_transaction();
+    
+    Assert(entry);
 
     /* Get row created_xid and expired_xid. */
     KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
@@ -313,17 +291,11 @@ bool row_is_visible(Row *row) {
     int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
 
     /* Three satisfied conditions. */
-    if (row_created_xid == trans_handle->xid && 
-        row_expired_xid == 0)
+    if (row_created_xid == entry->xid && row_expired_xid == 0)
         return true;
-    if (row_created_xid != trans_handle->xid && 
-        !is_active(row_created_xid) && 
-        row_expired_xid == 0)
+    if (row_created_xid != entry->xid && !is_active(row_created_xid) && row_expired_xid == 0)
         return true;
-    if (row_expired_xid != 0 && 
-        row_expired_xid != trans_handle->xid && 
-        is_active(row_expired_xid) && 
-        row_created_xid != row_expired_xid)
+    if (row_expired_xid != 0 && row_expired_xid != entry->xid && is_active(row_expired_xid) && row_created_xid != row_expired_xid)
         return true;
     
     return false;
@@ -340,16 +312,13 @@ bool row_is_deleted(Row *row) {
 static void transaction_insert_row(Row *row) {
 
     /* Get current transaction. */
-    TransactionHandle *current_trans = find_transaction();
+    TransEntry *entry = find_transaction();
 
-    if (current_trans == NULL) {
-        db_log(ERROR, "Not found transaction.");
-        return;
-    }
+    Assert(entry);
 
     /* For created_xid */
     KeyValue *created_xid_col = new_key_value(db_strdup(CREATED_XID_COLUMN_NAME), 
-                                              copy_value(&current_trans->xid, T_LONG), 
+                                              copy_value(&entry->xid, T_LONG), 
                                               T_LONG);
     lfirst(second_last_cell(row->data)) = created_xid_col;
 
@@ -365,11 +334,13 @@ static void transaction_insert_row(Row *row) {
 static void transaction_delete_row(Row *row) {
     
     /* Get current transaction. */
-    TransactionHandle *current_trans = find_transaction();
+    TransEntry *entry = find_transaction();
+
+    Assert(entry);
 
     /* Asssign current transaction id to expired_xid. */
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    *(int64_t *)expired_xid_col->value = current_trans->xid;
+    *(int64_t *)expired_xid_col->value = entry->xid;
 }
 
 /* Update transaction state. */

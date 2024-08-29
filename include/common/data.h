@@ -727,19 +727,12 @@ typedef struct {
 } LockTable;
 
 /* TransactionHandle */
-typedef struct TransactionHandle {
+typedef struct TransEntry {
     int64_t xid; /* transaction id. */ 
     pid_t pid; /* processor id. */
     bool auto_commit; /* auto commit. */
-    struct TransactionHandle *next; /* next */
-} TransactionHandle;
-
-/* Transaction Table. */
-typedef struct {
-    TransactionHandle *head;
-    TransactionHandle *tail;
-    volatile uint32_t size;
-} TransactionTable; 
+    struct TransEntry *next; /* next */
+} TransEntry;
 
 /* LogEntry puts current pthread messsage. */
 typedef struct LogEntry {

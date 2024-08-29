@@ -90,12 +90,9 @@ static KeyValue *new_sys_id_column() {
 /* Generate new created_xid column.*/
 static KeyValue *new_created_xid_column() {
     /* Get current transaction. */
-    TransactionHandle *current_trans = find_transaction();
-
-    if (current_trans == NULL) {
-        db_log(ERROR, "Not found transaction.");
-        return NULL;
-    }
+    TransEntry *current_trans = find_transaction();
+    
+    Assert(current_trans);
 
     return new_key_value(db_strdup(CREATED_XID_COLUMN_NAME), 
                                               copy_value(&current_trans->xid, T_LONG), 

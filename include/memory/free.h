@@ -108,9 +108,6 @@ void free_create_table_node(CreateTableNode *create_table_node);
 /* Free statement */
 void free_statement(Statement *stmt);
 
-/* Free TransactionHandle. */
-void free_transaction_handle(TransactionHandle *trans_handle);
-
 /* Free LockHandle. */
 void free_lock_handle(LockHandle *lock_state);
 

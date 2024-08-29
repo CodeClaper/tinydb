@@ -726,14 +726,6 @@ void free_lock_handle(LockHandle *lock_handle) {
     }
 }
 
-/* Free TransactionHandle. */
-void free_transaction_handle(TransactionHandle *trans_handle) {
-    if (trans_handle) {
-        free_transaction_handle(trans_handle->next);
-        db_free(trans_handle);
-    }
-}
-
 /* Free DBResult. */
 void free_db_result(DBResult *result) {
     if (result) {
