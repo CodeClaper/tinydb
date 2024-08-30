@@ -3,8 +3,9 @@
 
 extern "C" {
 #include "data.h"
-#include "mmu.h"
+#include "shmem.h"
 #include "mem.h"
+#include "mmu.h"
 #include "log.h"
 #include "session.h"
 #include "rwlock.h"
@@ -21,6 +22,8 @@ jmp_buf errEnv; /* jmp_buf for error. */
 
 /* DB Start. */
 static void db_start() {
+    /* Initialise shmem. */
+    init_shmem();
     /* Initialise memory manager unit. */
     init_mmu();
     /* Initialise memory manger. */
@@ -32,7 +35,7 @@ static void db_start() {
     /* Initialise lock. */
     init_lock();
     /* Initialise transaction. */
-    init_transaction();
+    init_trans();
     /* Initialise xlog. */
     init_xlog();
     /* Initialise table cache. */
