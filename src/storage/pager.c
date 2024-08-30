@@ -5,21 +5,57 @@
  * PAGE_SIZE is the size of a page and data length of each IO operation.
  * ===============================================================================
  */
-#include <errno.h>
-#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include "pager.h"
 #include "cache.h"
 #include "mmu.h"
 #include "log.h"
+#include "utils.h"
 
-/* Get file descriptor. */
-static int get_file_descriptor(char *file_path) {
+
+static List *FDESC_LIST = NULL;
+
+/* Register FDescEntry. */
+static void register_fdesc(char *table_name, int file_descriptor) {
+
+    if (is_null(FDESC_LIST))
+        FDESC_LIST = create_list(NODE_VOID);
+
+    FDescEntry *entry = instance(FDescEntry);
+    entry->file_descriptor = file_descriptor;
+    strcpy(entry->table_name, table_name);
+    append_list(FDESC_LIST, entry);
+}
+
+
+/* Find file descriptor in FDESC_LIST. 
+ * Return file descriptor or -1 if not found.
+ * */
+static int find_fdesc(char *table_name) {
+    
+    if (FDESC_LIST) {
+        ListCell *lc;
+        foreach(lc, FDESC_LIST) {
+            FDescEntry *entry = lfirst(lc);
+            if (streq(entry->table_name, table_name))
+                return entry->file_descriptor;
+        }
+    }
+
+    return -1;
+}
+
+
+/* Load file descriptor. */
+static int load_file_descriptor(char *file_path) {
     int file_descriptor = open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (file_descriptor == -1) 
         db_log(PANIC, "Open table file %d fail.", file_path);
@@ -28,10 +64,23 @@ static int get_file_descriptor(char *file_path) {
 }
 
 /* For mult-processor model, it will need reload the table file descriptor. */
-void reload_file_descriptor(Pager *pager) {
-    Assert(pager->table_file_path);
-    int file_descriptor = get_file_descriptor(pager->table_file_path);
-    pager->file_descriptor = file_descriptor;
+void reload_file_descriptor(Pager *pager, char *table_name) {
+
+    Assert(pager);
+    Assert(table_name);
+
+    int file_descriptor = find_fdesc(table_name);
+    if (file_descriptor != -1) 
+    {
+        pager->file_descriptor = file_descriptor;
+    }
+    else 
+    {
+        Assert(pager->table_file_path);
+        file_descriptor = load_file_descriptor(pager->table_file_path);
+        pager->file_descriptor = file_descriptor;
+        register_fdesc(table_name, file_descriptor);
+    }
 }
 
 
@@ -39,7 +88,7 @@ void reload_file_descriptor(Pager *pager) {
 Pager *open_pager(char *table_file_path) {
     Pager *pager = instance(Pager);
 
-    int file_descriptor = get_file_descriptor(table_file_path);
+    int file_descriptor = load_file_descriptor(table_file_path);
 
     off_t file_length = lseek(file_descriptor, 0, SEEK_END);
     if (file_length == -1)
@@ -106,10 +155,6 @@ void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
     if(!sync_page(table_name, page_num, pager->pages[page_num]))
         return;
 
-    db_log(DEBUGER, "Pid %d is acquire file descriptor %d", 
-           getpid(), 
-           pager->file_descriptor);
-
     /* Flush disk. */
     off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * page_num, SEEK_SET);
     if (offset == -1) 
@@ -123,3 +168,8 @@ void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
 
 /* Flush all to disk. */
 void flush(Pager pager) {}
+
+/* Close Pager. */
+void close_pager(Pager *pager) {
+    close(pager->file_descriptor);
+}

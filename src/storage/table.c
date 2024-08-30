@@ -174,10 +174,7 @@ bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPo
 Table *open_table(char *table_name) {
 
     /* Check valid. */
-    if (is_empty(table_name)) {
-        // db_log(ERROR, "Table name must be supported.");
-        return NULL;
-    }
+    Assert(table_name);
 
     /* Check table if locked, if locked, block here unitl acquire the table. */
     check_table_locked(table_name);

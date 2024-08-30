@@ -22,22 +22,28 @@ void init_table_buffer() {
     buffer_list = create_list(NODE_TABLE_BUFFER_ENTRY);
 }
 
+static void *new_table_buffer_entry(Table *table, int64_t xid) {
+    TableBufferEntry *entry = instance(TableBufferEntry);
+    entry->table = table;
+    entry->xid = xid;
+    return entry;
+}
+
+
 /* Save table buffer. */
 static bool save_table_buffer(Table *table) {
 
-    assert_not_null(table, "Input table must not be NULL.");
+    Assert(table);
 
     /* Try to get current transaction. */
     TransEntry *trans = find_transaction();
     if (!trans) 
         return false;
     
-    reload_file_descriptor(table->pager);
+    reload_file_descriptor(table->pager, table->meta_table->table_name);
     
     /* Generate TableBufferEntry. */
-    TableBufferEntry *entry = instance(TableBufferEntry);
-    entry->table = table;
-    entry->xid = trans->xid;
+    TableBufferEntry *entry = new_table_buffer_entry(table, trans->xid);
     
     /* Append to buffer. */
     append_list(buffer_list, entry);

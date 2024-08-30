@@ -58,6 +58,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "data.h"
+#include "defs.h"
 #include "trans.h"
 #include "mmu.h"
 #include "mem.h"
@@ -71,14 +72,18 @@
 #include "xlog.h"
 #include "type.h"
 #include "buffer.h"
+#include "spinlock.h"
 
 static TransEntry *xheader; /* Store activ transactions. */
+static s_lock *xlock;
 
 static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next);
+static void create_xlock();
 
 /* Initialise transaction. */
 void init_trans() {
     xheader = new_trans_entry(0, 0, false, NULL);
+    create_xlock();
 }
 
 static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next) {
@@ -91,6 +96,13 @@ static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntr
     switch_local();
 
     return entry;
+}
+
+static void create_xlock() {
+    switch_shared();
+    xlock = instance(s_lock);
+    init_spin_lock(xlock);
+    switch_local();
 }
 
 /* Generate next xid. 
@@ -132,13 +144,19 @@ TransEntry *find_transaction() {
 
 /* Register transaction. */
 static void register_transaction(TransEntry *entry) {
+    
+    acquire_spin_lock(xlock);
+
     TransEntry *tail = get_trans_tail();
     Assert(tail);
     tail->next = entry;
+
+    release_spin_lock(xlock);
 }
 
 /* Destroy transaction. */
 static void destroy_transaction() {
+    acquire_spin_lock(xlock);
     switch_shared();
 
     TransEntry *current = xheader;
@@ -151,7 +169,9 @@ static void destroy_transaction() {
         else
             pres = current;
     }
+
     switch_local();
+    release_spin_lock(xlock);
 }
 
 /* Check if a transaction active(uncommitted). */
@@ -185,7 +205,7 @@ void auto_begin_transaction() {
 }
 
 /* Begin a new transaction which need be committed manually. */
-void begin_transaction(DBResult *result) {
+void begin_transaction() {
 
     TransEntry *entry = find_transaction();
 
@@ -194,23 +214,18 @@ void begin_transaction(DBResult *result) {
     /* Generate new transaction. */
     entry = new_trans_entry(next_xid(), getpid(), false, NULL);
     db_log(INFO, "Begin transaction xid: %"PRId64" and pid: %"PRId64".", 
-           entry->xid, 
-           entry->pid);
+           entry->xid, entry->pid);
 
     /* Register the transaction. */
     register_transaction(entry);
 
-    result->success = true;
-    result->message = format("Begin transaction xid: %"PRId64" and pid: %"PRId64".", 
-                             entry->xid, 
-                             entry->pid);
-
     /* Send message. */
-    db_log(SUCCESS, "Begin new transaction successfully.");
+    db_log(SUCCESS, "Begin new transaction xid:%"PRId64" and pid: %"PRId64"successfully.", 
+           entry->xid, entry->pid);
 }
 
 /* Commit transaction manually. */
-void commit_transaction(DBResult *result) {
+void commit_transaction() {
 
     TransEntry *entry = find_transaction();
 
@@ -219,7 +234,7 @@ void commit_transaction(DBResult *result) {
 
     /* Clear table buffer. */
     clear_table_buffer();
-    
+
     /* Commit Xlog. */
     commit_xlog();
 
@@ -228,10 +243,6 @@ void commit_transaction(DBResult *result) {
     
     db_log(INFO, "Commit the transaction xid: %"PRId64" successfully.", 
            entry->xid);
-    
-    result->success = true;
-    result->message = format("Commit the transaction xid: %"PRId64" successfully.", 
-                             entry->xid);
 
     db_log(SUCCESS, "Commit the transaction successfully");
 }
@@ -244,6 +255,7 @@ void auto_commit_transaction() {
     if (entry && entry->auto_commit) {
 
         clear_table_buffer();
+
         int64_t xid = entry->xid; 
         /* Destroy transaction. */
         destroy_transaction();
@@ -253,20 +265,35 @@ void auto_commit_transaction() {
 }
 
 /* Tranasction rollback. */
-void rollback_transaction(DBResult *result) {
+void rollback_transaction() {
     TransEntry *entry = find_transaction();
-    if (entry && !entry->auto_commit) {
+
+    Assert(entry);
+    Assert(!entry->auto_commit);
+
+    execute_roll_back();
+    commit_transaction();
+
+    db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
+           entry->xid);
+}
+
+
+/* Auto transaction rollback. */
+void auto_rollback_transaction() {
+    if (conf->auto_rollback) {
+        TransEntry *entry = find_transaction();
+
+        Assert(entry);
+        Assert(!entry->auto_commit);
+
         execute_roll_back();
-        commit_transaction(result);
-        result->success = true;
-        result->message = format("Transaction xid: %"PRId64" rollbacked and commited successfully.", 
-                                 entry->xid);
-        db_log(SUCCESS, 
-               "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
+        commit_transaction();
+
+        db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
                entry->xid);
-    } 
-    else 
-        db_log(ERROR, "Not found transaction to rollback.");
+    }
+    
 }
 
 /* 
@@ -340,6 +367,7 @@ static void transaction_delete_row(Row *row) {
 
     /* Asssign current transaction id to expired_xid. */
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
+
     *(int64_t *)expired_xid_col->value = entry->xid;
 }
 

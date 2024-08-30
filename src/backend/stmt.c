@@ -35,21 +35,29 @@
 static void statement_begin_transaction(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == BEGIN_TRANSACTION_STMT,
                "System error, begin tranasction statement type error.");
-    begin_transaction(result);
+    begin_transaction();
+    result->success = true;
+    result->message = format("Begin new transaction successfully." );
 }
 
 /* Commit tranasction statement. */
 static void statement_commit_transaction(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == COMMIT_TRANSACTION_STMT, 
                "System error, commit tranasction statement type error.");
-    commit_transaction(result);
+    commit_transaction();
+
+    result->success = true;
+    result->message = format("Commit the transaction successfully.");
 }
 
 /* Rollback tranasction statement. */
 static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == ROLLBACK_TRANSACTION_STMT, 
                 "System error, rollback tranasction statement type error.");
-    rollback_transaction(result);
+    rollback_transaction();
+
+    result->success = true;
+    result->message = format("Rollback and commit the transaction successfully.");
 }
 
 /* Create table Statement. */
