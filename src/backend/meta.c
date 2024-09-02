@@ -24,6 +24,7 @@
 #include "asserts.h"
 #include "pager.h"
 #include "refer.h"
+#include "check.h"
 
 #define DEFAULT_BOOL_LENGTH         2
 #define DEFAULT_STRING_LENGTH       48
@@ -248,9 +249,8 @@ static void *get_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column) {
     /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
      * So we must use meta column data type to define which data type of the value. */
     switch (meta_column->column_type) {
-        case T_BOOL: {
+        case T_BOOL: 
             return copy_value(&atom_node->value.boolval, meta_column->column_type);
-        }
         case T_INT: {
             int32_t val = (int32_t)atom_node->value.intval;
             return copy_value(&val, meta_column->column_type);
@@ -295,9 +295,8 @@ static void *get_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column) {
         }
         case T_CHAR:
         case T_STRING: 
-        case T_VARCHAR: {
+        case T_VARCHAR: 
             return copy_value(atom_node->value.strval, meta_column->column_type);
-        }
         case T_DATE: {
             struct tm tmp_time;
             time_t *time = instance(time_t);  
@@ -342,6 +341,8 @@ void *get_value_from_value_item_node(ValueItemNode *value_item_node, MetaColumn 
     switch (value_item_node->type) {
         case V_ATOM: {
             AtomNode *atom_node = value_item_node->value.atom;
+            /* Check default value valid. */
+            check_value_valid(meta_column, atom_node);
             return get_value_from_atom(atom_node, meta_column);
         }
         case V_ARRAY:

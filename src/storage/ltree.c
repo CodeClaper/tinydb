@@ -1961,7 +1961,7 @@ static void assign_row_value(void *destination, void *value, MetaColumn *meta_co
         bool nflag = value == NULL ? true : false;
         memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
         if (!nflag)
-            memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, value, meta_column->column_length);
+            memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, value, meta_column->column_length - 1);
         else
             memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, meta_column->column_length);
     } else {

@@ -283,7 +283,7 @@ static bool check_value_data_type(DataType column_type, AtomNode *atom_node,
 
 /* Check value if valid. 
  * Because, CHAR, DATE, TIMESTAMP use '%s' format to pass value, thus check it. */
-static bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
+bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
 
     /* Get value from atom. */
     void *value = get_value_from_atom(atom_node);
@@ -369,6 +369,7 @@ static bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
         }
     }
 }
+
 
 /* Check ValueItemNode. */
 static bool check_value_item_node(MetaTable *meta_table, char *column_name, ValueItemNode *value_item_node) {
@@ -840,6 +841,7 @@ static bool check_default_value_type(ValueItemNode *value_item_node, DataType da
     }
 }
 
+
 /* Check if ColumnDefOptNodeList contains conflict default value. */
 static bool check_column_def_opt_list(ColumnDefNode *column_def) {
     if (column_def->column_def_opt_list) {
@@ -911,11 +913,13 @@ static bool check_table_element_commalist(List *base_table_element_commalist) {
                     return false;
                 }
                 if (check_if_contain_primary_key(current_column_def->column_def_opt_list)) {
-                    if (primary_key_flag) {
+                    if (primary_key_flag) 
+                    {
                         free_list(list);
                         db_log(ERROR, "Dulicate primary key.");
                         return false;
-                    } else
+                    } 
+                    else
                         primary_key_flag = true;
                 }
                 if (!check_column_def_opt_list(current_column_def)) {

@@ -43,7 +43,7 @@ void init_shmem() {
 /* Create Shmem. */
 static void create_shmem() {
     ShmemHeader init_shmrd;
-    void *shm_ptr = mmap(NULL, SHMEM_SIZE, PROT_WRITE|PROT_READ, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    void *shm_ptr = mmap(NULL, SHMEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     if (shm_ptr == MAP_FAILED) 
         db_log(PANIC, "Try to create shared memory fail.");
     bzero(shm_ptr, SHMEM_SIZE);

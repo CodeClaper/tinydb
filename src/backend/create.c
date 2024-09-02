@@ -39,7 +39,7 @@ uint32_t sys_reserved_column_count() {
 }
 
 /* Calculate meta column length. 
- * If define data len, use defined data length, note that, T_STRING & T_VARCHAR data length will add 1 for '0' as end.
+ * If define data len, use defined data length, note that, T_STRING & T_VARCHAR data length will increase 1 for '\0' as end.
  * Otherwise, use system default data length.
  * Note: when array cap more than zere, it means column is array, 
  * column length = data type length * array cap + reserved array number length (sizeof(uint32_t));
@@ -50,13 +50,13 @@ uint32_t calc_column_len(ColumnDefNode *column_def, uint32_t array_cap) {
     switch (data_type->type) {
         case T_VARCHAR: {
             column_length = data_type->len;
-            /* Increase for reserving a char of '0' as end of string. */
+            /* Increase for reserving a char of '\0' as end of string. */
             column_length++;
             break;
         }
         case T_STRING: {
             column_length = default_data_len(data_type->type);
-            /* Increase for reserving a char of '0' as end of string. */
+            /* Increase for reserving a char of '\0' as end of string. */
             column_length++;
             break;
         }

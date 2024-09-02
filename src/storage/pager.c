@@ -63,7 +63,7 @@ static int load_file_descriptor(char *file_path) {
     return file_descriptor;
 }
 
-/* For mult-processor model, it will need reload the table file descriptor. */
+/* For mult-processor model, it will reload the table file descriptor. */
 void reload_file_descriptor(Pager *pager, char *table_name) {
 
     Assert(pager);

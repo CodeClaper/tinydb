@@ -112,6 +112,8 @@ bool create_table(MetaTable *meta_table) {
         set_meta_column(root_node, destination, i);
         if (meta_column->default_value_type == DEFAULT_VALUE)
             memcpy(default_value_dest + offset, meta_column->default_value, meta_column->column_length);
+        else
+            memset(default_value_dest + offset, 0, meta_column->column_length);
         offset += meta_column->column_length;
     }
 

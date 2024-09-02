@@ -42,7 +42,7 @@ void accept_request(intptr_t client) {
     char buf[1024];
     Session *session = new_session(client);
     set_session(session);
-    db_log(INFO, "Client ID '%ld' connect successfully.", pthread_self());
+    db_log(INFO, "Client ID '%ld' connect successfully.", getpid());
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
         execute(buf);   
@@ -51,6 +51,6 @@ void accept_request(intptr_t client) {
     }
     close(client);
     destroy_session();
-    db_log(INFO, "Client ID '%ld' disconnect.", pthread_self());
+    db_log(INFO, "Client ID '%ld' disconnect.", getpid());
     exit(0);
 }

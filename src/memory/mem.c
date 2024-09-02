@@ -226,7 +226,7 @@ static char *dstrdup_shared(char *str) {
     size_t size = strlen(str) + 1;
     void *new_str = dalloc_shared(size);
     memcpy(new_str, str, strlen(str));
-    try_dfree_shared(str);
+    // try_dfree_shared(str);
     return new_str;
 }
 
