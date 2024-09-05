@@ -274,7 +274,9 @@ static Refer *insert_one_row(Table *table, Row *row) {
 
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     Assert(primary_key_meta_column);
+
     Cursor *cursor = define_cursor(table, row->key);
+
     if (check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
         db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
                get_key_str(row->key, primary_key_meta_column->column_type), 

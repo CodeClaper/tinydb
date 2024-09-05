@@ -21,16 +21,6 @@ static char *get_table_name(DescribeNode *describe_node) {
     return describe_node->table_name;
 }
 
-/* Calculate meta column length. Notice, T_STRING data has added on extra char. */
-static uint32_t calc_meta_column_len(MetaColumn *meta_column) {
-    switch (meta_column->column_type) {
-        case T_STRING:
-        case T_VARCHAR:
-            return meta_column->column_length - 2;
-        default:
-            return meta_column->column_length - 1;
-    }
-}
 
 /* Generate DescribeResult. */
 static List *gen_describe_result(MetaTable *meta_table) {
@@ -59,7 +49,7 @@ static List *gen_describe_result(MetaTable *meta_table) {
                                               T_STRING));
 
         /* length */
-        uint32_t column_length = calc_meta_column_len(meta_column);
+        uint32_t column_length = calc_raw_meta_column_len(meta_column);
         append_list(child_list, new_key_value(db_strdup("length"), 
                                               copy_value(&column_length, T_INT), 
                                               T_INT));

@@ -53,3 +53,8 @@ char *get_default_value_name(MetaColumn *meta_column);
 
 /* Check if table exists the column. */
 bool if_exists_column_in_table(char *column_name, char *table_name);
+
+
+/* Calculate Raw meta column length.
+ * Notice, T_STRING data has added on extra char. */
+uint32_t calc_raw_meta_column_len(MetaColumn *meta_column);

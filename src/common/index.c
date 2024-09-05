@@ -20,7 +20,7 @@
     uint32_t key_len = calc_primary_key_length(cursor->table);
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
     void *target = get_leaf_node_cell_key(node, cursor->cell_num, key_len, value_len);
-    return equal(target, key, primary_key_meta_column->column_type);
+    return (target < node + PAGE_SIZE) && equal(target, key, primary_key_meta_column->column_type);
 }
 
 
