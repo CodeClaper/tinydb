@@ -573,3 +573,15 @@ uint32_t calc_raw_meta_column_len(MetaColumn *meta_column) {
             return meta_column->column_length - 1;
     }
 }
+
+
+/* Check if user has defined primary key.*/
+bool has_user_primary_key(MetaTable *meta_table) {
+    int i;
+    for (i = 0; i < meta_table->column_size; i++) {
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (meta_column->is_primary)
+            return true;
+    }
+    return false;
+}
