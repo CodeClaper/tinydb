@@ -383,7 +383,7 @@ uint32_t calc_primary_key_length(Table *table) {
     for (i = 0; i < table->meta_table->all_column_size; i++) {
        MetaColumn *meta_column = table->meta_table->meta_column[i];
        if (meta_column->is_primary)
-           return calc_raw_meta_column_len(meta_column);
+           return meta_column->column_length;
     }
     panic("Not found primary key.");
     return -1;
@@ -568,7 +568,7 @@ uint32_t calc_raw_meta_column_len(MetaColumn *meta_column) {
         case T_CHAR:
         case T_STRING:
         case T_VARCHAR:
-            return meta_column->column_length - 1;
+            return meta_column->column_length - 2;
         default:
             return meta_column->column_length - 1;
     }

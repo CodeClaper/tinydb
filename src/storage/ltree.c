@@ -1101,7 +1101,7 @@ static void *gen_new_default_value_at_append_column(void *default_value, MetaTab
             if (!is_null(new_meta_column->default_value))
                 memcpy(default_value + offset, 
                        new_meta_column->default_value, 
-                       calc_raw_meta_column_len(new_meta_column));
+                       new_meta_column->column_length);
             else
                 memset(default_value + offset, 0, new_meta_column->column_length);
             break;
@@ -1961,16 +1961,16 @@ static void assign_row_value(void *destination, void *value, MetaColumn *meta_co
         bool nflag = value == NULL ? true : false;
         memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
         if (!nflag)
-            memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, value, calc_raw_meta_column_len(meta_column));
+            memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, value, meta_column->column_length);
         else
-            memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, calc_raw_meta_column_len(meta_column));
+            memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, meta_column->column_length);
     } else {
         bool nflag = value == NULL ? true : false;
         memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
         if (!nflag)
             assign_row_array_value(destination, value, meta_column);
         else
-            memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, calc_raw_meta_column_len(meta_column));
+            memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, meta_column->column_length);
     } 
 }
 

@@ -672,16 +672,12 @@ typedef struct {
 
 /* Abount configuration. */
 typedef struct {
-    /* data */
-    char *data_dir;     /* database file directory. */
-    /* base */
-    ushort port;        /* Server listening port. */
-    /* log */
-    char *log_dir;      /* log directory */
-    LogLevel log_level; /* log level */
-    /* transaction */
-    TransIsolationLevel trans_iso_level;
-    bool auto_rollback;
+    char *data_dir;                         /* Database file directory. */
+    ushort port;                            /* Server listening port. */
+    char *log_dir;                          /* Log directory */
+    LogLevel log_level;                     /* Log level */
+    TransIsolationLevel trans_iso_level;    /* Transaction Isolation level.*/
+    bool auto_rollback;                     /* If auto rollback. */
 } Conf;
 
 /* Refer */
@@ -708,52 +704,20 @@ typedef struct {
     double duration;
 } DBResult;
 
-/* Alias struct flock. */
-typedef struct flock FileLock;
-
-/* LockState */
-typedef struct LockHandle {
-    Refer *refer;
-    pthread_rwlock_t lock;      /* wrlock. */
-    uint32_t shared;            /* number of shared the lock. */
-    struct LockHandle *next;    /* next */
-} LockHandle;
-
-/* LockTable */
-typedef struct {
-    LockHandle *head; /* the head of list */
-    LockHandle *tail; /* the tail of list */
-    uint32_t size;
-} LockTable;
-
 /* TransactionHandle */
 typedef struct TransEntry {
-    int64_t xid; /* transaction id. */ 
-    pid_t pid; /* processor id. */
-    bool auto_commit; /* auto commit. */
-    struct TransEntry *next; /* next */
+    int64_t xid;                /* transaction id. */ 
+    pid_t pid;                  /* processor id. */
+    bool auto_commit;           /* auto commit. */
+    struct TransEntry *next;    /* next */
 } TransEntry;
-
-/* LogEntry puts current pthread messsage. */
-typedef struct LogEntry {
-    int64_t tid;           /* pthread id */
-    char *message;          /* mssage */
-    struct LogEntry *next;  /* next */
-} LogEntry;
-
-/* LogEntry Collector. */
-typedef struct LogTable {
-    LogEntry *head;
-    LogEntry *tail;
-    uint32_t size;
-} LogTable;
 
 /* XLogEntry */
 typedef struct XLogEntry {
-    int64_t xid;            /* Transaction Id */
-    Refer *refer;           /* Row refer. */
-    DDLType type;           /* DDL type. */
-    struct XLogEntry *next; /* Next XLogEntry */
+    int64_t xid;                /* Transaction Id */
+    Refer *refer;               /* Row refer. */
+    DDLType type;               /* DDL type. */
+    struct XLogEntry *next;     /* Next XLogEntry */
 }XLogEntry;
 
 /* XLogEntry */

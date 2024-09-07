@@ -717,15 +717,6 @@ void free_statement(Statement *statement) {
     db_free(statement);
 }
 
-/* Free LockHandle. */
-void free_lock_handle(LockHandle *lock_handle) {
-    if (lock_handle) {
-        free_refer(lock_handle->refer);
-        free_lock_handle(lock_handle->next);
-        db_free(lock_handle);
-    }
-}
-
 /* Free DBResult. */
 void free_db_result(DBResult *result) {
     if (result) {
@@ -745,15 +736,6 @@ void free_db_result(DBResult *result) {
                 break;
         }
         db_free(result);
-    }
-}
-
-/* Free LogEntry.*/
-void free_log_entry(LogEntry *log_entry) {
-    if (log_entry) {
-        if (log_entry->message)
-            db_free(log_entry->message);
-        db_free(log_entry);
     }
 }
 

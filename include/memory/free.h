@@ -108,14 +108,8 @@ void free_create_table_node(CreateTableNode *create_table_node);
 /* Free statement */
 void free_statement(Statement *stmt);
 
-/* Free LockHandle. */
-void free_lock_handle(LockHandle *lock_state);
-
 /* Free DBResult. */
 void free_db_result(DBResult *result);
-
-/* Free LogEntry.*/
-void free_log_entry(LogEntry *log_entry);
 
 /* Free XLogEntry. */
 void free_xlog_entry(XLogEntry *xlog_entry);

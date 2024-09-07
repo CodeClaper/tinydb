@@ -13,7 +13,6 @@
 #include "defs.h"
 #include "mmu.h"
 #include "mem.h"
-#include "rwlock.h"
 #include "trans.h"
 #include "xlog.h"
 #include "parser.h"
@@ -48,12 +47,8 @@ static void db_start() {
     init_mmu();
     /* Init tablereg. */
     init_table_reg();
-    /* Initialise log. */
-    init_log();
     /* Initialise session. */
     init_session();
-    /* Initialise lock. */
-    init_lock();
     /* Initialise transaction. */
     init_trans();
     /* Initialise xlog. */

@@ -8,7 +8,6 @@ extern "C" {
 #include "mmu.h"
 #include "log.h"
 #include "session.h"
-#include "rwlock.h"
 #include "trans.h"
 #include "xlog.h"
 #include "cache.h"
@@ -28,12 +27,8 @@ static void db_start() {
     init_mmu();
     /* Initialise memory manger. */
     init_mem();
-    /* Initialise log. */
-    init_log();
     /* Initialise session. */
     init_session();
-    /* Initialise lock. */
-    init_lock();
     /* Initialise transaction. */
     init_trans();
     /* Initialise xlog. */
