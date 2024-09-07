@@ -8,26 +8,29 @@
  *===============================================================================================
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include "tablelock.h"
 #include "utils.h"
 #include "mmu.h"
-
+#include "mem.h"
 
 /* The list stores TableLockEntity. */
 static List *lock_list;
 
 /* Initiliaze the table lock. */
 void init_table_lock() {
+    switch_shared();
     lock_list = create_list(NODE_VOID);
+    switch_local();
 }
 
 /* Find TableLockEntity in list.
  * Return NULL if not found. */
 static TableLockEntity *find_lock_entry(char *table_name) {
     ListCell *lc;
-    foreach(lc, lock_list) {
+    foreach (lc, lock_list) {
         TableLockEntity *current = lfirst(lc);
         if (streq(current->table_name, table_name))
             return current;
@@ -37,12 +40,16 @@ static TableLockEntity *find_lock_entry(char *table_name) {
 
 /* Register TableLockEntity. */
 static void register_lock_entry(char *table_name) {
+    switch_shared();
+
     TableLockEntity *new_one = instance(TableLockEntity);
     strcpy(new_one->table_name, table_name);
     new_one->entry_lock = instance(ExLockEntry);
     init_exlock(new_one->entry_lock);
     acquire_exlock(new_one->entry_lock);
     append_list(lock_list, new_one);
+
+    switch_local();
 }
 
 /* Check table if locked. 
@@ -54,6 +61,9 @@ void check_table_locked(char *table_name) {
     Assert(!is_empty(table_name));
     TableLockEntity *lock_entry = find_lock_entry(table_name);
     if (lock_entry) {
+
+        printf("wait for table %s\n", table_name);
+
         /* Try to check exlock if unlolocked, maybe block here when locked. */
         wait_for_exlock(lock_entry->entry_lock);   
     }
