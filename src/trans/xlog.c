@@ -1,12 +1,17 @@
 /*
  * ========================================= Transaction Log Manager============================================================
- * TinyDb transaction log is Write-Ahead Log (WAL). Transaction Log records all transactions and the database modifications 
- * that are made by each transaction. The transaction log is a critical component of the database and, if there`s a system failure, 
- * the transaction log might be required to bring your database back to a consistent state.
- * The Transaction log manager basically supports three functions:
- * (1) Supports Transaction Roll Back.
- * (2) Supports recovery data when server restart up.
- * (3) Support Transaction replication in distributed cluster.
+ * Auth:        JerryZhou
+ * Created:     2024/01/11
+ * Modify:      2024/09/05
+ * Locataion:   src/trans/xlog.c
+ * Description: 
+ *  TinyDb transaction log is Write-Ahead Log (WAL). Transaction Log records all transactions and the database modifications 
+ *  that are made by each transaction. The transaction log is a critical component of the database and, if there`s a system failure, 
+ *  the transaction log might be required to bring your database back to a consistent state.
+ *  The Transaction log manager basically supports three functions:
+ *  (1) Supports Transaction Roll Back.
+ *  (2) Supports recovery data when server restart up.
+ *  (3) Support Transaction replication in distributed cluster.
  * ==============================================================================================================================
  * */
 

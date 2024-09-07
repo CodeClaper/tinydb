@@ -58,7 +58,7 @@ static int find_fdesc(char *table_name) {
 static int load_file_descriptor(char *file_path) {
     int file_descriptor = open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (file_descriptor == -1) 
-        db_log(PANIC, "Open table file %d fail.", file_path);
+        db_log(PANIC, "Open table file %d fail: %s.", file_path, strerror(errno));
 
     return file_descriptor;
 }
@@ -124,9 +124,9 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
         void *page = db_malloc(PAGE_SIZE, "pointer");
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
-        if (read_bytes == -1) {
-            db_log(PANIC, "Table file read error and errno: %d", errno);
-        }
+        if (read_bytes == -1) 
+            db_log(PANIC, "Table file read error: %s", strerror(errno));
+
         pager->pages[page_num] = page;
 
         /* synchronous memory page data. */
@@ -145,10 +145,8 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
 /* Flush page to disk. */
 void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
-    if (pager->pages[page_num] == NULL) {
-        db_log(PANIC, "Tried to flush null to disk page.");
-        return;
-    } 
+
+    Assert (pager->pages[page_num]);
 
     /* Before flushing disk, synchronous page memory data. 
      * If synchronous page memory fail, not to flush disk. */

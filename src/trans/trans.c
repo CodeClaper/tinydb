@@ -229,8 +229,8 @@ void commit_transaction() {
 
     TransEntry *entry = find_transaction();
 
-    Assert(entry);
-    Assert(!entry->auto_commit);
+    if (is_null(entry) || entry->auto_commit)
+        db_log(ERROR, "Not in any transaction, please begin a transaction");
 
     /* Clear table buffer. */
     clear_table_buffer();
@@ -268,8 +268,8 @@ void auto_commit_transaction() {
 void rollback_transaction() {
     TransEntry *entry = find_transaction();
 
-    Assert(entry);
-    Assert(!entry->auto_commit);
+    if (is_null(entry) || entry->auto_commit)
+        db_log(ERROR, "Not in any transaction, please begin a transaction");
 
     execute_roll_back();
     commit_transaction();
