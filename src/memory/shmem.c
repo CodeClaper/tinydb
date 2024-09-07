@@ -76,8 +76,8 @@ static void *shmem_alloc_inner_unlock(size_t size) {
     size_t current_offset = shmrd->offset + size;
     if (current_offset <= shmrd->total_size) 
     {
-        ptr = shmrd + shmrd->offset;   
-        shmrd->offset += size;
+        ptr = (void *) ((char *) shmrd + shmrd->offset);   
+        shmrd->offset = current_offset;
     }
     else 
         ptr = NULL;
@@ -96,7 +96,7 @@ static void *shmem_alloc_inner(size_t size) {
     size_t current_offset = shmrd->offset + size;
     if (current_offset <= shmrd->total_size) 
     {
-        ptr = shmrd + shmrd->offset;   
+        ptr = (void *) ((char *) shmrd + shmrd->offset);   
         shmrd->offset = current_offset;
     }
     else 

@@ -164,7 +164,7 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
                                             meta_column->column_type);
         /* Check if primary key column. */
         if (meta_column->is_primary) 
-            row->key = copy_value(key_value->value, key_value->data_type);
+            row->key = copy_value2(key_value->value, meta_column);
 
         append_list(row->data, key_value);
     }

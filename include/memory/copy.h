@@ -4,6 +4,9 @@
 /* Copy value. */
 void *copy_value(void *value, DataType data_type); 
 
+/* Copy value. */
+void *copy_value2(void *value, MetaColumn *meta_column);
+
 /* Copy Key value pair. */
 KeyValue *copy_key_value(KeyValue *key_value);
 

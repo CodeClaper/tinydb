@@ -117,15 +117,14 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
     /* Assign new value. */
     switch(meta_column->column_type) {
         case T_BOOL: 
-            return copy_value(&atom_node->value.boolval, 
-                              meta_column->column_type);
+            return copy_value2(&atom_node->value.boolval, meta_column);
         case T_INT: {
             int32_t val = (int32_t)atom_node->value.intval;
-            return copy_value(&val, meta_column->column_type);
+            return copy_value2(&val, meta_column);
         }
         case T_LONG: {
             int64_t val = (int64_t)atom_node->value.intval;
-            return copy_value(&val, meta_column->column_type);
+            return copy_value2(&val, meta_column);
         }
         case T_FLOAT: {
             float val = 0;
@@ -142,7 +141,7 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
                            meta_column->column_name);
                     break;
             }
-            return copy_value(&val, meta_column->column_type);
+            return copy_value2(&val, meta_column);
         }
         case T_DOUBLE: {
             double val = 0;
@@ -159,13 +158,13 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
                            meta_column->column_name);
                     break;
             }
-            return copy_value(&val, meta_column->column_type);
+            return copy_value2(&val, meta_column);
         }
         case T_CHAR:
         case T_STRING: 
         case T_VARCHAR: 
-            return copy_value(atom_node->value.strval, 
-                              meta_column->column_type);
+            return copy_value2(atom_node->value.strval, 
+                              meta_column);
         case T_DATE: {
             struct tm tmp_time;
             strptime(atom_node->value.strval, "%Y-%m-%d", &tmp_time);
@@ -173,13 +172,13 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
             tmp_time.tm_min = 0;
             tmp_time.tm_hour = 0;
             time_t tmp = mktime(&tmp_time);
-            return copy_value(&tmp, meta_column->column_type);
+            return copy_value2(&tmp, meta_column);
         }
         case T_TIMESTAMP: {
             struct tm tmp_time;
             strptime(atom_node->value.strval, "%Y-%m-%d %H:%M:%S", &tmp_time);
             time_t tmp = mktime(&tmp_time);
-            return copy_value(&tmp, meta_column->column_type);
+            return copy_value2(&tmp, meta_column);
         }
         case T_REFERENCE: {
             ReferValue *refer_value = atom_node->value.referval;
@@ -569,7 +568,7 @@ uint32_t calc_raw_meta_column_len(MetaColumn *meta_column) {
         case T_CHAR:
         case T_STRING:
         case T_VARCHAR:
-            return meta_column->column_length - 2;
+            return meta_column->column_length - 1;
         default:
             return meta_column->column_length - 1;
     }

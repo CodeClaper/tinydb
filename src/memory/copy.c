@@ -64,6 +64,54 @@ void *copy_value(void *value, DataType data_type) {
     }    
 }
 
+
+/* Copy value. */
+void *copy_value2(void *value, MetaColumn *meta_column) {
+    if (!value)
+        return NULL;
+
+    bool *new_val = db_malloc(meta_column->column_length, "void");
+    switch (meta_column->column_type) {
+        case T_BOOL: {
+            memcpy(new_val, value, sizeof(bool));
+            return new_val;
+        }
+        case T_INT: {
+            memcpy(new_val, value, sizeof(int32_t));
+            return new_val;
+        }
+        case T_LONG: {
+            memcpy(new_val, value, sizeof(int64_t));
+            return new_val;
+        }
+        case T_FLOAT: {
+            memcpy(new_val, value, sizeof(float));
+            return new_val;
+        }
+        case T_DOUBLE: {
+            memcpy(new_val, value, sizeof(double));
+            return new_val;
+        }
+        case T_DATE:
+        case T_TIMESTAMP: {
+            memcpy(new_val, value, sizeof(time_t));
+            return new_val;
+        }
+        case T_CHAR:
+        case T_STRING: 
+        case T_VARCHAR: {
+            memcpy(new_val, value, strlen(value));
+            return new_val;
+        }
+        case T_REFERENCE: 
+            return copy_refer(value);
+        default: {
+            UNEXPECTED_VALUE("Not supported data type occurs at <copy_value>.");
+            return NULL;
+        }
+    }    
+}
+
 /* Copy Key value pair. */
 KeyValue *copy_key_value(KeyValue *key_value) {
     if (!key_value)
