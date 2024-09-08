@@ -29,6 +29,7 @@
 #include "table.h"
 #include "select.h"
 #include "asserts.h"
+#include "utils.h"
 
 static pthread_mutex_t mutex;
 
@@ -60,6 +61,26 @@ static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
     entry->refer = copy_refer(refer);
     entry->xid = xid;
     return entry;
+}
+
+
+/* Find Xlog entry. */
+static XLogEntry *find_xlog_entry() {
+
+    XLogEntry *current = NULL;
+
+    TransEntry *trans = find_transaction();
+
+    Assert(trans);
+
+    for (uint32_t i = 0; i < xtable->size; i++) {
+        XLogEntry *head = xtable->list[i];
+        if (head->xid == trans->xid) {
+            current = head;         
+        }
+    }
+
+    return current;
 }
 
 /* Insert into XLogEntry. */
@@ -95,15 +116,8 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
 
 /* Update xlog entry refer. */
 void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
-    XLogEntry *current = NULL;
 
-    TransEntry *trans = find_transaction();
-    for (uint32_t i = 0; i < xtable->size; i++) {
-        XLogEntry *head = xtable->list[i];
-        if (head->xid == trans->xid) {
-            current = head;         
-        }
-    }
+    XLogEntry *current = find_xlog_entry();
 
     if (current) {
         for (; current != NULL; current = current->next) {
@@ -154,20 +168,9 @@ void execute_roll_back() {
 
     Assert(trans);
 
-    XLogEntry *current = NULL;
-
-    int i;
-    /* Find current transaction xlog. */
-    for (i = 0; i < xtable->size; i++) {
-        XLogEntry *head = xtable->list[i];
-        if (head->xid == trans->xid) {
-            current = head;
-            break;
-        }
-    }
+    XLogEntry *current = find_xlog_entry();
     
-    /* If not found xlog, not rollback. */
-    if (current == NULL) 
+    if (is_null(current))
         return;
     
     /* Loop to rollback. */

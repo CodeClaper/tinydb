@@ -16,7 +16,6 @@
 #include <time.h>
 #include "refer.h"
 #include "data.h"
-#include "table.h"
 #include "mmu.h"
 #include "copy.h"
 #include "free.h"
@@ -28,6 +27,8 @@
 #include "pager.h"
 #include "utils.h"
 #include "asserts.h"
+#include "cache.h"
+#include "table.h"
 #include "log.h"
 
 typedef struct {
@@ -239,10 +240,8 @@ Cursor *convert_cursor(Refer *refer) {
 }
 
 /* Check if table has column refer to. */
-static bool if_related_table(char *table_name, char *refer_table_name) {
-    Table *table = open_table(table_name);
+static bool if_related_table(Table *table, char *refer_table_name) {
     Assert(table);
-    assert_not_null(table, "Table '%s' not exist. ", table_name);
     MetaTable *meta_table = table->meta_table;
 
     int i;
@@ -346,14 +345,14 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
 }
 
 /* Update table refer. */
-static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update_entity) {
+static void update_table_refer(Table *table, ReferUpdateEntity *refer_update_entity) {
 
     /* Skip update locked refer. */
     if (include_update_refer_lock(refer_update_entity->old_refer))
         return;
 
     /* Query with condition, and delete satisfied condition row. */
-    SelectResult *select_result = new_select_result(table_name);
+    SelectResult *select_result = new_select_result(table->meta_table->table_name);
 
     /* Traverse rows to update refer. */
     query_with_condition(NULL, select_result, update_row_refer, refer_update_entity);
@@ -364,16 +363,15 @@ static void update_table_refer(char *table_name, ReferUpdateEntity *refer_update
 /* Update releated tables reference. */
 void update_related_tables_refer(ReferUpdateEntity *refer_update_entity) {
 
-    List *table_list = get_table_list();
+    List *table_list = find_all_table_cache();
+
     /* Update table refer. */
     ListCell *lc;
     foreach (lc, table_list) {
-        char *curent_table_name = lfirst(lc);
-        if (if_related_table(curent_table_name, refer_update_entity->old_refer->table_name)) 
-            update_table_refer(curent_table_name, refer_update_entity);
+        Table *current_table = lfirst(lc);
+        if (if_related_table(current_table, refer_update_entity->old_refer->table_name)) 
+            update_table_refer(current_table, refer_update_entity);
     }
-
-    free_list_deep(table_list);
 }
 
 

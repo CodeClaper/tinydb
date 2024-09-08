@@ -42,6 +42,11 @@ void save_table_cache(Table *table) {
     switch_local();
 }
 
+/* Find all Table cache. */
+List *find_all_table_cache() {
+    return TableCache;
+}
+
 /* Find cache table by name, return null if not exist. */
 Table *find_table_cache(char *table_name) {
 

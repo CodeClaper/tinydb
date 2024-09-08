@@ -908,7 +908,7 @@ static bool check_table_element_commalist(List *base_table_element_commalist) {
                 ColumnDefNode *current_column_def = base_table_element->column_def;
                 if (check_if_column_already_exists(list, current_column_def)) {
                     free_list(list);
-                    db_log(ERROR, "Column def '%s' already exists, not allowd duplicate defination.", 
+                    db_log(ERROR, "Column '%s' already exists, not allowd duplicate defination.", 
                            get_column_def_name(current_column_def));
                     return false;
                 }
