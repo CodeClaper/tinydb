@@ -273,6 +273,9 @@ void exec_create_table_statement(CreateTableNode *create_table_node, DBResult *r
         result->rows = 0;
         result->message = format("Table '%s' created successfully.", create_table_node->table_name);
         db_log(SUCCESS, "Table '%s' created successfully.", create_table_node->table_name);
+
+        /* Not to open the table, but save the table to cache. */
+        open_table(create_table_node->table_name);
     }
 
     free_meta_table(meta_table);

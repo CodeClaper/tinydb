@@ -20,6 +20,7 @@
 #include "ltree.h"
 #include "refer.h"
 #include "buffer.h"
+#include "cache.h"
 #include "select.h"
 #include "asserts.h"
 
@@ -44,15 +45,12 @@ void loop_gc() {
         auto_begin_transaction();
 
         /* loop each of tables to gc. */
-        List *table_list = get_table_list();
+        List *table_list = find_all_table_cache();
 
         ListCell *lc;
         foreach (lc, table_list) {
             gc_table(lfirst(lc)); 
         }
-
-        /* Free memory. */
-        free_list_deep(table_list);
 
         /* Clear Buffer. */
         clear_table_buffer();
@@ -88,15 +86,13 @@ void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
 }
 
 /* Gc table */
-void gc_table(char *table_name) {
+void gc_table(Table *table) {
+
+    char *table_name = table->meta_table->table_name;
 
 #ifdef DEBUG
     db_log(DEBUG, "GC table '%s'.", table_name);
 #endif
-
-    /* Check table exist. */
-    Table *table = open_table(table_name);
-    assert_not_null(table, "System error, table '%s' not exist.", table_name);
 
     /* Query with condition, and delete satisfied condition row. */
     SelectResult *select_result = new_select_result(table_name);

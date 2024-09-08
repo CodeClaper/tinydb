@@ -25,6 +25,7 @@
 #include "select.h"
 #include "refer.h"
 #include "list.h"
+#include "cache.h"
 
 /* Check ValueItemSetNode. */
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, List *value_list);
@@ -1100,16 +1101,15 @@ static bool check_table(char *table_name) {
 }
 
 /* Check if table uses refer. */
-static bool if_table_used_refer(char *table_name, char *refer_table_name) {
-    Table *table = open_table(table_name);
-    assert_not_null(table, "Table '%s' not exist. ", refer_table_name);
+static bool if_table_used_refer(Table *table, char *refer_table_name) {
     MetaTable *meta_table = table->meta_table;
 
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *current_meta_column = meta_table->meta_column[i];
         if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0) {
-            db_log(ERROR , "Table '%s' is refered by column '%s' in table '%s', so can`t drop it.", refer_table_name, current_meta_column->column_name, table_name);
+            db_log(ERROR , "Table '%s' is refered by column '%s' in table '%s', so can`t drop it.", 
+                   refer_table_name, current_meta_column->column_name, table->meta_table->table_name);
             return true;
         }
     }
@@ -1191,19 +1191,18 @@ bool check_drop_table(char *table_name) {
     }
     
     /* Check table refered by others. */
-    List *table_list = get_table_list();
+    List *table_list = find_all_table_cache();
 
     bool ret = true;
     ListCell *lc;
     foreach (lc, table_list) {
-        char *curent_table_name = lfirst(lc);
-        if (if_table_used_refer(curent_table_name, table_name))  {
+        Table *curent_table = lfirst(lc);
+        if (if_table_used_refer(curent_table, table_name))  {
             ret = false;
             break;
         }
     }
 
-    free_list_deep(table_list);
     return ret;
 }
 

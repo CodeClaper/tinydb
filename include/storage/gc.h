@@ -4,4 +4,4 @@
 void loop_gc();
 
 /* Gc table */
-void gc_table(char *table_name);
+void gc_table(Table *table);
