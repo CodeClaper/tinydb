@@ -363,15 +363,18 @@ static void update_table_refer(Table *table, ReferUpdateEntity *refer_update_ent
 /* Update releated tables reference. */
 void update_related_tables_refer(ReferUpdateEntity *refer_update_entity) {
 
-    List *table_list = find_all_table_cache();
+    List *table_list = get_table_list();
 
     /* Update table refer. */
     ListCell *lc;
     foreach (lc, table_list) {
-        Table *current_table = lfirst(lc);
-        if (if_related_table(current_table, refer_update_entity->old_refer->table_name)) 
-            update_table_refer(current_table, refer_update_entity);
+        char *table_name = lfirst(lc);
+        Table *table = open_table(table_name);
+        if (if_related_table(table, refer_update_entity->old_refer->table_name)) 
+            update_table_refer(table, refer_update_entity);
     }
+
+    free_list_deep(table_list);
 }
 
 

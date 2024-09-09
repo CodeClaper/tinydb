@@ -691,6 +691,12 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
                        "System error, there is no column node in assignment set node.\n");
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
 
+        if (is_null(meta_column)) {
+            db_log(ERROR, "Not found column %s in table %s.", 
+                   column_node->column_name, get_table_name(table));
+            return false;
+        }
+
         if (meta_column->is_primary) {
             change_priamry = true;
             new_key = get_value_from_value_item_node(value_node, meta_column);
@@ -1191,17 +1197,20 @@ bool check_drop_table(char *table_name) {
     }
     
     /* Check table refered by others. */
-    List *table_list = find_all_table_cache();
+    List *table_list = get_table_list();
 
     bool ret = true;
     ListCell *lc;
     foreach (lc, table_list) {
-        Table *curent_table = lfirst(lc);
-        if (if_table_used_refer(curent_table, table_name))  {
+        char *current_table_name = lfirst(lc);
+        Table *table = open_table(current_table_name);
+        if (if_table_used_refer(table, table_name))  {
             ret = false;
             break;
         }
     }
+
+    free_list_deep(table_list);
 
     return ret;
 }

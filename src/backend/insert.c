@@ -21,7 +21,6 @@
 #include "table.h"
 #include "meta.h"
 #include "ltree.h"
-#include "table.h"
 #include "pager.h"
 #include "index.h"
 #include "asserts.h"
@@ -249,7 +248,7 @@ static Row *convert_insert_row(Row *row, Table *table) {
 
     Row *insert_row = instance(Row);
 
-    insert_row->table_name = db_strdup(table->meta_table->table_name);
+    insert_row->table_name = db_strdup(get_table_name(table));
     insert_row->data = create_list(NODE_KEY_VALUE);
 
     /* Copy data. */
@@ -273,6 +272,7 @@ static Row *convert_insert_row(Row *row, Table *table) {
 static Refer *insert_one_row(Table *table, Row *row) {
 
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
+
     Assert(primary_key_meta_column);
 
     Cursor *cursor = define_cursor(table, row->key);

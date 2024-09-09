@@ -138,6 +138,7 @@ TransEntry *find_transaction() {
         if (current->pid == pid) 
             return current;
     }
+
     return NULL;
 }
 

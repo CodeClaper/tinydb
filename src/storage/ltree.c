@@ -950,6 +950,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     cell_length = value_len + key_len;
 
 
+    /* Check if the leaf node overflow after inserting, if overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
     else {

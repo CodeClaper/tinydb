@@ -17,7 +17,7 @@
 #include "log.h"
 
 /*Get table name.*/
-static char *get_table_name(DescribeNode *describe_node) {
+static char *get_desc_table_name(DescribeNode *describe_node) {
     return describe_node->table_name;
 }
 
@@ -99,7 +99,7 @@ static List *gen_describe_result(MetaTable *meta_table) {
 
 /* Execute describe statment. */
 List *exec_describe_statement(DescribeNode *describe_node) {
-    char *table_name = get_table_name(describe_node); 
+    char *table_name = get_desc_table_name(describe_node); 
     Table *table = open_table(table_name);
     if (table == NULL) {
         db_log(ERROR, "Table '%s' not exists.", table_name);

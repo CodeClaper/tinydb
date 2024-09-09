@@ -62,8 +62,6 @@ void check_table_locked(char *table_name) {
     TableLockEntity *lock_entry = find_lock_entry(table_name);
     if (lock_entry) {
 
-        printf("wait for table %s\n", table_name);
-
         /* Try to check exlock if unlolocked, maybe block here when locked. */
         wait_for_exlock(lock_entry->entry_lock);   
     }

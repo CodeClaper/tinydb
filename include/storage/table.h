@@ -21,3 +21,8 @@ bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPo
 
 /*Delete an existed table. */
 bool drop_table(char *table_name);
+
+/* Get Table name. */
+static inline char * get_table_name(Table *table) {
+    return table->meta_table->table_name;
+}

@@ -72,6 +72,7 @@ Table *find_table_buffer(char *table_name) {
             }  
         }
     }
+
     /* If buffer missing, found in cache. */
     Table *cache_table = find_table_cache(table_name);
     
