@@ -1273,7 +1273,7 @@ non_all_function_value:
         }
     ;
 end:        
-    NL
+    ';'
     | ';' NL
     ;
 %%
