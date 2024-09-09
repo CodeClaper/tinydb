@@ -81,7 +81,7 @@ def test_query_after_insert_null_refer():
 
 ## insert sub columns null data
 def test_insert_subcolumn_null_data():
-    sql = "insert into B values('B002', 'shangsan', ('S003', 'wangli', null, null, '3233242345433332333'))"
+    sql = "insert into B values('B002', 'shangsan', ('S003', 'wangli', null, null, '3233242345433332333'));"
     ret = client.execute(sql)
     assert ret['success'] == True
 

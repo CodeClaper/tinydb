@@ -84,7 +84,7 @@ def test_loop_update():
 
 ## test update with complex condition.
 def test_update_with_complex_condition():
-    sql = "update B set name = 'bingo' where age > 13 or (a).id = '1' or name like '%02'";
+    sql = "update B set name = 'bingo' where age > 13 or (a).id = '1' or name like '%02';";
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["rows"] == 2

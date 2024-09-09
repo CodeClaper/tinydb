@@ -42,7 +42,7 @@ def test_select_one_item():
 
 ## test select multiple items
 def test_select_items():
-    ret = client.execute("select id, name from Student")
+    ret = client.execute("select id, name from Student;")
     assert ret["success"] == True
     assert ret["data"] == [{ "id": "S001", "name": "kail" }, \
                            { "id": "S002", "name": "sun" }, \
@@ -56,222 +56,222 @@ def test_select_items():
 
 ## test select not exists items.
 def test_select_not_exist_items():
-    ret = client.execute("select email from Student")
+    ret = client.execute("select email from Student;")
     assert ret["success"] == False
 
 ## test select condition field not exist.
 def test_select_not_exist_condition_filed():
-    ret = client.execute("select * from Student where name = 'xxx'")
+    ret = client.execute("select * from Student where name = 'xxx';")
     assert ret["data"] == []
 
 ## test select simple condition.
 def test_select_simple_condition():
-    ret = client.execute("select id from Student where id = 'S001'")
+    ret = client.execute("select id from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["rows"] == 1
     assert ret["data"][0] == { "id": "S001" }
 
 ## test select complex condition
 def test_select_complex_condition1():
-    ret = client.execute("select id from Student where age = 10 and name = 'kail'")
+    ret = client.execute("select id from Student where age = 10 and name = 'kail';")
     assert ret["success"] == True
     assert ret["data"][0] == { "id": "S001" }
 
 ## test select complex condition
 def test_select_complex_condition2():
-    ret = client.execute("select id from Student where age > 10 and (class).id = 'C001'")
+    ret = client.execute("select id from Student where age > 10 and (class).id = 'C001';")
     assert ret["success"] == True
     assert ret["rows"] == 1
 
 ## test select complex condition
 def test_select_complex_condition3():
-    ret = client.execute("select id from Student where age < 10 and age > 5 or (class).id = 'C002'")
+    ret = client.execute("select id from Student where age < 10 and age > 5 or (class).id = 'C002';")
     assert ret["success"] == True
     assert ret["rows"] == 4
 
 ## test select complex condition
 def test_select_complex_condition4():
-    ret = client.execute("select id from Student where (age < 10 and age > 5 or (class).id = 'C003')")
+    ret = client.execute("select id from Student where (age < 10 and age > 5 or (class).id = 'C003');")
     assert ret["success"] == True
     assert ret["rows"] == 3
 
 ## test select like predicate.
 def test_select_like_predicate1():
-    ret = client.execute("select id from Student where name like '%un%'")
+    ret = client.execute("select id from Student where name like '%un%';")
     assert ret["success"] == True
     assert ret["rows"] == 2
 
 ## test select like predicate.
 def test_select_like_predicate2():
-    ret = client.execute("select id from Student where name like '%ing'")
+    ret = client.execute("select id from Student where name like '%ing';")
     assert ret["success"] == True
     assert ret["rows"] == 1
 
 ## test select like predicate.
 def test_select_like_predicate3():
-    ret = client.execute("select id from Student where name like 'k%'")
+    ret = client.execute("select id from Student where name like 'k%';")
     assert ret["success"] == True
     assert ret["rows"] == 2
 
 ## test select like predicate.
 def test_select_like_predicate4():
-    ret = client.execute("select id from Student where name like 'bob'")
+    ret = client.execute("select id from Student where name like 'bob';")
     assert ret["success"] == True
     assert ret["rows"] == 1
 
 
 ## test select in predicate.
 def test_select_in_predicate1():
-    ret = client.execute("select id from Student where id in ('S001')")
+    ret = client.execute("select id from Student where id in ('S001');")
     assert ret["success"] == True
     assert ret["rows"] == 1
 
 ## test select in predicate.
 def test_select_in_predicate2():
-    ret = client.execute("select id from Student where id in ('S001', 'S002')")
+    ret = client.execute("select id from Student where id in ('S001', 'S002');")
     assert ret["success"] == True
     assert ret["rows"] == 2
 
 ## test select in predicate.
 def test_select_in_predicate3():
-    ret = client.execute("select id from Student where name in ('bob', 'alice')")
+    ret = client.execute("select id from Student where name in ('bob', 'alice');")
     assert ret["success"] == True
     assert ret["rows"] == 2
 
 ## test select in predicate.
 def test_select_in_predicate4():
-    ret = client.execute("select id from Student where name in ('jim', 'jerry')")
+    ret = client.execute("select id from Student where name in ('jim', 'jerry');")
     assert ret["success"] == True
     assert ret["rows"] == 0
 
 ## test max function.
 def test_max_function1():
-    ret = client.execute("select max(age) from Student")
+    ret = client.execute("select max(age) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "max": 14 }
 
 ## test max function.
 def test_max_function2():
-    ret = client.execute("select max(age), id from Student where id in ('S001', 'S002')")
+    ret = client.execute("select max(age), id from Student where id in ('S001', 'S002');")
     assert ret["success"] == True
     assert ret["data"][0] == { "max": 11, "id": "S001" }
 
 ## test max function.
 def test_max_function3():
-    ret = client.execute("select max(*) from Student where id in ('S001', 'S002')")
+    ret = client.execute("select max(*) from Student where id in ('S001', 'S002');")
     assert ret["success"] == False
 
 ## test max function.
 def test_max_function4():
-    ret = client.execute("select max(100) from Student where id in ('S001', 'S002', 'S003')")
+    ret = client.execute("select max(100) from Student where id in ('S001', 'S002', 'S003');")
     assert ret["success"] == True
     assert ret["data"][0] == { "max": 100 }
 
 ## test max function.
 def test_max_function5():
-    ret = client.execute("select max(age) as age from Student where id in ('S001', 'S002', 'S003')")
+    ret = client.execute("select max(age) as age from Student where id in ('S001', 'S002', 'S003');")
     assert ret["success"] == True
     assert ret["data"][0] == { "age": 12 }
 
 ## test min function.
 def test_min_function1():
-    ret = client.execute("select min(id) from Student where name like '%a%'")
+    ret = client.execute("select min(id) from Student where name like '%a%';")
     assert ret["success"] == True
     assert ret["data"][0] == { "min": "S001" }
 
 ## test min function.
 def test_min_function2():
-    ret = client.execute("select min(age), name from Student where name like '%a%'")
+    ret = client.execute("select min(age), name from Student where name like '%a%';")
     assert ret["success"] == True
     assert ret["data"][0] == { "min": 10, "name": "kail" }
 
 ## test min function.
 def test_min_function3():
-    ret = client.execute("select min(age), max(name) from Student where name like '%n%'")
+    ret = client.execute("select min(age), max(name) from Student where name like '%n%';")
     assert ret["success"] == True
     assert ret["data"][0] == { "min": 9, "max": "sun" }
 
 ## test min function.
 def test_min_function4():
-    ret = client.execute("select min(10) from Student where id like '%ng%'")
+    ret = client.execute("select min(10) from Student where id like '%ng%';")
     assert ret["success"] == True
     assert ret["data"][0] == { "min": 10 }
 
 ## test count function.
 def test_count_function1():
-    ret = client.execute("select count(1) from Student")
+    ret = client.execute("select count(1) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "count": 8 }
 
 ## test count function.
 def test_count_function2():
-    ret = client.execute("select count(10) from Student")
+    ret = client.execute("select count(10) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "count": 8 }
 
 ## test count function.
 def test_count_function3():
-    ret = client.execute("select count(age) from Student")
+    ret = client.execute("select count(age) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "count": 8 }
 
 ## test count function.
 def test_count_function4():
-    ret = client.execute("select count(id) from Student")
+    ret = client.execute("select count(id) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "count": 8 }
 
 ## test sum function.
 def test_sum_function1():
-    ret = client.execute("select sum(id) from Student")
+    ret = client.execute("select sum(id) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "sum": 0 }
 
 
 ## test sum function.
 def test_sum_function2():
-    ret = client.execute("select sum(age) from Student")
+    ret = client.execute("select sum(age) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "sum": 89 }
 
 ## test avg function.
 def test_avg_function1():
-    ret = client.execute("select avg(age) from Student")
+    ret = client.execute("select avg(age) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "avg": 11.125}
 
 ## test avg function.
 def test_avg_function2():
-    ret = client.execute("select avg(id) from Student")
+    ret = client.execute("select avg(id) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "avg": 0.0 }
 
 ## test calculate selection
 def test_calculate_selection_add1():
-    ret = client.execute("select count(id) + count(1) from Student")
+    ret = client.execute("select count(id) + count(1) from Student;")
     assert ret["success"] == True
     assert ret["data"][0] == { "add": 16 }
 
 ## test calculate selection
 def test_calculate_selection_add2():
-    ret = client.execute("select age + age from Student where (class).id = 'C002'")
+    ret = client.execute("select age + age from Student where (class).id = 'C002';")
     assert ret["success"] == True
     assert ret["data"] == [{ "add": 24 }, { "add": 28 }, { "add": 18 }]
 
 ## test calculate selection
 def test_calculate_selection_add3():
-    ret = client.execute("select age + age from Student where id = 'S001'")
+    ret = client.execute("select age + age from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["data"][0] == { "add": 20 }
 
 ## test calculate selection
 def test_calculate_selection_sub1():
-    ret = client.execute("select sum(age) - sum(class) from Student")
+    ret = client.execute("select sum(age) - sum(class) from Student;")
     assert ret["success"] == False
 
 ## test calculate selection
 def test_calculate_selection_sub2():
-    ret = client.execute("select sum(age) from Student where (class).id = 'C001'")
+    ret = client.execute("select sum(age) from Student where (class).id = 'C001';")
     assert ret["success"] == True
     assert ret["data"][0] == { "sum": 21 }
 

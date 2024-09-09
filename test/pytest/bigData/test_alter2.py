@@ -18,7 +18,7 @@ def test_mock_table():
 ## test insert 3000 students
 def test_3000_student():
     for i in range(1, 3000):
-        sql = f"insert into Student values ('{uuid.uuid4()}', '{names[i % 7]}', '{address[random.randint(0,12)]}')"
+        sql = f"insert into Student values ('{uuid.uuid4()}', '{names[i % 7]}', '{address[random.randint(0,12)]}');"
         ret = client.execute(sql)
         assert ret["success"] == True
 
@@ -54,7 +54,7 @@ def test_add_column_not_column_without_default_value():
 
 ## add row after adding column.
 def test_add_data_after_add_column():
-    sql = f"insert into Student(id, name, phone, address, class) values ('{uuid.uuid4()}', '{names[0]}', '130028382912', '{address[random.randint(0,12)]}', null)"
+    sql = f"insert into Student(id, name, phone, address, class) values ('{uuid.uuid4()}', '{names[0]}', '130028382912', '{address[random.randint(0,12)]}', null);"
     ret = client.execute(sql)
     assert ret['success'] == False
     assert ret['message'] == "Column 'class' can`t be null."

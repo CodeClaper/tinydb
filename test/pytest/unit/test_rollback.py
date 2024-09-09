@@ -34,7 +34,7 @@ def test_select_data1():
 
 ## rollback
 def test_rollback():
-    sql = "rollback"
+    sql = "rollback;"
     ret = client1.execute(sql)
     assert ret["success"] == True 
 

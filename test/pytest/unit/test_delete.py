@@ -49,6 +49,6 @@ def test_delete_without_condition():
 
 ## Finally drop table.
 def test_drop_table():
-    sql = "drop table A"
+    sql = "drop table A;"
     ret = client.execute(sql)
     assert ret["success"] == True

@@ -38,7 +38,7 @@ def test_select_after_inserting():
 
 ## drop table
 def test_drop_table():
-    sql = "drop table Student"
+    sql = "drop table Student;"
     ret = client.execute(sql)
     assert ret["success"] == True
 

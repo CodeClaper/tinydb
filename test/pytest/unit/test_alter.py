@@ -16,8 +16,8 @@ def test_mock_table_data():
     sql = "insert into Student values ('S0001', 'zhangchuran', 10);\n" \
           "insert into Student values ('S0002', 'chengzhen', 11);\n" \
           "insert into Student values ('S0003', 'dongxiaojun', 8);\n" \
-          "insert into Teacher values('T001', 'sunqing', 'C01')\n"\
-          "insert into Teacher values('T002', 'duli', 'C02')\n"
+          "insert into Teacher values ('T001', 'sunqing', 'C01');\n"\
+          "insert into Teacher values ('T002', 'duli', 'C02');\n"
     ret = client.execute(sql)
     assert_all(ret)
 
@@ -30,7 +30,7 @@ def test_add_column():
 
 ## test desc table aftert add column
 def test_desc_table_after_add_column():
-    sql = "desc Student"
+    sql = "desc Student;"
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["data"][2] == { "field": "sex", "key": None, "type": "char", "length": 1, "array": False, "default": "M", "comment": "M if man and W if women" }

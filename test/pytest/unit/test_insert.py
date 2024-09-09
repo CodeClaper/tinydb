@@ -27,7 +27,7 @@ def test_insert_row():
 
 ## test insert with direct reference column value.
 def test_insert_with_direct_reference():
-    sql = "insert into Parent values ('P001', 'Kim', ('S003', 'lili', 10, 5, 'M', '2013-03-05', '139924422323', 'nanjing', '2024-03-20 16:08:30'))"
+    sql = "insert into Parent values ('P001', 'Kim', ('S003', 'lili', 10, 5, 'M', '2013-03-05', '139924422323', 'nanjing', '2024-03-20 16:08:30'));"
     ret = client.execute(sql)
     assert ret["success"] == True
     assert ret["rows"] == 1

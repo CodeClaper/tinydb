@@ -12,7 +12,7 @@ def test_create_table():
 
 ## test drop table which is refred by others.
 def test_drop_refered_table():
-    ret = client.execute("drop table A")
+    ret = client.execute("drop table A;")
     assert ret["success"] == False
 
 ## test drop table
@@ -24,7 +24,7 @@ def test_drop_table():
 
 ## test drop not exist table.
 def test_drop_not_exist_table():
-    ret = client.execute("drop table X")
+    ret = client.execute("drop table X;")
     assert ret["success"] == False
     assert ret["message"] == "Table 'X' not exists."
 

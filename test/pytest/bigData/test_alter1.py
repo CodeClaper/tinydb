@@ -16,7 +16,7 @@ def test_mock_table():
 def test_1000_student_insert():
     names = ["zhangsan", "lisi", "Sun", "July", "Kaili", "James", "Max"]
     for i in range(1, 1000):
-        sql = f"insert into Student values ('{uuid.uuid4()}', '{names[i % 7]}', { random.randint(6, 15) })"
+        sql = f"insert into Student values ('{uuid.uuid4()}', '{names[i % 7]}', { random.randint(6, 15) });"
         ret = client.execute(sql)
         assert ret["success"] == True
 
@@ -45,6 +45,6 @@ def test_select_count():
 
 # drop mock table
 def test_drop_mock_table():
-    sql = "drop table Student"
+    sql = "drop table Student;"
     ret = client.execute(sql)
     assert ret["success"] == True

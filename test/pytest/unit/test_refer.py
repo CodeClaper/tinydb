@@ -30,36 +30,36 @@ def test_insert_mock_data():
 
 ## test select one subcolumn.
 def test_select_subcolumn():
-    ret = client.execute("select (class).id as cid from Student where id = 'S001'")
+    ret = client.execute("select (class).id as cid from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["data"] == [{ "cid": "C001"}]
 
 ## test select subcolumn json.
 def test_select_subcolumn_json():
-    ret = client.execute("select class{id as cid} from Student where id = 'S001'")
+    ret = client.execute("select class{id as cid} from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["data"] == [{ "class" : {"cid": "C001"} }]
 
 ## test select subcolumn json.
 def test_select_unknown_subcolumn():
-    ret = client.execute("select class{x as cid} from Student where id = 'S001'")
+    ret = client.execute("select class{x as cid} from Student where id = 'S001';")
     assert ret["success"] == False
 
 ## test select plain column and subcolumn.
 def test_select_column_subcolumn():
-    ret = client.execute("select id, class{id as cid} from Student where id = 'S001'")
+    ret = client.execute("select id, class{id as cid} from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["data"] == [{ "id": "S001", "class" : {"cid": "C001"} }]
 
 ## test max for subcolumn.
 def test_max_subcolumn():
-    ret = client.execute("select max((class).id) from Student")
+    ret = client.execute("select max((class).id) from Student;")
     assert ret["success"] == True
     assert ret["data"] == [{ "max": "C004" }]
 
 ## test min for subcolumn
 def test_min_subcolumn():
-    ret = client.execute("select min((class).studentNum) from Student")
+    ret = client.execute("select min((class).studentNum) from Student;")
     assert ret["success"] == True
     assert ret["data"] == [{ "min": 30 }]
 
@@ -99,23 +99,23 @@ def test_avg_reference():
 
 ## test update refer.
 def test_update_refer():
-    ret1 = client.execute("select * from Student");
+    ret1 = client.execute("select * from Student;");
     assert ret1["success"] == True
-    ret2 = client.execute("insert into Class values ('01', 'West', 28)");
+    ret2 = client.execute("insert into Class values ('01', 'West', 28);");
     assert ret2["success"] == True
-    ret3 = client.execute("select * from Student");
+    ret3 = client.execute("select * from Student;");
     assert ret3["success"] == True
     assert ret1["data"] == ret3["data"]
 
 ## test delete reference.
 def test_delete_reference():
-    ret = client.execute("delete from Class where id = 'C001'")
+    ret = client.execute("delete from Class where id = 'C001';")
     assert ret["success"] == True
     assert ret["rows"] == 1
 
 ## test deleted subcolumn
 def test_select_deleted_subcolumn_json():
-    ret = client.execute("select class from Student where id = 'S001'")
+    ret = client.execute("select class from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["rows"] == 1
     assert ret["data"] == [{ "class": None }]
@@ -123,7 +123,7 @@ def test_select_deleted_subcolumn_json():
 
 ## test deleted subcolumn
 def test_select_deleted_subcolumn_json_detail():
-    ret = client.execute("select class{id, location} from Student where id = 'S001'")
+    ret = client.execute("select class{id, location} from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["rows"] == 1
     assert ret["data"] == [{ "class": None }]
@@ -131,7 +131,7 @@ def test_select_deleted_subcolumn_json_detail():
 
 ## test deleted subcolumn
 def test_select_deleted_subcolumn_item():
-    ret = client.execute("select (class).id, (class).location from Student where id = 'S001'")
+    ret = client.execute("select (class).id, (class).location from Student where id = 'S001';")
     assert ret["success"] == True
     assert ret["rows"] == 1
     assert ret["data"] == [{ "id": None, "location": None}]

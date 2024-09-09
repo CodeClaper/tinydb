@@ -39,7 +39,7 @@ def test_select_array_data():
 def test_update_array_refer():
     ret1 = client.execute("select * from Square;")
     assert ret1["success"] == True
-    ret2 = client.execute("insert into Pointer values(1, 2, 3)")
+    ret2 = client.execute("insert into Pointer values(1, 2, 3);")
     assert ret2["success"] == True
     ret3 = client.execute("select * from Square;")
     assert ret1["data"] == ret3["data"]
