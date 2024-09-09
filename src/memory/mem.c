@@ -164,6 +164,8 @@ static void *dalloc_local(size_t size) {
 static void *dalloc_shared(size_t size) {
     Assert(size > 0);
 
+    size = MAXALIGN(size);
+
     void *ptr;
     ptr = dalloc_shared_in_free_list(size);
     if (is_null(ptr)) {
