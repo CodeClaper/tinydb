@@ -342,6 +342,8 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
             && streq(meta_column->table_name, refer_update_entity->old_refer->table_name)) 
                 update_key_value_refer(row, meta_column, cursor, refer_update_entity);
     }
+
+    flush(meta_table->table_name);
 }
 
 /* Update table refer. */

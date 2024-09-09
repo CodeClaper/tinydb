@@ -280,7 +280,7 @@ static Refer *insert_one_row(Table *table, Row *row) {
     if (has_user_primary_key(table->meta_table) && check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
         db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
                get_key_str(row->key, primary_key_meta_column->column_type), 
-               table->meta_table->table_name);
+               get_table_name(table));
         /* Free unuesed memeory */
         free_cursor(cursor);
         return NULL;
@@ -288,6 +288,9 @@ static Refer *insert_one_row(Table *table, Row *row) {
 
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
+
+    /* Flush. */
+    flush(get_table_name(table));
 
     /* Convert to Refer. */
     Refer *refer = convert_refer(cursor);

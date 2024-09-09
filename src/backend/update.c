@@ -134,6 +134,8 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
         
     /* Free memory. */
     free_refer_update_entity(refer_update_entity);
+
+    flush(get_table_name(table));
 }
 
 /* Get ConditionNode form WhereClause.. */

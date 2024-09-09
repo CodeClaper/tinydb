@@ -17,3 +17,6 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num);
 
 /* Flush page to disk. */
 void flush_page(char *table_name, Pager *pager, uint32_t page_num);
+
+/* Flush all to disk. */
+void flush(char *table_name);

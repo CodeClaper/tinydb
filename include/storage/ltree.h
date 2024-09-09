@@ -4,8 +4,11 @@
 /* If obsolute node. */
 bool is_obsolute_node(void *node);
 
-/* Set obsolute flag. */
-void set_obsolute_node(void *node, bool flag);
+/* Get NodeState. */
+NodeState get_node_state(void *node);
+
+/* Set node state. */
+void set_node_state(void *node, NodeState state);
 
 /* Get node type. */
 NodeType get_node_type(void *node);

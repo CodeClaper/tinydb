@@ -82,12 +82,15 @@ typedef enum {
     DELETE_STMT, 
     DESCRIBE_STMT, 
     SHOW_STMT, 
-    DROP_TABLE_STMT ,
+    DROP_TABLE_STMT,
     ALTER_TABLE_STMT
 } StatementType; // statement type
 
 /* Tansaction operation type. */
 typedef enum { TR_SELECT, TR_INSERT, TR_DELETE, TR_UPDATE } TransOpType;
+
+/* NodeState. */
+typedef enum { INUSE_STATE, OBSOLETE_STATE, FLUSH_STATE } NodeState;
 
 /* NodeType */
 typedef enum { UNKNOWN_NODE, LEAF_NODE, INTERNAL_NODE } NodeType;

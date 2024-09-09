@@ -30,6 +30,7 @@
 #include "select.h"
 #include "asserts.h"
 #include "utils.h"
+#include "pager.h"
 
 static pthread_mutex_t mutex;
 
@@ -207,6 +208,8 @@ static void reverse_insert(Refer *refer, TransEntry *transaction) {
     *(int64_t *)expired_xid_col->value = transaction->xid;
 
     update_row_data(row, convert_cursor(refer));
+
+    flush(refer->table_name);
 }
 
 /* Reverse delete operation. 
@@ -233,6 +236,8 @@ static void reverse_delete(Refer *refer, TransEntry *transaction) {
 
     /* Re-insert. */
     insert_leaf_node_cell(new_cur, row);
+
+    flush(get_table_name(table));
 }
 
 /* Reverse update delete transaction. */
@@ -267,4 +272,6 @@ static void reverse_update_delete(Refer *refer, TransEntry *transaction) {
 
     free_cursor(new_cur);
     free_refer(new_ref);
+
+    flush(refer->table_name);
 }

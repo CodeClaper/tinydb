@@ -64,20 +64,26 @@ static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn 
 /* If obsolute node. */
 bool is_obsolute_node(void *node) {
     if (node == NULL) return false;
-    uint8_t value  = *(uint8_t *)(node + IS_OBSOLUTE_OFFSET);
-    return (bool) value;
+    uint8_t value  = *(uint8_t *)(node + NODE_STATE_SIZE_OFFSET);
+    return (NodeState) value == OBSOLETE_STATE;
 }
 
-/* Set obsolute flag. */
-void set_obsolute_node(void *node, bool flag) {
-    uint8_t value = (uint8_t) flag;
-    *(uint8_t *)(node + IS_OBSOLUTE_OFFSET) = value;
+/* Get NodeState. */
+NodeState get_node_state(void *node) {
+    uint8_t value = *(uint8_t *)(node + NODE_STATE_SIZE_OFFSET);
+    return (NodeState) value;
+}
+
+/* Set node state. */
+void set_node_state(void *node, NodeState state) {
+    uint8_t value = (uint8_t) state;
+    *(uint8_t *)(node + NODE_STATE_SIZE_OFFSET) = value;
 }
 
 /* Make node obsolute. */
 static void make_obsolute_node(void *node) {
     memset(node, 0, PAGE_SIZE);
-    set_obsolute_node(node, true);
+    set_node_state(node, OBSOLETE_STATE);
 }
 
 /* Get next avaliable page num. 
@@ -87,7 +93,7 @@ static uint32_t next_avaliable_page_num(Pager *pager) {
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
         if (is_obsolute_node(pager->pages[i])) {
-            set_obsolute_node(pager->pages[i], false);
+            set_node_state(pager->pages[i], INUSE_STATE);
             return i;
         }
     }

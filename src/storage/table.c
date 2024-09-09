@@ -168,6 +168,7 @@ bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPo
     MetaTable *meta_table = table->meta_table;
     int index = get_column_position(meta_table, pos);
     append_new_column(table->root_page_num, table, new_meta_column, index);
+    flush(table_name);
     return true;
 }
 

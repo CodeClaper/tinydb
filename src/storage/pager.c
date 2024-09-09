@@ -19,6 +19,8 @@
 #include "mmu.h"
 #include "log.h"
 #include "utils.h"
+#include "ltree.h"
+#include "table.h"
 
 
 static List *FDESC_LIST = NULL;
@@ -146,26 +148,60 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 /* Flush page to disk. */
 void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
 
-    Assert (pager->pages[page_num]);
+    Assert(pager->pages[page_num]);
 
-    /* Before flushing disk, synchronous page memory data. 
-     * If synchronous page memory fail, not to flush disk. */
-    if(!sync_page(table_name, page_num, pager->pages[page_num]))
-        return;
+    void *node = pager->pages[page_num];
 
-    /* Flush disk. */
-    off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * page_num, SEEK_SET);
-    if (offset == -1) 
-        db_log(PANIC, "Error seeking: %s.", strerror(errno));
-    
-    /* Write. */
-    ssize_t write_size = write(pager->file_descriptor, pager->pages[page_num], PAGE_SIZE);
-    if (write_size == -1) 
-        db_log(PANIC, "Try to write page error and errno", errno);        
+    set_node_state(node, FLUSH_STATE);
+
 }
 
 /* Flush all to disk. */
-void flush(Pager pager) {}
+void flush(char *table_name) {
+
+    Table *table = open_table(table_name);
+
+    Pager *pager = table->pager;
+
+    uint32_t i;
+    for (i = 0; i < pager->size; i++) {
+        void *node = pager->pages[i];
+
+        Assert(node);
+
+        if (get_node_state(node) == FLUSH_STATE) {
+    
+            /* Reset to INUSE_STATE. */
+            set_node_state(node, INUSE_STATE);
+
+            /* Before flushing disk, synchronous page memory data. 
+             * If synchronous page memory fail, not to flush disk. */
+            if(!sync_page(table->meta_table->table_name, i, node))
+                return;
+
+            /* Flush disk. */
+            off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * i, SEEK_SET);
+            if (offset == -1) 
+                db_log(PANIC, "Error seeking: %s.", strerror(errno));
+            
+            /* Write. */
+            ssize_t write_size = write(pager->file_descriptor, node, PAGE_SIZE);
+
+            if (write_size == -1) 
+                db_log(PANIC, "Try to write page error and errno", errno);        
+        }
+    }
+
+    
+    uint32_t j;
+    for (j = 0; j < table->meta_table->column_size; j++) {
+        MetaColumn *meta_column = table->meta_table->meta_column[j];
+        if (meta_column->column_type == T_REFERENCE) {
+            char *table_name = meta_column->table_name;
+            flush(table_name);
+        }
+    }
+}
 
 /* Close Pager. */
 void close_pager(Pager *pager) {

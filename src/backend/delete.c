@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "xlog.h"
 #include "log.h"
+#include "pager.h"
 
 /* Delete row */
 void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
@@ -40,6 +41,8 @@ void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
         /* Free memeory. */
         free_cursor(cursor);
         free_refer(refer);
+
+        flush(get_table_name(table));
     }
 }
 
