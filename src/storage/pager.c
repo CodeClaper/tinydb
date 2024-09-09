@@ -145,7 +145,8 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 }
 
 
-/* Flush page to disk. */
+/* Flush page. 
+ * Just make page FLUSH_STATE flag. */
 void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
 
     Assert(pager->pages[page_num]);
@@ -153,18 +154,17 @@ void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
     void *node = pager->pages[page_num];
 
     set_node_state(node, FLUSH_STATE);
-
 }
 
-/* Flush all to disk. */
-void flush(char *table_name) {
 
-    Table *table = open_table(table_name);
+/* Flush Table. */
+static void flush_table(Table *table) {
 
     Pager *pager = table->pager;
 
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
+
         void *node = pager->pages[i];
 
         Assert(node);
@@ -186,13 +186,22 @@ void flush(char *table_name) {
             
             /* Write. */
             ssize_t write_size = write(pager->file_descriptor, node, PAGE_SIZE);
-
             if (write_size == -1) 
-                db_log(PANIC, "Try to write page error and errno", errno);        
+                db_log(PANIC, "Try to write page error: %s.", strerror(errno));        
         }
     }
 
+}
+
+/* Flush all to disk. */
+void flush(char *table_name) {
+
+    Table *table = open_table(table_name);
     
+    /* Flush self table. */
+    flush_table(table);
+    
+    /* Flush refer tables. */
     uint32_t j;
     for (j = 0; j < table->meta_table->column_size; j++) {
         MetaColumn *meta_column = table->meta_table->meta_column[j];
