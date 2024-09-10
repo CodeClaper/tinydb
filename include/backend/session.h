@@ -1,5 +1,14 @@
 #include "data.h"
 
+/* Session */
+typedef struct {
+    int client;
+    uint32_t frequency;
+    uint32_t volumn;
+    char spool[SPOOL_SIZE]; /* Store messsage pool. */
+    int pindex;             /* Current spool position index. */
+} Session;
+
 /* Generate new session. */
 void new_session(int client);
 

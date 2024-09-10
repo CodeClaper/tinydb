@@ -660,18 +660,10 @@ typedef struct MEntry {
 /* MHashTable */
 typedef struct {
     MEntry **entry_list;
-    uint32_t num;      /* number of entry list. */
-    uint32_t capacity; /* capacity of table cell. */
+    uint32_t num;                           /* number of entry list. */
+    uint32_t capacity;                      /* capacity of table cell. */
 } MHashTable;
 
-/* Session */
-typedef struct {
-    int client;
-    uint32_t frequency;
-    uint32_t volumn;
-    char spool[SPOOL_SIZE]; /* Store messsage pool. */
-    int pindex;             /* Current spool position index. */
-} Session;
 
 /* Abount configuration. */
 typedef struct {

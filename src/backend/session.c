@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
+#include "session.h"
 #include "data.h"
 #include "mmu.h"
 #include "log.h"

@@ -1,9 +1,14 @@
 /*
  * ========================================= The Spin Lock Module =======================================================
- * TinydDb support tow ways of lock, spin lock and wrlock. Spin lock is exclusieve lock, and wrlock is shared for all read 
- * operation threads, and exclusieve if including write operation thread.
- * When try to get a contended spin lock, delay for a while using usleep and then try again. 
- * This routine is known as Test-and-Set(TAS).
+ * Auth:        JerryZhou
+ * Created:     2024/01/24
+ * Modify:      2024/01/24
+ * Locataion:   src/memory/shmem.c
+ * Description: 
+ *  TinydDb support tow ways of lock, spin lock and wrlock. Spin lock is exclusieve lock, and wrlock is shared for all read 
+ *  operation threads, and exclusieve if including write operation thread.
+ *  When try to get a contended spin lock, delay for a while using usleep and then try again. 
+ *  This routine is known as Test-and-Set(TAS).
  * ======================================================================================================================
  * */
 
