@@ -39,26 +39,34 @@ static void sigchild();
 
 /* DB Start. */
 static void db_start() {
+
     /* Initialise shmem. */
     init_shmem();
+
     /* Initialise memory manger. */
     init_mem();
+
     /* Initialise memory manager unit. */
     init_mmu();
+
     /* Init tablereg. */
     init_table_reg();
-    /* Initialise session. */
-    init_session();
+
     /* Initialise transaction. */
     init_trans();
+
     /* Initialise xlog. */
     init_xlog();
+
     /* Initialise table cache. */
     init_table_cache();
+
     /* Initialise table buffer. */
     init_table_buffer();
+
     /* Initialise refer. */
     init_refer();
+
     /* Initialise table lock. */
     init_table_lock();
 
@@ -98,7 +106,6 @@ static void db_run() {
 
 /* DB End */
 static void db_end() {
-    end_session();
 }
 
 static void sigchild() {
