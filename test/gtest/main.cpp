@@ -21,24 +21,31 @@ jmp_buf errEnv; /* jmp_buf for error. */
 
 /* DB Start. */
 static void db_start() {
+
     /* Initialise shmem. */
     init_shmem();
+
     /* Initialise memory manager unit. */
     init_mmu();
+
     /* Initialise memory manger. */
     init_mem();
-    /* Initialise session. */
-    init_session();
+
     /* Initialise transaction. */
     init_trans();
+
     /* Initialise xlog. */
     init_xlog();
+
     /* Initialise table cache. */
     init_table_cache();
+
     /* Initialise table buffer. */
     init_table_buffer();
+
     /* Initialise refer. */
     init_refer();
+
     /* Load configuration. */
     conf = load_conf();
 }
