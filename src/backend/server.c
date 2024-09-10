@@ -40,8 +40,7 @@ int startup(u_short port) {
 void accept_request(intptr_t client) {
     size_t chars_num;
     char buf[1024];
-    Session *session = new_session(client);
-    set_session(session);
+    new_session(client);
     db_log(INFO, "Client ID '%ld' connect successfully.", getpid());
     while((chars_num = recv(client, buf, 1024, 0)) > 0) {
         buf[chars_num] = '\0';
@@ -50,7 +49,6 @@ void accept_request(intptr_t client) {
             break;
     }
     close(client);
-    destroy_session();
     db_log(INFO, "Client ID '%ld' disconnect.", getpid());
     exit(0);
 }

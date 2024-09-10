@@ -88,3 +88,6 @@ ST_FLAG stod(char *val, double *ret);
 
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);
+
+/* Min size. */
+size_t min_size(size_t size1, size_t size2);

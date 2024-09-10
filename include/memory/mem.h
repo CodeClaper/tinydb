@@ -14,6 +14,16 @@ typedef struct ShMemFreeEntry {
 } ShMemFreeEntry;
 
 
+typedef struct LoMemEntry {
+    size_t size;
+    bool isFree;
+} LoMemEntry;
+
+
+#define LMENTRY_OFFSET sizeof(LoMemEntry)
+
+
+
 /* Define as the maximum alignment requirement of any C data type. */
 #define MAXIMUM_ALIGNOF 8
 
@@ -25,6 +35,7 @@ typedef struct ShMemFreeEntry {
 
 /* Init mem. */
 void init_mem();
+
 
 /* Swith Shared Memory. */
 void switch_shared();

@@ -373,3 +373,9 @@ int get_line(int sock, char *buf, int size) {
 
     return(i);
 }
+
+
+/* Min size. */
+size_t min_size(size_t size1, size_t size2) {
+    return size1 < size2 ? size1 : size2;
+}
