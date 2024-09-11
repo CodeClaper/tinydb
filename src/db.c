@@ -29,6 +29,7 @@
 #include "tablelock.h"
 #include "log.h"
 #include "shmem.h"
+#include "lomem.h"
 #include "tablereg.h"
 
 

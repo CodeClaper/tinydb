@@ -13,6 +13,7 @@
 #include "mem.h"
 #include "mmu.h"
 #include "shmem.h"
+#include "lomem.h"
 #include "list.h"
 #include "spinlock.h"
 #include "asserts.h"
@@ -99,6 +100,8 @@ static void *dalloc_shared_in_free_list(size_t size) {
     return ptr;
 }
 
+
+/* Get FreeList tail. */
 static void *get_free_list_tail() {
     ShMemFreeEntry *entry = header;
     while (entry->next) {
@@ -154,8 +157,24 @@ static ShMemFreeEntry *find_free_entry(void *ptr) {
 
 /* Allocate memory in local memory. */
 static void *dalloc_local(size_t size) {
-    void *ptr = malloc(size);
+
+    void *ptr = NULL;
+
+    if (lomem_available()) {
+        LoMemEntry entry;
+        void *npt = lomem_alloc(size + LMENTRY_OFFSET );
+        entry.size = size;
+        entry.isFree = false;
+        memcpy(npt, &entry, LMENTRY_OFFSET);
+        ptr = npt + LMENTRY_OFFSET;
+    } else
+        ptr = malloc(size);
+
+    Assert(ptr);
+    
+    /* Initialise. */
     memset(ptr, 0, size);
+
     return ptr;
 }
 
@@ -182,7 +201,12 @@ static void *dalloc_shared(size_t size) {
 
 /* Free memory in local memory.*/
 static void dfree_local(void *ptr) {
-    free(ptr);
+    
+    if (lomem_available()) {
+        LoMemEntry *entry = ptr - LMENTRY_OFFSET;
+        entry->isFree = true;
+    } else
+        free(ptr);
 }
 
 /* Free memory in shared memory.*/
@@ -207,7 +231,15 @@ static void try_dfree_shared(void *ptr) {
 
 /* Reallocate local memory. */
 static void *drealloc_local(void *ptr, size_t size) {
-    return realloc(ptr, size);
+
+    if (lomem_available()) {
+        LoMemEntry *entry = ptr - LMENTRY_OFFSET;
+        void *npt = dalloc_local(size);
+        memcpy(npt, ptr, min_size(entry->size, size));
+        dfree_local(ptr);
+        return npt;
+    } else
+        return realloc(ptr, size);
 }
 
 
@@ -223,12 +255,22 @@ static void *drealloc_shared(void *ptr, size_t size) {
     return new_ptr;
 }
 
+
+/* Strdup in local memory. */
+static char *dstrdup_local(char *str) {
+    if (mem_avaliable()) {
+        char *nstr = dalloc_local(strlen(str) + 1);
+        memcpy(nstr, str, strlen(str));
+        return nstr;
+    } else
+        return strdup(str);
+}
+
 /* Strdup in shared memory.  */
 static char *dstrdup_shared(char *str) {
     size_t size = strlen(str) + 1;
     void *new_str = dalloc_shared(size);
     memcpy(new_str, str, strlen(str));
-    // try_dfree_shared(str);
     return new_str;
 }
 
@@ -275,7 +317,7 @@ void *drealloc(void *ptr, size_t size) {
 void *dstrdup(char *str) {
     switch (type) {
         case MEM_LOCAL:
-            return strdup(str);
+            return dstrdup_local(str);
         case MEM_SHARED:
             return dstrdup_shared(str);
         default:

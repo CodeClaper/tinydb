@@ -34,6 +34,7 @@ static void register_fdesc(char *table_name, int file_descriptor) {
     FDescEntry *entry = instance(FDescEntry);
     entry->file_descriptor = file_descriptor;
     strcpy(entry->table_name, table_name);
+
     append_list(FDESC_LIST, entry);
 }
 

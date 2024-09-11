@@ -85,12 +85,7 @@ Table *find_table_buffer(char *table_name) {
 }
 
 
-/* Clear all of TableBufferEntries releated whole current transaction. */
-bool clear_table_buffer() {
-    /* Try to get current transaction. */
-    TransEntry *trans = find_transaction();
-    if (is_null(trans))
-        return false;
+static void loop_clear_table_buffer(TransEntry *trans) {
 
     uint32_t i;
     for (i = 0; i < len_list(buffer_list); i++) {
@@ -98,10 +93,22 @@ bool clear_table_buffer() {
         if (entry->xid == trans->xid) {
             free_table_buffer_entry(entry);
             list_delete(buffer_list, entry);
-            i = 0; // Restart over.
+            loop_clear_table_buffer(trans); // Restart over.
+            break;
         }
     }
     
+}
+
+/* Clear all of TableBufferEntries releated whole current transaction. */
+bool clear_table_buffer() {
+    /* Try to get current transaction. */
+    TransEntry *trans = find_transaction();
+    if (is_null(trans))
+        return false;
+
+    loop_clear_table_buffer(trans);
+
     /* Destroy TableReg also. */
     destroy_table_reg();
 

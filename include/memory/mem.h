@@ -23,7 +23,6 @@ typedef struct LoMemEntry {
 #define LMENTRY_OFFSET sizeof(LoMemEntry)
 
 
-
 /* Define as the maximum alignment requirement of any C data type. */
 #define MAXIMUM_ALIGNOF 8
 

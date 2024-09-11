@@ -9,8 +9,15 @@ typedef struct LoMemHeader {
 } LoMemHeader;
 
 
+/* Lomem if available*/
+bool lomem_available();
+
+
+/* Start the lomem. */
+void lomem_start();
+
 /* Alloc from Local Memory. */
 void *lomem_alloc(size_t size);
 
-/* Destroy Local Memory. */
-void destroy_local_memory();
+/* End the lomem. */
+void lomem_end();
