@@ -511,7 +511,9 @@ void free_list_deep(List *list) {
             case NODE_PAGE: {
                 ListCell *lc;
                 foreach (lc, list) {
-                    db_free(lfirst(lc));
+                    void *page = lfirst(lc);
+                    if (page)
+                        db_free(page);
                 }
                 break;
             }
