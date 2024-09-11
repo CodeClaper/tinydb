@@ -246,3 +246,34 @@ TEST(list, list_copy) {
     ASSERT_EQ(lfirst(first_cell(list1)), lfirst(first_cell(list2)));
 
 }
+
+
+/* Test for list_replace_at. */
+TEST(list, list_replace_at) {
+    
+     char* strings[10] = {
+        "hello everyone!", 
+        "¡Hola a todos!", 
+        "大家好!", 
+        "Bonjour à tous !", 
+        "Guten Tag, alle zusammen!", 
+        "Ciao a tutti!", 
+        "Здравствуйте, все!", 
+        "こんにちは、皆さん！", 
+        " 여러분, 안녕하세요!", 
+        "مرحباً جميعًا!" 
+    };
+
+    List *list = create_list(NODE_STRING);
+
+    for (int i = 0; i < 10; i++) {
+        append_list(list, strings[i]);
+    }
+
+    char *item = "hello world";
+
+    list_replace_at(list, 2, item);
+
+    ASSERT_EQ(lfirst(list_nth_cell(list, 2)), "hello world");
+
+}
