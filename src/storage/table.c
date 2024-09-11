@@ -46,7 +46,7 @@ List *get_table_list() {
 }
 
 /* Get table file path. */
-static char *table_file_path(char *table_name) {
+char *table_file_path(char *table_name) {
     if (table_name == NULL) {
         fprintf(stderr, "Inner error, table name can`t be NULL.\n");
         exit(EXIT_FAILURE);

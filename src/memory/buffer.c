@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "asserts.h"
 #include "mem.h"
+#include "fdesc.h"
 #include "pager.h"
 #include "tablereg.h"
 
@@ -40,7 +41,7 @@ static bool save_table_buffer(Table *table) {
     if (!trans) 
         return false;
     
-    reload_file_descriptor(table->pager, table->meta_table->table_name);
+    table->pager->file_descriptor = get_file_desc(table->meta_table->table_name);
     
     /* Generate TableBufferEntry. */
     TableBufferEntry *entry = new_table_buffer_entry(table, trans->xid);

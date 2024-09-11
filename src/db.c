@@ -26,6 +26,7 @@
 #include "refer.h"
 #include "cache.h"
 #include "buffer.h"
+#include "fdesc.h"
 #include "tablelock.h"
 #include "log.h"
 #include "shmem.h"
@@ -50,8 +51,11 @@ static void db_start() {
     /* Initialise memory manager unit. */
     init_mmu();
 
-    /* Init tablereg. */
+    /* Initialise tablereg. */
     init_table_reg();
+
+    /* Initialise fesc.*/
+    init_fdesc();
 
     /* Initialise transaction. */
     init_trans();

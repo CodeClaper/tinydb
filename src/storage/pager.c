@@ -21,77 +21,14 @@
 #include "utils.h"
 #include "ltree.h"
 #include "table.h"
-
-
-static List *FDESC_LIST = NULL;
-
-/* Register FDescEntry. */
-static void register_fdesc(char *table_name, int file_descriptor) {
-
-    if (is_null(FDESC_LIST))
-        FDESC_LIST = create_list(NODE_VOID);
-
-    FDescEntry *entry = instance(FDescEntry);
-    entry->file_descriptor = file_descriptor;
-    strcpy(entry->table_name, table_name);
-
-    append_list(FDESC_LIST, entry);
-}
-
-
-/* Find file descriptor in FDESC_LIST. 
- * Return file descriptor or -1 if not found.
- * */
-static int find_fdesc(char *table_name) {
-    
-    if (FDESC_LIST) {
-        ListCell *lc;
-        foreach(lc, FDESC_LIST) {
-            FDescEntry *entry = lfirst(lc);
-            if (streq(entry->table_name, table_name))
-                return entry->file_descriptor;
-        }
-    }
-
-    return -1;
-}
-
-
-/* Load file descriptor. */
-static int load_file_descriptor(char *file_path) {
-    int file_descriptor = open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
-    if (file_descriptor == -1) 
-        db_log(PANIC, "Open table file %d fail: %s.", file_path, strerror(errno));
-
-    return file_descriptor;
-}
-
-/* For mult-processor model, it will reload the table file descriptor. */
-void reload_file_descriptor(Pager *pager, char *table_name) {
-
-    Assert(pager);
-    Assert(table_name);
-
-    int file_descriptor = find_fdesc(table_name);
-    if (file_descriptor != -1) 
-    {
-        pager->file_descriptor = file_descriptor;
-    }
-    else 
-    {
-        Assert(pager->table_file_path);
-        file_descriptor = load_file_descriptor(pager->table_file_path);
-        pager->file_descriptor = file_descriptor;
-        register_fdesc(table_name, file_descriptor);
-    }
-}
+#include "fdesc.h"
 
 
 /* Open the pager. */
 Pager *open_pager(char *table_file_path) {
     Pager *pager = instance(Pager);
 
-    int file_descriptor = load_file_descriptor(table_file_path);
+    int file_descriptor = load_file_desc(table_file_path);
 
     off_t file_length = lseek(file_descriptor, 0, SEEK_END);
     if (file_length == -1)

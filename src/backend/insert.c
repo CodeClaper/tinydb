@@ -132,9 +132,6 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
 
     List *value_list = insert_node->values_or_query_spec->values;
 
-    /* Instance row. */
-    Row *row = instance(Row);
-
     /* Table and MetaTable. */
     Table *table = open_table(insert_node->table_name);
     if (table == NULL) {
@@ -143,8 +140,11 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
     }
 
     MetaTable *meta_table = table->meta_table;
+
+    /* Instance row. */
+    Row *row = instance(Row);
     
-    /* Combination */
+    /* Initialization */
     row->table_name = db_strdup(meta_table->table_name);
     row->data = create_list(NODE_KEY_VALUE);
     
@@ -179,8 +179,6 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
     List *column_list = insert_node->column_list;
     List *value_list = insert_node->values_or_query_spec->values;
 
-    /* Instance row. */
-    Row *row = instance(Row);
 
     /* Table and MetaTable. */
     Table *table = open_table(insert_node->table_name);
@@ -191,7 +189,10 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
 
     MetaTable *meta_table = table->meta_table;
     
-    /* Combination */
+    /* Instance row. */
+    Row *row = instance(Row);
+
+    /* Initialization */
     row->table_name = db_strdup(meta_table->table_name);
     row->data = create_list(NODE_KEY_VALUE);
     
