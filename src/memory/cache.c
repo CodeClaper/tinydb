@@ -36,6 +36,7 @@ void save_table_cache(Table *table) {
             free_table(current);
         }
     }
+
     /* Insert new table cache. */
     append_list(TableCache, copy_table(table));
 
@@ -53,6 +54,24 @@ Table *find_table_cache(char *table_name) {
         Table *current = lfirst(lc);
         if (streq(current->meta_table->table_name, table_name)) {
             ptr = copy_table(current);
+        }
+    }
+    return ptr;
+}
+
+
+/* Find cache table by name, return null if not exist. 
+ * User in inner, not return duplicate.
+ * */
+static Table *find_table_cache_inner(char *table_name) {
+
+    void *ptr = NULL;
+
+    ListCell *lc;
+    foreach (lc, TableCache) {
+        Table *current = lfirst(lc);
+        if (streq(current->meta_table->table_name, table_name)) {
+            ptr = current;
         }
     }
     return ptr;
@@ -76,35 +95,48 @@ void remove_table_cache(char *table_name) {
 /* Synchronous page data. */
 bool sync_page(char *table_name, uint32_t page_num, void *page) {
 
-    ListCell *lc;
-    foreach (lc, TableCache) {
-        Table *cur_table = lfirst(lc);
-        if (streq(cur_table->meta_table->table_name, table_name)) {
-            void *old_page = cur_table->pager->pages[page_num];
-            switch_shared();
-            /* Notice: must copy the page, 
-             * because the page will be freed at <remove_table_buffer> */
-            cur_table->pager->pages[page_num] = copy_block(page, PAGE_SIZE);
-            if (old_page != page)
-                free_block(old_page);
-            switch_local();
-            return true;
-        }
+    Table *table = find_table_cache_inner(table_name);
+
+    if (table) {
+
+        switch_shared();
+
+        ListCell *lc = list_nth_cell(table->pager->pages, page_num);
+        void *old_page = lfirst(lc);
+
+        /* Notice: must copy the page, 
+         * because the page will be freed at <remove_table_buffer> */
+        lfirst(lc) = copy_block(page, PAGE_SIZE);
+
+        if (old_page != page)
+            free_block(old_page);
+
+        switch_local();
+
+        return true;
     }
     
     return false;
 }
 
-/* Synchronous page size. */
-bool sync_page_size(char *table_name, uint32_t page_size) {
+/* Synchronous page increase. */
+bool sync_page_increase(char *table_name, void *page) {
 
-    ListCell *lc;
-    foreach (lc, TableCache) {
-        Table *cur_table = lfirst(lc);
-        if (streq(cur_table->meta_table->table_name, table_name)) {
-            cur_table->pager->size = page_size;
-            return true;
-        }
+    Table *table = find_table_cache_inner(table_name);
+
+    if (table) {
+
+        switch_shared();
+
+        Pager *pager = table->pager;
+
+        append_list(pager->pages, copy_block(page, PAGE_SIZE));
+
+        pager->size++;
+
+        Assert(len_list(pager->pages) == pager->size);
+
+        switch_local();
     }
 
     return false;

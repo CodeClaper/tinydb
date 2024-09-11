@@ -92,8 +92,9 @@ static void make_obsolute_node(void *node) {
 static uint32_t next_avaliable_page_num(Pager *pager) {
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
-        if (is_obsolute_node(pager->pages[i])) {
-            set_node_state(pager->pages[i], INUSE_STATE);
+        void *node = lfirst(list_nth_cell(pager->pages, i));
+        if (is_obsolute_node(node)) {
+            set_node_state(node, INUSE_STATE);
             return i;
         }
     }

@@ -246,11 +246,7 @@ Pager *copy_pager(Pager *pager) {
     pager_copy->file_length = pager->file_length;
     pager_copy->file_descriptor = pager->file_descriptor;
     pager_copy->table_file_path = db_strdup(pager->table_file_path);
-
-    int32_t i;
-    for (i = 0; i < pager->size; i++) {
-        pager_copy->pages[i] = copy_block(pager->pages[i], PAGE_SIZE);
-    }
+    pager_copy->pages = list_copy_deep(pager->pages);
 
     return pager_copy;
 }

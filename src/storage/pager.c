@@ -100,13 +100,16 @@ Pager *open_pager(char *table_file_path) {
     pager->table_file_path = db_strdup(table_file_path);
     pager->file_length = file_length;
     pager->size = (file_length / PAGE_SIZE);
+    pager->pages = create_list(NODE_PAGE);
 
     if (file_length % PAGE_SIZE != 0) 
         db_log(PANIC, "Db file is not a whole number pages");
 
-    for (int i = 0; i < MAX_TABLE_PAGE; i++) {
-        pager->pages[i] = NULL;
+    for (int i = 0; i < pager->size; i++) {
+        append_list(pager->pages, NULL);
     }
+
+    Assert(len_list(pager->pages) == pager->size);
 
     return pager;
 }
@@ -120,28 +123,48 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
                page_num, 
                MAX_TABLE_PAGE);
 
-    /* Cache dismiss, allocate memory and load file. */
-    if (pager->pages[page_num] == NULL) {
+    /* Exceeds the pager. */
+    if (page_num >= pager->size) {
+
+        Assert(page_num == pager->size);
 
         void *page = db_malloc(PAGE_SIZE, "pointer");
+
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
         if (read_bytes == -1) 
             db_log(PANIC, "Table file read error: %s", strerror(errno));
 
-        pager->pages[page_num] = page;
+        append_list(pager->pages, page);
 
-        /* synchronous memory page data. */
+        pager->size++;
+
+        Assert(len_list(pager->pages) == pager->size);
+
+        /* Sync Cache.*/
+        sync_page_increase(table_name, page);
+
+        return page;
+    }
+
+    ListCell *lc = list_nth_cell(pager->pages, page_num);
+
+    /* Cache dismiss, allocate memory and load file. */
+    if (is_null(lfirst(lc))) {
+        
+        void *page = db_malloc(PAGE_SIZE, "pointer");
+
+        lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+        ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
+        if (read_bytes == -1) 
+            db_log(PANIC, "Table file read error: %s", strerror(errno));
+
+        lfirst(lc) = page;
+
         sync_page(table_name, page_num, page);
     }
 
-    /* Page extends and synchronous page size. */
-    if (page_num >= pager->size) {
-        pager->size++;
-        sync_page_size(table_name, pager->size);
-    }
-
-    return pager->pages[page_num];
+    return lfirst(lc);
 }
 
 
@@ -149,9 +172,12 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
  * Just make page FLUSH_STATE flag. */
 void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
 
-    Assert(pager->pages[page_num]);
 
-    void *node = pager->pages[page_num];
+    ListCell *lc = list_nth_cell(pager->pages, page_num);
+
+    void *node = lfirst(lc);
+
+    Assert(node);
 
     set_node_state(node, FLUSH_STATE);
 }
@@ -165,7 +191,7 @@ static void flush_table(Table *table) {
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
 
-        void *node = pager->pages[i];
+        void *node = lfirst(list_nth_cell(pager->pages, i));
 
         Assert(node);
 

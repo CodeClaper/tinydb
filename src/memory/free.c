@@ -159,12 +159,10 @@ void free_column_node(ColumnNode *column_node) {
 /* Free Pager. */
 void free_pager(Pager *pager) {
     if (pager) {
-        uint32_t i;
-        for (i = 0; i < pager->size; i++) {
-            /* Page maybe not loaded. */
-            if (pager->pages[i])
-                db_free(pager->pages[i]);
-        }
+        if (pager->table_file_path)
+            db_free(pager->table_file_path);
+
+        free_list_deep(pager->pages);
         db_free(pager);
     }
 }

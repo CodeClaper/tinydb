@@ -270,6 +270,65 @@ void list_delete(List *list, void *item) {
 }
 
 
+void list_replace_at_int(List *list, int n, int item) {
+    ListCell *lc = list_nth_cell(list, n);
+    lfirst_int(lc) = item;
+}
+
+
+/* Replace list at n. */
+void list_replace_at_bool(List *list, int n, bool item) {
+    ListCell *lc = list_nth_cell(list, n);
+    lfirst_bool(lc) = item;
+}
+
+
+/* Replace list at n. */
+void list_replace_at_float(List *list, int n, float item) {
+    ListCell *lc = list_nth_cell(list, n);
+    lfirst_float(lc) = item;
+}
+
+
+/* Replace list at n. */
+void list_replace_at_double(List *list, int n, double item) {
+    ListCell *lc = list_nth_cell(list, n);
+    lfirst_double(lc) = item;
+}
+
+
+/* Replace list at n. */
+void list_replace_at_ptr(List *list, int n, void *item) {
+    ListCell *lc = list_nth_cell(list, n);
+    lfirst(lc) = item;
+}
+
+/* Replace list at n. */
+void list_replace_at(List *list, int n, void *item) {
+
+    Assert(n >= 0 && n < list->size);
+
+    switch (list->type) {
+        case NODE_INT:
+            list_replace_at_int(list, n, *(int *)item);
+            break;
+        case NODE_BOOL:
+            list_replace_at_bool(list, n, *(bool *)item);
+            break;
+        case NODE_FLOAT:
+            list_replace_at_float(list, n, *(float *)item);
+            break;
+        case NODE_DOUBLE:
+            list_replace_at_double(list, n, *(double *)item);
+            break;
+        default:
+            list_replace_at_ptr(list, n, item);
+            break;
+    }
+
+}
+
+
 /* List copy shallow. 
  * Notice: the replica list must be free`d by free_list if necessary.
  * */
@@ -361,6 +420,14 @@ List *list_copy_deep(List *old_list) {
             }
             break;
         }
+        case NODE_PAGE: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                void *replica = copy_block(lfirst(lc), PAGE_SIZE);
+                append_list(new_list, replica);
+            }
+            break;
+        }
         default:
             UNEXPECTED_VALUE("Not support this node to copy.");
     }
@@ -438,6 +505,13 @@ void free_list_deep(List *list) {
                 ListCell *lc;
                 foreach (lc, list) {
                     free_column_node(lfirst(lc));
+                }
+                break;
+            }
+            case NODE_PAGE: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    db_free(lfirst(lc));
                 }
                 break;
             }

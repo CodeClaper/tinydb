@@ -21,5 +21,5 @@ void remove_table_cache(char *table_name);
 bool sync_page(char *table_name, uint32_t page_num, void *page);
 
 
-/* Synchronous page size. */
-bool sync_page_size(char *table_name, uint32_t page_size);
+/* Synchronous page increase. */
+bool sync_page_increase(char *table_name, void *page);

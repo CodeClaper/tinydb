@@ -568,7 +568,7 @@ typedef struct Pager {
     char *table_file_path;
     uint32_t file_length;
     uint32_t size;
-    void *pages[MAX_TABLE_PAGE];
+    List *pages;
 } Pager;
 
 typedef enum DefaultValueType {

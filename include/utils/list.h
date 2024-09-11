@@ -20,6 +20,7 @@ typedef enum NodeTag {
     NODE_ROW,
     NODE_REFER,
     NODE_COLUMN,
+    NODE_PAGE,
     NODE_TABLE,
     NODE_STATEMENT,
     NODE_DB_RESULT,
@@ -174,6 +175,10 @@ void list_delete_double(List *list, double item);
  * Skip if not found in list.
  * */
 void list_delete(List *list, void *item);
+
+
+/* Replace list at n. */
+void list_replace_at(List *list, int n, void *item);
 
 
 /* List copy. */
