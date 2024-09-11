@@ -22,7 +22,7 @@
 static MemType type;
 
 static ShMemFreeEntry *header = NULL;
-static size_t *capcity;
+static size_t *SHSZIE;
 static s_lock *lock;
 
 static void create_free_list();
@@ -62,8 +62,8 @@ static ShMemFreeEntry *new_free_entry(void *ptr, size_t size, bool isFree, ShMem
 /* Create shemem list. */
 static void create_free_list() {
     header = new_free_entry(NULL, 0, false, NULL);
-    capcity = shmem_alloc(sizeof(size_t));
-    *capcity = 0;
+    SHSZIE = shmem_alloc(sizeof(size_t));
+    *SHSZIE = 0;
 }
 
 static void create_spin_lock() {
@@ -128,7 +128,7 @@ static void append_free_list(void *ptr, size_t size, bool isFree) {
 
     tail->next = free_entry;
 
-    (*capcity)++;
+    (*SHSZIE)++;
 
     release_spin_lock(lock);
 }
