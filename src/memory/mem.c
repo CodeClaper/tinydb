@@ -6,6 +6,7 @@
  * Description: The memory manager supports local memory and share memory manager.
 ******************************************************************************/
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -19,23 +20,18 @@
 #include "asserts.h"
 #include "utils.h"
 
-static MemType type;
+static MemType type = MEM_LOCAL;
 
 static ShMemFreeEntry *header = NULL;
-static size_t *SHSZIE;
-static s_lock *lock;
-
-static void create_free_list();
-static void create_spin_lock();
-static void append_free_list(void *ptr, size_t size, bool isFree);
-static bool is_free_entry_addr(void *ptr);
-static ShMemFreeEntry *find_free_entry(void *ptr);
+static void *BASE_LINE;
 
 /* Init mem. */
 void init_mem() {
-    type = MEM_LOCAL;
-    create_free_list();
-    create_spin_lock();
+    ShMemFreeEntry entry = { .size = 0, .num = 0, .isFree = false, .lock = SPIN_UN_LOCKED_STATUS };
+    void *ptr = shmem_alloc(SHM_OFFSET);
+    memcpy(ptr, &entry, SHM_OFFSET);
+    header = ptr;
+    BASE_LINE = header;
 }
 
 /* Swith Shared Memory. */
@@ -48,110 +44,31 @@ inline void switch_local() {
     type = MEM_LOCAL;
 }
 
-/* Generate new ShMemFreeEntry. */
-static ShMemFreeEntry *new_free_entry(void *ptr, size_t size, bool isFree, ShMemFreeEntry *next) {
-    ShMemFreeEntry *entry = shmem_alloc(sizeof(ShMemFreeEntry));
-    entry->ptr = ptr;
-    entry->size = size;
-    entry->isFree = isFree;
-    entry->next = next;
-    return entry;
-}
-
-
-/* Create shemem list. */
-static void create_free_list() {
-    header = new_free_entry(NULL, 0, false, NULL);
-    SHSZIE = shmem_alloc(sizeof(size_t));
-    *SHSZIE = 0;
-}
-
-static void create_spin_lock() {
-    lock = shmem_alloc(sizeof(s_lock));
-    init_spin_lock(lock);
-}
-
-/* Mem if avaliable. */
-static inline bool mem_avaliable() {
-    return !is_null(header);
-}
-
 
 /* Allocate shared memory in FreeList.*/
 static void *dalloc_shared_in_free_list(size_t size) {
 
     void *ptr = NULL;
 
-    acquire_spin_lock(lock);
+    acquire_spin_lock(&header->lock);
     
-    if (mem_avaliable()) {
-        ShMemFreeEntry *entry = header;
-        while ((entry = entry->next)) {
-            if (entry->isFree && entry->size >= size) {
-                ptr = entry->ptr;
-                entry->isFree = false;
-                break;
-            }
+    size_t offset = SHM_OFFSET;
+
+    uint32_t i;
+    for (i = 0; i < header->num; i++) {
+        ShMemFreeEntry *entry = BASE_LINE + offset;
+        if (entry->isFree && entry->size >= size) {
+            ptr = (void *) ((char *) entry + SHM_OFFSET);
+            entry->isFree = false;
+            break;
         }
+
+        offset += (entry->size + SHM_OFFSET);
     }
 
-    release_spin_lock(lock);
+    release_spin_lock(&header->lock);
 
     return ptr;
-}
-
-
-/* Get FreeList tail. */
-static void *get_free_list_tail() {
-    ShMemFreeEntry *entry = header;
-    while (entry->next) {
-        entry = entry->next;
-    }
-    return entry;
-}
-
-/* Append free list. */
-static void append_free_list(void *ptr, size_t size, bool isFree) {
-    Assert(ptr);
-    Assert(!is_free_entry_addr(ptr));
-    
-    Assert(!find_free_entry(ptr));
-
-    if (!mem_avaliable())
-        return;
-
-    acquire_spin_lock(lock);
-
-    ShMemFreeEntry *free_entry = new_free_entry(ptr, size, isFree, NULL);
-
-    ShMemFreeEntry *tail = get_free_list_tail();
-
-    tail->next = free_entry;
-
-    (*SHSZIE)++;
-
-    release_spin_lock(lock);
-}
-
-static bool is_free_entry_addr(void *ptr) {
-    ShMemFreeEntry *entry = header;
-    while ((entry = entry->next)) {
-        if (entry == ptr)
-            return true;
-    }
-    return false;
-}
-
-/* Find ShMemFreeEntry. */
-static ShMemFreeEntry *find_free_entry(void *ptr) {
-
-    ShMemFreeEntry *entry = header;
-    while ((entry = entry->next)) {
-        if (entry->ptr == ptr)
-            return entry;
-    }
-    return NULL;
-
 }
 
 
@@ -185,11 +102,19 @@ static void *dalloc_shared(size_t size) {
 
     size = MAXALIGN(size);
 
-    void *ptr;
-    ptr = dalloc_shared_in_free_list(size);
+    void *ptr = dalloc_shared_in_free_list(size);
+
     if (is_null(ptr)) {
-        ptr = shmem_alloc(size);
-        append_free_list(ptr, size, false);
+
+        void *nptr = shmem_alloc(size + SHM_OFFSET);
+
+        ShMemFreeEntry entry = { .size = size, .isFree = false };
+
+        memcpy(nptr, &entry, SHM_OFFSET);
+
+        ptr = nptr + SHM_OFFSET;
+
+        header->num++;
     }
 
     /* Initialise data. */
@@ -215,7 +140,7 @@ static void dfree_shared(void *ptr) {
     Assert(ptr);
     Assert(shmem_addr_valid(ptr));
 
-    ShMemFreeEntry *free_entry = find_free_entry(ptr);
+    ShMemFreeEntry *free_entry = ptr - SHM_OFFSET;
 
     Assert(free_entry);
     Assert(!free_entry->isFree);
@@ -245,20 +170,24 @@ static void *drealloc_local(void *ptr, size_t size) {
 
 /* Reallocate shared memory. */
 static void *drealloc_shared(void *ptr, size_t size) {
+
     Assert(ptr);
-    ShMemFreeEntry *free_entry = find_free_entry(ptr);
-    Assert(free_entry);
-    size_t bsize = free_entry->size;
+
+    ShMemFreeEntry *entry = ptr - SHM_OFFSET;
+
     void *new_ptr = dalloc_shared(size);
-    memcpy(new_ptr, ptr, size < bsize ? size : bsize);
+
+    memcpy(new_ptr, ptr, min_size(entry->size, size));
+
     try_dfree_shared(ptr);
+
     return new_ptr;
 }
 
 
 /* Strdup in local memory. */
 static char *dstrdup_local(char *str) {
-    if (mem_avaliable()) {
+    if (lomem_available()) {
         char *nstr = dalloc_local(strlen(str) + 1);
         memcpy(nstr, str, strlen(str));
         return nstr;

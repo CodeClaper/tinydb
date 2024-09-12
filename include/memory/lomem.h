@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define INIT_LOMEM_SIZE 1024 * 1024 * 1024 // Local Memory Initial Size.
+#define INIT_LOMEM_SIZE 1024 * 1024 * 8 // Local Memory Initial Size.
 
 typedef struct LoMemHeader {
     size_t total_size;

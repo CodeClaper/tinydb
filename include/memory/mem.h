@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include "spinlock.h"
 
 typedef enum MemType {
     MEM_LOCAL,
@@ -7,11 +8,13 @@ typedef enum MemType {
 } MemType;
 
 typedef struct ShMemFreeEntry {
-    size_t size;
-    bool isFree;
-    void *ptr;
-    struct ShMemFreeEntry *next;
+    size_t  size;
+    bool    isFree;
+    size_t  num;
+    s_lock  lock;
 } ShMemFreeEntry;
+
+#define SHM_OFFSET sizeof(ShMemFreeEntry)
 
 
 typedef struct LoMemEntry {
