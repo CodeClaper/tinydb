@@ -1,13 +1,16 @@
-/*
- * =============================================== Json output Module ===============================================================
- * DBResult is the json format that db finally output, include flows:
- * [success]  Whether execution result is successful or unsuccessful, its value is true or false.
- * [message]  Output message to client.
- * [data]     Query data, only used when select statement.
- * [rows]     The number of rows affected.
- * [duration] The execution time.
- * =============================================================================================================================
- * */
+/**************************************** Json output Module ******************************************
+ * Auth:        JerryZhou
+ * Created:     2023/12/29
+ * Modify:      2024/09/13
+ * Locataion:   src/backend/jsonwriter.c
+ * Description:
+ *  DBResult is the json format that db finally output, include flows:
+ *  [success]  Whether execution result is successful or unsuccessful, its value is true or false.
+ *  [message]  Output message to client.
+ *  [data]     Query data, only used when select statement.
+ *  [rows]     The number of rows affected.
+ *  [duration] The execution time.
+ ****************************************************************************************************/
 
 #include <stdint.h>
 #include <time.h>
@@ -44,6 +47,7 @@ static void json_array_key_value(KeyValue *key_value) {
         switch (key_value->data_type) {
             case T_BOOL: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     bool value = *(bool *)lfirst(lc);
@@ -51,11 +55,13 @@ static void json_array_key_value(KeyValue *key_value) {
                     if (last_cell(array_value->list) != lc)
                         db_send( ",");
                 }
+
                 db_send("]");
                 break;
             }
             case T_INT: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     int32_t value = *(int32_t *)lfirst(lc);
@@ -65,11 +71,13 @@ static void json_array_key_value(KeyValue *key_value) {
                         db_send(",");
                     db_free(strVal);
                 }
+
                 db_send("]");
                 break;
             }
             case T_LONG: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     int64_t value = *(int64_t *)lfirst(lc);
@@ -79,6 +87,7 @@ static void json_array_key_value(KeyValue *key_value) {
                         db_send(",");
                     db_free(strVal);
                 }
+
                 db_send("]");
                 break;
             }
@@ -86,6 +95,7 @@ static void json_array_key_value(KeyValue *key_value) {
             case T_VARCHAR:
             case T_CHAR: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     char *value = (char *)lfirst(lc);
@@ -93,11 +103,13 @@ static void json_array_key_value(KeyValue *key_value) {
                     if (last_cell(array_value->list) != lc)
                         db_send(",");
                 }
+
                 db_send("]");
                 break;
             }
             case T_FLOAT: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     float value = *(float *)lfirst(lc);
@@ -107,11 +119,13 @@ static void json_array_key_value(KeyValue *key_value) {
                          db_send(",");
                     db_free(strVal);
                 }
+
                 db_send("]");
                 break;
             }
             case T_DOUBLE: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     double value = *(double *)lfirst(lc);
@@ -121,11 +135,13 @@ static void json_array_key_value(KeyValue *key_value) {
                         db_send(",");
                     db_free(strVal);
                 }
+
                 db_send("]");
                 break;
             }
             case T_TIMESTAMP: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     time_t value = *(time_t *)lfirst(lc);
@@ -135,11 +151,13 @@ static void json_array_key_value(KeyValue *key_value) {
                         db_send(",");
                     db_free(strVal);
                 }
+
                 db_send("]");
                 break;
             }
             case T_DATE: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     time_t value = *(time_t *)lfirst(lc);
@@ -149,11 +167,13 @@ static void json_array_key_value(KeyValue *key_value) {
                         db_send(",");
                     db_free(strVal);
                 }
+
                 db_send("]");
                 break;
             }
             case T_REFERENCE: {
                 db_send("\"%s\": [", key);
+
                 ListCell *lc;
                 foreach (lc, array_value->list) {
                     Refer *refer = (Refer *)lfirst(lc);
@@ -163,6 +183,7 @@ static void json_array_key_value(KeyValue *key_value) {
                         db_send(",");
                     free_row(subrow);
                 }
+
                 db_send("]");
                 break;
             }
@@ -266,6 +287,7 @@ static void json_row(Row *row) {
         /* Handler duplacate key. */
         handle_dulicate_key(row);
         db_send("{ ");
+
         ListCell *lc;
         foreach (lc, row->data) {
             KeyValue *key_value = lfirst(lc);
@@ -274,6 +296,7 @@ static void json_row(Row *row) {
             if (last_cell(row->data) != lc) 
                 db_send(", ");
         }
+
         db_send(" }");
     }
 }
@@ -282,7 +305,7 @@ static void json_row(Row *row) {
 static void json_select_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\"", 
             result->success ? "true" : "false", 
-            result->success ? result->message : get_log_msg());
+            result->success ? result->message : get_stack_message());
 
     if (result->success) {
         db_send(", \"data\": ");
@@ -306,7 +329,7 @@ static void json_select_result(DBResult *result) {
 static void json_nondata_rows_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"rows\": %d, \"duration\": %lf }", 
             result->success ? "true" : "false", 
-            result->success ? result->message : get_log_msg(), result->rows, 
+            result->success ? result->message : get_stack_message(), result->rows, 
             result->duration);
 }
 
@@ -314,7 +337,7 @@ static void json_nondata_rows_result(DBResult *result) {
 static void json_nondata_result(DBResult *result) {
     db_send("{ \"success\": %s, \"message\": \"%s\", \"duration\": %lf }", 
             result->success ? "true" : "false", 
-            result->success? result->message : get_log_msg(), 
+            result->success? result->message : get_stack_message(), 
             result->duration);
 }
 
@@ -353,17 +376,20 @@ static void json_result_list(DBResult *result) {
     List *list = (List *)result->data;
     db_send("{ \"success\": %s, \"message\": \"%s\"", 
             result->success ? "true" : "false", 
-            result->success ? result->message : get_log_msg());
+            result->success ? result->message : get_stack_message());
+
     if (result->success) {
         db_send(", \"data\": ");
         json_list(list);
     }
+
     db_send(", \"duration\": %lf }", result->duration);
 }
 
 /* Handle duplicate Key. */
 static void handle_dulicate_key(Row *row) {
     uint32_t times = 0;
+
     ListCell *lc1, *lc2;
     foreach (lc1, row->data) {
         KeyValue *first = lfirst(lc1);
@@ -377,6 +403,7 @@ static void handle_dulicate_key(Row *row) {
             }
         } 
     }
+
 }
 
 /* Json DBResult. */

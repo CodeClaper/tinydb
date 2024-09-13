@@ -25,11 +25,17 @@ static char* LOG_LEVEL_NAME_LIST[] = { "TRACE", "DEBUG", "INFO", "SUCCS", "WARN"
 
 static char CurrentMessage[BUFF_SIZE] = {};
 
-/* Store log message. */
-static void store_log_msg(char *msg) {
+/* Save message to stack. */
+static void save_stack_message(char *msg) {
     Assert(strlen(msg) < BUFF_SIZE);
     bzero(CurrentMessage, BUFF_SIZE);
     memcpy(CurrentMessage, msg, strlen(msg));
+}
+
+
+/* Get stack message. */
+char *get_stack_message() {
+    return CurrentMessage;
 }
 
 
@@ -86,33 +92,39 @@ void db_log(LogLevel lev, char *format, ...) {
     switch(lev) {
         case SUCCESS:
         case WARN:
-            store_log_msg(message);
+            save_stack_message(message);
             break;
-        case ERROR:
-            store_log_msg(message);
+        case ERROR: {
+
+            /* Save message to stack. */
+            save_stack_message(message);
+
             /* Auto rollback*/
             if (conf->auto_rollback) {
                 TransEntry *transaction = find_transaction();
                 if (transaction && !transaction->auto_commit)
                     execute_roll_back();
             }
+
             /* Stop the process, goto stmt. */
             longjmp(errEnv, 1);
             break;
-        case SYS_ERROR:
-            store_log_msg(message);
+        }
+        case SYS_ERROR: {
+
+            /* Save message to stack. */
+            save_stack_message(message);
+
             /* Stop the process, goto stmt. */
             longjmp(errEnv, 1);
             break;
+        }
         case FATAL:
-        case PANIC:
-            exit(1);
+        case PANIC: {
+            exit(EXIT_FAILURE);
+        }
         default:
             break;
     }
 }
 
-/* Get log message. */
-char *get_log_msg() {
-    return CurrentMessage;
-}

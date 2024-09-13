@@ -1,11 +1,12 @@
-/*
- *================================== Insert Statement Module ===================================
- * Insert Statement executor.
- * support:
- * (1) plain insert values statment, support for all column or special part column.
- * (2) insert with subselect statment.
- *==============================================================================================
- * */
+/********************************* Insert Statement Module ************************************
+ * Auth:        JerryZhou
+ * Created:     2023/08/22
+ * Modify:      2024/09/13
+ * Locataion:   src/backend/insert.c
+ * Description:
+ *  (1) plain insert values statment, support for all column or special part column.
+ *  (2) insert with subselect statment.
+ *********************************************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
