@@ -108,6 +108,7 @@ m4/lt~obsolete.m4
 # can automatically generate from config.status script
 # (which is called by configure script))
 
+src/cli/__pycache__
 test/pytest/support/__pycache__
 test/pytest/unit/__pycache__
 test/pytest/bigData/__pycache__
