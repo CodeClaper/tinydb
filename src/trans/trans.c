@@ -233,9 +233,6 @@ void commit_transaction() {
     if (is_null(entry) || entry->auto_commit)
         db_log(ERROR, "Not in any transaction, please begin a transaction");
 
-    /* Clear table buffer. */
-    clear_table_buffer();
-
     /* Commit Xlog. */
     commit_xlog();
 
@@ -254,8 +251,6 @@ void auto_commit_transaction() {
 
     /* Only deal with auto-commit transaction. */
     if (entry && entry->auto_commit) {
-
-        clear_table_buffer();
 
         int64_t xid = entry->xid; 
         /* Destroy transaction. */

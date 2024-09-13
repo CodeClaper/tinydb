@@ -3,6 +3,12 @@
 /* Initialise transaction. */
 void init_trans();
 
+/* Check if row is visible for current transaction. */
+bool row_is_visible(Row *row);
+
+/* Check if a row has been deleted. */
+bool row_is_deleted(Row *row);
+
 /* Any running transaction. */
 bool any_transaction_running();
 
@@ -25,11 +31,9 @@ void auto_commit_transaction();
 /* Rollback transaction. */
 void rollback_transaction();
 
-/* Check if row is visible for current transaction. */
-bool row_is_visible(Row *row);
+/* Auto transaction rollback. */
+void auto_rollback_transaction();
 
-/* Check if a row has been deleted. */
-bool row_is_deleted(Row *row);
 
 /* Update transaction state. */
 void update_transaction_state(Row *row, TransOpType trans_op_type);
