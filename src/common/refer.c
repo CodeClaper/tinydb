@@ -145,9 +145,12 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 
 /* Define Cursor. */
 Cursor *define_cursor(Table *table, void *key) {
-    assert_not_null(key, "Input key can`t be NULL");
+    /* Key can`t be NULL. */
+    Assert(key);
+
     void *root_node = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
     NodeType node_type = get_node_type(root_node);
+
     switch(node_type) {
         case LEAF_NODE:
             return define_cursor_leaf_node(table, root_node, table->root_page_num, key);

@@ -243,7 +243,7 @@ static Row *generate_insert_row(InsertNode *insert_node) {
 }
 
 /* Convert to insert row. */
-static Row *convert_insert_row(Row *row, Table *table) {
+static Row *convert2_insert_row(Row *row, Table *table) {
 
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
 
@@ -262,7 +262,7 @@ static Row *convert_insert_row(Row *row, Table *table) {
             insert_row->key = copy_value(key_value->value, primary_meta_column->column_type);
     }
 
-    supple_reserved_column(row);
+    supple_reserved_column(insert_row);
 
     return insert_row;
 }
@@ -358,7 +358,7 @@ static List *insert_for_query_spec(InsertNode *insert_node) {
         /* Insert into rows. */
         ListCell *lc;
         foreach (lc, select_result->rows) {
-            Row *insert_row = convert_insert_row(lfirst(lc), table);
+            Row *insert_row = convert2_insert_row(lfirst(lc), table);
             Refer *refer = insert_one_row(table, insert_row);
             append_list(list, refer);
             free_row(insert_row);
