@@ -433,3 +433,10 @@ void json_list(List *list) {
     }
 }
 
+/* Banner. */
+void banner() {
+    DBResult result;
+    result.success = true;
+    result.message = "Welcome to tinydb.";
+    json_db_result(&result);
+}
