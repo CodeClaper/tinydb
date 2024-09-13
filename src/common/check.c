@@ -957,8 +957,8 @@ static bool check_table_element_commalist(List *base_table_element_commalist) {
     return true;
 }
 
-/* Check InsertNode for VALUES. */
-static bool check_insert_node_for_values(InsertNode *insert_node, List *value_list) {
+/* Check InsertNode for value items. */
+static bool check_insert_node_for_value_items(InsertNode *insert_node, List *value_item_list) {
 
     /* Check table exist.*/
     Table *table = open_table(insert_node->table_name);
@@ -971,17 +971,17 @@ static bool check_insert_node_for_values(InsertNode *insert_node, List *value_li
     if (insert_node->all_column) {
         
         /* Check column number equals the insert values number. */
-        if (meta_table->column_size != len_list(value_list)) {
+        if (meta_table->column_size != len_list(value_item_list)) {
             db_log(ERROR, "Column count doesn`t match value count: %d != %d.", 
                    meta_table->column_size, 
-                   len_list(value_list));
+                   len_list(value_item_list));
             return false;
         }
 
         uint32_t i;
         for (i = 0; i < meta_table->column_size; i++) {
             MetaColumn *meta_column = meta_table->meta_column[i];
-            ValueItemNode *value_item_node = lfirst(list_nth_cell(value_list, i));
+            ValueItemNode *value_item_node = lfirst(list_nth_cell(value_item_list, i));
             if (!check_value_item_node(meta_table, meta_column->column_name, value_item_node))
                 return false;
         }
@@ -989,13 +989,13 @@ static bool check_insert_node_for_values(InsertNode *insert_node, List *value_li
     } else {
 
         /* Check column number equals the insert values number. */
-        if (len_list(insert_node->column_list) != len_list(value_list)) {
+        if (len_list(insert_node->column_list) != len_list(value_item_list)) {
             db_log(ERROR, "Column count doesn`t match value count.");
             return false;
         }
 
         ListCell *lc1, *lc2;
-        forboth (lc1, insert_node->column_list, lc2, value_list) {
+        forboth (lc1, insert_node->column_list, lc2, value_item_list) {
             ColumnNode *column_node = lfirst(lc1);
             ValueItemNode *value_item_node = lfirst(lc2);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column_node->column_name);
@@ -1011,6 +1011,20 @@ static bool check_insert_node_for_values(InsertNode *insert_node, List *value_li
 
     return true;
 }
+
+/* Check InsertNode for VALUES. */
+static bool check_insert_node_for_values(InsertNode *insert_node, List *value_list) {
+
+    ListCell *lc;
+    foreach (lc, value_list) {
+        List *value_item_list = lfirst(lc);
+        if (!check_insert_node_for_value_items(insert_node, value_item_list))
+            return false;
+    }
+
+    return true;
+}
+
 
 /* Check InsertNode for QUERY_SPEC. */
 static bool check_insert_node_for_query_spec(InsertNode *insert_node, QuerySpecNode *query_spec) {

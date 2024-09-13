@@ -144,6 +144,7 @@ int yylex();
 %type <calculate_node> calculate
 %type <table_ref_node> table_ref
 %type <list> table_ref_commalist
+%type <list> opt_values
 %type <query_spec_node> query_spec
 %type <values_or_query_spec_node> values_or_query_spec
 %type <from_clause_node> from_clause
@@ -553,11 +554,11 @@ where_clause:
         }
     ;
 values_or_query_spec:
-    VALUES '(' value_items')'
+    VALUES opt_values
         {
             ValuesOrQuerySpecNode *values_or_query_spec = instance(ValuesOrQuerySpecNode);
             values_or_query_spec->type = VQ_VALUES;
-            values_or_query_spec->values = $3;
+            values_or_query_spec->values = $2;
             $$ = values_or_query_spec;
         }
     | query_spec 
@@ -566,6 +567,18 @@ values_or_query_spec:
             values_or_query_spec->type = VQ_QUERY_SPEC;
             values_or_query_spec->query_spec = $1;
             $$ = values_or_query_spec;
+        }
+    ;
+opt_values:
+    '(' value_items ')'
+        {
+            $$ = create_list(NODE_LIST);
+            append_list($$, $2);
+        } 
+    | opt_values ',' '(' value_items ')'
+        {
+            $$ = $1;
+            append_list($$, $4);
         }
     ;
 query_spec:

@@ -396,6 +396,14 @@ List *list_copy_deep(List *old_list) {
             }
             break;
         }
+        case NODE_LIST: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                List *replica = list_copy_deep(lfirst(lc));
+                append_list(new_list, replica);
+            }
+            break;
+        }
         case NODE_SCALAR_EXP: {
             ListCell *lc;
             foreach (lc, old_list) {

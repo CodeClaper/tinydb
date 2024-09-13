@@ -5,8 +5,10 @@
 #ifdef DEBUG
 #include "assert.h"
 #define Assert(condition) assert(condition)
+#define AssertFalse(condition) assert(!condition)
 #else
 #define Assert(condition) ((void)true)
+#define AssertFalse(condition) ((void)true)
 #endif
 
 #define UNEXPECTED_VALUE(EXPR) do {                    \

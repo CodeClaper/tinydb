@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 #include "list.h"
 
 #ifndef DATA_H
@@ -286,6 +287,7 @@ typedef struct {
     ColumnNode *column;
 } PrimaryKeyNode;
 
+
 /* ValuesOrQuerySpecType */
 typedef enum ValuesOrQuerySpecType {
     VQ_VALUES,
@@ -294,9 +296,9 @@ typedef enum ValuesOrQuerySpecType {
 
 /* ValuesOrQuerySpecNode. */
 typedef struct {
-    ValuesOrQuerySpecType type;
-    List *values;
-    struct QuerySpecNode *query_spec;
+    ValuesOrQuerySpecType type;         /* Type*/
+    List *values;                       /* List of Value List. */
+    struct QuerySpecNode *query_spec;   /* QuerySpecNode. */
 } ValuesOrQuerySpecNode;
 
 /* ReferFetchType */

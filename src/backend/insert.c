@@ -41,11 +41,13 @@
 #include "type.h"
 
 /* Get value in insert node to assign column at index. */
-static void *get_insert_value(List *value_list, uint32_t index, MetaColumn *meta_column) {
-    Assert(index < len_list(value_list));
+static void *get_insert_value(List *value_item_list, uint32_t index, MetaColumn *meta_column) {
+    
+    /* Not out of boundary. */
+    Assert(index < len_list(value_item_list));
 
     /* Get value item node at index. */
-    ValueItemNode* value_item_node = lfirst(list_nth_cell(value_list, index));
+    ValueItemNode* value_item_node = lfirst(list_nth_cell(value_item_list, index));
 
     return assign_value_from_value_item_node(value_item_node, meta_column);
 }
@@ -54,7 +56,8 @@ static void *get_insert_value(List *value_list, uint32_t index, MetaColumn *meta
 static ValuesOrQuerySpecNode *fake_values_or_query_spec_node(List *value_list) {
     ValuesOrQuerySpecNode *values_or_query_spec = instance(ValuesOrQuerySpecNode);
     values_or_query_spec->type = VQ_VALUES;
-    values_or_query_spec->values = list_copy_deep(value_list);
+    values_or_query_spec->values = create_list(NODE_LIST);
+    append_list(values_or_query_spec->values, list_copy_deep(value_list));
     return values_or_query_spec;
 }
 
@@ -127,19 +130,14 @@ static void supple_reserved_column(Row *row) {
         row->key = copy_value(sys_id_col->value, T_LONG);
 }
 
-/* Generate insert row for all columns. */
-static Row *generate_insert_row_for_all(InsertNode *insert_node) {
 
-    List *value_list = insert_node->values_or_query_spec->values;
+/* Generate insert row for all columns. 
+ * Return Row.
+ * */
+static Row *generate_insert_row_for_all2(MetaTable *meta_table, List *value_item_list) {
 
-    /* Table and MetaTable. */
-    Table *table = open_table(insert_node->table_name);
-    if (table == NULL) {
-        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
-        return NULL;
-    }
-
-    MetaTable *meta_table = table->meta_table;
+    /* Check NodeType. */
+    Assert(value_item_list->type == NODE_VALUE_ITEM);
 
     /* Instance row. */
     Row *row = instance(Row);
@@ -159,7 +157,7 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
             continue;
 
         KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name),
-                                            get_insert_value(value_list, i, meta_column),
+                                            get_insert_value(value_item_list, i, meta_column),
                                             meta_column->column_type);
         /* Check if primary key column. */
         if (meta_column->is_primary) 
@@ -173,12 +171,12 @@ static Row *generate_insert_row_for_all(InsertNode *insert_node) {
     return row;
 }
 
-/* Generate insert row for part columns.*/
-static Row *generate_insert_row_for_part(InsertNode *insert_node) {
+/* Generate insert row for all columns. 
+ * Return list of Row.
+ * */
+static List *generate_insert_row_for_all(InsertNode *insert_node) {
 
-    List *column_list = insert_node->column_list;
     List *value_list = insert_node->values_or_query_spec->values;
-
 
     /* Table and MetaTable. */
     Table *table = open_table(insert_node->table_name);
@@ -188,7 +186,25 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
     }
 
     MetaTable *meta_table = table->meta_table;
+
+    List *row_list = create_list(NODE_ROW);
+
+    ListCell *lc;
+    foreach (lc, value_list) {
+        List *value_item_list = lfirst(lc);
+        Row *row = generate_insert_row_for_all2(meta_table, value_item_list);
+        append_list(row_list, row);
+    }
     
+    return row_list;
+}
+
+
+/* Generate insert row for part columns.
+ * Return Row.
+ * */
+static Row *generate_insert_row_for_part2(MetaTable *meta_table, List *column_list, List *value_item_list) {
+
     /* Instance row. */
     Row *row = instance(Row);
 
@@ -211,7 +227,7 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
                    meta_table->table_name);
 
         KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name), 
-                                            get_insert_value(value_list, i, meta_column), 
+                                            get_insert_value(value_item_list, i, meta_column), 
                                             meta_column->column_type);
 
         /* Value of KeyValue may be null when it is Refer. */
@@ -231,8 +247,40 @@ static Row *generate_insert_row_for_part(InsertNode *insert_node) {
     return row;
 }
 
-/* Generate insert row. */
-static Row *generate_insert_row(InsertNode *insert_node) {
+/* Generate insert row for part columns.
+ * Return list of Row.
+ * */
+static List *generate_insert_row_for_part(InsertNode *insert_node) {
+
+    List *column_list = insert_node->column_list;
+    List *value_list = insert_node->values_or_query_spec->values;
+
+
+    /* Table and MetaTable. */
+    Table *table = open_table(insert_node->table_name);
+    if (table == NULL) {
+        db_log(ERROR, "Try to open table '%s' fail.", insert_node->table_name);
+        return NULL;
+    }
+
+    MetaTable *meta_table = table->meta_table;
+
+    List *row_list = create_list(NODE_ROW);
+
+    ListCell *lc;
+    foreach (lc, value_list) {
+        List *value_item_list = lfirst(lc);
+        Row *row = generate_insert_row_for_part2(meta_table, column_list, value_item_list);
+        append_list(row_list, row);
+    }
+
+    return row_list;
+}
+
+/* Generate insert row. 
+ * Return list of Row.
+ * */
+static List *generate_insert_row(InsertNode *insert_node) {
 
     /* Check only for VQ_VALUES. */
     Assert(insert_node->values_or_query_spec->type == VQ_VALUES);
@@ -305,28 +353,35 @@ static Refer *insert_one_row(Table *table, Row *row) {
     return refer;    
 }
 
-/* Insert for values case. */
-Refer *insert_for_values(InsertNode *insert_node) {
-    /* Check if table exists. */
+/* Insert for values case. 
+ * Return list of Refer.
+ * */
+List *insert_for_values(InsertNode *insert_node) {
+
     Table *table = open_table(insert_node->table_name);
-    if (!table) {
-        db_log(ERROR, "Try to open table '%s' fail.", 
-               insert_node->table_name);
-        return NULL;
-    }
+
+    /* Check if table exists. */
+    Assert(table);
     
     /* Generate insert row. */
-    Row *row = generate_insert_row(insert_node);
+    List *list_row = generate_insert_row(insert_node);
 
-    /* Make sure, not null. */
-    Assert(row);
+    /* Make sure, not empty. */
+    AssertFalse(list_empty(list_row));
+
+    List *refer_list = create_list(NODE_REFER);
 
     /* Insert to page. */
-    Refer *refer = insert_one_row(table, row);
+    ListCell *lc;
+    foreach (lc, list_row) {
+        Row *row = lfirst(lc);
+        Refer *refer = insert_one_row(table, row);
+        append_list(refer_list, refer);
+    }
 
-    free_row(row);
+    free_list_deep(list_row);
 
-    return refer;
+    return refer_list;
 }
 
 /* Insert for query spec case. */
@@ -393,10 +448,8 @@ List *exec_insert_statement(InsertNode *insert_node) {
 
     switch (values_or_query_spec->type) {
         case VQ_VALUES: {
-            Refer *refer = insert_for_values(insert_node);
-            return refer 
-                ? combine_single_refer_list(refer)
-                : NULL;
+            /* Insert with values. */
+            return insert_for_values(insert_node);
         }
         case VQ_QUERY_SPEC: {
             /* For query spec, there is no refer. 
