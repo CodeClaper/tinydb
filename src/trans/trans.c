@@ -287,14 +287,11 @@ void rollback_transaction() {
 void auto_rollback_transaction() {
     if (conf->auto_rollback) {
         TransEntry *entry = find_transaction();
-
         Assert(entry);
-        Assert(!entry->auto_commit);
 
         execute_roll_back();
-        commit_transaction();
 
-        db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
+        db_log(INFO, "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
                entry->xid);
     }
     

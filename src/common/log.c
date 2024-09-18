@@ -100,11 +100,7 @@ void db_log(LogLevel lev, char *format, ...) {
             save_stack_message(message);
 
             /* Auto rollback*/
-            if (conf->auto_rollback) {
-                TransEntry *transaction = find_transaction();
-                if (transaction)
-                    execute_roll_back();
-            }
+            auto_rollback_transaction();
 
             /* Stop the process, goto stmt. */
             longjmp(errEnv, 1);
