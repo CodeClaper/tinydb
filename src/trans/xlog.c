@@ -89,9 +89,7 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
 
     TransEntry *trans = find_transaction();
 
-    /* Not handle auto-commit transaction. */
-    if (trans->auto_commit)
-        return;
+    Assert(trans);
 
     pthread_mutex_lock(&mutex);
 

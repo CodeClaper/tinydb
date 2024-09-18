@@ -122,7 +122,7 @@ void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
 
 
 /* Flush Table. */
-static void flush_table(Table *table) {
+static void flush_disk(Table *table) {
 
     Pager *pager = table->pager;
 
@@ -163,7 +163,7 @@ void flush(char *table_name) {
     Table *table = open_table(table_name);
     
     /* Flush self table. */
-    flush_table(table);
+    flush_disk(table);
     
     /* Flush refer tables. */
     uint32_t j;
