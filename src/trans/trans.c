@@ -285,9 +285,13 @@ void rollback_transaction() {
 
 /* Auto transaction rollback. */
 void auto_rollback_transaction() {
+
     if (conf->auto_rollback) {
+        
+        /* Return if not exists transaction. */
         TransEntry *entry = find_transaction();
-        Assert(entry);
+        if (is_null(entry))
+            return;
 
         execute_roll_back();
 
