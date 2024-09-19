@@ -1098,7 +1098,7 @@ static void *gen_new_default_value_at_append_column(void *default_value, MetaTab
     uint32_t offset = calc_offset_new_column(meta_table, pos);
 
     /* Move after offset memory. */
-    memcpy(default_value + offset + new_meta_column->column_length,
+    memmove(default_value + offset + new_meta_column->column_length,
            default_value + offset,
            value_len - offset);
 
@@ -1285,6 +1285,8 @@ static void split_root_internal_node_append_column(uint32_t page_num, Table *tab
 
 /* Append root leaf node new column. */
 static void append_root_leaf_node_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos) {
+
+    /* Get leaf node. */
     void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
 
     /* Just for check. */
@@ -1302,8 +1304,7 @@ static void append_root_leaf_node_column(uint32_t page_num, Table *table, MetaCo
      * When we appending new column, we need to adjust the Page cell from bottom to top.
      * Otherwise, the front cell will override the back cell.
      * So we first add default or NULL value in reserved order, then append new meta column info.
-     * *******************************************************************************************
-     * */
+     * ******************************************************************************************* */
 
     /* Move leaf node body. */
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node, value_len);
@@ -1366,8 +1367,7 @@ static void append_normal_leaf_node_column(uint32_t page_num, Table *table, Meta
      * When we appending new column, we need to adjust the Page cell from bottom to top.
      * Otherwise, the front cell will override the back cell.
      * So we first add default or NULL value in reserved order, then append new meta column info.
-     * *******************************************************************************************
-     * */
+     * ********************************************************************************************/
 
     /* Move leaf node body. */
     uint32_t cell_num = get_leaf_node_cell_num(leaf_node, value_len);
@@ -1394,7 +1394,7 @@ static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn 
 
     void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
 
-    /* Just for check. */
+    /* Make sure. */
     Assert(get_node_type(leaf_node) == LEAF_NODE);
 
     uint32_t value_len = calc_table_row_length(table);
@@ -1411,7 +1411,7 @@ static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn 
 /* Append new column for root internal node. */
 static void append_root_internal_node_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos) {
     void *root_node = get_page(table->meta_table->table_name, table->pager, page_num);
-    /* Just for check. */
+    /* Make sure. */
     Assert(is_root_node(root_node));
 
     uint32_t key_len = calc_primary_key_length(table);
@@ -1503,7 +1503,7 @@ static void append_internal_node_column(uint32_t page_num, Table *table, MetaCol
 
 /* Append new column. 
  * This function supports page-level alter-table-add-column routine.
- * And it will do two things:
+ * And it will do the following:
  * (1) Add new meta column info to the root node.
  * (2) Add default value or NULL value (if missing default value) to the whole cells.
  * */
@@ -1516,6 +1516,157 @@ void append_new_column(uint32_t page_num, Table *table, MetaColumn *new_column, 
             break;
         case INTERNAL_NODE:
             append_internal_node_column(page_num, table, new_column, pos);
+            break;
+        case UNKNOWN_NODE:
+            UNEXPECTED_VALUE(node_type);
+            break;
+    }
+}
+
+/* Genrate new default value at drop colum*/
+static void *gen_new_default_value_after_drop_column(void *default_value, MetaTable *meta_table, MetaColumn *meta_column, int pos) {
+    
+    Assert(pos > -1);
+
+    uint32_t value_len = calc_table_row_length2(meta_table);
+
+    /* Get new column offset. */
+    uint32_t offset = calc_offset_new_column(meta_table, pos);
+
+    /* Move after offset memory. */
+    memmove(default_value + offset, 
+            default_value + offset + meta_column->column_length, 
+            value_len - offset - meta_column->column_length);
+    
+    /* Set 0 for tail of value. */
+    memset(default_value + value_len - meta_column->column_length, 0, meta_column->column_length);
+
+    return default_value;
+}
+
+
+/* Generate new cell after droping column. */
+static void *gen_new_cell_after_drop_column(void *old_cell, MetaTable *meta_table, MetaColumn *meta_column, int pos) {
+
+    Assert(pos > -1);
+
+    uint32_t value_len = calc_table_row_length2(meta_table);
+    uint32_t key_len = calc_primary_key_length2(meta_table);
+    uint32_t cell_len = key_len + value_len;
+    
+    /* Get new column offset. */
+    uint32_t offset = calc_offset_new_column(meta_table, pos);
+    Assert(cell_len > offset);
+    
+    /* Move after offset memory. */
+    memcpy(old_cell + offset, 
+           old_cell + offset + meta_column->column_length, 
+           cell_len - offset - meta_column->column_length);
+
+    return old_cell;
+
+}
+
+
+/* Get new cell pointer After droping column. */
+static void *cell_pointer_after_drop_column(void *leaf_node, MetaColumn *old_column, int index, uint32_t key_len, uint32_t value_len) {
+    /* Row value lenght after substract the old column. */
+    value_len -= old_column->column_length;
+    uint32_t row_len = key_len + value_len;
+    /* Column size increases one. */
+    uint32_t column_size = get_column_size(leaf_node) - 1;
+    if (is_root_node(leaf_node))
+        return (leaf_node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + row_len * index); 
+    else
+        return (leaf_node + LEAF_NODE_CELL_OFFSET + row_len * index);
+
+}
+
+/* Drop column for root leaf node.  */
+static void drop_root_leaf_node_column(uint32_t page_num, Table *table, int pos) {
+
+    /* Get root node. */
+    void *root_node = get_page(table->meta_table->table_name, table->pager, page_num);
+
+    Assert(get_node_type(root_node) == LEAF_NODE);
+    Assert(is_root_node(root_node));
+
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
+    uint32_t cell_len = key_len + value_len;
+    
+    MetaTable *meta_table = table->meta_table;
+
+    MetaColumn *meta_column = meta_table->meta_column[pos];
+
+    /* Move meta column info. */
+    uint32_t column_size = get_column_size(root_node);
+    for (int i = pos; i < column_size; i++) {
+        if (i < column_size - 1)
+            mempcpy(get_meta_column_pointer(root_node, i),
+                    get_meta_column_pointer(root_node, i + 1),
+                    ROOT_NODE_META_COLUMN_SIZE);
+        else
+            memset(get_meta_column_pointer(root_node, i), 0, ROOT_NODE_META_COLUMN_SIZE);
+    }
+
+    /* Move default value. */
+    void *default_value = get_default_value_cell(root_node);
+    memmove(default_value - ROOT_NODE_META_COLUMN_SIZE, 
+            gen_new_default_value_after_drop_column(default_value, meta_table, meta_column, pos), 
+            value_len - meta_column->column_length);
+
+    /* Move leaf node header. */
+    memmove(get_leaf_node_header_pointer(root_node, value_len) - ROOT_NODE_META_COLUMN_SIZE - meta_column->column_length, 
+           get_leaf_node_header_pointer(root_node, value_len), 
+           CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE);
+
+    /* Move leaf node body cells. */ 
+    uint32_t cell_num = get_leaf_node_cell_num(root_node, value_len);
+    for (int i = 0; i < cell_num; i++) {
+        void *old_cell = get_leaf_node_cell(root_node, key_len, value_len, i);
+        void *new_cell = gen_new_cell_after_drop_column(old_cell, meta_table, meta_column, pos);
+        memmove(cell_pointer_after_drop_column(root_node, meta_column, i, key_len, value_len), 
+               new_cell,
+               cell_len - meta_column->column_length);
+    }
+    
+    /* Decrease column size. */
+    set_column_size(root_node, column_size - 1);
+
+    /* flush page. */
+    flush_page(table->meta_table->table_name, table->pager, page_num);
+}
+
+
+/* Drop column for leaf node. */
+static void drop_leaf_node_column(uint32_t page_num, Table *table, int pos) {
+    
+    /* Get leaf node. */
+    void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
+
+    if (is_root_node(leaf_node)) 
+        drop_root_leaf_node_column(page_num, table, pos);
+    else {
+
+    }
+}
+
+/* Drop column for internal node. */
+static void drop_internal_node_column(uint32_t page_num, Table *table, int pos) {
+
+}
+
+/* Drop the column. */
+void drop_column(uint32_t page_num, Table *table, int pos) {
+    void *node = get_page(table->meta_table->table_name, table->pager, page_num);
+    NodeType node_type = get_node_type(node);
+    switch (node_type) {
+        case LEAF_NODE:
+            drop_leaf_node_column(page_num, table, pos);
+            break;
+        case INTERNAL_NODE:
+            drop_internal_node_column(page_num, table, pos);
             break;
         case UNKNOWN_NODE:
             UNEXPECTED_VALUE(node_type);

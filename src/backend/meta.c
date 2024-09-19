@@ -405,8 +405,8 @@ uint32_t calc_primary_key_length2(MetaTable *meta_table) {
     return -1;
 }
 
-/* Get index column meta info */
-MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index, uint32_t offset) {
+/* Get column meta info by index. */
+static MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index, uint32_t offset) {
     void *destination = get_meta_column_pointer(root_node, index);
     MetaColumn *meta_column = deserialize_meta_column(destination);
     if (meta_column->default_value_type == DEFAULT_VALUE) {
@@ -417,14 +417,29 @@ MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index, uint32_t o
 }
 
 /* Get meta column info by column name. */
-MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name) {
+MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *column_name) {
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
       MetaColumn *meta_column = meta_table->meta_column[i];
-      if (streq(meta_column->column_name, name))
+      if (streq(meta_column->column_name, column_name))
         return meta_column;
     }
     return NULL;
+}
+
+
+/* Get meta columnn postion by column name.
+ * Return -1 if missing. 
+ * */
+int get_meta_column_pos_by_name(MetaTable *meta_table, char *column_name) {
+    uint32_t i;
+    for (i = 0; i < meta_table->column_size; i++) {
+      MetaColumn *meta_column = meta_table->meta_column[i];
+      if (streq(meta_column->column_name, column_name))
+        return i;
+    }
+
+    return -1;
 }
 
 /* Get meta column of primary key. */

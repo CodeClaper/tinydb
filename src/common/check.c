@@ -1069,6 +1069,7 @@ static bool check_values_or_query_spec(InsertNode *insert_node, ValuesOrQuerySpe
 
 }
 
+/* Get column name for AddColumnDef. */
 static inline char *get_column_name_from_add_column_def(AddColumnDef *add_column) {
     return add_column->column_def->column->column;
 }
@@ -1097,12 +1098,38 @@ static bool check_alter_table_add_column_action(char *table_name, AddColumnDef *
     return true;    
 }
 
+/* Check for dorp-column action. */
+static bool check_alter_table_drop_column(char *table_name, DropColumnDef *drop_column_def) {
+    
+    Table *table = open_table(table_name);
+    MetaTable *meta_table = table->meta_table;
+
+    MetaColumn *meta_column = get_meta_column_by_name(meta_table, drop_column_def->column_name);
+
+    /* Check drop column if exists. */
+    if (is_null(meta_column)) {
+        db_log(ERROR, "Table '%s' not exists column '%s'.", 
+               table_name, 
+               drop_column_def->column_name);
+        return false;
+    }
+
+    if (meta_column->is_primary) {
+        db_log(ERROR, "Column '%s' is priamry-key, not allowed to droped.", 
+               drop_column_def->column_name);
+        return false;
+    }
+
+    return true;
+}
+
 /* Check alter table action. */
 static bool check_alter_table_action(char *table_name, AlterTableAction *action) {
     switch (action->type) {
         case ALTER_TO_ADD_COLUMN:
             return check_alter_table_add_column_action(table_name, action->action.add_column);
         case ALTER_TO_DROP_COLUMN:
+            return check_alter_table_drop_column(table_name, action->action.drop_column);
         case ALTER_TO_CHANGE_COLUMN:
             db_log(ERROR, "Not supprot yet");
             return false;

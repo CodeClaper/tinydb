@@ -33,6 +33,10 @@ bool create_table(MetaTable *meta_table);
 bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPositionDef *pos);
 
 
+/* Drop table`s meta_column. */
+bool drop_meta_column(char *tbale_name, char *column_name);
+
+
 /*Delete an existed table. */
 bool drop_table(char *table_name);
 

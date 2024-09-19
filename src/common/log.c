@@ -91,9 +91,10 @@ void db_log(LogLevel lev, char *format, ...) {
      * */
     switch(lev) {
         case SUCCESS:
-        case WARN:
+        case WARN: {
             save_stack_message(message);
             break;
+        }
         case ERROR: {
 
             /* Save message to stack. */
@@ -117,6 +118,10 @@ void db_log(LogLevel lev, char *format, ...) {
         }
         case FATAL:
         case PANIC: {
+
+            /* Save message to stack. */
+            save_stack_message("System inner error.");
+
             exit(EXIT_FAILURE);
         }
         default:

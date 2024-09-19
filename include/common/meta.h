@@ -52,6 +52,12 @@ MetaTable *gen_meta_table(Table *table, char *table_name);
 MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name);
 
 
+/* Get meta columnn postion by column name.
+ * Return -1 if missing. 
+ * */
+int get_meta_column_pos_by_name(MetaTable *meta_table, char *column_name);
+
+
 /* Get all meta column info by column name including system reserved column. */
 MetaColumn *get_all_meta_column_by_name(MetaTable *meta_table, char *name);
 

@@ -45,13 +45,13 @@ static void release_table(char *table_name) {
 /* Add new Column. */
 static void add_new_column(AddColumnDef *add_column_def, char *table_name, DBResult *result) {
 
-    /* Capture table exclusively. */
-    try_capture_table(table_name);
-
     MetaColumn *new_meta_column = combine_user_meta_column(add_column_def->column_def, table_name);        
 
     if (new_meta_column->is_primary)
         db_log(ERROR, "Not support add primary-key column through alter table.");
+
+    /* Capture table exclusively. */
+    try_capture_table(table_name);
 
     if (add_new_meta_column(table_name, new_meta_column, add_column_def->position_def)) {
         result->success = true;
@@ -71,16 +71,31 @@ static void add_new_column(AddColumnDef *add_column_def, char *table_name, DBRes
 
 /* Drop old column. */
 static void drop_old_column(DropColumnDef *drop_column_def, char *table_name, DBResult *result) {
+
     /* Capture table exclusively. */
     try_capture_table(table_name);
+
+    /* Drop column.*/
+    if (drop_meta_column(table_name, drop_column_def->column_name)) {
+        result->success = true;
+        result->message = format("Drop column '%s' for table '%s' successfully.", 
+                                 drop_column_def->column_name, 
+                                 table_name);
+        db_log(SUCCESS, "Drop column '%s' for table '%s' successfully.", 
+               drop_column_def->column_name, 
+               table_name);
+    }
+
     /* Release table. */
     release_table(table_name);
 }
 
 /* Change old column. */
 static void change_old_column(ChangeColumnDef *change_column_def, char *table_name, DBResult *result) {
+
     /* Capture table exclusively. */
     try_capture_table(table_name);
+
     /* Release table. */
     release_table(table_name);
 }

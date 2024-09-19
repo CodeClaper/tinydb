@@ -74,22 +74,23 @@ bool check_table_exist(char *table_name) {
 
 /* Create a new table. */
 bool create_table(MetaTable *meta_table) {
-    if (meta_table == NULL) {
-        db_log(ERROR, "Try to create table fail.");
-        return false;
-    }
+
+    Assert(meta_table);
+
     char *file_path = table_file_path(meta_table->table_name);
     if (table_file_exist(file_path)) {
         db_log(ERROR, "Table '%s' already exists. \n", meta_table->table_name);
         db_free(file_path);
         return false;
     }
+
     int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (descr == -1) {
         db_log(ERROR, "Open database file '%s' fail.\n", file_path);
         db_free(file_path);
         return false;
     }
+
     void *root_node = db_malloc(PAGE_SIZE, "pointer");
 
     uint32_t default_value_len = calc_table_row_length2(meta_table);
@@ -138,17 +139,17 @@ bool create_table(MetaTable *meta_table) {
 }
 
 /* Get Column Position. */
-static int get_column_position(MetaTable *meta_table, ColumnPositionDef *pos) {
+static int get_column_position(MetaTable *meta_table, ColumnPositionDef *pos_def) {
     
     /* If not ColumnPositionDef, append column at last. */
-    if (is_null(pos))
+    if (is_null(pos_def))
         return meta_table->column_size;
 
     int i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *current = meta_table->meta_column[i];
-        if (streq(current->column_name, pos->column)) {
-            switch (pos->type) {
+        if (streq(current->column_name, pos_def->column)) {
+            switch (pos_def->type) {
                 case POS_BEFORE:
                     return i;
                 case POS_AFTER:
@@ -156,18 +157,32 @@ static int get_column_position(MetaTable *meta_table, ColumnPositionDef *pos) {
             }
         }
     }
-    db_log(ERROR, "Column '%s' not exists in table '%s'.", pos->column, meta_table->table_name);
+
+    db_log(ERROR, "Column '%s' not exists in table '%s'.", 
+           pos_def->column, 
+           meta_table->table_name);
+
     return -1;
 }
 
 /* Add new MetaColumn to table.
  * This function is actually bottom-level routine for alter-table-add-column action.
  * */
-bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPositionDef *pos) {
+bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPositionDef *post_def) {
     Table *table = open_table(table_name);
     MetaTable *meta_table = table->meta_table;
-    int index = get_column_position(meta_table, pos);
-    append_new_column(table->root_page_num, table, new_meta_column, index);
+    int post = get_column_position(meta_table, post_def);
+    append_new_column(table->root_page_num, table, new_meta_column, post);
+    flush(table_name);
+    return true;
+}
+
+/* Drop table`s meta_column. */
+bool drop_meta_column(char *table_name, char *column_name) {
+    Table *table = open_table(table_name);
+    int pos = get_meta_column_pos_by_name(table->meta_table, column_name);
+    Assert(pos >= 0);
+    drop_column(table->root_page_num, table, pos);
     flush(table_name);
     return true;
 }
