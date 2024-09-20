@@ -1482,6 +1482,9 @@ static void append_internal_node_column(uint32_t page_num, Table *table, MetaCol
 
     /* Get internal node. */
     void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
+    
+    /* Just for check. */
+    Assert(get_node_type(internal_node) == INTERNAL_NODE);
 
     if (is_root_node(internal_node)) 
         append_root_internal_node_column(page_num, table, new_column, pos);
@@ -1638,6 +1641,42 @@ static void drop_root_leaf_node_column(uint32_t page_num, Table *table, int pos)
     flush_page(table->meta_table->table_name, table->pager, page_num);
 }
 
+/* Drop column for normal leaf node. */
+static void drop_normal_leaf_node_column(uint32_t page_num, Table *table, int pos) {
+    
+    void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
+
+    /* Just for check. */
+    Assert(get_node_type(leaf_node) == LEAF_NODE);
+    Assert(!is_root_node(leaf_node));
+
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
+    uint32_t cell_len = key_len + value_len;
+    
+    MetaTable *meta_table = table->meta_table;
+    
+    MetaColumn *meta_column = meta_table->meta_column[pos];
+    
+    /* ************************************************************
+     * For normal leaf node, only need to move body cells, 
+     * the header keeps still. 
+     * ***********************************************************/
+
+    /* Move leaf node body cells. */ 
+    uint32_t cell_num = get_leaf_node_cell_num(leaf_node, value_len);
+    for (int i = 0; i < cell_num; i++) {
+        void *old_cell = get_leaf_node_cell(leaf_node, key_len, value_len, i);
+        void *new_cell = gen_new_cell_after_drop_column(old_cell, meta_table, meta_column, pos);
+        memmove(cell_pointer_after_drop_column(leaf_node, meta_column, i, key_len, value_len), 
+               new_cell,
+               cell_len - meta_column->column_length);
+    }
+
+    /* flush page. */
+    flush_page(table->meta_table->table_name, table->pager, page_num);
+}
+
 
 /* Drop column for leaf node. */
 static void drop_leaf_node_column(uint32_t page_num, Table *table, int pos) {
@@ -1647,14 +1686,114 @@ static void drop_leaf_node_column(uint32_t page_num, Table *table, int pos) {
 
     if (is_root_node(leaf_node)) 
         drop_root_leaf_node_column(page_num, table, pos);
-    else {
+    else 
+        drop_normal_leaf_node_column(page_num, table, pos);
+}
 
+
+/* Drop column for root internal node. */
+static void drop_root_internal_node_column(uint32_t page_num, Table *table, int pos) {
+
+    /* Get root node. */
+    void *root_node = get_page(table->meta_table->table_name, table->pager, page_num);
+    
+    /* Just for check. */
+    Assert(get_node_type(root_node) == INTERNAL_NODE);
+    Assert(is_root_node(root_node));
+
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
+    
+    MetaTable *meta_table = table->meta_table;
+
+    MetaColumn *meta_column = meta_table->meta_column[pos];
+
+    /* Move meta column info. */
+    uint32_t column_size = get_column_size(root_node);
+    for (int i = pos; i < column_size; i++) {
+        if (i < column_size - 1)
+            mempcpy(get_meta_column_pointer(root_node, i),
+                    get_meta_column_pointer(root_node, i + 1),
+                    ROOT_NODE_META_COLUMN_SIZE);
+        else
+            memset(get_meta_column_pointer(root_node, i), 0, ROOT_NODE_META_COLUMN_SIZE);
     }
+
+    /* Move default value. */
+    void *default_value = get_default_value_cell(root_node);
+    memmove(default_value - ROOT_NODE_META_COLUMN_SIZE, 
+            gen_new_default_value_after_drop_column(default_value, meta_table, meta_column, pos), 
+            value_len - meta_column->column_length);
+
+
+    /* Move body */
+    uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
+    uint32_t keys_num = get_internal_node_keys_num(root_node, value_len);
+
+    void *body = get_internal_node_body_pointer(root_node, value_len);
+    memmove(body - ROOT_NODE_META_COLUMN_SIZE - meta_column->column_length,
+           body,
+           KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + cell_len * keys_num);
+
+
+    /* Decrease column size. */
+    set_column_size(root_node, column_size - 1);
+
+    /* flush page. */
+    flush_page(table->meta_table->table_name, table->pager, page_num);
+
+    /* Loop for children. */
+    value_len -= meta_column->column_length;
+    uint32_t i;
+    for (i = 0; i < keys_num; i++) {
+        uint32_t child_page_num = get_internal_node_child(root_node, i, key_len, value_len);
+        drop_column(child_page_num, table, pos);
+    }
+
+    uint32_t right_child_page_num = get_internal_node_right_child(root_node, value_len);
+    drop_column(right_child_page_num, table, pos);
+}
+
+
+/* Drop column for normal internal node. */
+static void drop_normal_internal_node_column(uint32_t page_num, Table *table, int pos) {
+
+    /* Get internal_node node. */
+    void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
+    
+    /* Just for check. */
+    Assert(get_node_type(internal_node) == INTERNAL_NODE);
+    Assert(!is_root_node(internal_node));
+
+    uint32_t value_len = calc_table_row_length(table);
+    uint32_t key_len = calc_primary_key_length(table);
+
+    uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
+
+    /* Loop for children. */
+    uint32_t i;
+    for (i = 0; i < keys_num; i++) {
+        uint32_t child_page_num = get_internal_node_child(internal_node, i, key_len, value_len);
+        drop_column(child_page_num, table, pos);
+    }
+
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
+    drop_column(right_child_page_num, table, pos);
 }
 
 /* Drop column for internal node. */
 static void drop_internal_node_column(uint32_t page_num, Table *table, int pos) {
 
+    /* Get internal node. */
+    void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
+    
+    /* Just for check. */
+    Assert(get_node_type(internal_node) == INTERNAL_NODE);
+
+    if (is_root_node(internal_node))
+        drop_root_internal_node_column(page_num, table, pos);
+    else 
+        drop_normal_internal_node_column(page_num, table, pos);
 }
 
 /* Drop the column. */
