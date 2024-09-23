@@ -17,7 +17,7 @@
 #define MAX_BUFF_SIZE 1<<20
 #define DEFAULT_HOST "127.0.0.1"
 #define DEFAULT_PORT 4080
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 65535
 
 int re_try;
 
@@ -137,7 +137,8 @@ bool db_receive(int server_fd) {
         ssize_t r;
         char buff[BUFF_SIZE];
         memset(buff, 0, BUFF_SIZE);
-        if ((r = recv(server_fd, buff, BUFF_SIZE, 0)) > 0) {
+        if ((r = recv(server_fd, buff, BUFF_SIZE - 1, 0)) > 0) {
+            buff[r] = '\0';
             if (strcmp(buff, "OVER") == 0) 
                 return true;
             else

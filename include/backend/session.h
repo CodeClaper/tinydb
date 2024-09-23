@@ -6,7 +6,7 @@ typedef struct {
     uint32_t frequency;
     uint32_t volumn;
     char spool[SPOOL_SIZE]; /* Store messsage pool. */
-    int pindex;             /* Current spool position index. */
+    uint32_t pindex;             /* Current spool position index. */
 } Session;
 
 /* Generate new session. */

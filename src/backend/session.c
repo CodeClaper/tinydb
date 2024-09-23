@@ -14,12 +14,15 @@
 #include "data.h"
 #include "mmu.h"
 #include "log.h"
+#include "utils.h"
 #include "asserts.h"
 
 #define OVER_FLAG "OVER"  /* Over flag of message. */
 
 
 static Session inner_session;
+
+static char TEMP[SPOOL_SIZE];
 
 
 /* Init spool. */
@@ -33,31 +36,37 @@ void new_session(int client) {
     inner_session.volumn = 0;
 }
 
+/* Spool if empty. */
+inline static bool spool_is_empty() {
+    return inner_session.pindex == 0 || is_empty(inner_session.spool);
+}
 
-static bool spool_is_full() {
+/* Spool if full. */
+inline static bool spool_is_full() {
     return inner_session.pindex >= SPOOL_SIZE;
 }
 
-/* Init spool. */
-static void clearn_up_spool() {
-    memset(inner_session.spool, '\0', SPOOL_SIZE);
+/* Clear up spool. */
+inline static void clearn_up_spool() {
+    bzero(inner_session.spool, SPOOL_SIZE);
     inner_session.pindex = 0;
 }
 
 /* Store spool. */
 static char *store_spool(char *message) {
     size_t len = strlen(message);
-    int index = inner_session.pindex + len;
+    size_t current = inner_session.pindex + len;
     if (strcmp(OVER_FLAG, message) == 0) {
         if (inner_session.pindex == 0) {
-            memcpy(inner_session.spool + inner_session.pindex, message, len); 
+            memcpy(inner_session.spool, message, len); 
+            inner_session.pindex = current;
             return NULL;
         } else {
             return message;
         }
-    } else if (index < SPOOL_SIZE) {
+    } else if (current < SPOOL_SIZE - 1) {
         memcpy(inner_session.spool + inner_session.pindex, message, len); 
-        inner_session.pindex = index;
+        inner_session.pindex = current;
         return NULL;
     } else {
         inner_session.pindex = SPOOL_SIZE;
@@ -78,7 +87,7 @@ bool db_send(const char *format, ...) {
     char rbuff[3], sbuff[SPOOL_SIZE];
 
     /* Initialize send buffer. */
-    memset(sbuff, 0, SPOOL_SIZE);
+    bzero(sbuff, SPOOL_SIZE);
 
     va_start(ap, format);
     
@@ -95,6 +104,7 @@ bool db_send(const char *format, ...) {
     if (!spool_is_full() && strcmp(OVER_FLAG, sbuff) != 0)
         return true;
 
+    Assert(!spool_is_empty());
 
     /* Check if client close connection, if recv get zero which means client has closed conneciton. */
     if ((r = recv(inner_session.client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 
@@ -102,6 +112,8 @@ bool db_send(const char *format, ...) {
 
         inner_session.volumn += s;
         inner_session.frequency++;
+
+        memcpy(TEMP, inner_session.spool, SPOOL_SIZE);
 
         clearn_up_spool();
 

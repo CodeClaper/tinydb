@@ -12,11 +12,11 @@ class TinyDbClient:
 
     def execute(self, sql) -> dict:
         try:
-            self.client.send(sql.encode("utf-8")[:1024])
+            self.client.send(sql.encode("utf-8")[:65535])
             writer = io.StringIO()
             while True:
-                response = self.client.recv(1024)
-                response = response.decode("utf-8").rstrip("\x00")
+                response = self.client.recv(65535)
+                response = response.decode("utf-8").rstrip("\x00").lstrip("\x00").strip()
                 if response.upper() == "OVER":
                     break
                 writer.write(response)
