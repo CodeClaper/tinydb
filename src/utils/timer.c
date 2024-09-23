@@ -7,6 +7,7 @@
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdint.h>
@@ -48,6 +49,54 @@ int64_t get_current_sys_time(TIME_LEVEL time_level) {
     }
     return value;
 }
+
+
+/* Get system time for ms level. */
+char *get_current_sys_time2(TIME_LEVEL level) {
+    struct timeval tv;
+    time_t t;
+    struct tm *ptm;
+
+    gettimeofday(&tv, NULL);
+    t = tv.tv_sec;
+
+    ptm = localtime(&t);
+
+    char *res = db_malloc(30, "string");
+
+    switch (level) {
+        case SECOND:
+            sprintf(res, "%04d-%02d-%02d %02d:%02d:%02d",
+                   ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
+                   ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+            break;
+        case MILLISECOND:
+            sprintf(res, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+                   ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
+                   ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ((int)(tv.tv_usec)) / 1000);
+            break;
+        case MICROSECOND:
+            sprintf(res, "%04d-%02d-%02d %02d:%02d:%02d.%06d",
+                   ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
+                   ptm->tm_hour, ptm->tm_min, ptm->tm_sec, (int)(tv.tv_usec));
+            break;
+        default:
+            UNEXPECTED_VALUE(level);
+            break;
+    }
+
+
+    return res;
+}
+
+
+/* Get system time by format. */
+char* get_sys_time(char *format) {
+    time_t t_now;
+    time(&t_now);
+    return format_time(format, t_now);
+}
+
 
 /* Get format time string. */
 char *format_time(char *format, time_t t) {

@@ -39,13 +39,6 @@ char *get_stack_message() {
 }
 
 
-/* Get system time by format. */
-static char* get_sys_time(char *format) {
-    time_t t_now;
-    time(&t_now);
-    return format_time(format, t_now);
-}
-
 /* Flush log message to disk. */
 static void flush_log(char* msg) {
     char log_path[BUFF_SIZE];
@@ -74,7 +67,7 @@ void db_log(LogLevel lev, char *format, ...) {
 
     /* Only print higher level log. */
     if (lev >= conf->log_level) {
-        char *sys_time = get_sys_time("%Y-%m-%d %H:%M:%S");
+        char *sys_time = get_current_sys_time2(MICROSECOND);
         char buff[BUFF_SIZE * 2];
         sprintf(buff, "[%s][%d][%s]:\t%s\n", sys_time, getpid(), LOG_LEVEL_NAME_LIST[lev], message);
         fprintf(stdout, "%s", buff);
