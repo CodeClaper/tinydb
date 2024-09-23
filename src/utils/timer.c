@@ -4,6 +4,7 @@
 * ======================================================================================================
 */
 
+#include <bits/types/struct_timeval.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
@@ -54,4 +55,9 @@ char *format_time(char *format, time_t t) {
     struct tm *tm = localtime(&t);
     strftime(res, 20, format, tm);
     return res;
+}
+
+/* Time span. */
+double time_span(struct timeval end_time, struct timeval start_time) {
+    return ((end_time.tv_sec - start_time.tv_sec) * 1000000u + end_time.tv_usec - start_time.tv_usec) / 1000000.0;;
 }

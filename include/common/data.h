@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <time.h>
 #include "list.h"
 
 #ifndef DATA_H
@@ -690,6 +691,8 @@ typedef struct {
     void *data;
     uint32_t rows;
     char *message;
+    clock_t start_time;
+    clock_t end_time;
     double duration;
 } DBResult;
 

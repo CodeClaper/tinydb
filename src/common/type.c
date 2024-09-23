@@ -50,6 +50,7 @@ DBResult *new_db_result() {
     result->message = NULL;
     result->data = NULL;
     result->rows = 0;
+    result->start_time = clock();
     result->duration = 0;
     result->table = NULL;
     return result;

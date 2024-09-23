@@ -1,6 +1,8 @@
+#include <bits/types/struct_timeval.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <setjmp.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 #include "stmt.h"
@@ -30,6 +32,7 @@
 #include "jsonwriter.h"
 #include "type.h"
 #include "xlog.h"
+#include "timer.h"
 
 
 /* Begin tranasction statement. */
@@ -151,8 +154,6 @@ static void statement_show(Statement *statement, DBResult *result) {
 /* Execute statment. */
 static void exec_statement(Statement *statement, DBResult *result) {
     /* Execute statment */
-    clock_t start, end;
-    start = clock();
     if (statement) {
         result->stmt_type = statement->statement_type;
         switch(statement->statement_type) {
@@ -199,8 +200,8 @@ static void exec_statement(Statement *statement, DBResult *result) {
     } 
 
     /* Calulate duration. */
-    end = clock();
-    result->duration = (double)(end - start) / CLOCKS_PER_SEC;
+    result->end_time = clock();
+    result->duration = (double)(result->end_time - result->start_time) / CLOCKS_PER_SEC;
     db_log(INFO, "Duration: %lfs", result->duration);
 
 }
@@ -221,8 +222,9 @@ static void exec_statement(Statement *statement, DBResult *result) {
  * */
 void execute(char *sql) {
 
-    clock_t start_time, end_time;
-    start_time = clock();
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
     List *result_list = create_list(NODE_DB_RESULT);
     List *statements = NULL;
 
@@ -253,8 +255,8 @@ void execute(char *sql) {
             DBResult *last_result = lfirst(last_cell(result_list));
             if (last_result->success == false) {
                 /* Calulate duration. */
-                clock_t err_end_time = clock();
-                last_result->duration = (double)(err_end_time - start_time) / CLOCKS_PER_SEC;
+                last_result->end_time = clock();
+                last_result->duration = (double)(last_result->end_time - last_result->start_time) / CLOCKS_PER_SEC;
                 db_log(INFO, "Duration: %lfs", last_result->duration);
             }
         }
@@ -275,8 +277,6 @@ void execute(char *sql) {
     auto_commit_transaction();
 
     /* Calulate whole duration. */
-    end_time = clock();
-    double whole_duration = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-    db_log(INFO, "Whole duration: %lfs", whole_duration);
-
+    gettimeofday(&end_time, NULL);
+    db_log(INFO, "Whole duration: %lfs", time_span(end_time, start_time));
 }

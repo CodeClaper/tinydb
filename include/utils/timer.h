@@ -9,3 +9,6 @@ int64_t get_current_sys_time(TIME_LEVEL time_level);
 
 /* Format time. */
 char *format_time(char *format, time_t t);
+
+/* Time span. */
+double time_span(struct timeval end_time, struct timeval start_time);
