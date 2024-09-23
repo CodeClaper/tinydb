@@ -130,11 +130,24 @@ def test_query_data_after_add_column3():
         assert row["master"] == None
 
 
+## drop column.
+def test_drop_column():
+    sql = "alter table Student drop column `age`;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+
+
+## query after drop column.
+def test_query_after_drop_column():
+    sql = "select age from Student;"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+
+
 ## drop mock table
 def test_drop_mock_table():
     sql = "drop table Student;\n"\
           "drop table Teacher;\n"
     ret = client.execute(sql)
     assert_all(ret)
-
 

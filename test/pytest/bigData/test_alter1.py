@@ -43,6 +43,65 @@ def test_select_count():
     assert ret["data"][0] == { "count": 999 }
 
 
+## select add column.
+def test_select_add_column():
+    sql = "select * from Student;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["rows"] == 999
+
+
+## test add already exists column.
+def test_add_alreay_exists_column():
+    sql = "alter table Student add column name varchar(32);"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Table 'Student' already exists column 'name'."
+
+
+## drop column.
+def test_drop_column():
+    sql = "alter table Student drop column `age`;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["message"] == "Drop column 'age' for table 'Student' successfully."
+
+
+## drop column.
+def test_select_after_drop_column():
+    sql = "select age from Student;"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Unknown column name 'age'. "
+
+
+## try drop primary-key column
+def test_drop_primary_key_column():
+    sql = "alter table Student drop column `id`;"
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Column 'id' is priamry-key, not allowed to drop."
+
+
+## add column after drop 
+def test_add_afer_drop_column():
+    sql = "alter table Student add column `age` int default 0;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["message"] == "Add column 'age' for table 'Student' successfully."
+
+
+## query add column.
+def test_query_add_column():
+    sql = "select age from Student;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["rows"] == 999
+    assert ret["data"][11] ==  { "age": 0 }
+    assert ret["data"][100] ==  { "age": 0 }
+    assert ret["data"][503] ==  { "age": 0 }
+
+
 # drop mock table
 def test_drop_mock_table():
     sql = "drop table Student;"

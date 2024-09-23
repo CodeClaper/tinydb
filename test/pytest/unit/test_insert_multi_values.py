@@ -1,7 +1,6 @@
 ## test_insert_multi_values.py
 
 from support.tinydb_cli import TinyDbClient
-from support.asserts import assert_all
 
 client = TinyDbClient("127.0.0.1", 4083)    
 

@@ -13,17 +13,17 @@ class TinyDbClient:
 
     def execute(self, sql) -> dict:
         try:
-            self.client.send(sql.encode("utf-8")[:1024])
-            print("Connect to tinydb server successfully.")
+            self.client.send(sql.encode("utf-8")[:65535])
             writer = io.StringIO()
             while True:
-                response = self.client.recv(1024)
-                response = response.decode("utf-8").rstrip("\x00")
+                print("====================")
+                response = self.client.recv(65535)
+                response = response.decode("utf-8").rstrip("\x00").lstrip("\x00").strip()
+                print(response)
                 if response.upper() == "OVER":
                     break
                 writer.write(response)
             ret = writer.getvalue()
-            print(f"TinyDb receive: {ret}")
             writer.close()
             return json.loads(ret)
                
