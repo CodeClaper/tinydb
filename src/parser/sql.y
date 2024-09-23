@@ -53,7 +53,6 @@ int yylex();
    TableExpNode                 *table_exp_node; 
    AddColumnDef                 *add_column_def;
    DropColumnDef                *drop_column_def;
-   ChangeColumnDef              *change_column_def;
    AlterTableAction             *alter_table_action;
    ColumnPositionDef            *column_position_def;
    CreateTableNode              *create_table_node;
@@ -99,7 +98,7 @@ int yylex();
 %token <keyword> CHAR INT LONG VARCHAR STRING BOOL FLOAT DOUBLE DATE TIMESTAMP
 %token <keyword> EQ NE GT GE LT LE IN LIKE
 %token <keyword> NOT
-%token <keyword> ALTER COLUMN ADD CHANGE
+%token <keyword> ALTER COLUMN ADD RENAME
 %token <keyword> BEFORE AFTER
 %token <keyword> SYSTEM CONFIG MEMORY
 %token <strVal> IDENTIFIER
@@ -153,7 +152,6 @@ int yylex();
 %type <table_exp_node> table_exp   
 %type <add_column_def> add_column_def
 %type <drop_column_def> drop_column_def
-%type <change_column_def> change_column_def
 %type <alter_table_action> alter_table_action
 %type <column_position_def> column_position_def
 %type <select_node> select_statement
@@ -398,13 +396,6 @@ alter_table_action:
             action->action.drop_column = $1;
             $$ = action;
         }
-    | change_column_def
-        {
-            AlterTableAction *action = instance(AlterTableAction);
-            action->type = ALTER_TO_CHANGE_COLUMN;
-            action->action.change_column = $1;
-            $$ = action;
-        }
     ;
 add_column_def:
     ADD COLUMN column_def column_position_def
@@ -420,15 +411,6 @@ drop_column_def:
         {
             DropColumnDef *node = instance(DropColumnDef);
             node->column_name = $3;
-            $$ = node;
-        }
-    ;
-change_column_def:
-    CHANGE IDENTIFIER column_def
-        {
-            ChangeColumnDef *node = instance(ChangeColumnDef);
-            node->old_column_name = $2;
-            node->new_column_def = $3;
             $$ = node;
         }
     ;

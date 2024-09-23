@@ -116,7 +116,7 @@ extern int yydebug;
     ALTER = 317,                   /* ALTER  */
     COLUMN = 318,                  /* COLUMN  */
     ADD = 319,                     /* ADD  */
-    CHANGE = 320,                  /* CHANGE  */
+    RENAME = 320,                  /* RENAME  */
     BEFORE = 321,                  /* BEFORE  */
     AFTER = 322,                   /* AFTER  */
     SYSTEM = 323,                  /* SYSTEM  */
@@ -196,7 +196,7 @@ extern int yydebug;
 #define ALTER 317
 #define COLUMN 318
 #define ADD 319
-#define CHANGE 320
+#define RENAME 320
 #define BEFORE 321
 #define AFTER 322
 #define SYSTEM 323
@@ -249,7 +249,6 @@ union YYSTYPE
    TableExpNode                 *table_exp_node; 
    AddColumnDef                 *add_column_def;
    DropColumnDef                *drop_column_def;
-   ChangeColumnDef              *change_column_def;
    AlterTableAction             *alter_table_action;
    ColumnPositionDef            *column_position_def;
    CreateTableNode              *create_table_node;
@@ -264,7 +263,7 @@ union YYSTYPE
    Statement                    *statement;
    List                         *list;
 
-#line 268 "y.tab.h"
+#line 267 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

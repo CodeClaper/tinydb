@@ -528,14 +528,6 @@ void free_drop_column_def(DropColumnDef *drop_column_def) {
     }
 }
 
-/* Free ChangeColumnDef. */
-void free_change_column_def(ChangeColumnDef *change_column_def) {
-    if (change_column_def) {
-        if (change_column_def->old_column_name)
-            db_free(change_column_def->old_column_name);
-        free_column_def_node(change_column_def->new_column_def);
-    }
-}
 
 /* Free AlterTableAction. */
 void free_alter_table_action(AlterTableAction *action) {
@@ -546,9 +538,6 @@ void free_alter_table_action(AlterTableAction *action) {
                 break;
             case ALTER_TO_DROP_COLUMN:
                 free_drop_column_def(action->action.drop_column);
-                break;
-            case ALTER_TO_CHANGE_COLUMN:
-                free_change_column_def(action->action.change_column);
                 break;
         }
     }

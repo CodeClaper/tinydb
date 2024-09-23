@@ -497,8 +497,7 @@ typedef struct ShowNode {
 /* AlterTableActionType */
 typedef enum AlterTableActionType {
     ALTER_TO_ADD_COLUMN,
-    ALTER_TO_DROP_COLUMN,
-    ALTER_TO_CHANGE_COLUMN
+    ALTER_TO_DROP_COLUMN
 } AlterTableActionType;
 
 /* PositionType */
@@ -524,12 +523,6 @@ typedef struct DropColumnDef {
     char *column_name;
 } DropColumnDef;
 
-/* ChangeColumnDef */
-typedef struct ChangeColumnDef {
-    char *old_column_name;
-    ColumnDefNode *new_column_def;
-} ChangeColumnDef;
-
 
 /* AlterTableAction */
 typedef struct AlterTableAction {
@@ -537,7 +530,6 @@ typedef struct AlterTableAction {
     union {
         AddColumnDef *add_column;
         DropColumnDef *drop_column;
-        ChangeColumnDef *change_column;
     } action;
 } AlterTableAction;
 

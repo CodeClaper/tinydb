@@ -57,7 +57,6 @@ COMMENT                 return COMMENT;
 ALTER                   return ALTER;
 COLUMN                  return COLUMN;
 ADD                     return ADD;
-CHANGE                  return CHANGE;
 BEFORE                  return BEFORE;
 AFTER                   return AFTER;
 INT                     return INT;

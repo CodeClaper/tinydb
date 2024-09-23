@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <setjmp.h>
 #include <time.h>
+#include <unistd.h>
 #include "stmt.h"
 #include "list.h"
 #include "defs.h"
@@ -220,8 +221,8 @@ static void exec_statement(Statement *statement, DBResult *result) {
  * */
 void execute(char *sql) {
 
-    clock_t start, end;
-    start = clock();
+    clock_t start_time, end_time;
+    start_time = clock();
     List *result_list = create_list(NODE_DB_RESULT);
     List *statements = NULL;
 
@@ -252,8 +253,8 @@ void execute(char *sql) {
             DBResult *last_result = lfirst(last_cell(result_list));
             if (last_result->success == false) {
                 /* Calulate duration. */
-                end = clock();
-                last_result->duration = (double)(end - start) / CLOCKS_PER_SEC;
+                clock_t err_end_time = clock();
+                last_result->duration = (double)(err_end_time - start_time) / CLOCKS_PER_SEC;
                 db_log(INFO, "Duration: %lfs", last_result->duration);
             }
         }
@@ -272,5 +273,10 @@ void execute(char *sql) {
 
     /* Commit transction manually. */
     auto_commit_transaction();
+
+    /* Calulate whole duration. */
+    end_time = clock();
+    double whole_duration = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    db_log(INFO, "Whole duration: %lfs", whole_duration);
 
 }

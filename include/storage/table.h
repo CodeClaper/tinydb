@@ -37,6 +37,10 @@ bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPo
 bool drop_meta_column(char *tbale_name, char *column_name);
 
 
+/* Change table`s meta_table. */
+bool change_meta_column(char *table_name, char *column_name, MetaColumn *new_meta_column);
+
+
 /*Delete an existed table. */
 bool drop_table(char *table_name);
 

@@ -171,8 +171,8 @@ static int get_column_position(MetaTable *meta_table, ColumnPositionDef *pos_def
 bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPositionDef *post_def) {
     Table *table = open_table(table_name);
     MetaTable *meta_table = table->meta_table;
-    int post = get_column_position(meta_table, post_def);
-    append_new_column(table->root_page_num, table, new_meta_column, post);
+    int pos = get_column_position(meta_table, post_def);
+    append_new_column(table->root_page_num, table, new_meta_column, pos);
     flush(table_name);
     return true;
 }
@@ -186,6 +186,7 @@ bool drop_meta_column(char *table_name, char *column_name) {
     flush(table_name);
     return true;
 }
+
 
 /* Open a table file. 
  * Return Table or NULL if not exists. */

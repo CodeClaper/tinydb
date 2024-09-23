@@ -1,12 +1,14 @@
-/**
- * ============================= Alter table statment module===================================
+/******************************** Alter table statment module *******************************
+ * Auth:        JerryZhou
+ * Created:     2024/06/28
+ * Modify:      2024/09/20
+ * Locataion:   src/backend/alter.c
  * support:
  * (1) alter table add column
  * (2) alter table drop column
  * (3) alter table change column
  * (4) alter table rename column
- * ============================================================================================
- */
+ ********************************************************************************************/
 #include <stdbool.h>
 #include <unistd.h>
 #include "data.h"
@@ -90,16 +92,6 @@ static void drop_old_column(DropColumnDef *drop_column_def, char *table_name, DB
     release_table(table_name);
 }
 
-/* Change old column. */
-static void change_old_column(ChangeColumnDef *change_column_def, char *table_name, DBResult *result) {
-
-    /* Capture table exclusively. */
-    try_capture_table(table_name);
-
-    /* Release table. */
-    release_table(table_name);
-}
-
 
 /* Execute alter table statement. */
 void exec_alter_statement(AlterTableNode *alter_table_node, DBResult *result) {
@@ -108,15 +100,13 @@ void exec_alter_statement(AlterTableNode *alter_table_node, DBResult *result) {
         switch (alter_table_action->type) {
             case ALTER_TO_ADD_COLUMN:
                 add_new_column(alter_table_action->action.add_column, 
-                               alter_table_node->table_name, result);
+                               alter_table_node->table_name, 
+                               result);
                 break;
             case ALTER_TO_DROP_COLUMN:
                 drop_old_column(alter_table_action->action.drop_column, 
-                                alter_table_node->table_name, result);
-                break;
-            case ALTER_TO_CHANGE_COLUMN:
-                change_old_column(alter_table_action->action.change_column, 
-                                  alter_table_node->table_name, result);
+                                alter_table_node->table_name, 
+                                result);
                 break;
         }
     }

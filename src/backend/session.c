@@ -97,19 +97,20 @@ bool db_send(const char *format, ...) {
 
 
     /* Check if client close connection, if recv get zero which means client has closed conneciton. */
-    if ((r = recv(inner_session.client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 && 
-        (s = send(inner_session.client, inner_session.spool, SPOOL_SIZE, 0)) > 0) {
-            inner_session.volumn += s;
-            inner_session.frequency++;
+    if ((r = recv(inner_session.client, rbuff, 3, MSG_PEEK | MSG_DONTWAIT)) != 0 
+            && (s = send(inner_session.client, inner_session.spool, SPOOL_SIZE, 0)) > 0) {
 
-            clearn_up_spool();
+        inner_session.volumn += s;
+        inner_session.frequency++;
 
-            /* If there are left message, continue db_send. */
-            if (left_msg) {
-                return db_send(left_msg);
-            }
+        clearn_up_spool();
 
-            return true;
+        /* If there are left message, continue db_send. */
+        if (left_msg) {
+            return db_send(left_msg);
+        }
+
+        return true;
     }
 
     return false;

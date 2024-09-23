@@ -274,7 +274,7 @@ static bool check_value_data_type(DataType column_type, AtomNode *atom_node,
         default:
             UNEXPECTED_VALUE(column_type);
     }
-    db_log(ERROR, "Can`t convert data [%s] to [%s] for column '%s' in table '%s'", 
+    db_log(ERROR, "Incorrect %s value for column '%s' in table '%s'", 
            data_type_name(convert_data_type(atom_node->type)),
            data_type_name(column_type), 
            column_name, 
@@ -1074,6 +1074,7 @@ static inline char *get_column_name_from_add_column_def(AddColumnDef *add_column
     return add_column->column_def->column->column;
 }
 
+
 /* Check alter table add-column action*/
 static bool check_alter_table_add_column_action(char *table_name, AddColumnDef *add_column) {
     char *column_name = get_column_name_from_add_column_def(add_column);
@@ -1087,7 +1088,7 @@ static bool check_alter_table_add_column_action(char *table_name, AddColumnDef *
 
     /* Check if the position column def exists. */
     if (!is_null(add_column->position_def) 
-        && !if_exists_column_in_table(add_column->position_def->column, table_name)) {
+            && !if_exists_column_in_table(add_column->position_def->column, table_name)) {
         db_log(ERROR, "Unknown column '%s' in table '%s'.", 
                add_column->position_def->column, 
                table_name);
@@ -1114,14 +1115,23 @@ static bool check_alter_table_drop_column(char *table_name, DropColumnDef *drop_
         return false;
     }
 
+    /* Not alloed drop primary-key column. */
     if (meta_column->is_primary) {
-        db_log(ERROR, "Column '%s' is priamry-key, not allowed to droped.", 
+        db_log(ERROR, "Column '%s' is priamry-key, not allowed to drop.", 
+               drop_column_def->column_name);
+        return false;
+    }
+
+    /* If only exists last one column, not allowed to drop. */
+    if (meta_table->column_size == 1) {
+        db_log(ERROR, "Column '%s' is the last column, not allowed to drop.", 
                drop_column_def->column_name);
         return false;
     }
 
     return true;
 }
+
 
 /* Check alter table action. */
 static bool check_alter_table_action(char *table_name, AlterTableAction *action) {
@@ -1130,9 +1140,6 @@ static bool check_alter_table_action(char *table_name, AlterTableAction *action)
             return check_alter_table_add_column_action(table_name, action->action.add_column);
         case ALTER_TO_DROP_COLUMN:
             return check_alter_table_drop_column(table_name, action->action.drop_column);
-        case ALTER_TO_CHANGE_COLUMN:
-            db_log(ERROR, "Not supprot yet");
-            return false;
     }
     return true;
 }
