@@ -3,7 +3,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h>
@@ -60,16 +62,17 @@ int startup(u_short port) {
 void accept_request(intptr_t client) {
     size_t chars_num;
     char buf[SPOOL_SIZE];
+    bzero(buf, SPOOL_SIZE);
     new_session(client);
     db_log(INFO, "Client ID '%ld' connect successfully.", getpid());
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    while((chars_num = recv(client, buf, SPOOL_SIZE - 1, 0)) > 0) {
+    while((chars_num = recv(client, buf, SPOOL_SIZE, 0)) > 0) {
         buf[chars_num] = '\0';
-        execute(buf);   
+        execute(buf);
+        bzero(buf, SPOOL_SIZE);
         if (!db_send_over())
             break;
-
         gettimeofday(&end, NULL);
         db_log(INFO, "Loop duration: %lfs", time_span(end, start));
         start = end;

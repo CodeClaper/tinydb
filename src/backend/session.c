@@ -22,8 +22,6 @@
 
 static Session inner_session;
 
-static char TEMP[SPOOL_SIZE];
-
 
 /* Init spool. */
 static void clearn_up_spool();
@@ -43,7 +41,7 @@ inline static bool spool_is_empty() {
 
 /* Spool if full. */
 inline static bool spool_is_full() {
-    return inner_session.pindex >= SPOOL_SIZE;
+    return inner_session.pindex >= SPOOL_SIZE - 1;
 }
 
 /* Clear up spool. */
@@ -56,7 +54,7 @@ inline static void clearn_up_spool() {
 static char *store_spool(char *message) {
     size_t len = strlen(message);
     size_t current = inner_session.pindex + len;
-    if (strcmp(OVER_FLAG, message) == 0) {
+    if (streq(OVER_FLAG, message)) {
         if (inner_session.pindex == 0) {
             memcpy(inner_session.spool, message, len); 
             inner_session.pindex = current;
@@ -101,7 +99,7 @@ bool db_send(const char *format, ...) {
     char *left_msg = store_spool(sbuff);
 
     /* Only when spool is full or OVER FLAG, socket will send the whole spool data. */
-    if (!spool_is_full() && strcmp(OVER_FLAG, sbuff) != 0)
+    if (!spool_is_full() && !streq(OVER_FLAG, sbuff))
         return true;
 
     Assert(!spool_is_empty());
@@ -113,8 +111,7 @@ bool db_send(const char *format, ...) {
         inner_session.volumn += s;
         inner_session.frequency++;
 
-        memcpy(TEMP, inner_session.spool, SPOOL_SIZE);
-
+        /* Clear up spool. */
         clearn_up_spool();
 
         /* If there are left message, continue db_send. */

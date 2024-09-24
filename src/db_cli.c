@@ -18,8 +18,11 @@
 #define DEFAULT_HOST "127.0.0.1"
 #define DEFAULT_PORT 4080
 #define BUFF_SIZE 65535
+typedef unsigned char *byte_pointer;
 
 int re_try;
+
+
 
 /* Check if empty string. */
 static bool is_empty(char *s) {
@@ -126,6 +129,15 @@ int re_connect(struct sockaddr_in *address) {
 }
 
 
+void show_bytes(byte_pointer start, size_t len) {
+    size_t i;
+    for (i = 0; i <len; i++)
+        printf(" %.2x", start[i]);
+    printf("\n");
+}
+
+
+
 /**
  * Protocol symbol
  * GET: get the server message
@@ -135,16 +147,19 @@ int re_connect(struct sockaddr_in *address) {
 bool db_receive(int server_fd) {
     while(true) {
         ssize_t r;
-        char buff[BUFF_SIZE];
-        memset(buff, 0, BUFF_SIZE);
-        if ((r = recv(server_fd, buff, BUFF_SIZE - 1, 0)) > 0) {
+        char buff[BUFF_SIZE + 1];
+        memset(buff, 0, BUFF_SIZE + 1);
+        if ((r = recv(server_fd, buff, BUFF_SIZE, 0)) > 0) {
             buff[r] = '\0';
             if (strcmp(buff, "OVER") == 0) 
                 return true;
             else
                 printf("%s", buff);
-        } else
+            bzero(buff, BUFF_SIZE + 1);
+        } else {
+            printf("Fetch nothing\n");
             return false;
+        }
     }
 }
 
@@ -171,7 +186,8 @@ int main(int argc, char* argv[]) {
     re_try = 0;
     while(true) {
         char *input = readline("tinydb > ");
-        if (is_empty(input)) continue;
+        if (is_empty(input))
+            continue;
         if (strcmp("exit", input) == 0) {
             printf("Goodbye.\n");
             break;
@@ -182,8 +198,9 @@ int main(int argc, char* argv[]) {
             continue;
         }
         char buff[BUFF_SIZE];
+        bzero(buff, BUFF_SIZE);
         sprintf(buff, "%s", input);
-        size_t result = send(sock_fd, buff, BUFF_SIZE, 0);
+        size_t result = send(sock_fd, buff, strlen(buff), 0);
         if (result == -1) {
             fprintf(stderr, "Send fail.");
             exit(1);

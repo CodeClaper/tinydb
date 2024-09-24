@@ -330,6 +330,13 @@ ST_FLAG stod(char *val, double *ret) {
     return ST_SUCCESS;
 }
 
+ void show_bytes(byte_pointer start, size_t len) {
+    size_t i;
+    for (i = 0; i <len; i++)
+        printf(" %.2x", start[i]);
+    printf("\n");
+}
+
 /**********************************************************************/
 /* Get a line from a socket, whether the line ends in a newline,
  * carriage return, or a CRLF combination.  Terminates the string read
@@ -375,7 +382,4 @@ int get_line(int sock, char *buf, int size) {
 }
 
 
-/* Min size. */
-size_t min_size(size_t size1, size_t size2) {
-    return size1 < size2 ? size1 : size2;
-}
+

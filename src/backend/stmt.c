@@ -260,7 +260,12 @@ void execute(char *sql) {
                 db_log(INFO, "Duration: %lfs", last_result->duration);
             }
         }
-    } 
+    } else {
+        DBResult *empty_result = new_db_result();
+        empty_result->success = false;
+        empty_result->message = format("Input nothing");
+        append_list(result_list, empty_result);
+    }
 
     json_list(result_list);
 

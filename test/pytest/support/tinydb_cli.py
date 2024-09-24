@@ -16,10 +16,8 @@ class TinyDbClient:
             self.client.send(sql.encode("utf-8")[:65535])
             writer = io.StringIO()
             while True:
-                print("====================")
                 response = self.client.recv(65535)
                 response = response.decode("utf-8").rstrip("\x00").lstrip("\x00").strip()
-                print(response)
                 if response.upper() == "OVER":
                     break
                 writer.write(response)

@@ -18,13 +18,13 @@ tinydb: db.o $(OBJS)
 	$(CC) $(CFLAGS)  db.o $(OBJS) -o $@ $(LDADDCFLAGS)
 
 tinydb_cli: db_cli.o
-	$(CC) db_cli.o -o $@ -lreadline -ltinfo
+	$(CC) $(CFLAGS) db_cli.o -o $@ -lreadline -ltinfo
 
 db.o: db.c $(headers)
 	$(CC) $(CFLAGS) -c db.c -o $@
 
 db_cli.o: db_cli.c
-	$(CC) -c db_cli.c -o $@
+	$(CC) $(CFLAGS) -c db_cli.c -o $@
 
 $(SUBDIRS): 
 	@$(MAKE) -C $@

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <stdio.h>
 
 typedef enum ST_FLAG {
     ST_SUCCESS = 0,
@@ -8,6 +9,8 @@ typedef enum ST_FLAG {
     ST_OVERFLOW,
     ST_OUTRANGE
 } ST_FLAG;
+
+typedef unsigned char *byte_pointer;
 
 /* left trim*/
 char *ltrim(char *s);
@@ -89,5 +92,12 @@ ST_FLAG stod(char *val, double *ret);
 /* Get line from socket. */
 int get_line(int sock, char *buf, int size);
 
+
 /* Min size. */
-size_t min_size(size_t size1, size_t size2);
+inline static size_t min_size(size_t size1, size_t size2) {
+    return size1 < size2 ? size1 : size2;
+}
+
+
+/* Show bytes. */
+void show_bytes(byte_pointer start, size_t len);
