@@ -1,4 +1,5 @@
 #include <bits/types/struct_timeval.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -19,6 +20,7 @@
 #include "free.h"
 #include "session.h"
 #include "log.h"
+#include "auth.h"
 #include "timer.h"
 
 /* Start up the server. */
@@ -58,8 +60,30 @@ int startup(u_short port) {
     return httpd;
 }
 
-/* Accept request.*/
-void accept_request(intptr_t client) {
+
+/* Auth client. */
+static bool auth_request(intptr_t client) {
+    char buf[SPOOL_SIZE];
+    bzero(buf, SPOOL_SIZE);
+
+    size_t chars_num = recv(client, buf, SPOOL_SIZE, 0);
+    if (chars_num > 0) {
+        buf[chars_num] = '\0';
+        bool pass = auth(buf);
+        const char* message = pass 
+            ? "Welcome to TinyDb.\nYour TinyDb version is 0.0.1.\n\nCopyright (c) 2024, Inspur.\n" 
+            : "No access.";
+        size_t s = send(client, message, strlen(message), 0);
+        if (s == -1) 
+            db_log(ERROR, "Try to send %s fail, %s.", message, strerror(errno));
+
+        return pass;
+    }
+
+    return false;
+}
+
+static void loop_request(intptr_t client) {
     size_t chars_num;
     char buf[SPOOL_SIZE];
     bzero(buf, SPOOL_SIZE);
@@ -77,7 +101,17 @@ void accept_request(intptr_t client) {
         db_log(INFO, "Loop duration: %lfs", time_span(end, start));
         start = end;
     }
-    close(client);
     db_log(INFO, "Client ID '%ld' disconnect.", getpid());
+}
+
+/* Accept request.*/
+void accept_request(intptr_t client) {
+
+    /* Auth login message. */
+    if (auth_request(client))
+        loop_request(client);
+    
+    /* Quite */
+    close(client);
     exit(0);
 }

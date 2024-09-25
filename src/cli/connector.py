@@ -9,6 +9,12 @@ class TinyDbClient:
         # create a socket object.
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect((ip, port))
+        self.client.send("root/Zc120130211".encode("utf-8"))
+        response = self.client.recv(65535)
+        response = response.decode("utf-8").rstrip("\x00")
+        print(response)
+        if response == 'No access.':
+            exit(1)
 
     def execute(self, sql) -> dict:
         try:
@@ -16,7 +22,7 @@ class TinyDbClient:
             writer = io.StringIO()
             while True:
                 response = self.client.recv(65535)
-                response = response.decode("utf-8").rstrip("\x00").lstrip("\x00").strip()
+                response = response.decode("utf-8").rstrip("\x00")
                 if response.upper() == "OVER":
                     break
                 writer.write(response)
@@ -24,6 +30,8 @@ class TinyDbClient:
             writer.close()
             return json.loads(ret)
                
+        except ConnectionError:
+            exit(1)
         except Exception as e:
             print(f"Error: {e}")
 

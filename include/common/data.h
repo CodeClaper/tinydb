@@ -668,6 +668,8 @@ typedef struct {
     LogLevel log_level;                     /* Log level */
     TransIsolationLevel trans_iso_level;    /* Transaction Isolation level.*/
     bool auto_rollback;                     /* If auto rollback. */
+    char *account;                          /* Account. */
+    char *password;                         /* password. */
 } Conf;
 
 /* Refer */

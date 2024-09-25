@@ -100,5 +100,7 @@ Conf *load_conf() {
     conf->log_dir = append_dir_end(read_conf("log", "dir"));
     conf->log_level = define_log_level(read_conf("log", "level"));
     conf->auto_rollback = define_bool_value("transaction", "auto_rollback");
+    conf->account = read_conf("auth", "account");
+    conf->password = read_conf("auth", "password");
     return conf;
 }

@@ -9,3 +9,6 @@ level=DEBUG
 ## Supports four transaction isoland level, READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE.
 trans_isolation_level=READ_COMMITTED
 auto_rollback=true
+[auth]
+account=root
+password=Zc120130211
