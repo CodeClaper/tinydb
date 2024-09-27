@@ -4,6 +4,7 @@ import readline
 import os
 import sys
 import connector
+import getpass
 
 client = connector.TinyDbClient('127.0.0.1', 4083)
 
@@ -75,8 +76,14 @@ def exec_cmd(cmd):
             case _:
                 tinydb(cmd)
 
+def login() -> bool:
+    account = input("Your account: ")
+    password = getpass.getpass("Your password: ")
+    return client.login(account, password)
+
 
 if __name__ == "__main__":
-    while True:
-        cmd = readCmd()
-        exec_cmd(cmd)
+    if login():
+        while True:
+            cmd = readCmd()
+            exec_cmd(cmd)

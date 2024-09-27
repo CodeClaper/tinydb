@@ -9,12 +9,13 @@ class TinyDbClient:
         # create a socket object.
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect((ip, port))
-        self.client.send("root/Zc120130211".encode("utf-8"))
+
+    def login(self, account, password) -> bool:
+        self.client.send(f"{account}/{password}".encode("utf-8"))
         response = self.client.recv(65535)
         response = response.decode("utf-8").rstrip("\x00")
-        print(response)
-        if response == 'No access.':
-            exit(1)
+        return response != 'No access.'
+
 
     def execute(self, sql) -> dict:
         try:
