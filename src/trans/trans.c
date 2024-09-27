@@ -244,6 +244,9 @@ void commit_transaction() {
     /* Commit Xlog. */
     commit_xlog();
 
+    /* Clear table buffer. */
+    clear_table_buffer();
+
     /* Destroy transaction. */
     destroy_transaction(); 
     
@@ -261,6 +264,10 @@ void auto_commit_transaction() {
     if (entry && entry->auto_commit) {
 
         int64_t xid = entry->xid; 
+
+        /* Clear table buffer. */
+        clear_table_buffer();
+
         /* Destroy transaction. */
         destroy_transaction();
 

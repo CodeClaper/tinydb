@@ -247,7 +247,7 @@ static void reverse_update_delete(Refer *refer, TransEntry *transaction) {
 
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
     int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
-    assert_true(row_expired_xid == transaction->xid, "System error, row expired xid not equals transaction xid");
+    Assert(row_expired_xid == transaction->xid); 
 
     /* Make the row visible. */
     *(int64_t *)expired_xid_col->value = 0;
