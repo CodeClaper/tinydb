@@ -5,6 +5,8 @@ import random
 import uuid
 
 client = TinyDbClient("127.0.0.1", 4083)
+client.login("root", "Zc120130211")
+
 names = ["zhangsan", "lisi", "Sun", "July", "Kaili", "James", "Max"]
 address = ["beijing", "shanghai", "nanjing", "jinan", "zhengzhou", "xian", "guangzhou", "hongkong", "shenzhen", "wuhan", "zhejiang", "chognqing", "shengdu"]
 

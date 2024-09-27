@@ -3,6 +3,8 @@ from support.tinydb_cli import TinyDbClient
 from support.asserts import assert_all
 client1 = TinyDbClient("127.0.0.1", 4083)
 client2 = TinyDbClient("127.0.0.1", 4083)
+client1.login("root", "Zc120130211")
+client2.login("root", "Zc120130211")
 
 
 ## create mock table:

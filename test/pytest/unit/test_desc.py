@@ -2,6 +2,7 @@
 from support.tinydb_cli import TinyDbClient
 
 client = TinyDbClient("127.0.0.1", 4083)    
+client.login("root", "Zc120130211")
 
 ## Firstly create table.
 def test_create_table():

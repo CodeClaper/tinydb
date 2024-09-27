@@ -4,6 +4,7 @@ import random
 import uuid
 
 client = TinyDbClient("127.0.0.1", 4083)    
+client.login("root", "Zc120130211")
 
 # mock table
 def test_mock_table():

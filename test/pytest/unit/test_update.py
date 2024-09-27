@@ -1,7 +1,9 @@
 ## update_test.py
 from support.tinydb_cli import TinyDbClient
 from support.asserts import assert_all
+
 client = TinyDbClient("127.0.0.1", 4083)
+client.login("root", "Zc120130211")
 
 ## create mock table;
 def test_create_mock_table():

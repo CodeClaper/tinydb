@@ -2,6 +2,7 @@
 from support.tinydb_cli import TinyDbClient
 
 client = TinyDbClient("127.0.0.1", 4083)    
+client.login("root", "Zc120130211")
 
 ## create table with default value but invalid.
 def test_invalid_default_value():

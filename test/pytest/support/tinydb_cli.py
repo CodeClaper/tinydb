@@ -11,13 +11,20 @@ class TinyDbClient:
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect((ip, port))
 
+    def login(self, account, password) -> bool:
+        self.client.send(f"{account}/{password}".encode("utf-8"))
+        response = self.client.recv(65535)
+        response = response.decode("utf-8").rstrip("\x00")
+        print(response)
+        return response != 'No access.'
+
     def execute(self, sql) -> dict:
         try:
             self.client.send(sql.encode("utf-8")[:65535])
             writer = io.StringIO()
             while True:
                 response = self.client.recv(65535)
-                response = response.decode("utf-8").rstrip("\x00").lstrip("\x00").strip()
+                response = response.decode("utf-8").rstrip("\x00").lstrip("\x00")
                 if response.upper() == "OVER":
                     break
                 writer.write(response)
