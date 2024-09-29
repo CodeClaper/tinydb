@@ -7,12 +7,11 @@ import connector
 import getpass
 
 client = connector.TinyDbClient('127.0.0.1', 4083)
+keywords = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'DROP', 'CREATE', 'TABLE', 'FROM', 'WHERE', 
+           'AND', 'OR', 'ALTER', 'DESC', 'DESCRIBE']
 
 def completer(text, state):
-    options = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'DROP', 'CREATE', 'TABLE', 'FROM', 'WHERE', 
-               'AND', 'OR', 'ALTER', 'DESC', 'DESCRIBE']
-    options = [i for i in options if i.startswith(text.upper())]
-
+    options = [i for i in keywords if i.startswith(text) or i.startswith(text.upper())]
     try:
         return options[state]
     except:
@@ -102,10 +101,17 @@ def login() -> bool:
     password = getpass.getpass("Your password: ")
     return client.login(account, password)
 
+def fetchTables():
+    ret = client.execute("show tables;")
+    assert ret["success"] == True
+    for item in ret["data"]:
+        keywords.append(item["table_name"])
+
 
 if __name__ == "__main__":
     try:
         if login():
+            fetchTables()
             while True:
                 cmd = readCmd()
                 exec_cmd(cmd)
