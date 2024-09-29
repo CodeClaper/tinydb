@@ -83,7 +83,10 @@ def login() -> bool:
 
 
 if __name__ == "__main__":
-    if login():
-        while True:
-            cmd = readCmd()
-            exec_cmd(cmd)
+    try:
+        if login():
+            while True:
+                cmd = readCmd()
+                exec_cmd(cmd)
+    except KeyboardInterrupt:
+        exit()

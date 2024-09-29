@@ -1896,7 +1896,7 @@ static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *sca
  * Actually, the Selection is pure-column scalars. */
 static Row *query_plain_row_selection(SelectResult *select_result, List *scalar_exp_list, Row *row) {
 
-    if (!row) 
+    if (is_null(row)) 
         return NULL;
     
     Table *table = open_table(row->table_name);

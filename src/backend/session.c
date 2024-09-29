@@ -115,9 +115,8 @@ bool db_send(const char *format, ...) {
         clearn_up_spool();
 
         /* If there are left message, continue db_send. */
-        if (left_msg) {
+        if (left_msg) 
             return db_send(left_msg);
-        }
 
         return true;
     }

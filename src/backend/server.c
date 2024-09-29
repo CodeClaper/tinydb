@@ -64,18 +64,26 @@ int startup(u_short port) {
 /* Auth client. */
 static bool auth_request(intptr_t client) {
     char buf[SPOOL_SIZE];
+    char sbuf[SPOOL_SIZE];
+    
+    /* Intialize. */
     bzero(buf, SPOOL_SIZE);
+    bzero(sbuf, SPOOL_SIZE);
 
     size_t chars_num = recv(client, buf, SPOOL_SIZE, 0);
     if (chars_num > 0) {
         buf[chars_num] = '\0';
         bool pass = auth(buf);
-        const char* message = pass 
-            ? "Welcome to TinyDb.\nYour TinyDb version is 0.0.1.\n\nCopyright (c) 2024, Inspur.\n" 
-            : "No access.";
-        size_t s = send(client, message, strlen(message), 0);
+        
+        /* Banner. */
+        if (pass)
+            sprintf(sbuf, "Welcome to TinyDb.\nYour TinyDb version is 0.0.1.\n\nCopyright (c) 2024, Inspur.\n");
+        else
+            sprintf(sbuf, "No access.");
+
+        size_t s = send(client, sbuf, SPOOL_SIZE, 0);
         if (s == -1) 
-            db_log(ERROR, "Try to send %s fail, %s.", message, strerror(errno));
+            db_log(ERROR, "Try to send %s fail, %s.", sbuf, strerror(errno));
 
         return pass;
     }
