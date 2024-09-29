@@ -27,7 +27,7 @@
 int startup(u_short port) {
     int httpd = 0;
     int on = 1;
-    size_t buff_size = 65535;
+    size_t buff_size = SPOOL_SIZE;
     struct sockaddr_in *address = sys_malloc(sizeof(struct sockaddr_in));
     httpd = socket(PF_INET, SOCK_STREAM, 0);
     if (httpd == -1)

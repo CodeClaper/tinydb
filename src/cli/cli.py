@@ -22,9 +22,14 @@ readline.set_completer(completer)
 readline.parse_and_bind('tab: complete')
 readline.parse_and_bind('Control-v: paste')
 
+def generateSql(cmd: str):
+    if not cmd.endswith(';'):
+        cmd +=';'
+    return cmd
+
 ## exec exit.
 def exit():
-    print('Bye...')
+    print('\nBye...\n')
     sys.exit(0)
 
 ## exec clear 
@@ -34,7 +39,8 @@ def clear():
 
 ## execute tinydb
 def tinydb(cmd):
-    ret = client.execute(cmd)    
+    sql = generateSql(cmd)
+    ret = client.execute(sql)    
     print(ret)
 
 ## read command.
@@ -60,11 +66,25 @@ def source(file):
     except KeyboardInterrupt:
         exit()
 
+def output(cmd: str):
+    list = cmd.split(">>")
+    if (len(list) != 2):
+        print("Error input for >>")
+        return
+    sql = generateSql(list[0].strip())
+    filePath = list[1].rstrip(';').strip()
+    ret = client.directExecute(sql)
+    with open(filePath, 'w', encoding='utf-8') as file:
+        file.write(ret)
+    print(f"Result write into {filePath} successfully.")
+
 
 ## Execute command.
 def exec_cmd(cmd):
     if cmd.upper().startswith("SOURCE "):
         source(cmd.strip("SOURCE ").strip("source" ).strip())
+    elif ">>" in cmd:
+        output(cmd)
     else:
         match cmd.upper():
             case 'EXIT':
@@ -76,6 +96,7 @@ def exec_cmd(cmd):
             case _:
                 tinydb(cmd)
 
+## Login 
 def login() -> bool:
     account = input("Your account: ")
     password = getpass.getpass("Your password: ")

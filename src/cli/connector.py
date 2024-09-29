@@ -25,6 +25,28 @@ class TinyDbClient:
         hex_values = ' '.join(hex(ord(c))[2:].zfill(2) for c in string_data)
         print(hex_values)
 
+
+    def directExecute(self, sql) -> str:
+        try:
+            self.client.send(sql.encode("utf-8")[:65535])
+            writer = io.StringIO()
+            while True:
+                resp_bytes = self.client.recv(65535)
+                response = resp_bytes.decode("utf-8").strip("\x00")
+                if response.upper() == "OVER":
+                    break
+                writer.write(response)
+            ret = writer.getvalue()
+            writer.close()
+            return ret
+               
+        except ConnectionError:
+            exit(1)
+        except Exception as e:
+            print(f"Error: {e}")
+
+        return ""
+
     def execute(self, sql) -> dict:
         try:
             self.client.send(sql.encode("utf-8")[:65535])
