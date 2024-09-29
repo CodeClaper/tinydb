@@ -44,7 +44,7 @@ int yylex();
    ComparisonNode               *comparison_node;
    LikeNode                     *like_node;
    InNode                       *in_node;
-   LimitNode                    *limit_node;
+   LimitClauseNode              *limit_clause_node;
    TableRefNode                 *table_ref_node;
    QuerySpecNode                *query_spec_node;
    ValuesOrQuerySpecNode        *values_or_query_spec_node;
@@ -84,7 +84,7 @@ int yylex();
 %token <keyword> SET
 %token <keyword> VALUES
 %token <keyword> TABLE
-%token <keyword> LIMIT
+%token <keyword> LIMIT OFFSET
 %token <keyword> SHOW
 %token <keyword> TABLES
 %token <keyword> PRIMARY KEY
@@ -131,7 +131,7 @@ int yylex();
 %type <comparison_node> comparison_predicate
 %type <like_node> like_predicate
 %type <in_node> in_predicate
-%type <limit_node> opt_limit
+%type <limit_clause_node> limit_clause
 %type <assignment_node> assignment
 %type <list> assignments
 %type <data_type_node> data_type
@@ -450,11 +450,12 @@ selection:
         }
     ;
 table_exp:
-    from_clause opt_where_clause
+    from_clause opt_where_clause limit_clause
         {
             TableExpNode *table_exp = instance(TableExpNode);
             table_exp->from_clause = $1;
             table_exp->where_clause = $2;
+            table_exp->limit_clause = $3;
             $$ = table_exp;
         }
     ;
@@ -1164,24 +1165,31 @@ in_predicate:
             $$ = in_node;
         }
     ;
-opt_limit:  
+limit_clause:  
     // empty
         {
             $$ = NULL;
         }
     | LIMIT INTVALUE
         {
-            LimitNode *limit_node = instance(LimitNode);
-            limit_node->start = 0;
-            limit_node->end = $2;
-            $$ = limit_node;
+            LimitClauseNode *node = instance(LimitClauseNode);
+            node->offset = 0;
+            node->rows = $2;
+            $$ = node;
         }
     | LIMIT INTVALUE ',' INTVALUE
         {
-            LimitNode *limit_node = instance(LimitNode);
-            limit_node->start = $2;
-            limit_node->end = $4;
-            $$ = limit_node;
+            LimitClauseNode *node = instance(LimitClauseNode);
+            node->offset = $2;
+            node->rows = $4;
+            $$ = node;
+        }
+    | LIMIT INTVALUE OFFSET INTVALUE
+        {
+            LimitClauseNode *node = instance(LimitClauseNode);
+            node->rows = $2;
+            node->offset = $4;
+            $$ = node;
         }
     ;
 compare: 

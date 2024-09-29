@@ -37,6 +37,7 @@ WHERE                   return WHERE;
 LIKE                    return LIKE;
 IN                      return IN;
 LIMIT                   return LIMIT;
+OFFSET                  return OFFSET;
 SHOW                    return SHOW;
 TABLES                  return TABLES;
 AS                      return AS;

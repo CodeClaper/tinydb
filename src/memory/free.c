@@ -411,9 +411,9 @@ void free_condition_node(ConditionNode *condition_node) {
 }
 
 /* Free LimitNode. */
-void free_limit_node(LimitNode *limit_node) {
-    if (limit_node) {
-        db_free(limit_node);
+void free_limit_node(LimitClauseNode *limit_clause_node) {
+    if (limit_clause_node) {
+        db_free(limit_clause_node);
     }
 }
 

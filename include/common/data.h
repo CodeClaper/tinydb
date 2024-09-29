@@ -419,11 +419,12 @@ typedef struct InNode {
     List *value_list;
 } InNode;
 
-/* LimitNode */
-typedef struct LimitNode {
-    int32_t start;
-    int32_t end;
-} LimitNode;
+/* LimitClauseNode */
+typedef struct LimitClauseNode {
+    int32_t offset;
+    int32_t rows;
+    int32_t poffset;        /* Not user assigned, use for record now offset.*/
+} LimitClauseNode;
 
 /* TableRefNode. */
 typedef struct TableRefNode {
@@ -445,6 +446,7 @@ typedef struct WhereClauseNode {
 typedef struct TableExpNode {
     FromClauseNode *from_clause;
     WhereClauseNode *where_clause;
+    LimitClauseNode *limit_clause;
 } TableExpNode;
 
 /* CreateTableNode */

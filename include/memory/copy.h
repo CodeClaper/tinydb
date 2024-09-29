@@ -52,8 +52,8 @@ LikeNode *copy_like_node(LikeNode *like_node);
 /* Copy an InNode. */
 InNode *copy_in_node(InNode *in_node);
 
-/* Copy LimitNode. */
-LimitNode *copy_limit_node(LimitNode *limit_node);
+/* Copy LimitCluaseNode. */
+LimitClauseNode *copy_limit_node(LimitClauseNode *limit_clause_node);
 
 /* Copy ReferValue. */
 ReferValue *copy_refer_value(ReferValue *refer_value);

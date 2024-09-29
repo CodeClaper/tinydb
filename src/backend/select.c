@@ -97,6 +97,13 @@ static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
     return off_set;
 }
 
+/* Check if LimitClauseNode is full. 
+ * LimitClauseNode full means the poffset is greater or equal the offset.
+ * */
+inline static bool limit_clause_full(LimitClauseNode *limit_clause) {
+    return limit_clause->poffset >= limit_clause->offset + limit_clause->rows;
+}
+
 
 /* Check if include internal comparison predicate for Value type. */
 static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
@@ -653,6 +660,10 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
                                   uint32_t page_num, Table *table, 
                                   ROW_HANDLER row_handler, void *arg) {
 
+    /* If LimitClauseNode full, not continue. */
+    if (arg && limit_clause_full(arg))
+        return;
+
     void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
 
     /* Get cell number, key length and value lenght. */
@@ -716,6 +727,10 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
 /* Select through internal node. */
 static void select_from_internal_node(SelectResult *select_result, ConditionNode *condition, 
                                       uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
+
+    /* If LimitClauseNode full, not continue. */
+    if (arg && limit_clause_full(arg))
+        return;
 
     void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
 
@@ -820,7 +835,19 @@ void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) 
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
-    append_list(select_result->rows, copy_row_without_reserved(row));
+
+    if (arg) {
+        LimitClauseNode *limit_clause = (LimitClauseNode *) arg;
+
+        /* If has limit clause, only append row whose pindex > offset and pindex < offset + rows. */
+        if (limit_clause->poffset >= limit_clause->offset && 
+                limit_clause->poffset < (limit_clause->offset + limit_clause->rows)) {
+            append_list(select_result->rows, copy_row_without_reserved(row));
+        }
+        limit_clause->poffset++;
+    } 
+    else 
+        append_list(select_result->rows, copy_row_without_reserved(row));
 }
 
 /* Calulate column sum value. */
@@ -2012,7 +2039,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
         ConditionNode *condition = get_table_exp_condition(select_node->table_exp);
 
         /* Query with condition to filter satisfied conditions rows. */
-        query_with_condition(condition, current_result, select_row, NULL);
+        query_with_condition(condition, current_result, select_row, select_node->table_exp->limit_clause);
 
         result = current_result;
     }

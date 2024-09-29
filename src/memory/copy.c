@@ -13,6 +13,7 @@
 #include "asserts.h"
 #include "common.h"
 #include "mmu.h"
+#include "utils.h"
 
 /* Copy value. */
 void *copy_value(void *value, DataType data_type) {
@@ -446,13 +447,14 @@ InNode *copy_in_node(InNode *in_node) {
 }
 
 /* Copy LimitNode. */
-LimitNode *copy_limit_node(LimitNode *limit_node) {
-    if (limit_node == NULL)
+LimitClauseNode *copy_limit_clause_node(LimitClauseNode *limit_clause_node) {
+    if (is_null(limit_clause_node))
         return NULL;
-    LimitNode *limit_node_copy = instance(LimitNode);
-    limit_node_copy->start = limit_node->start;
-    limit_node_copy->end = limit_node->end;
-    return limit_node_copy;
+    LimitClauseNode *duplica = instance(LimitClauseNode);
+    duplica->rows = limit_clause_node->rows;
+    duplica->offset = limit_clause_node->offset;
+    duplica->poffset = limit_clause_node->poffset;
+    return duplica;
 }
 
 /* Copy ReferValue. */
@@ -553,6 +555,7 @@ TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node) {
     TableExpNode *table_exp_copy = instance(TableExpNode);
     table_exp_copy->from_clause = copy_from_clause_node(table_exp_node->from_clause);
     table_exp_copy->where_clause = copy_where_clause_node(table_exp_node->where_clause);
+    table_exp_copy->limit_clause = copy_limit_clause_node(table_exp_node->limit_clause);
     return table_exp_copy;
 }
 
