@@ -177,6 +177,10 @@ void list_delete_double(List *list, double item);
 void list_delete(List *list, void *item);
 
 
+/* Delete the last n item */
+void list_delete_tail(List *list, int num);
+
+
 /* Replace list at n. */
 void list_replace_at(List *list, int n, void *item);
 

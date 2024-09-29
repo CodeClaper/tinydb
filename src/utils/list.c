@@ -269,6 +269,13 @@ void list_delete(List *list, void *item) {
     }
 }
 
+/* Delete the last n item */
+void list_delete_tail(List *list, int num) {
+    Assert(num <= list->size);
+    memset(list->elements + list->size - num, 0, sizeof(ListCell) * num);
+    list->size = list->size - num;
+}
+
 
 void list_replace_at_int(List *list, int n, int item) {
     ListCell *lc = list_nth_cell(list, n);

@@ -815,14 +815,15 @@ static void* purge_row(Row *row) {
     /* At least, more 3 sys-reserved column. */
     Assert(list->size > 3);
 
+    /* Free KeyValue. */
     int32_t i;
     for (i = list->size - 1; i >= list->size - 3; i--) {
         KeyValue *key_value = lfirst(list_nth_cell(list, i));
         free_key_value(key_value);
     }
 
-    memset(list->elements + list->size - 3, 0, sizeof(ListCell) * 3);
-    list->size -= 3;
+    /* Delete items. */
+    list_delete_tail(list, 3);
 
     return row;
 }
