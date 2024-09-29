@@ -188,10 +188,6 @@ bool streq_or_null(char *str1, char *str2) {
         return false;
 }
 
-/* Return if pointer is NULL. */
-bool is_null(void *ptr) {
-    return ptr == NULL;
-}
 
 /* Convert int32 to string. */
 char *itos(int32_t val) {

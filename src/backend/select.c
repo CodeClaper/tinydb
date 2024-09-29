@@ -661,7 +661,7 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
                                   ROW_HANDLER row_handler, void *arg) {
 
     /* If LimitClauseNode full, not continue. */
-    if (arg && limit_clause_full(arg))
+    if (non_null(arg) && limit_clause_full(arg))
         return;
 
     void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
@@ -729,7 +729,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                                       uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
 
     /* If LimitClauseNode full, not continue. */
-    if (arg && limit_clause_full(arg))
+    if (non_null(arg) && limit_clause_full(arg))
         return;
 
     void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);

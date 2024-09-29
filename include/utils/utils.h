@@ -52,8 +52,15 @@ bool streq(char *str1, char *str2);
  * if both is null, also return true. */
 bool streq_or_null(char *str1, char *str2);
 
-/* Return if pointer is NULL. */
-bool is_null(void *ptr);
+/* Return true if pointer is NULL. */
+inline static bool is_null(void *ptr) {
+    return ptr == NULL;
+}
+
+/* Return true if pointer is not NULL. */
+inline static bool non_null(void *ptr) {
+    return ptr != NULL;
+}
 
 /* Convert int32 to string. */
 char *itos(int32_t val);
