@@ -672,16 +672,11 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
     value_len = calc_table_row_length(table);
     cell_num = get_leaf_node_cell_num(leaf_node, value_len);
 
-    /* It`s necessary to use leaf node snapshot, beacuse when traversing cells, 
-     * update or delete operation will change the data structure of leaf node,
-     * which may causes bug. */
-    void *leaf_node_snapshot = copy_block(leaf_node, PAGE_SIZE);
-
     uint32_t i;
     for (i = 0; i < cell_num; i++) {
 
         /* Get leaf node cell value. */
-        void *destinct = get_leaf_node_cell_value(leaf_node_snapshot, key_len, value_len, i);
+        void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, i);
 
         /* If satisfied, exeucte row handler function. */
         Row *row = generate_row(destinct, table->meta_table);
@@ -701,27 +696,20 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
                 /* Check if the row data include, 
                  * in another word, check if the row data satisfy the condition. */
                 if (include_leaf_node(select_result, derived_row, condition)) 
-                    /* Execute row handler. */
                     row_handler(derived_row, select_result, table, arg);
+                else
+                    free_row(row);
             }
-
-            /* Free useless row. */
-            free_row(row);
-
             continue;
         }
 
-        /* Check if the row data include, in another word, check if the row data satisfy the condition. */
+        /* Check if the row data include, in another word, 
+         * check if the row data satisfy the condition. */
         if (include_leaf_node(select_result, row, condition)) 
-            /* Execute row handler. */
             row_handler(row, select_result, table, arg);
-
-        /* Free useless row. */
-        free_row(row);
+        else
+            free_row(row);
     }
-    
-    /* Free useless memory. */
-    free_block(leaf_node_snapshot);
 }
 
 /* Select through internal node. */
@@ -740,11 +728,6 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     value_len = calc_table_row_length(table);
     keys_num = get_internal_node_keys_num(internal_node, value_len);
 
-    /* It`s necessary to use internal node snapshot, beacuse when traversing cells, 
-     * update or delete operation will change the data structure of internal node,
-     * which may causes bug. */
-    void *internal_node_snapshot = copy_block(internal_node, PAGE_SIZE);
-
     /* Loop each interanl node cell to check if satisfy condition. */
     uint32_t i;
     for (i = 0; i < keys_num; i++) {
@@ -752,15 +735,15 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key. */
-            void *max_key = get_internal_node_key(internal_node_snapshot, i, key_len, value_len); 
-            void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node_snapshot, i - 1, key_len, value_len);
+            void *max_key = get_internal_node_key(internal_node, i, key_len, value_len); 
+            void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node, i - 1, key_len, value_len);
 
             if (!include_internal_node(select_result, min_key, max_key, condition, table->meta_table))
                 continue;
         }
 
         /* Check other non-key column */
-        uint32_t page_num = get_internal_node_child(internal_node_snapshot, i, key_len, value_len);
+        uint32_t page_num = get_internal_node_child(internal_node, i, key_len, value_len);
         void *node = get_page(table->meta_table->table_name, table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
@@ -776,11 +759,11 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     }
 
     /* Don`t forget the right child. */
-    uint32_t right_child_page_num = get_internal_node_right_child(internal_node_snapshot, value_len);
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
 
     /* Zero means there is no page. */
     if (right_child_page_num == 0) {
-        free_block(internal_node_snapshot);
+        free_block(internal_node);
         return;
     } 
     
@@ -798,9 +781,6 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
             UNEXPECTED_VALUE(node_type);
             break;
     }
-
-    /* Free memory. */
-    free_block(internal_node_snapshot);
 }
 
 
@@ -830,24 +810,42 @@ void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     select_result->row_size++;
 }
 
+static void* purge_row(Row *row) {
+    List *list = row->data;
+    /* At least, more 3 sys-reserved column. */
+    Assert(list->size > 3);
+
+    int32_t i;
+    for (i = list->size - 1; i >= list->size - 3; i--) {
+        KeyValue *key_value = lfirst(list_nth_cell(list, i));
+        free_key_value(key_value);
+    }
+
+    memset(list->elements + list->size - 3, 0, sizeof(ListCell) * 3);
+    list->size -= 3;
+
+    return row;
+}
+
 /* Select row data. */
 void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
 
+    /* If has limit clause. */
     if (arg) {
         LimitClauseNode *limit_clause = (LimitClauseNode *) arg;
 
         /* If has limit clause, only append row whose pindex > offset and pindex < offset + rows. */
         if (limit_clause->poffset >= limit_clause->offset && 
                 limit_clause->poffset < (limit_clause->offset + limit_clause->rows)) {
-            append_list(select_result->rows, copy_row_without_reserved(row));
+            append_list(select_result->rows,purge_row(row));
         }
         limit_clause->poffset++;
     } 
     else 
-        append_list(select_result->rows, copy_row_without_reserved(row));
+        append_list(select_result->rows, purge_row(row));
 }
 
 /* Calulate column sum value. */

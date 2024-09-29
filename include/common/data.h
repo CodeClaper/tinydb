@@ -631,9 +631,9 @@ typedef struct KeyValue {
 
 /* Row */
 typedef struct Row {
-    void *key;
-    char *table_name;
-    List *data;    /* List of KeyValue. */
+    void *key;                      /* Primary key. */
+    char *table_name;               /* Table name. */
+    List *data;                     /* List of KeyValue. */
 } Row;
 
 /* SelectResult */
