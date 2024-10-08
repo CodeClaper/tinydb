@@ -676,7 +676,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
     List *assignment_list = update_node->assignment_list;
     SelectResult *select_result = new_select_result(update_node->table_name);
     ConditionNode *condition_node = get_condition_from_where_clause(update_node->where_clause);
-    query_with_condition(condition_node, select_result, count_row, NULL);
+    query_with_condition(condition_node, select_result, count_row, ARG_NULL, NULL);
 
     bool change_priamry = false;
     void *new_key = NULL;

@@ -1,6 +1,7 @@
 #include "data.h"
 #include "type.h"
 #include "mmu.h"
+#include <string.h>
 #include <time.h>
 
 /* Generate new KeyValue instance. */
@@ -17,7 +18,7 @@ KeyValue *new_key_value(char *key, void *value, DataType data_type) {
 Row *new_row(void *key, char *table_name) {
     Row *row = instance(Row);
     row->key = key;
-    row->table_name = table_name;
+    strcpy(row->table_name, table_name);
     row->data = create_list(NODE_KEY_VALUE);
     return row;
 }

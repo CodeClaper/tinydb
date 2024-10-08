@@ -144,7 +144,7 @@ static Row *generate_insert_row_for_all2(MetaTable *meta_table, List *value_item
     Row *row = instance(Row);
     
     /* Initialization */
-    row->table_name = db_strdup(meta_table->table_name);
+    strcpy(row->table_name, meta_table->table_name);
     row->data = create_list(NODE_KEY_VALUE);
     
     /* Row data. */
@@ -210,7 +210,7 @@ static Row *generate_insert_row_for_part2(MetaTable *meta_table, List *column_li
     Row *row = instance(Row);
 
     /* Initialization */
-    row->table_name = db_strdup(meta_table->table_name);
+    strcpy(row->table_name, meta_table->table_name);
     row->data = create_list(NODE_KEY_VALUE);
     
     /* Row data. */
@@ -298,7 +298,7 @@ static Row *convert2_insert_row(Row *row, Table *table) {
 
     Row *insert_row = instance(Row);
 
-    insert_row->table_name = db_strdup(get_table_name(table));
+    strcpy(insert_row->table_name, get_table_name(table));
     insert_row->data = create_list(NODE_KEY_VALUE);
 
     /* Copy data. */

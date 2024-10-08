@@ -75,7 +75,7 @@ static bool allow_gc() {
 }
 
 /* Gc row*/
-void gc_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+void gc_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only for deleted row. */
     if (!row_is_deleted(row))
         return;
@@ -97,7 +97,7 @@ void gc_table(char *table_name) {
     /* Query with condition, and delete satisfied condition row. */
     SelectResult *select_result = new_select_result(table_name);
 
-    query_with_condition(NULL, select_result, gc_row, NULL);
+    query_with_condition(NULL, select_result, gc_row, ARG_NULL, NULL);
     
     free_select_result(select_result);
 

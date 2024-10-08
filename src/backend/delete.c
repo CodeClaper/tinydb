@@ -20,7 +20,8 @@
 #include "pager.h"
 
 /* Delete row */
-void delete_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void delete_row(Row *row, SelectResult *select_result, Table *table, 
+                       ROW_HANDLER_ARG_TYPE type, void *arg) {
 
     /* Only deal with row that is visible for current transaction. */
     if (row_is_visible(row)) {
@@ -64,7 +65,7 @@ void exec_delete_statement(DeleteNode *delete_node, DBResult *result) {
     SelectResult *select_result = new_select_result(delete_node->table_name);
 
     /* Query with condition and delete satisfied row. */
-    query_with_condition(delete_node->condition_node, select_result, delete_row, NULL);
+    query_with_condition(delete_node->condition_node, select_result, delete_row, ARG_NULL, NULL);
 
     /* Root fall back. */
     root_fall_back_root_node(table);

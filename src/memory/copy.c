@@ -151,7 +151,7 @@ Row *copy_row(Row *row) {
     Row *row_copy = instance(Row);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type);
-    row_copy->table_name = db_strdup(row->table_name);
+    strcpy(row_copy->table_name, row->table_name);
     row_copy->data = create_list(NODE_KEY_VALUE);
 
     ListCell *lc;
@@ -179,7 +179,7 @@ Row *copy_row_without_reserved(Row *row) {
     /* copy row. */
     Row *row_copy = instance(Row);
     row_copy->key = copy_value(row->key, primary_meta_column->column_type);
-    row_copy->table_name = db_strdup(row->table_name);
+    strcpy(row_copy->table_name, row->table_name);
     row_copy->data = create_list(NODE_KEY_VALUE);
 
     ListCell *lc;

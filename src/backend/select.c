@@ -101,7 +101,8 @@ static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
  * LimitClauseNode full means the poffset is greater or equal the offset.
  * */
 inline static bool limit_clause_full(LimitClauseNode *limit_clause) {
-    return limit_clause->poffset >= limit_clause->offset + limit_clause->rows;
+    return non_null(limit_clause) && 
+        (limit_clause->poffset >= limit_clause->offset + limit_clause->rows);
 }
 
 
@@ -558,7 +559,7 @@ static void *assign_row_value(void *destination, MetaColumn *meta_column) {
 static Row *generate_row(void *destination, MetaTable *meta_table) {
 
     /* Instance new row. */
-    Row *row = new_row(NULL, db_strdup(meta_table->table_name));
+    Row *row = new_row(NULL, meta_table->table_name);
 
     /* Assignment row data. */
     uint32_t i;
@@ -658,10 +659,10 @@ static char *search_table_via_alias(SelectResult *select_result, char *range_var
 /* Select through leaf node. */
 static void select_from_leaf_node(SelectResult *select_result, ConditionNode *condition, 
                                   uint32_t page_num, Table *table, 
-                                  ROW_HANDLER row_handler, void *arg) {
+                                  ROW_HANDLER row_handler, ROW_HANDLER_ARG_TYPE type, void *arg) {
 
     /* If LimitClauseNode full, not continue. */
-    if (non_null(arg) && limit_clause_full(arg))
+    if (type == ARG_LIMIT_CLAUSE_NODE && limit_clause_full(arg))
         return;
 
     void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
@@ -696,7 +697,7 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
                 /* Check if the row data include, 
                  * in another word, check if the row data satisfy the condition. */
                 if (include_leaf_node(select_result, derived_row, condition)) 
-                    row_handler(derived_row, select_result, table, arg);
+                    row_handler(derived_row, select_result, table, type, arg);
                 else
                     free_row(row);
             }
@@ -706,7 +707,7 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         /* Check if the row data include, in another word, 
          * check if the row data satisfy the condition. */
         if (include_leaf_node(select_result, row, condition)) 
-            row_handler(row, select_result, table, arg);
+            row_handler(row, select_result, table, type, arg);
         else
             free_row(row);
     }
@@ -714,7 +715,8 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
 
 /* Select through internal node. */
 static void select_from_internal_node(SelectResult *select_result, ConditionNode *condition, 
-                                      uint32_t page_num, Table *table, ROW_HANDLER row_handler, void *arg) {
+                                      uint32_t page_num, Table *table, 
+                                      ROW_HANDLER row_handler, ROW_HANDLER_ARG_TYPE type, void *arg) {
 
     /* If LimitClauseNode full, not continue. */
     if (non_null(arg) && limit_clause_full(arg))
@@ -747,10 +749,10 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         void *node = get_page(table->meta_table->table_name, table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
-                select_from_leaf_node(select_result, condition, page_num, table, row_handler, arg);
+                select_from_leaf_node(select_result, condition, page_num, table, row_handler, type, arg);
                 break;
             case INTERNAL_NODE:
-                select_from_internal_node(select_result, condition, page_num, table, row_handler, arg);
+                select_from_internal_node(select_result, condition, page_num, table, row_handler, type, arg);
                 break;
             default:
                 db_log(PANIC, "Unknown node type.");
@@ -772,10 +774,10 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     NodeType node_type = get_node_type(right_child);
     switch (node_type) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, condition, right_child_page_num, table, row_handler, arg);
+            select_from_leaf_node(select_result, condition, right_child_page_num, table, row_handler, type, arg);
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, condition, right_child_page_num, table, row_handler, arg);
+            select_from_internal_node(select_result, condition, right_child_page_num, table, row_handler, type, arg);
             break;
         default:
             UNEXPECTED_VALUE(node_type);
@@ -785,17 +787,19 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 
 
 /* Query with condition. */
-void query_with_condition(ConditionNode *condition, SelectResult *select_result, ROW_HANDLER row_handler, void *arg) {
+void query_with_condition(ConditionNode *condition, SelectResult *select_result, 
+                          ROW_HANDLER row_handler, ROW_HANDLER_ARG_TYPE type, void *arg) {
+
     Table *table = open_table(select_result->table_name);
     if (table == NULL)
         return;
     void *root = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
     switch (get_node_type(root)) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, condition, table->root_page_num, table, row_handler, arg);
+            select_from_leaf_node(select_result, condition, table->root_page_num, table, row_handler, type, arg);
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, condition, table->root_page_num, table, row_handler, arg);
+            select_from_internal_node(select_result, condition, table->root_page_num, table, row_handler, type, arg);
             break;
         default:
             db_log(PANIC, "Unknown data type occurs in <query_with_condition>.");
@@ -803,7 +807,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
 }
 
 /* Count number of row, used in the sql function count(1) */
-void count_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+void count_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type,void *arg) {
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
@@ -829,13 +833,13 @@ static void* purge_row(Row *row) {
 }
 
 /* Select row data. */
-void select_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+void select_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
 
     /* If has limit clause. */
-    if (arg) {
+    if (type == ARG_LIMIT_CLAUSE_NODE && non_null(arg)) {
         LimitClauseNode *limit_clause = (LimitClauseNode *) arg;
 
         /* If has limit clause, only append row whose pindex > offset and pindex < offset + rows. */
@@ -1820,7 +1824,7 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
 /* Query function data. */
 static void query_fuction_selecton(List *scalar_exp_list, SelectResult *select_result) {
 
-    Row *row = new_row(NULL, db_strdup(select_result->table_name));
+    Row *row = new_row(NULL, select_result->table_name);
 
     ListCell *lc;
     foreach (lc, scalar_exp_list) {
@@ -1928,7 +1932,7 @@ static Row *query_plain_row_selection(SelectResult *select_result, List *scalar_
     Table *table = open_table(row->table_name);
     MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
 
-    Row *sub_row = new_row(copy_value(row->key, key_meta_column->column_type), db_strdup(row->table_name));
+    Row *sub_row = new_row(copy_value(row->key, key_meta_column->column_type), row->table_name);
 
     ListCell *lc;
     foreach (lc, scalar_exp_list) {
@@ -2038,7 +2042,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
         ConditionNode *condition = get_table_exp_condition(select_node->table_exp);
 
         /* Query with condition to filter satisfied conditions rows. */
-        query_with_condition(condition, current_result, select_row, select_node->table_exp->limit_clause);
+        query_with_condition(condition, current_result, select_row, ARG_LIMIT_CLAUSE_NODE, select_node->table_exp->limit_clause);
 
         result = current_result;
     }

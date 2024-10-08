@@ -178,7 +178,7 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     /* Make a new SelectResult. */
     SelectResult *select_result = new_select_result(meta_column->table_name);
 
-    query_with_condition(condition_node, select_result, select_row, NULL);
+    query_with_condition(condition_node, select_result, select_row, ARG_NULL, NULL);
 
     Refer *refer = NULL;
     uint32_t row_size = len_list(select_result->rows);
@@ -299,7 +299,8 @@ static bool update_array_key_value_refer(KeyValue *key_value, ReferUpdateEntity 
 }
 
 /* Update row key value. */
-static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cursor, ReferUpdateEntity *refer_update_entity) {
+static void update_key_value_refer(Row *row, MetaColumn *meta_column, 
+                                   Cursor *cursor, ReferUpdateEntity *refer_update_entity) {
     
     bool flag = false;
 
@@ -325,11 +326,12 @@ static void update_key_value_refer(Row *row, MetaColumn *meta_column, Cursor *cu
 
 
 /* Update row refer. */
-static void update_row_refer(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void update_row_refer(Row *row, SelectResult *select_result, Table *table,  ROW_HANDLER_ARG_TYPE type, void *arg) {
 
-    assert_not_null(arg, "Illegal parameter input at <update_row_refer>");
+    Assert(arg);
 
     /* ReferUpdateEntity */
+    Assert(type == ARG_REFER_UPDATE_ENTITY);
     ReferUpdateEntity *refer_update_entity = (ReferUpdateEntity *) arg;
 
     /* Curosr */
@@ -342,8 +344,8 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
         if (meta_column->column_type == T_REFERENCE 
-            && streq(meta_column->table_name, refer_update_entity->old_refer->table_name)) 
-                update_key_value_refer(row, meta_column, cursor, refer_update_entity);
+                && streq(meta_column->table_name, refer_update_entity->old_refer->table_name)) 
+            update_key_value_refer(row, meta_column, cursor, refer_update_entity);
     }
 
     flush(meta_table->table_name);
@@ -360,7 +362,7 @@ static void update_table_refer(Table *table, ReferUpdateEntity *refer_update_ent
     SelectResult *select_result = new_select_result(table->meta_table->table_name);
 
     /* Traverse rows to update refer. */
-    query_with_condition(NULL, select_result, update_row_refer, refer_update_entity);
+    query_with_condition(NULL, select_result, update_row_refer, ARG_REFER_UPDATE_ENTITY, refer_update_entity);
     
     free_select_result(select_result);
 }

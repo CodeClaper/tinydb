@@ -83,9 +83,6 @@ void free_row(Row *row) {
         /* free row data. */
         if (row->data) 
             free_list_deep(row->data);
-        /* table name. */
-        if (row->table_name)
-            db_free(row->table_name);
 
         db_free(row);
     }

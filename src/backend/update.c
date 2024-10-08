@@ -77,7 +77,7 @@ static void insert_row_for_update(Row *row, Table *table) {
 /* Update row 
  * Update operation can be regarded as delete + re-insert operation. 
  * It makes transaction roll back simpler. */
-static void update_row(Row *row, SelectResult *select_result, Table *table, void *arg) {
+static void update_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
 
     /* Only update row that is visible for current transaction. */
     if (!row_is_visible(row)) 
@@ -93,6 +93,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, void
     delete_row_for_update(row, table);
 
     /* For update row funciton, the arg is the List of Assignment. */
+    Assert(type == ARG_ASSIGNMENT_LIST);
     List *assignment_list = (List *) arg;
 
     /* Use old primary key as default. */
@@ -165,7 +166,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     ConditionNode *condition_node = get_condition_from_where(update_node->where_clause);
 
     /* Query with update row operation. */
-    query_with_condition(condition_node, select_result, update_row, update_node->assignment_list);
+    query_with_condition(condition_node, select_result, update_row, ARG_ASSIGNMENT_LIST, update_node->assignment_list);
 
     result->success = true;
     result->rows = select_result->row_size;
