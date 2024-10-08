@@ -39,7 +39,7 @@
 #include "log.h"
 #include "utils.h"
 #include "jsonwriter.h"
-#include "type.h"
+#include "instance.h"
 
 /* Get value in insert node to assign column at index. */
 static void *get_insert_value(List *value_item_list, uint32_t index, MetaColumn *meta_column) {

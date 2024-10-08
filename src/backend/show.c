@@ -16,8 +16,8 @@
 #include "session.h"
 #include "asserts.h"
 #include "jsonwriter.h"
+#include "instance.h"
 #include "log.h"
-#include "type.h"
 #include "timer.h"
 
 #define KB_THRESHOLD 1024

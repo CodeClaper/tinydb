@@ -13,7 +13,7 @@
 #include "meta.h"
 #include "copy.h"
 #include "session.h"
-#include "type.h"
+#include "instance.h"
 #include "log.h"
 
 /*Get table name.*/

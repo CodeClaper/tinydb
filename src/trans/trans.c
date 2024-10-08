@@ -73,11 +73,11 @@
 #include "free.h"
 #include "timer.h"
 #include "refer.h"
-#include "asserts.h"
 #include "utils.h"
 #include "xlog.h"
-#include "type.h"
 #include "buffer.h"
+#include "asserts.h"
+#include "instance.h"
 #include "spinlock.h"
 
 static TransEntry *xheader; /* Store activ transactions. */

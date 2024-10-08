@@ -111,6 +111,7 @@ Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num) {
 
 /* Define cursor when meet leaf node. */
 static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t page_num, void *key) {
+
     Cursor *cursor = instance(Cursor);
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t key_len = calc_primary_key_length(table);
@@ -124,6 +125,7 @@ static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t p
 
 /* Define cursor when meet internal node. */
 static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
+
     uint32_t key_len = calc_primary_key_length(table);
     uint32_t value_len = calc_table_row_length(table);
     uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
@@ -183,7 +185,9 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
     Refer *refer = NULL;
     uint32_t row_size = len_list(select_result->rows);
     if (row_size > 1) {
-        db_log(ERROR, "Expected to one reference, but found %d, maybe you can use 'in' as for array.", select_result->row_size);
+        db_log(ERROR, 
+               "Expected to one reference, but found %d, maybe you can use 'in' as for array.", 
+               select_result->row_size);
         return NULL;
     }
     else if (row_size == 1) {

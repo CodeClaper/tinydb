@@ -30,7 +30,7 @@
 #include "log.h"
 #include "free.h"
 #include "jsonwriter.h"
-#include "type.h"
+#include "instance.h"
 #include "xlog.h"
 #include "timer.h"
 

@@ -1,8 +1,8 @@
-#include "data.h"
-#include "type.h"
-#include "mmu.h"
 #include <string.h>
 #include <time.h>
+#include "instance.h"
+#include "data.h"
+#include "mmu.h"
 
 /* Generate new KeyValue instance. */
 KeyValue *new_key_value(char *key, void *value, DataType data_type) {

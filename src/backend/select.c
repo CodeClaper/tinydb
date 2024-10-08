@@ -18,7 +18,6 @@
 #include "check.h"
 #include "common.h"
 #include "copy.h"
-#include "type.h"
 #include "free.h"
 #include "index.h"
 #include "log.h"
@@ -26,7 +25,6 @@
 #include "mem.h"
 #include "meta.h"
 #include "ltree.h"
-#include "compare.h"
 #include "pager.h"
 #include "select.h"
 #include "table.h"
@@ -35,8 +33,10 @@
 #include "trans.h"
 #include "refer.h"
 #include "utils.h"
-#include "jsonwriter.h"
 #include "const.h"
+#include "compare.h"
+#include "instance.h"
+#include "jsonwriter.h"
 
 /* Maximum number of rows fetched at once.*/
 #define MAX_FETCH_ROWS 100 
