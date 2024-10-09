@@ -105,6 +105,11 @@ inline static bool limit_clause_full(LimitClauseNode *limit_clause) {
         (limit_clause->poffset >= limit_clause->offset + limit_clause->rows);
 }
 
+/* Get LimitClauseNode. */
+inline static LimitClauseNode *get_limit_clause(SelectNode *select_node) {
+    return select_node->table_exp->limit_clause;
+}
+
 
 /* Check if include internal comparison predicate for Value type. */
 static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
@@ -2017,7 +2022,7 @@ static ConditionNode *get_table_exp_condition(TableExpNode *table_exp) {
 static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
 
     /* If no from clause, return an empty select result. */
-    if (select_node->table_exp->from_clause == NULL) 
+    if (is_null(select_node->table_exp->from_clause)) 
         return new_select_result(NULL);
 
     List *list = select_node->table_exp->from_clause->from;
@@ -2042,7 +2047,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
         ConditionNode *condition = get_table_exp_condition(select_node->table_exp);
 
         /* Query with condition to filter satisfied conditions rows. */
-        query_with_condition(condition, current_result, select_row, ARG_LIMIT_CLAUSE_NODE, select_node->table_exp->limit_clause);
+        query_with_condition(condition, current_result, select_row, ARG_LIMIT_CLAUSE_NODE, get_limit_clause(select_node));
 
         result = current_result;
     }

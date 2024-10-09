@@ -94,9 +94,9 @@ FALSE                   return FALSE;
                             yylval.strVal = replace_all(yytext, "`", ""); 
                             return IDENTIFIER;
                         } 
-[0-9]+                  { yylval.intVal = parse_long(yytext); return INTVALUE;}
-[0-9]+	|
-[0-9]+"."[0-9]* |
+[+-]?[0-9]+             { yylval.intVal = parse_long(yytext); return INTVALUE;}
+[+-]?[0-9]+	|
+[+-]?[0-9]+"."[0-9]* |
 "."[0-9]*	            { yylval.floatVal = parse_double(yytext); return FLOATVALUE; }
 '[^'\n]*'	            { if (strcmp(yytext, "''") == 0) 
                           { 

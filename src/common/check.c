@@ -662,10 +662,26 @@ static bool check_where_clause(WhereClauseNode *where_clause, AliasMap alias_map
     return check_condition_node(where_clause->condition, alias_map);
 }
 
+/* Check LimitClauseNode. */
+static bool check_limit_clause(LimitClauseNode *limit_clause) {
+    if (non_null(limit_clause)) {
+        if (limit_clause->rows < 0) {
+            db_log(ERROR, "LIMIT must not be negative.");
+            return false;
+        }
+        if (limit_clause->offset < 0) {
+            db_log(ERROR, "OFFSET must not be negative.");
+            return false;
+        }
+    }
+    return true;
+}
+
 /* Check TableExpNode. */
 static bool check_table_exp(TableExpNode *table_exp, AliasMap alias_map) {
     return check_from_clause(table_exp->from_clause)
-        && check_where_clause(table_exp->where_clause, alias_map);
+        && check_where_clause(table_exp->where_clause, alias_map)
+        && check_limit_clause(table_exp->limit_clause);
 }
 
 
