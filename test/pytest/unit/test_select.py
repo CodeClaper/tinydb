@@ -7,7 +7,7 @@ client.login("root", "Zc120130211")
 
 ## create mock tables;
 def test_create_mock_table():
-    sql = "create table Class (id string primary key, location string);\n" \
+    sql = "create table Class (id string primary key, location string, studentNum int);\n" \
           "create table Student (id string primary key, name string, age int, birth date, class Class);\n"  
     ret = client.execute(sql)
     assert ret[0]["success"] == True
@@ -15,10 +15,10 @@ def test_create_mock_table():
 
 ## insert mock data. 
 def test_insert_mock_data():
-    sql = "insert into Class values('C001', 'Northwest corner ');\n" \
-          "insert into Class values('C002', 'Middle');\n" \
-          "insert into Class values('C003', 'South side');\n" \
-          "insert into Class values('C004', 'East side');\n" \
+    sql = "insert into Class values('C001', 'Northwest corner', 32);\n" \
+          "insert into Class values('C002', 'Middle', 28);\n" \
+          "insert into Class values('C003', 'South side', 33);\n" \
+          "insert into Class values('C004', 'East side', 30);\n" \
           "insert into Student values('S001', 'kail', 10, '2014-10-03', ref(id = 'C001'));\n" \
           "insert into Student values('S002', 'sun', 11, '2013-11-20', ref(id = 'C001'));\n" \
           "insert into Student values('S003', 'ben', 12, '2012-04-23', ref(id = 'C002'));\n" \
@@ -281,6 +281,74 @@ def test_calculate_selection_sub2():
 def test_calculate_selection_none_column():
     ret = client.execute("select age - none from Student;")
     assert ret["success"] == False
+
+
+## query with limit clause.
+def test_query_with_limit_clause1():
+    sql = "select count(1) from Student limit 5;";
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"] == [{ "count": 5 }]
+
+## query with limit clause.
+def test_query_with_limit_clause2():
+    sql = "select * from Student limit 1, 5;";
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["rows"] == 5
+    assert ret["data"] == [
+        {'id': 'S002', 'name': 'sun', 'age': 11, 'birth': '2013-11-20', 'class': {'id': 'C001', 'location': 'Northwest corner', 'studentNum': 32}}, 
+        {'id': 'S003', 'name': 'ben', 'age': 12, 'birth': '2012-04-23', 'class': {'id': 'C002', 'location': 'Middle', 'studentNum': 28}}, 
+        {'id': 'S004', 'name': 'david', 'age': 14, 'birth': '2010-01-05', 'class': {'id': 'C002', 'location': 'Middle', 'studentNum': 28}}, 
+        {'id': 'S005', 'name': 'kunting', 'age': 9, 'birth': '2015-06-23', 'class': {'id': 'C002', 'location': 'Middle', 'studentNum': 28}}, 
+        {'id': 'S006', 'name': 'bob', 'age': 9, 'birth': '2015-07-07', 'class': {'id': 'C003', 'location': 'South side', 'studentNum': 33}}
+    ]
+
+
+## query with limit clause.
+def test_query_with_limit_claus3():
+    sql = "select * from Student limit 5 offset 1;";
+    ret = client.execute(sql)
+    assert ret["rows"] == 5
+    assert ret["data"] == [
+        {'id': 'S002', 'name': 'sun', 'age': 11, 'birth': '2013-11-20', 'class': {'id': 'C001', 'location': 'Northwest corner', 'studentNum': 32}}, 
+        {'id': 'S003', 'name': 'ben', 'age': 12, 'birth': '2012-04-23', 'class': {'id': 'C002', 'location': 'Middle', 'studentNum': 28}}, 
+        {'id': 'S004', 'name': 'david', 'age': 14, 'birth': '2010-01-05', 'class': {'id': 'C002', 'location': 'Middle', 'studentNum': 28}}, 
+        {'id': 'S005', 'name': 'kunting', 'age': 9, 'birth': '2015-06-23', 'class': {'id': 'C002', 'location': 'Middle', 'studentNum': 28}}, 
+        {'id': 'S006', 'name': 'bob', 'age': 9, 'birth': '2015-07-07', 'class': {'id': 'C003', 'location': 'South side', 'studentNum': 33}}
+    ]
+
+## query with limit clause.
+def test_query_with_limit_claus4():
+    sql = "select * from Student offset 1 limit 5;";
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Sql syntax error near [offset]."
+
+
+## query with limit clause.
+def test_query_with_limit_claus5():
+    sql = "select count(1) from Student limit 5 offset 5;";
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"] == [{ "count": 3 }]
+
+
+## query with limit clause.
+def test_query_with_limit_claus6():
+    sql = "select count(1) from Student limit -1;";
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "LIMIT must not be negative."
+
+
+## query with limit clause.
+def test_query_with_limit_claus7():
+    sql = "select count(1) from Student limit 10 offset -1;";
+    ret = client.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "OFFSET must not be negative."
+
 
 ## drop mock tables   
 def test_drop_mock_tables():

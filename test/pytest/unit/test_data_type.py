@@ -67,6 +67,22 @@ def test_query_double_value():
     assert ret["success"] == True
     assert ret["data"][0]["diamend"] == 9999992312313131238173472748273472874827348738478274832784782748273847824782748728478294782783472893213287382738274872837827387283728892832738728478273872837827382.231872463478718273817483784723847823
 
+## test insert negative value.
+def test_insert_negative_value():
+    sql = "INSERT INTO F values (-10, -11.232);"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["rows"] == 1
+
+
+## test insert negative value.
+def test_select_negative_value():
+    sql = "SELECT * FROM F WHERE id = -10;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["rows"] == 1
+    assert ret["data"] == [{ "id": -10, "diamend": -11.232 }]
+
 ## test for drop table.
 def test_drop_table():
     sql = "DROP TABLE A;\n" \
