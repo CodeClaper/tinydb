@@ -318,7 +318,7 @@ ST_FLAG stod(char *val, double *ret) {
     else if (isinf(converted))
         return ST_OVERFLOW;
 
-    if (converted > DBL_MAX || converted < DBL_MIN) 
+    if (fabs(converted) > DBL_MAX || fabs(converted) < DBL_MIN) 
         return ST_OVERFLOW;
 
     *ret = converted;
