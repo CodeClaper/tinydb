@@ -670,7 +670,7 @@ char *yytext;
 #include <stdlib.h>
 #include <string.h>
 #include "data.h"
-#include "mmu.h"
+#include "mem.h"
 #include "utils.h"
 #include "intpr.h"
 #include "log.h"
@@ -1306,7 +1306,7 @@ return FALSE;
 case 70:
 YY_RULE_SETUP
 #line 92 "sql.l"
-{ yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
+{ yylval.strVal = dstrdup(yytext); return IDENTIFIER;} 
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
@@ -1335,11 +1335,11 @@ YY_RULE_SETUP
 #line 101 "sql.l"
 { if (strcmp(yytext, "''") == 0) 
                           { 
-                              yylval.strVal = db_strdup(" ");
+                              yylval.strVal = dstrdup(" ");
                           } else 
                           {
                               char *str = strtok(yytext, "\'");  
-                              yylval.strVal = db_strdup(str);
+                              yylval.strVal = dstrdup(str);
                           } 
                           return STRINGVALUE;
                         } 

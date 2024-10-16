@@ -14,7 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "server.h"
-#include "mmu.h"
+#include "mem.h"
 #include "common.h"
 #include "stmt.h"
 #include "free.h"
@@ -28,7 +28,7 @@ int startup(u_short port) {
     int httpd = 0;
     int on = 1;
     size_t buff_size = SPOOL_SIZE;
-    struct sockaddr_in *address = sys_malloc(sizeof(struct sockaddr_in));
+    struct sockaddr_in *address = dalloc(sizeof(struct sockaddr_in));
     httpd = socket(PF_INET, SOCK_STREAM, 0);
     if (httpd == -1)
         db_log(PANIC, "Create socket fail.");

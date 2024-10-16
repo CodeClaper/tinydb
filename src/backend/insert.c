@@ -17,7 +17,7 @@
 #define __USE_XOPEN
 #include <time.h>
 #include "insert.h"
-#include "mmu.h"
+#include "mem.h"
 #include "common.h"
 #include "table.h"
 #include "meta.h"
@@ -65,7 +65,7 @@ static ValuesOrQuerySpecNode *fake_values_or_query_spec_node(List *value_list) {
 /* Make a fake InsertNode. */
 InsertNode *fake_insert_node(char *table_name, List *value_list) {
     InsertNode *insert_node = instance(InsertNode);
-    insert_node->table_name = db_strdup(table_name);
+    insert_node->table_name = dstrdup(table_name);
     insert_node->all_column = true;
     insert_node->values_or_query_spec = fake_values_or_query_spec_node(value_list);
     return insert_node;
@@ -85,7 +85,7 @@ static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
 static KeyValue *new_sys_id_column() {
     /* Automatically insert sys_id using current sys time. */
     int64_t sys_id = get_current_sys_time(NANOSECOND);
-    return new_key_value(db_strdup(SYS_RESERVED_ID_COLUMN_NAME), 
+    return new_key_value(dstrdup(SYS_RESERVED_ID_COLUMN_NAME), 
                                          copy_value(&sys_id, T_LONG), 
                                          T_LONG);
 }
@@ -97,7 +97,7 @@ static KeyValue *new_created_xid_column() {
     
     Assert(current_trans);
 
-    return new_key_value(db_strdup(CREATED_XID_COLUMN_NAME), 
+    return new_key_value(dstrdup(CREATED_XID_COLUMN_NAME), 
                                               copy_value(&current_trans->xid, T_LONG), 
                                               T_LONG);
 }
@@ -106,7 +106,7 @@ static KeyValue *new_created_xid_column() {
 static KeyValue *new_expired_xid_column() {
     /* For expired_xid */
     int64_t zero = 0;
-    return new_key_value(db_strdup(EXPIRED_XID_COLUMN_NAME),
+    return new_key_value(dstrdup(EXPIRED_XID_COLUMN_NAME),
                                               copy_value(&zero, T_LONG),
                                               T_LONG);
 }
@@ -157,7 +157,7 @@ static Row *generate_insert_row_for_all2(MetaTable *meta_table, List *value_item
         if (meta_column->sys_reserved) 
             continue;
 
-        KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name),
+        KeyValue *key_value = new_key_value(dstrdup(meta_column->column_name),
                                             get_insert_value(value_item_list, i, meta_column),
                                             meta_column->column_type);
         /* Check if primary key column. */
@@ -227,7 +227,7 @@ static Row *generate_insert_row_for_part2(MetaTable *meta_table, List *column_li
                    column->column_name,
                    meta_table->table_name);
 
-        KeyValue *key_value = new_key_value(db_strdup(meta_column->column_name), 
+        KeyValue *key_value = new_key_value(dstrdup(meta_column->column_name), 
                                             get_insert_value(value_item_list, i, meta_column), 
                                             meta_column->column_type);
 
@@ -421,7 +421,7 @@ static List *insert_for_query_spec(InsertNode *insert_node) {
         }
     }
 
-    db_free(select_node);
+    dfree(select_node);
     free_db_result(result);
 
     return list;

@@ -66,7 +66,6 @@
 #include "data.h"
 #include "defs.h"
 #include "trans.h"
-#include "mmu.h"
 #include "mem.h"
 #include "log.h"
 #include "copy.h"
@@ -175,7 +174,7 @@ static void destroy_transaction() {
     while ((current = current->next)) {
         if (current->pid == getpid()) {
             pres->next = current->next;
-            db_free(current);
+            dfree(current);
         }
         else
             pres = current;
@@ -355,7 +354,7 @@ static void transaction_insert_row(Row *row) {
     Assert(entry);
 
     /* For created_xid */
-    KeyValue *created_xid_col = new_key_value(db_strdup(CREATED_XID_COLUMN_NAME), 
+    KeyValue *created_xid_col = new_key_value(dstrdup(CREATED_XID_COLUMN_NAME), 
                                               copy_value(&entry->xid, T_LONG), 
                                               T_LONG);
 
@@ -363,7 +362,7 @@ static void transaction_insert_row(Row *row) {
 
     /* For expired_xid */
     int64_t zero = 0;
-    KeyValue *expired_xid_col = new_key_value(db_strdup(EXPIRED_XID_COLUMN_NAME),
+    KeyValue *expired_xid_col = new_key_value(dstrdup(EXPIRED_XID_COLUMN_NAME),
                                               copy_value(&zero, T_LONG),
                                               T_LONG);
     lfirst(last_cell(row->data)) = expired_xid_col;

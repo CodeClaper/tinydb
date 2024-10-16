@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "free.h"
-#include "mmu.h"
+#include "mem.h"
 #include "refer.h"
 #include "asserts.h"
 #include "table.h"
@@ -22,7 +22,7 @@ void free_value(void *value, DataType data_type) {
                 free_row((Row *)value);
                 break;
             default:
-                db_free(value);
+                dfree(value);
                 break;
         }
     }
@@ -32,36 +32,36 @@ void free_value(void *value, DataType data_type) {
 void free_key_value(KeyValue *key_value) {
     if (key_value) {
         if (key_value->key)
-            db_free(key_value->key);
+            dfree(key_value->key);
         if (key_value->table_name)
-            db_free(key_value->table_name);
+            dfree(key_value->table_name);
         if (key_value->is_array)
             free_array_value(key_value->value);
         else
             free_value(key_value->value, key_value->data_type);
-        db_free(key_value);
+        dfree(key_value);
     } 
 }
 
 /* Free Block. */
 void free_block(void *value) {
     if (value)
-        db_free(value);
+        dfree(value);
 }
 
 /* Free DataTyepNode. */
 void free_data_type_node(DataTypeNode *data_type_node) {
     if (data_type_node) {
         if (data_type_node->table_name)
-            db_free(data_type_node->table_name);
-        db_free(data_type_node);
+            dfree(data_type_node->table_name);
+        dfree(data_type_node);
     }
 }
 
 /* Free Refer. */
 void free_refer(Refer *refer) {
     if (refer) {
-        db_free(refer);
+        dfree(refer);
     }
 }
 
@@ -70,7 +70,7 @@ void free_refer_update_entity(ReferUpdateEntity *refer_update_entity) {
     if (refer_update_entity) {
         free_refer(refer_update_entity->old_refer);
         free_refer(refer_update_entity->new_refer);
-        db_free(refer_update_entity);
+        dfree(refer_update_entity);
     }
 }
 
@@ -79,12 +79,12 @@ void free_row(Row *row) {
     if (row) {
         /* free key. */
         if (row->key)
-            db_free(row->key);
+            dfree(row->key);
         /* free row data. */
         if (row->data) 
             free_list_deep(row->data);
 
-        db_free(row);
+        dfree(row);
     }
 }
 
@@ -93,10 +93,10 @@ void free_select_result(SelectResult *select_result) {
     if (select_result) {
         /* free table name. */
         if (select_result->table_name)
-            db_free(select_result->table_name);
+            dfree(select_result->table_name);
 
         if (select_result->range_variable) 
-            db_free(select_result->range_variable);
+            dfree(select_result->range_variable);
 
         if (select_result->rows) 
             /* free rows. */
@@ -105,28 +105,28 @@ void free_select_result(SelectResult *select_result) {
         if (select_result->derived)
             free_select_result(select_result->derived);
 
-        db_free(select_result);
+        dfree(select_result);
     }
 }
 
 /* Free meta column. */
 void free_meta_column(MetaColumn *meta_column) {
     if (meta_column) 
-        db_free(meta_column);
+        dfree(meta_column);
 }
 
 /* Free meta table. */
 void free_meta_table(MetaTable *meta_table) {
     if (meta_table) {
         if (meta_table->table_name) {
-            db_free(meta_table->table_name);
+            dfree(meta_table->table_name);
         }
         uint32_t i;
         for (i = 0; i < meta_table->all_column_size; i++) {
             free_meta_column(meta_table->meta_column[i]);
         }
-        db_free(meta_table->meta_column);
-        db_free(meta_table);
+        dfree(meta_table->meta_column);
+        dfree(meta_table);
     }
 }
 
@@ -143,12 +143,12 @@ void free_column_node(ColumnNode *column_node) {
             free_list_deep(column_node->scalar_exp_list);
 
         if (column_node->column_name)
-            db_free(column_node->column_name);
+            dfree(column_node->column_name);
 
         if (column_node->range_variable)
-            db_free(column_node->range_variable);
+            dfree(column_node->range_variable);
 
-        db_free(column_node);
+        dfree(column_node);
     }
 
 }
@@ -157,10 +157,10 @@ void free_column_node(ColumnNode *column_node) {
 void free_pager(Pager *pager) {
     if (pager) {
         if (pager->table_file_path)
-            db_free(pager->table_file_path);
+            dfree(pager->table_file_path);
 
         free_list_deep(pager->pages);
-        db_free(pager);
+        dfree(pager);
     }
 }
 
@@ -169,7 +169,7 @@ void free_table(Table *table) {
     if (table) {
         free_pager(table->pager);
         free_meta_table(table->meta_table);
-        db_free(table);
+        dfree(table);
     }
 }
 
@@ -177,7 +177,7 @@ void free_table(Table *table) {
 void free_table_buffer_entry(TableBufferEntry *entry) {
     if (entry) {
         free_table(entry->table);
-        db_free(entry);
+        dfree(entry);
     }
 }
 
@@ -185,7 +185,7 @@ void free_table_buffer_entry(TableBufferEntry *entry) {
 void free_cursor(Cursor *cursor) {
     if (cursor) {
         /* Notice: Table is used for cache, not free here. */
-        db_free(cursor);
+        dfree(cursor);
     }
 } 
 
@@ -194,7 +194,7 @@ void free_atom_node(AtomNode *atom_node) {
     if (atom_node) {
         switch (atom_node->type) {
             case A_STRING:
-                db_free(atom_node->value.strval);
+                dfree(atom_node->value.strval);
                 break;
             case A_REFERENCE:
                 free_refer_value(atom_node->value.referval);
@@ -202,7 +202,7 @@ void free_atom_node(AtomNode *atom_node) {
             default:
                 break;
         }
-        db_free(atom_node);
+        dfree(atom_node);
     }
 }
 
@@ -222,7 +222,7 @@ void free_value_item_node(ValueItemNode *value_item_node) {
                 UNEXPECTED_VALUE(value_item_node->type);
                 break;
         }
-        db_free(value_item_node);
+        dfree(value_item_node);
     }
 }
 
@@ -240,7 +240,7 @@ void free_function_value_node(FunctionValueNode *function_value_node) {
                 UNEXPECTED_VALUE(function_value_node->value_type);
                 break;
         }
-        db_free(function_value_node);
+        dfree(function_value_node);
     }
 }
 
@@ -248,7 +248,7 @@ void free_function_value_node(FunctionValueNode *function_value_node) {
 void free_function_node(FunctionNode *function_node) {
     if (function_node) {
         free_function_value_node(function_node->value);
-        db_free(function_node);
+        dfree(function_node);
     } 
 }
 
@@ -258,10 +258,10 @@ void free_column_def_opt_node(ColumnDefOptNode *column_def_opt) {
         free_value_item_node(column_def_opt->value);
         free_condition_node(column_def_opt->condition);
         if (column_def_opt->refer_table)
-            db_free(column_def_opt->refer_table);
+            dfree(column_def_opt->refer_table);
         if (column_def_opt->comment)
-            db_free(column_def_opt->comment);
-        db_free(column_def_opt);
+            dfree(column_def_opt->comment);
+        dfree(column_def_opt);
     }
 }
 
@@ -271,7 +271,7 @@ void free_column_def_node(ColumnDefNode *column_def_node) {
         free_column_def_name(column_def_node->column);
         free_data_type_node(column_def_node->data_type);
         free_list_deep(column_def_node->column_def_opt_list);
-        db_free(column_def_node);
+        dfree(column_def_node);
     }
 }
 
@@ -281,7 +281,7 @@ void free_query_spec_node(QuerySpecNode *query_spec_node) {
     if (query_spec_node) {
         free_selection_node(query_spec_node->selection);
         free_table_exp_node(query_spec_node->table_exp);  
-        db_free(query_spec_node);
+        dfree(query_spec_node);
     }
 }
 
@@ -299,7 +299,7 @@ void free_values_or_query_spec_node(ValuesOrQuerySpecNode *value_or_query_spec_n
                 UNEXPECTED_VALUE(value_or_query_spec_node->type);
                 break;
         }
-        db_free(value_or_query_spec_node);
+        dfree(value_or_query_spec_node);
     }
 }
 
@@ -307,7 +307,7 @@ void free_values_or_query_spec_node(ValuesOrQuerySpecNode *value_or_query_spec_n
 void free_primary_key_node(PrimaryKeyNode *primary_key_node) {
     if (primary_key_node != NULL) {
         free_column_node(primary_key_node->column);
-        db_free(primary_key_node);
+        dfree(primary_key_node);
     }
 }
 
@@ -327,7 +327,7 @@ void free_select_items_node(SelectItemsNode *select_items_node) {
                 UNEXPECTED_VALUE(select_items_node->type);
                 break;
         }
-        db_free(select_items_node);
+        dfree(select_items_node);
     }
 }
 
@@ -336,7 +336,7 @@ void free_assignment_node(AssignmentNode *assignment_node) {
     if (assignment_node) {
         free_column_node(assignment_node->column);
         free_value_item_node(assignment_node->value);
-        db_free(assignment_node);
+        dfree(assignment_node);
     }
 }
 
@@ -345,7 +345,7 @@ void free_comparison_node(ComparisonNode *comparison_node) {
     if (comparison_node) {
         free_column_node(comparison_node->column);
         free_scalar_exp_node(comparison_node->value);
-        db_free(comparison_node);
+        dfree(comparison_node);
     }
 }
 
@@ -383,7 +383,7 @@ void free_predicate_node(PredicateNode *predicate_node) {
                 UNEXPECTED_VALUE(predicate_node->type);
                 break;
         }
-        db_free(predicate_node);
+        dfree(predicate_node);
     }
 }
 
@@ -403,14 +403,14 @@ void free_condition_node(ConditionNode *condition_node) {
                 UNEXPECTED_VALUE(condition_node->conn_type);
                 break;
         }
-        db_free(condition_node);
+        dfree(condition_node);
     }
 }
 
 /* Free LimitNode. */
 void free_limit_node(LimitClauseNode *limit_clause_node) {
     if (limit_clause_node) {
-        db_free(limit_clause_node);
+        dfree(limit_clause_node);
     }
 }
 
@@ -434,7 +434,7 @@ void free_array_value(ArrayValue *array_value) {
         if (array_value->list) {
             free_list_deep(array_value->list);
         }
-        db_free(array_value);
+        dfree(array_value);
     }
 }
 
@@ -457,7 +457,7 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
                 break;
         }
         free_value(scalar_exp_node->alias, T_STRING);
-        db_free(scalar_exp_node);
+        dfree(scalar_exp_node);
     }
 }
 
@@ -465,8 +465,8 @@ void free_scalar_exp_node(ScalarExpNode *scalar_exp_node) {
 void free_column_def_name(ColumnDefName *column_def_name) {
     if (column_def_name) {
         if (column_def_name->column)
-            db_free(column_def_name->column);
-        db_free(column_def_name);
+            dfree(column_def_name->column);
+        dfree(column_def_name);
     }
 }
 
@@ -474,10 +474,10 @@ void free_column_def_name(ColumnDefName *column_def_name) {
 void free_table_contraint_def_node(TableContraintDefNode *table_contraint) {
     if (table_contraint) {
         if (table_contraint->table)
-            db_free(table_contraint->table);
+            dfree(table_contraint->table);
         free_condition_node(table_contraint->condition);
         free_list_deep(table_contraint->column_commalist);
-        db_free(table_contraint);
+        dfree(table_contraint);
     }
 }
 
@@ -495,7 +495,7 @@ void free_base_table_element_node(BaseTableElementNode *base_table_element) {
                 db_log(ERROR, "Unknown base type element type.");
                 break;
         }
-        db_free(base_table_element);
+        dfree(base_table_element);
     }
 }
 
@@ -503,10 +503,10 @@ void free_base_table_element_node(BaseTableElementNode *base_table_element) {
 void free_table_ref_node(TableRefNode *table_ref_node) {
     if (table_ref_node) {
         if (table_ref_node->table) 
-            db_free(table_ref_node->table);
+            dfree(table_ref_node->table);
         if (table_ref_node->range_variable)
-            db_free(table_ref_node->range_variable);
-        db_free(table_ref_node);
+            dfree(table_ref_node->range_variable);
+        dfree(table_ref_node);
     }
 }
 
@@ -521,7 +521,7 @@ void free_add_column_def(AddColumnDef *add_column_def) {
 void free_drop_column_def(DropColumnDef *drop_column_def) {
     if (drop_column_def) {
         if (drop_column_def->column_name)
-            db_free(drop_column_def->column_name);
+            dfree(drop_column_def->column_name);
     }
 }
 
@@ -544,7 +544,7 @@ void free_alter_table_action(AlterTableAction *action) {
 void free_from_clause_node(FromClauseNode *from_clause_node) {
     if (from_clause_node) {
         free_list_deep(from_clause_node->from);
-        db_free(from_clause_node);
+        dfree(from_clause_node);
     }
 }
 
@@ -552,7 +552,7 @@ void free_from_clause_node(FromClauseNode *from_clause_node) {
 void free_where_clause_node(WhereClauseNode *where_clause_node) {
     if (where_clause_node) {
         free_condition_node(where_clause_node->condition);
-        db_free(where_clause_node);
+        dfree(where_clause_node);
     }
 }
 
@@ -561,7 +561,7 @@ void free_table_exp_node(TableExpNode *table_exp_node) {
     if (table_exp_node) {
         free_from_clause_node(table_exp_node->from_clause);
         free_where_clause_node(table_exp_node->where_clause);
-        db_free(table_exp_node);
+        dfree(table_exp_node);
     }
 }
 
@@ -570,7 +570,7 @@ void free_selection_node(SelectionNode *selection_node) {
     if (selection_node) {
         if (!selection_node->all_column)
             free_list_deep(selection_node->scalar_exp_list);
-        db_free(selection_node);
+        dfree(selection_node);
     }
 }
 
@@ -580,7 +580,7 @@ void free_select_node(SelectNode *select_node) {
     if (select_node) {
         free_selection_node(select_node->selection);
         free_table_exp_node(select_node->table_exp);
-        db_free(select_node);
+        dfree(select_node);
     }
 }
 
@@ -588,11 +588,11 @@ void free_select_node(SelectNode *select_node) {
 void free_insert_node(InsertNode *insert_node) {
     if (insert_node != NULL) {
         if (insert_node->table_name)
-            db_free(insert_node->table_name);
+            dfree(insert_node->table_name);
         if (!insert_node->all_column)
             free_list_deep(insert_node->column_list);
         free_values_or_query_spec_node(insert_node->values_or_query_spec);
-        db_free(insert_node);
+        dfree(insert_node);
     }
 }
 
@@ -600,10 +600,10 @@ void free_insert_node(InsertNode *insert_node) {
 void free_update_node(UpdateNode *update_node) {
     if (update_node) {
         if (update_node->table_name)
-            db_free(update_node->table_name);
+            dfree(update_node->table_name);
         free_list_deep(update_node->assignment_list);
         free_where_clause_node(update_node->where_clause);
-        db_free(update_node);
+        dfree(update_node);
     } 
 }
 
@@ -611,9 +611,9 @@ void free_update_node(UpdateNode *update_node) {
 void free_delete_node(DeleteNode *delete_node) {
     if (delete_node) {
         if (delete_node->table_name)
-            db_free(delete_node->table_name);
+            dfree(delete_node->table_name);
         free_condition_node(delete_node->condition_node);
-        db_free(delete_node);
+        dfree(delete_node);
     } 
 }
 
@@ -621,9 +621,9 @@ void free_delete_node(DeleteNode *delete_node) {
 void free_create_table_node(CreateTableNode *create_table_node) {
     if (create_table_node != NULL) {
         if (create_table_node->table_name)
-            db_free(create_table_node->table_name);
+            dfree(create_table_node->table_name);
         free_list_deep(create_table_node->base_table_element_commalist);
-        db_free(create_table_node);
+        dfree(create_table_node);
     }
 }
 
@@ -631,8 +631,8 @@ void free_create_table_node(CreateTableNode *create_table_node) {
 void free_drop_table_node(DropTableNode *drop_table_node) {
     if (drop_table_node) {
         if (drop_table_node->table_name)
-            db_free(drop_table_node->table_name);
-        db_free(drop_table_node);
+            dfree(drop_table_node->table_name);
+        dfree(drop_table_node);
     }
 }
 
@@ -640,22 +640,22 @@ void free_drop_table_node(DropTableNode *drop_table_node) {
 void free_describe_node(DescribeNode *describe_node) {
     if (describe_node) {
         if (describe_node->table_name)
-            db_free(describe_node->table_name);
-        db_free(describe_node);
+            dfree(describe_node->table_name);
+        dfree(describe_node);
     }
 }
 
 /* Free show tables node. */
 void free_show_tables_node(ShowNode *show_node) {
     if (show_node)
-        db_free(show_node);
+        dfree(show_node);
 }
 
 /* Free AlterTableNode. */
 void free_alter_table_node(AlterTableNode *alter_table_node) {
     if (alter_table_node) {
         if (alter_table_node->table_name)
-            db_free(alter_table_node->table_name);
+            dfree(alter_table_node->table_name);
         free_alter_table_action(alter_table_node->action);
     }
 }
@@ -698,16 +698,16 @@ void free_statement(Statement *statement) {
             UNEXPECTED_VALUE(statement->statement_type);
             break;
     }
-    db_free(statement);
+    dfree(statement);
 }
 
 /* Free DBResult. */
 void free_db_result(DBResult *result) {
     if (result) {
         if (result->table)
-            db_free(result->table);
+            dfree(result->table);
         if (result->message)
-            db_free(result->message);
+            dfree(result->message);
         switch(result->stmt_type) {
             case SELECT_STMT:
                 free_select_result(result->data);
@@ -719,7 +719,7 @@ void free_db_result(DBResult *result) {
             default:
                 break;
         }
-        db_free(result);
+        dfree(result);
     }
 }
 
@@ -728,6 +728,6 @@ void free_xlog_entry(XLogEntry *xlog_entry) {
     if (xlog_entry) {
         free_refer(xlog_entry->refer);
         free_xlog_entry(xlog_entry->next);
-        db_free(xlog_entry);
+        dfree(xlog_entry);
     }
 }

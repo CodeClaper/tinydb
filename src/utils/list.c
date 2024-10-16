@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "list.h"
-#include "mmu.h"
+#include "mem.h"
 #include "free.h"
 #include "asserts.h"
 #include "data.h"
@@ -32,10 +32,10 @@ static void enlarge_list(List *list) {
     list->capacity = list->capacity * 2;
     
     if (list->elements == list->initial_elements) {
-        list->elements = db_malloc(sizeof(ListCell) * list->capacity, "pointer");
+        list->elements = dalloc(sizeof(ListCell) * list->capacity);
         memcpy(list->elements, list->initial_elements, sizeof(ListCell) * list->size);
     } else {
-        list->elements = db_realloc(list->elements, sizeof(ListCell) * list->capacity);
+        list->elements = drealloc(list->elements, sizeof(ListCell) * list->capacity);
     }
 }
 
@@ -351,7 +351,7 @@ List *list_copy(List *old_list) {
     if (old_list->elements == old_list->initial_elements) {
         new_list->elements = new_list->initial_elements;
     } else {
-        new_list->elements = db_malloc(sizeof(ListCell) * new_list->capacity, "pointer");
+        new_list->elements = dalloc(sizeof(ListCell) * new_list->capacity);
         memcpy(new_list->elements, old_list->elements, sizeof(ListCell) * new_list->size);
     }
     return new_list;
@@ -398,7 +398,7 @@ List *list_copy_deep(List *old_list) {
         case NODE_STRING: {
             ListCell *lc;
             foreach (lc, old_list) {
-                char *replica = db_strdup(lfirst(lc));
+                char *replica = dstrdup(lfirst(lc));
                 append_list(new_list, replica);
             }
             break;
@@ -457,9 +457,9 @@ void free_list(List *list) {
     if (list != NIL) {
 
         if (list->elements != list->initial_elements)
-            db_free(list->elements);
+            dfree(list->elements);
 
-        db_free(list);
+        dfree(list);
     }
 }
 
@@ -484,14 +484,14 @@ void free_list_deep(List *list) {
             case NODE_VOID: {
                 ListCell *lc;
                 foreach (lc, list) {
-                    db_free(lfirst(lc));
+                    dfree(lfirst(lc));
                 }
                 break;
             }
             case NODE_STRING: {
                 ListCell *lc;
                 foreach (lc, list) {
-                    db_free(lfirst(lc));
+                    dfree(lfirst(lc));
                 }
                 break;
             }
@@ -528,7 +528,7 @@ void free_list_deep(List *list) {
                 foreach (lc, list) {
                     void *page = lfirst(lc);
                     if (page)
-                        db_free(page);
+                        dfree(page);
                 }
                 break;
             }
@@ -619,9 +619,9 @@ void free_list_deep(List *list) {
         }
 
         if (list->elements != list->initial_elements)
-            db_free(list->elements);
+            dfree(list->elements);
 
-        db_free(list);
+        dfree(list);
     }
 }
 

@@ -10,7 +10,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include "log.h"
-#include "mmu.h"
+#include "mem.h"
 #include "defs.h"
 #include "free.h"
 #include "data.h"
@@ -52,7 +52,7 @@ static void flush_log(char* msg) {
     }
     fputs(msg, file);
     fclose(file);
-    db_free(sys_date);
+    dfree(sys_date);
 }
 
 /* Db log. */
@@ -72,7 +72,7 @@ void db_log(LogLevel lev, char *format, ...) {
         sprintf(buff, "[%s][%d][%s]:\t%s\n", sys_time, getpid(), LOG_LEVEL_NAME_LIST[lev], message);
         fprintf(stdout, "%s", buff);
         flush_log(buff);
-        db_free(sys_time);
+        dfree(sys_time);
     }
 
     /* According to LogLevel, there are diffent treatments. 

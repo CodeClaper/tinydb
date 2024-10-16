@@ -2,7 +2,7 @@
 #include <time.h>
 #include "instance.h"
 #include "data.h"
-#include "mmu.h"
+#include "mem.h"
 
 /* Generate new KeyValue instance. */
 KeyValue *new_key_value(char *key, void *value, DataType data_type) {
@@ -35,7 +35,7 @@ ArrayValue *new_array_value(DataType data_type, uint32_t size) {
 SelectResult *new_select_result(char *table_name) {
     SelectResult *select_result = instance(SelectResult);
     select_result->row_size = 0;
-    select_result->table_name = table_name ? db_strdup(table_name) : NULL;
+    select_result->table_name = table_name ? dstrdup(table_name) : NULL;
     select_result->range_variable = NULL;
     select_result->rows = create_list(NODE_ROW);
     select_result->derived = NULL;

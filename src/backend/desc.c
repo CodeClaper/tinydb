@@ -7,7 +7,7 @@
 #include "data.h"
 #include "desc.h"
 #include "list.h"
-#include "mmu.h"
+#include "mem.h"
 #include "table.h"
 #include "index.h"
 #include "meta.h"
@@ -34,36 +34,36 @@ static List *gen_describe_result(MetaTable *meta_table) {
         List *child_list = create_list(NODE_KEY_VALUE);
 
         /* filed */
-        append_list(child_list, new_key_value(db_strdup("field"), 
-                                              db_strdup(meta_column->column_name), 
+        append_list(child_list, new_key_value(dstrdup("field"), 
+                                              dstrdup(meta_column->column_name), 
                                               T_STRING));
     
         /* key */
-        append_list(child_list, new_key_value(db_strdup("key"), 
-                                                  db_strdup(key_type_name(meta_column)), 
+        append_list(child_list, new_key_value(dstrdup("key"), 
+                                                  dstrdup(key_type_name(meta_column)), 
                                                   T_STRING));
 
         /* type */
-        append_list(child_list, new_key_value(db_strdup("type"), 
-                                              db_strdup(data_type_name(meta_column->column_type)), 
+        append_list(child_list, new_key_value(dstrdup("type"), 
+                                              dstrdup(data_type_name(meta_column->column_type)), 
                                               T_STRING));
 
         /* length */
         uint32_t column_length = calc_raw_meta_column_len(meta_column);
-        append_list(child_list, new_key_value(db_strdup("length"), 
+        append_list(child_list, new_key_value(dstrdup("length"), 
                                               copy_value(&column_length, T_INT), 
                                               T_INT));
 
 
         /* array dim */
         bool is_array = meta_column->array_dim > 0;
-        append_list(child_list, new_key_value(db_strdup("array"), 
+        append_list(child_list, new_key_value(dstrdup("array"), 
                                               copy_value(&is_array, T_BOOL), 
                                               T_BOOL));
 
         /* primary key */
         if (is_array) 
-            append_list(child_list, new_key_value(db_strdup("array_dim"), 
+            append_list(child_list, new_key_value(dstrdup("array_dim"), 
                                                   copy_value(&meta_column->array_dim, T_BOOL), 
                                                   T_BOOL));
 
@@ -72,12 +72,12 @@ static List *gen_describe_result(MetaTable *meta_table) {
             case DEFAULT_VALUE_NONE:
                 break;
             case DEFAULT_VALUE_NULL:
-                append_list(child_list, new_key_value(db_strdup("default"), 
+                append_list(child_list, new_key_value(dstrdup("default"), 
                                                       copy_value(NULL, meta_column->column_type), 
                                                       meta_column->column_type));
                 break;
             case DEFAULT_VALUE:
-                append_list(child_list, new_key_value(db_strdup("default"), 
+                append_list(child_list, new_key_value(dstrdup("default"), 
                                                       copy_value(meta_column->default_value, meta_column->column_type), 
                                                       meta_column->column_type));
                 break;
@@ -86,8 +86,8 @@ static List *gen_describe_result(MetaTable *meta_table) {
 
         if (meta_column->has_comment)
             /* Comment */
-            append_list(child_list, new_key_value(db_strdup("comment"), 
-                                                  db_strdup(meta_column->comment), 
+            append_list(child_list, new_key_value(dstrdup("comment"), 
+                                                  dstrdup(meta_column->comment), 
                                                   T_STRING));
 
 

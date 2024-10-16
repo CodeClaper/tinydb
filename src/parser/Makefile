@@ -1,6 +1,6 @@
 
 includedir = ../../include
-headerdirs = $(includedir)/parser $(includedir)/common $(includedir)/memory \
+headerdirs = $(includedir)/parser $(includedir)/common $(includedir)/memory $(includedir)/lock \
 			 $(includedir)/utils ./
 headers := $(shell find $(headerdirs) -name "*.h")
 objects := $(patsubst %.c,%.o,$(wildcard *.c))

@@ -10,7 +10,7 @@
 #include "meta.h"
 #include "data.h"
 #include "table.h"
-#include "mmu.h"
+#include "mem.h"
 #include "copy.h"
 #include "free.h"
 #include "log.h"
@@ -476,10 +476,10 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
     void *root_node = get_page(table_name, table->pager, table->root_page_num);
     uint32_t column_size = get_column_size(root_node);
 
-    meta_table->table_name = db_strdup(table_name);
+    meta_table->table_name = dstrdup(table_name);
     meta_table->column_size = 0;
     meta_table->all_column_size = 0;
-    meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * column_size, "pointer");
+    meta_table->meta_column = dalloc(sizeof(MetaColumn *) * column_size);
 
     uint32_t offset = 0;
     uint32_t i;
@@ -503,7 +503,7 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
  * */
 char *stringify_value(void *value, DataType data_type) {
     if (!value)
-        return db_strdup("NULL");
+        return dstrdup("NULL");
 
     char buff[BUFF_SIZE];
 
@@ -549,7 +549,7 @@ char *stringify_value(void *value, DataType data_type) {
             break;
     }
 
-    return db_strdup(buff);
+    return dstrdup(buff);
 }
 
 /* Get default value name from MetaColumn. */
@@ -557,7 +557,7 @@ char *get_default_value_name(MetaColumn *meta_column) {
     switch (meta_column->default_value_type) {
         case DEFAULT_VALUE_NONE:
         case DEFAULT_VALUE_NULL:
-            return db_strdup("NULL");
+            return dstrdup("NULL");
         case DEFAULT_VALUE:
             return stringify_value(meta_column->default_value, meta_column->column_type);
     }

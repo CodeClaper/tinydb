@@ -4,7 +4,7 @@
 #include "data.h"
 #include "free.h"
 #include "log.h"
-#include "mmu.h"
+#include "mem.h"
 #include "utils.h"
 
 /* Paser a string value to int64_t value. */

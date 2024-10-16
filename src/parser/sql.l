@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "data.h"
-#include "mmu.h"
+#include "mem.h"
 #include "utils.h"
 #include "intpr.h"
 #include "log.h"
@@ -89,7 +89,7 @@ AVG                     return AVG;
 REF                     return REF;
 TRUE                    return TRUE;
 FALSE                   return FALSE;
-[a-zA-Z][a-zA-Z0-9_]*   { yylval.strVal = db_strdup(yytext); return IDENTIFIER;} 
+[a-zA-Z][a-zA-Z0-9_]*   { yylval.strVal = dstrdup(yytext); return IDENTIFIER;} 
 `[a-zA-Z][a-zA-Z0-9_]*` { 
                             yylval.strVal = replace_all(yytext, "`", ""); 
                             return IDENTIFIER;
@@ -100,11 +100,11 @@ FALSE                   return FALSE;
 "."[0-9]*	            { yylval.floatVal = parse_double(yytext); return FLOATVALUE; }
 '[^'\n]*'	            { if (strcmp(yytext, "''") == 0) 
                           { 
-                              yylval.strVal = db_strdup(" ");
+                              yylval.strVal = dstrdup(" ");
                           } else 
                           {
                               char *str = strtok(yytext, "\'");  
-                              yylval.strVal = db_strdup(str);
+                              yylval.strVal = dstrdup(str);
                           } 
                           return STRINGVALUE;
                         } 

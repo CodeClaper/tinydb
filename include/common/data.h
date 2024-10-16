@@ -69,7 +69,7 @@ typedef enum { SELECT_COLUMNS, SELECT_FUNCTION, SELECT_ALL } SelectItemType;
 typedef enum { LOGIC_CONDITION, EXEC_CONDITION } ConditionNodeType;
 
 /* ShowNodeType */
-typedef enum { SHOW_TABLES, SHOW_MEMORY } ShowNodeType;
+typedef enum { SHOW_TABLES  } ShowNodeType;
 
 /* StatementType */
 typedef enum { 

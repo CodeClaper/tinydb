@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include "tablelock.h"
 #include "utils.h"
-#include "mmu.h"
 #include "mem.h"
 
 /* The list stores TableLockEntity. */

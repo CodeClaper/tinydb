@@ -13,7 +13,7 @@
 #include "const.h"
 #include "common.h"
 #include "table.h"
-#include "mmu.h"
+#include "mem.h"
 #include "meta.h"
 #include "session.h"
 #include "asserts.h"
@@ -223,10 +223,10 @@ static MetaTable *combine_meta_table(CreateTableNode *create_table_node) {
 
     MetaTable *meta_table = instance(MetaTable);
 
-    meta_table->table_name = db_strdup(create_table_node->table_name);
+    meta_table->table_name = dstrdup(create_table_node->table_name);
     meta_table->column_size = get_column_def_size(create_table_node); 
     meta_table->all_column_size = meta_table->column_size + SYS_RESERVED_COLUMNS_LENGTH;
-    meta_table->meta_column = db_malloc(sizeof(MetaColumn *) * meta_table->all_column_size, "pointer");
+    meta_table->meta_column = dalloc(sizeof(MetaColumn *) * meta_table->all_column_size);
 
     /* User-level defination. */
     uint32_t j = 0;

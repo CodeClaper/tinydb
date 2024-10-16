@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include "index.h"
-#include "mmu.h"
+#include "mem.h"
 #include "pager.h"
 #include "ltree.h"
 #include "meta.h"
@@ -34,33 +34,33 @@ char *get_key_str(void *key, DataType data_type) {
         case T_VARCHAR:
             return (char *)key;
         case T_INT: {
-            char *str = db_malloc(50, "string");
+            char *str = dalloc(50);
             sprintf(str, "%d", *(int32_t *)key);
             return str;
         }
         case T_LONG: {
-            char *str = db_malloc(100, "string");
+            char *str = dalloc(100);
             sprintf(str, "%ld", *(int64_t *)key);
             return str;
         }
         case T_DOUBLE: {
-            char *str = db_malloc(50, "string");
+            char *str = dalloc(50);
             sprintf(str, "%lf", *(double *)key);
             return str;
         }
         case T_FLOAT: {
-            char *str = db_malloc(50, "string");
+            char *str = dalloc(50);
             sprintf(str, "%f", *(float *)key);
             return str;
         }
         case T_DATE: {
-            char *str = db_malloc(30, "string");
+            char *str = dalloc(30);
             struct tm *tmp_time = localtime(key);
             strftime(str, strlen(str), "%Y-%m-%d", tmp_time);
             return str;
         }
         case T_TIMESTAMP: {
-            char *str = db_malloc(40, "string");
+            char *str = dalloc(40);
             struct tm *tmp_time = localtime(key);
             strftime(str, strlen(str), "%Y-%m-%d %H:%M:%S", tmp_time);
             return str;

@@ -16,8 +16,8 @@
 #include <unistd.h>
 #include "pager.h"
 #include "cache.h"
-#include "mmu.h"
 #include "log.h"
+#include "mem.h"
 #include "utils.h"
 #include "ltree.h"
 #include "table.h"
@@ -35,7 +35,7 @@ Pager *open_pager(char *table_file_path) {
         db_log(PANIC, "Error seeking: %s.", strerror(errno));
     
     pager->file_descriptor = file_descriptor;
-    pager->table_file_path = db_strdup(table_file_path);
+    pager->table_file_path = dstrdup(table_file_path);
     pager->file_length = file_length;
     pager->size = (file_length / PAGE_SIZE);
     pager->pages = create_list(NODE_PAGE);
@@ -66,7 +66,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
         Assert(page_num == pager->size);
 
-        void *page = db_malloc(PAGE_SIZE, "pointer");
+        void *page = dalloc(PAGE_SIZE);
 
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
@@ -90,7 +90,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
     /* Cache dismiss, allocate memory and load file. */
     if (is_null(lfirst(lc))) {
         
-        void *page = db_malloc(PAGE_SIZE, "pointer");
+        void *page = dalloc(PAGE_SIZE);
 
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);

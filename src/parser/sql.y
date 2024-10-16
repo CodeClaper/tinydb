@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "list.h"
 #include "intpr.h"
-#include "mmu.h"
+#include "mem.h"
 #include "log.h"
 #include "utils.h"
 #include "y.tab.h"
@@ -363,12 +363,6 @@ show_statement:
         {
             ShowNode *node = instance(ShowNode);   
             node->type = SHOW_TABLES;
-            $$ = node;
-        }
-    | SHOW MEMORY end
-        {
-            ShowNode *node = instance(ShowNode);   
-            node->type = SHOW_MEMORY;
             $$ = node;
         }
     ;

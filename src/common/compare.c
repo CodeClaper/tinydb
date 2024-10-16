@@ -6,7 +6,6 @@
 #include "log.h"
 
 
-
 /*Equal operation (=).*/
 bool equal(void *source, void *target, DataType data_type) {
     if (source == NULL && target == NULL) 

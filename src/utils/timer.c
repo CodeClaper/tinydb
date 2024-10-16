@@ -12,10 +12,10 @@
 #include <math.h>
 #include <stdint.h>
 #include "data.h"
+#include "mem.h"
 #include "timer.h"
 #include "data.h"
 #include "log.h"
-#include "mmu.h"
 
 /* Get current system timestamp.
  * Return current system timestamp, and -1 if fail.
@@ -62,7 +62,7 @@ char *get_current_sys_time2(TIME_LEVEL level) {
 
     ptm = localtime(&t);
 
-    char *res = db_malloc(30, "string");
+    char *res = dalloc(30);
 
     switch (level) {
         case SECOND:
@@ -100,7 +100,7 @@ char* get_sys_time(char *format) {
 
 /* Get format time string. */
 char *format_time(char *format, time_t t) {
-    char *res = db_malloc(20, "string");
+    char *res = dalloc(20);
     struct tm *tm = localtime(&t);
     strftime(res, 20, format, tm);
     return res;

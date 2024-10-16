@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include "data.h"
 #include "alter.h"
-#include "mmu.h"
+#include "mem.h"
 #include "check.h"
 #include "table.h"
 #include "cache.h"

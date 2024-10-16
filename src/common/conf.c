@@ -9,7 +9,7 @@
 #include "data.h"
 #include "asserts.h"
 #include "conf.h"
-#include "mmu.h"
+#include "mem.h"
 #include "utils.h"
 
 #define DEFAULT_CONF_FILE "/etc/tinydb.cnf"
@@ -51,7 +51,7 @@ char *read_conf(char *title, char *key) {
         trim(p);
         /* skip '=' */
         p += 1;
-        return db_strdup(trim(p));
+        return dstrdup(trim(p));
     }
     fprintf(stderr, "Not found [%s].[%s] in configuration file.\n", title, key);
     exit(EXECUTE_FAIL);
@@ -79,7 +79,7 @@ static char* append_dir_end(char *dir) {
     if (dir[size - 1] == '/')
         return dir;
     else {
-        char *append = db_malloc(size + 1, "string");
+        char *append = dalloc(size + 1);
         sprintf(append, "%s/", dir);
         return append;
     }

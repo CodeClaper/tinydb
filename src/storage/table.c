@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include "table.h"
-#include "mmu.h"
+#include "mem.h"
 #include "free.h"
 #include "cache.h"
 #include "buffer.h"
@@ -52,7 +52,7 @@ char *table_file_path(char *table_name) {
         exit(EXIT_FAILURE);
     }
     int len = strlen(conf->data_dir) + strlen(table_name) + strlen(".dbt") + 1;
-    char *file_path = db_malloc(len, "string");
+    char *file_path = dalloc(len);
     sprintf(file_path, "%s%s%s", conf->data_dir, table_name, ".dbt");
     return file_path;
 }
@@ -68,7 +68,7 @@ static bool table_file_exist(char *table_file_path) {
 bool check_table_exist(char *table_name) {
     char *file_path = table_file_path(table_name);
     bool ret = table_file_exist(file_path);
-    db_free(file_path);
+    dfree(file_path);
     return ret;
 }
 
@@ -80,18 +80,18 @@ bool create_table(MetaTable *meta_table) {
     char *file_path = table_file_path(meta_table->table_name);
     if (table_file_exist(file_path)) {
         db_log(ERROR, "Table '%s' already exists. \n", meta_table->table_name);
-        db_free(file_path);
+        dfree(file_path);
         return false;
     }
 
     int descr = open(file_path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (descr == -1) {
         db_log(ERROR, "Open database file '%s' fail.\n", file_path);
-        db_free(file_path);
+        dfree(file_path);
         return false;
     }
 
-    void *root_node = db_malloc(PAGE_SIZE, "pointer");
+    void *root_node = dalloc(PAGE_SIZE);
 
     uint32_t default_value_len = calc_table_row_length2(meta_table);
 
@@ -123,8 +123,8 @@ bool create_table(MetaTable *meta_table) {
     ssize_t w_size = write(descr, root_node, PAGE_SIZE);
     if (w_size == -1) {
         db_log(ERROR, "Write table meta info error and errno %d.\n", errno);
-        db_free(file_path);
-        db_free(root_node);
+        dfree(file_path);
+        dfree(root_node);
         return false;
     }
     
@@ -132,8 +132,8 @@ bool create_table(MetaTable *meta_table) {
     close(descr);
 
     /* Free memory. */
-    db_free(file_path);
-    db_free(root_node);
+    dfree(file_path);
+    dfree(root_node);
 
     return true;
 }
@@ -206,7 +206,7 @@ Table *open_table(char *table_name) {
     /* Memory missing, get from disk. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-        db_free(file_path);
+        dfree(file_path);
         return NULL;
     }
     
@@ -215,7 +215,7 @@ Table *open_table(char *table_name) {
     Pager *pager = open_pager(file_path);
     if (pager == NULL) {
         free_table(table);
-        db_free(file_path);
+        dfree(file_path);
         return NULL;
     }
 
@@ -237,7 +237,7 @@ Table *open_table(char *table_name) {
     save_table_cache(table);
     
     /* Free memory. */
-    db_free(file_path);
+    dfree(file_path);
 
     /* Only return buffer table to keep same table pointer in same thread. */
     return find_table_buffer(table_name);
@@ -250,13 +250,13 @@ bool drop_table(char *table_name) {
     /* Check if exist the table. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
-        db_free(file_path);
+        dfree(file_path);
         return false;
     }
 
     /* Disk remove. */
     if (remove(file_path) == 0) {
-        db_free(file_path);
+        dfree(file_path);
         /* Remove table cache. */
         remove_table_cache(table_name);
         /* Remove table buffer. */
@@ -264,7 +264,7 @@ bool drop_table(char *table_name) {
         return true;
     }
 
-    db_free(file_path);
+    dfree(file_path);
     db_log(ERROR, "Table '%s' deleted fail, error : %d", table_name, errno);
 
     return false;

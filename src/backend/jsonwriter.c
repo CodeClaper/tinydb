@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include "data.h"
-#include "mmu.h"
+#include "mem.h"
 #include "jsonwriter.h"
 #include "log.h"
 #include "utils.h"
@@ -69,7 +69,7 @@ static void json_array_key_value(KeyValue *key_value) {
                     db_send(strVal);
                     if (last_cell(array_value->list) != lc)
                         db_send(",");
-                    db_free(strVal);
+                    dfree(strVal);
                 }
 
                 db_send("]");
@@ -85,7 +85,7 @@ static void json_array_key_value(KeyValue *key_value) {
                     db_send(strVal);
                     if (last_cell(array_value->list) != lc)
                         db_send(",");
-                    db_free(strVal);
+                    dfree(strVal);
                 }
 
                 db_send("]");
@@ -117,7 +117,7 @@ static void json_array_key_value(KeyValue *key_value) {
                     db_send(strVal);
                     if (last_cell(array_value->list) != lc)
                          db_send(",");
-                    db_free(strVal);
+                    dfree(strVal);
                 }
 
                 db_send("]");
@@ -133,7 +133,7 @@ static void json_array_key_value(KeyValue *key_value) {
                     db_send(strVal);
                     if (last_cell(array_value->list) != lc)
                         db_send(",");
-                    db_free(strVal);
+                    dfree(strVal);
                 }
 
                 db_send("]");
@@ -149,7 +149,7 @@ static void json_array_key_value(KeyValue *key_value) {
                     db_send("\"%s\"", strVal);
                     if (last_cell(array_value->list) != lc)
                         db_send(",");
-                    db_free(strVal);
+                    dfree(strVal);
                 }
 
                 db_send("]");
@@ -165,7 +165,7 @@ static void json_array_key_value(KeyValue *key_value) {
                     db_send("\"%s\"", strVal);
                     if (last_cell(array_value->list) != lc)
                         db_send(",");
-                    db_free(strVal);
+                    dfree(strVal);
                 }
 
                 db_send("]");
@@ -398,7 +398,7 @@ static void handle_dulicate_key(Row *row) {
             if (lc1 == lc2)
                 continue;
             if (streq(second->key, first->key)) {
-                db_free(second->key);
+                dfree(second->key);
                 second->key = format("%s(%d)", first->key, ++times);
             }
         } 

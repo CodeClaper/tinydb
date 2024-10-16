@@ -7,9 +7,9 @@
 #include <errno.h>
 #include "fdesc.h"
 #include "data.h"
+#include "mem.h"
 #include "table.h"
 #include "utils.h"
-#include "mmu.h"
 #include "log.h"
 
 /* FDescEntry cache. */

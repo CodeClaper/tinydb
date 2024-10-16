@@ -9,7 +9,6 @@
 #include <float.h>
 #include "check.h"
 #include "utils.h"
-#include "mmu.h"
 #include "asserts.h"
 #include "compare.h"
 #include "data.h"

@@ -22,6 +22,8 @@ typedef struct LoMemEntry {
     bool isFree;
 } LoMemEntry;
 
+#define instance(_type_)  ((_type_ *) dalloc(sizeof(_type_)))
+
 
 #define LMENTRY_OFFSET sizeof(LoMemEntry)
 
@@ -55,5 +57,5 @@ void dfree(void *ptr);
 void *drealloc(void *ptr, size_t size);
 
 /* Strdup. */
-void *dstrdup(char *str);
+char *dstrdup(char *str);
 

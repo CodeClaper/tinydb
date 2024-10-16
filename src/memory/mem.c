@@ -12,7 +12,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include "mem.h"
-#include "mmu.h"
 #include "shmem.h"
 #include "lomem.h"
 #include "list.h"
@@ -122,7 +121,6 @@ static void *dalloc_shared(size_t size) {
 
     return ptr;
 }
-
 
 /* Free memory in local memory.*/
 static void dfree_local(void *ptr) {
@@ -243,7 +241,10 @@ void *drealloc(void *ptr, size_t size) {
 }
 
 /* Strdup. */
-void *dstrdup(char *str) {
+char *dstrdup(char *str) {
+    if (is_null(str))
+        return NULL;
+
     switch (type) {
         case MEM_LOCAL:
             return dstrdup_local(str);

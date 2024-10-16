@@ -11,7 +11,6 @@
 #include <signal.h>
 #include "data.h"
 #include "defs.h"
-#include "mmu.h"
 #include "mem.h"
 #include "trans.h"
 #include "xlog.h"
@@ -48,9 +47,6 @@ static void db_start() {
     /* Initialise memory manger. */
     init_mem();
 
-    /* Initialise memory manager unit. */
-    init_mmu();
-
     /* Initialise tablereg. */
     init_table_reg();
 
@@ -83,7 +79,7 @@ static void db_start() {
 static void db_run() {
     int server_socket = -1;
     int client_secket = -1;
-    struct sockaddr_in *client_name = sys_malloc(sizeof(struct sockaddr_in));
+    struct sockaddr_in *client_name = dalloc(sizeof(struct sockaddr_in));
     socklen_t client_name_len = sizeof(*client_name);
 
     /* Start up server. */

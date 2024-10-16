@@ -40,7 +40,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include "ltree.h"
-#include "mmu.h"
+#include "mem.h"
 #include "copy.h"
 #include "free.h"
 #include "refer.h"
@@ -904,7 +904,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
             void *serial_data = serialize_row_data(row, cursor->table);
             memcpy(destination, serial_data, value_len);
             set_leaf_node_cell_key(destination_node, index_at_node, key_len, value_len, row->key);
-            db_free(serial_data);
+            dfree(serial_data);
         } else if (i > cursor->cell_num) {
             /* Define new position, and right cells make cell space. */
             memcpy(destination, get_leaf_node_cell(old_node, key_len, value_len, i - 1), cell_length);
@@ -997,7 +997,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
         /* Flush into disk. */
         flush_page(table_name, cursor->table->pager, cursor->page_num);
 
-        db_free(destination);
+        dfree(destination);
     }
 }
 
@@ -1858,7 +1858,7 @@ void update_row_data(Row *row, Cursor *cursor) {
 
     flush_page(table->meta_table->table_name, table->pager, cursor->page_num);
 
-    db_free(destination);
+    dfree(destination);
 }
 
 
@@ -2160,7 +2160,7 @@ MetaColumn *deserialize_meta_column(void *destination) {
 
 /* Deserialize meta column */
 void *serialize_meta_column(MetaColumn *meta_column) {
-    void *destination= db_malloc(ROOT_NODE_META_COLUMN_SIZE, "pointer");
+    void *destination= dalloc(ROOT_NODE_META_COLUMN_SIZE);
     strcpy(destination, meta_column->column_name);
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE) = (uint32_t) meta_column->column_type;
     *(uint32_t *)(destination + ROOT_NODE_META_COLUMN_NAME_SIZE + ROOT_NODE_META_COLUMN_TYPE_SIZE) = (uint32_t) meta_column->column_length;
@@ -2275,7 +2275,7 @@ static void assign_row_value(void *destination, void *value, MetaColumn *meta_co
 /* Serialize row data */
 void *serialize_row_data(Row *row, Table *table) {
     uint32_t row_length = calc_table_row_length(table);
-    void *destination = db_malloc(row_length, "pointer");
+    void *destination = dalloc(row_length);
     MetaTable *meta_table = table->meta_table;
     uint32_t i, offset = 0;
     for (i = 0; i < meta_table->all_column_size; i++) {

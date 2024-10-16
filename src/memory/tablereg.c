@@ -3,7 +3,6 @@
 #include <time.h>
 #include <unistd.h>
 #include "tablereg.h"
-#include "mmu.h"
 #include "mem.h"
 #include "utils.h"
 
@@ -73,7 +72,7 @@ void destroy_table_reg() {
     while ((current = current->next) != NULL) {
         if (current->pid == getpid()) {
             pres->next = current->next;
-            db_free(current);
+            dfree(current);
         } 
         else 
             pres = current;

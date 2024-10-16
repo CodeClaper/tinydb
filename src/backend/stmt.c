@@ -8,7 +8,6 @@
 #include "stmt.h"
 #include "list.h"
 #include "defs.h"
-#include "mmu.h"
 #include "mem.h"
 #include "common.h"
 #include "asserts.h"
@@ -139,7 +138,7 @@ static void statement_describe(Statement *statement, DBResult *result) {
         /* Success resule. */
         result->success = true;
         result->data = list;
-        result->message = db_strdup("Describe executed successfully.");
+        result->message = dstrdup("Describe executed successfully.");
         db_log(SUCCESS, "Describe statement is executed successfully.");
     }
 }

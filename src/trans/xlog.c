@@ -20,7 +20,7 @@
 #include <string.h>
 #include "xlog.h"
 #include "log.h"
-#include "mmu.h"
+#include "mem.h"
 #include "trans.h"
 #include "copy.h"
 #include "free.h"
@@ -50,7 +50,7 @@ static void reverse_update_delete(Refer *refer, TransEntry *transaction);
 void init_xlog() {
     xtable = instance(XLogTable);
     xtable->size = 0;
-    xtable->list = db_malloc(sizeof(XLogEntry *) * xtable->size, "pointer");
+    xtable->list = dalloc(sizeof(XLogEntry *) * xtable->size);
     pthread_mutex_init(&mutex, NULL);
 }
 
@@ -106,7 +106,7 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
         }
     }
 
-    xtable->list = db_realloc(xtable->list, sizeof(XLogEntry *) * (xtable->size + 1));
+    xtable->list = drealloc(xtable->list, sizeof(XLogEntry *) * (xtable->size + 1));
     xtable->list[i] = entry;
     xtable->size++;
 
@@ -153,7 +153,7 @@ void commit_xlog() {
             free_xlog_entry(head);
 
             xtable->size--;
-            xtable->list = db_realloc(xtable->list, sizeof(XLogEntry *) * xtable->size);
+            xtable->list = drealloc(xtable->list, sizeof(XLogEntry *) * xtable->size);
             break;     
         }
     }

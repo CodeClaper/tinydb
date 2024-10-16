@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include "gc.h"
 #include "data.h"
-#include "mmu.h"
 #include "log.h"
 #include "free.h"
 #include "trans.h"

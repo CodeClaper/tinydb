@@ -12,7 +12,7 @@
 #include <time.h>
 #include <float.h>
 #include "utils.h"
-#include "mmu.h"
+#include "mem.h"
 
 /* Left trim. 
  * Notice: not use the s directly, 
@@ -74,7 +74,7 @@ char *substr(char *str, uint32_t start, uint32_t end) {
     ssize_t str_size = strlen(str);
     if (start >= str_size || end >= str_size)
         return NULL;
-    char *substr = db_malloc(end - start + 1, "string");
+    char *substr = dalloc(end - start + 1);
     uint index = 0;
     for (uint32_t i = 0; i <str_size; i++) {
         if (start <= i && i <= end) {
@@ -97,7 +97,7 @@ char *replace_once(char *str, char *old_str, char *new_str) {
     if (new_str == NULL)
         new_str = "";
     ssize_t new_size = strlen(new_str);
-    char *ret = db_malloc(str_size - old_size + new_size + 1, "string");
+    char *ret = dalloc(str_size - old_size + new_size + 1);
 
     uint32_t index;
     for (index = 0; index < str_size; index++) {
@@ -109,7 +109,7 @@ char *replace_once(char *str, char *old_str, char *new_str) {
         }
         *(ret + index) = *(str + index);
     }
-    db_free(ret);
+    dfree(ret);
     return NULL;
 }
 
@@ -126,13 +126,13 @@ char *replace_all(char *str, char *old_str, char *new_str) {
     ssize_t new_size = strlen(new_str);
     
     ssize_t size = str_size + 1;
-    char* ret = db_malloc(size, "String");
+    char* ret = dalloc(size);
     uint32_t i, j;
     for (i = 0, j = 0; i < str_size; i++, j++) {
         if (strncmp(str + i, old_str, old_size) == 0) {
             if (j + new_size - old_size + 1 > size) {
                 size = j + new_size -old_size + 1;
-                ret = db_realloc(ret, size);
+                ret = drealloc(ret, size);
             }
             memcpy(ret + j, new_str, new_size);
             i += old_size;
@@ -166,7 +166,7 @@ char *format(char *format, ...) {
     va_list ap;
     va_start(ap, format);
     vsprintf(message, format, ap);
-    char *ret = db_strdup(message);
+    char *ret = dstrdup(message);
     va_end(ap);
     return ret;
 }
@@ -191,35 +191,35 @@ bool streq_or_null(char *str1, char *str2) {
 
 /* Convert int32 to string. */
 char *itos(int32_t val) {
-    char *str = db_malloc(MAX_INT_STR_LENGTH, "string");
+    char *str = dalloc(MAX_INT_STR_LENGTH);
     sprintf(str, "%d", val);
     return str;
 }
 
 /* Convert long to string. */
 char *ltos(int64_t val) {
-    char *str = db_malloc(MAX_LONG_STR_LENGTH, "string");
+    char *str = dalloc(MAX_LONG_STR_LENGTH);
     sprintf(str, "%ld", val);
     return str;
 }
 
 /* Covnert bool to string. */
 char *btos(bool val) {
-    char *str = db_malloc(MAX_BOOL_STR_LENGTH, "string");
+    char *str = dalloc(MAX_BOOL_STR_LENGTH);
     sprintf(str, val ? "true" : "false");
     return str;
 }
 
 /* Convert float to string. */
 char *ftos(float val) {
-    char *str = db_malloc(MAX_FLOAT_STR_LENGTH, "string");
+    char *str = dalloc(MAX_FLOAT_STR_LENGTH);
     sprintf(str, "%f", val);
     return str;
 }
 
 /* Convert float to string. */
 char *dtos(double val) {
-    char *str = db_malloc(MAX_DOUBLE_STR_LENGTH, "string");
+    char *str = dalloc(MAX_DOUBLE_STR_LENGTH);
     sprintf(str, "%.15lf", val);
     return str;
 }
@@ -227,7 +227,7 @@ char *dtos(double val) {
 /* Convert time to string. */
 char *ttos(time_t val, char *frmt) {
     char temp[90];
-    char *str = db_malloc(MAX_TIMESTAMP_STR_LENGTH, "string");
+    char *str = dalloc(MAX_TIMESTAMP_STR_LENGTH);
     struct tm *tmp_time = localtime(&val);
     strftime(temp, sizeof(temp), frmt, tmp_time);
     sprintf(str, "%s", temp);
@@ -377,5 +377,27 @@ int get_line(int sock, char *buf, int size) {
     return(i);
 }
 
+/* Generate hascode. */
+uint32_t hash_code(void *ptr) {
+    int a = (uintptr_t)ptr & 0xFFFFFFF;
+    /*return a ^ (a >> 16);*/
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+    return a;
+}
+
+/* Table size .*/
+uint32_t table_size_for(uint32_t cap) {
+        uint32_t n = cap - 1;
+        n |= n >> 1;
+        n |= n >> 2;
+        n |= n >> 4;
+        n |= n >> 8;
+        n |= n >> 16;
+        return (n < 0) ? 1 : n;
+}
 
 

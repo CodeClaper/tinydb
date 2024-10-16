@@ -5,11 +5,10 @@
 #include "cache.h"
 #include "spinlock.h"
 #include "utils.h"
-#include "mmu.h"
+#include "mem.h"
 #include "copy.h"
 #include "free.h"
 #include "log.h"
-#include "mem.h"
 
 #define MAX_TABLE_CACHE_SIZE 100
 

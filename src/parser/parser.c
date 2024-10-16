@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
-#include "mmu.h"
+#include "mem.h"
 #include "data.h"
 #include "common.h"
 #include "utils.h"

@@ -12,7 +12,7 @@
 #include "log.h"
 #include "asserts.h"
 #include "common.h"
-#include "mmu.h"
+#include "mem.h"
 #include "utils.h"
 
 /* Copy value. */
@@ -55,7 +55,7 @@ void *copy_value(void *value, DataType data_type) {
         case T_CHAR:
         case T_STRING: 
         case T_VARCHAR:
-            return db_strdup((char *)value);
+            return dstrdup((char *)value);
         case T_REFERENCE: 
             return copy_refer(value);
         default: {
@@ -71,7 +71,7 @@ void *copy_value2(void *value, MetaColumn *meta_column) {
     if (!value)
         return NULL;
 
-    bool *new_val = db_malloc(meta_column->column_length, "void");
+    bool *new_val = dalloc(meta_column->column_length);
     switch (meta_column->column_type) {
         case T_BOOL: {
             memcpy(new_val, value, sizeof(bool));
@@ -121,7 +121,7 @@ KeyValue *copy_key_value(KeyValue *key_value) {
     /* copy key value */
     KeyValue *key_value_copy = instance(KeyValue);
 
-    key_value_copy->key = db_strdup(key_value->key);
+    key_value_copy->key = dstrdup(key_value->key);
     /* Meta column may be null, in fact, for key aggregate function, 
      * key is min, max, sum, avg ect. there is no meta column. */
     key_value_copy->data_type = key_value->data_type;
@@ -131,7 +131,7 @@ KeyValue *copy_key_value(KeyValue *key_value) {
         key_value_copy->value = copy_array_value(key_value->value);
     else
         key_value_copy->value = copy_value(key_value->value, key_value->data_type);
-    key_value_copy->table_name = db_strdup(key_value->table_name);
+    key_value_copy->table_name = dstrdup(key_value->table_name);
 
     return key_value_copy;
 }
@@ -224,10 +224,10 @@ MetaTable *copy_meta_table(MetaTable *meta_table) {
         return NULL;
 
     MetaTable *copy = instance(MetaTable);
-    copy->table_name = db_strdup(meta_table->table_name);
+    copy->table_name = dstrdup(meta_table->table_name);
     copy->column_size = meta_table->column_size;
     copy->all_column_size = meta_table->all_column_size;
-    copy->meta_column = db_malloc(sizeof(MetaColumn *) * copy->all_column_size, "pointer");
+    copy->meta_column = dalloc(sizeof(MetaColumn *) * copy->all_column_size);
 
     uint32_t i;
     for (i = 0; i < meta_table->all_column_size; i++) {
@@ -246,7 +246,7 @@ Pager *copy_pager(Pager *pager) {
     pager_copy->size = pager->size;
     pager_copy->file_length = pager->file_length;
     pager_copy->file_descriptor = pager->file_descriptor;
-    pager_copy->table_file_path = db_strdup(pager->table_file_path);
+    pager_copy->table_file_path = dstrdup(pager->table_file_path);
     pager_copy->pages = list_copy_deep(pager->pages);
 
     return pager_copy;
@@ -275,7 +275,7 @@ ColumnNode *copy_column_node(ColumnNode *column_node) {
         column_node_copy->sub_column = copy_column_node(column_node->sub_column);
         column_node_copy->scalar_exp_list = list_copy_deep(column_node->scalar_exp_list);
     }
-    column_node_copy->column_name = db_strdup(column_node->column_name);
+    column_node_copy->column_name = dstrdup(column_node->column_name);
     return column_node_copy;
 }
 
@@ -296,7 +296,7 @@ AtomNode *copy_atom_node(AtomNode *atom_node) {
             atom_node_dup->value.floatval = atom_node->value.floatval;
             break;
         case A_STRING:
-            atom_node_dup->value.strval = db_strdup(atom_node->value.strval);
+            atom_node_dup->value.strval = dstrdup(atom_node->value.strval);
             break;
         case A_REFERENCE:
             atom_node_dup->value.referval = copy_refer_value(atom_node->value.referval);
@@ -522,9 +522,9 @@ TableRefNode *copy_table_ref_node(TableRefNode *table_ref) {
         return NULL;
     TableRefNode *table_ref_copy = instance(TableRefNode);
     if (table_ref->table)
-        table_ref_copy->table = db_strdup(table_ref->table);
+        table_ref_copy->table = dstrdup(table_ref->table);
     if (table_ref->range_variable)
-        table_ref_copy->range_variable = db_strdup(table_ref->range_variable);
+        table_ref_copy->range_variable = dstrdup(table_ref->range_variable);
     return table_ref_copy;
 }
 
@@ -563,7 +563,7 @@ TableExpNode *copy_table_exp_node(TableExpNode *table_exp_node) {
 void *copy_block(void *value, size_t size) {
     if (value == NULL)
         return NULL;
-    void *block = db_malloc(size, "pointer");
+    void *block = dalloc(size);
     memcpy(block, value, size);
     return block;
 }

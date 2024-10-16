@@ -4,6 +4,5 @@
 /* Send out db execution result set. */
 void json_list(List *list);
 
-
 /* Banner. */
 void banner();

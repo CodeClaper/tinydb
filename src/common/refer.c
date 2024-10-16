@@ -16,7 +16,7 @@
 #include <time.h>
 #include "refer.h"
 #include "data.h"
-#include "mmu.h"
+#include "mem.h"
 #include "copy.h"
 #include "free.h"
 #include "select.h"
@@ -44,14 +44,14 @@ static bool include_update_refer_lock(Refer *refer);
 /* Init Refer. */
 void init_refer() {
     update_refer_lock_content = instance(UpdateReferLockContent);
-    update_refer_lock_content->list = db_malloc(0, "pointer");
+    update_refer_lock_content->list = dalloc(0);
     update_refer_lock_content->size = 0;
 }
 
 /* Add Refer to UpdateReferLockContent. */
 void add_refer_update_lock(Refer *refer) {
     if (!include_update_refer_lock(refer)) {
-        update_refer_lock_content->list = db_realloc(update_refer_lock_content->list, sizeof(Refer *) * (update_refer_lock_content->size + 1));
+        update_refer_lock_content->list = drealloc(update_refer_lock_content->list, sizeof(Refer *) * (update_refer_lock_content->size + 1));
         update_refer_lock_content->list[update_refer_lock_content->size++] = copy_refer(refer);
     }
 }
@@ -71,7 +71,7 @@ void free_refer_update_lock(Refer *refer) {
             free_refer(current);
 
             update_refer_lock_content->size--;
-            update_refer_lock_content->list = db_realloc(update_refer_lock_content->list, sizeof(Refer *) * update_refer_lock_content->size);
+            update_refer_lock_content->list = drealloc(update_refer_lock_content->list, sizeof(Refer *) * update_refer_lock_content->size);
             break;
         }
     }
