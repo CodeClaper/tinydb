@@ -167,6 +167,7 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
                               meta_column);
         case T_DATE: {
             struct tm tmp_time;
+            memset(&tmp_time, 0, sizeof(struct tm));
             strptime(atom_node->value.strval, "%Y-%m-%d", &tmp_time);
             tmp_time.tm_sec = 0;
             tmp_time.tm_min = 0;
@@ -176,6 +177,7 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
         }
         case T_TIMESTAMP: {
             struct tm tmp_time;
+            memset(&tmp_time, 0, sizeof(struct tm));
             strptime(atom_node->value.strval, "%Y-%m-%d %H:%M:%S", &tmp_time);
             time_t tmp = mktime(&tmp_time);
             return copy_value2(&tmp, meta_column);

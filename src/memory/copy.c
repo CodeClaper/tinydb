@@ -71,7 +71,7 @@ void *copy_value2(void *value, MetaColumn *meta_column) {
     if (!value)
         return NULL;
 
-    bool *new_val = dalloc(meta_column->column_length);
+    void *new_val = dalloc(meta_column->column_length);
     switch (meta_column->column_type) {
         case T_BOOL: {
             memcpy(new_val, value, sizeof(bool));
