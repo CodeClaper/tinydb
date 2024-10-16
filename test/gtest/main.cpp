@@ -5,7 +5,6 @@ extern "C" {
 #include "data.h"
 #include "shmem.h"
 #include "mem.h"
-#include "mmu.h"
 #include "log.h"
 #include "session.h"
 #include "trans.h"
@@ -24,9 +23,6 @@ static void db_start() {
 
     /* Initialise shmem. */
     init_shmem();
-
-    /* Initialise memory manager unit. */
-    init_mmu();
 
     /* Initialise memory manger. */
     init_mem();

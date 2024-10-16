@@ -4,25 +4,25 @@
 
 extern "C" {
 #include "data.h"
-#include "mmu.h"
+#include "mem.h"
 #include "utils.h"
 }
 
 /* Test for ltrim. */
 TEST(utils, ltrim) {
-    char *string = db_strdup("  hello");
+    char *string = dstrdup("  hello");
     ASSERT_STREQ(ltrim(string), "hello");
 }
 
 /* Test for ltrim. */
 TEST(utils, rtrim) {
-    char *string = db_strdup("hello  ");
+    char *string = dstrdup("hello  ");
     ASSERT_STREQ(rtrim(string), "hello");
 }
 
 /* Test for trim. */
 TEST(utils, trim) {
-    char *string = db_strdup("  hello  ");
+    char *string = dstrdup("  hello  ");
     ASSERT_STREQ(trim(string), "hello");
 }
 
