@@ -65,8 +65,7 @@ static void create_shmem_lock() {
 }
 
 /* Allocate memory in Shmem for inner. 
- * And it only work befor shmem lock ready. 
- * */
+ * And it only work befor shmem lock ready. */
 static void *shmem_alloc_inner_unlock(size_t size) {
     void *ptr;
 

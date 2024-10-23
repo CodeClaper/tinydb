@@ -101,6 +101,7 @@ static void *dalloc_shared(size_t size) {
 
     size = MAXALIGN(size);
 
+    /* Firstly allocate from free list, if missing, shmem alloc. */
     void *ptr = dalloc_shared_in_free_list(size);
 
     if (is_null(ptr)) {
