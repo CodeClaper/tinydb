@@ -27,11 +27,8 @@ static s_lock* lock;
 static void *BaseEnd;
 static void *BaseStart;
 
-
 static void create_shmem();
-
 static void create_shmem_lock();
-
 static void *shmem_alloc_inner_unlock(size_t size);
 
 /* Init the shared memory. */

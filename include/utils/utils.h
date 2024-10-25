@@ -100,6 +100,11 @@ ST_FLAG stod(char *val, double *ret);
 int get_line(int sock, char *buf, int size);
 
 
+/* Max size. */
+inline static size_t max_size(size_t size1, size_t size2) {
+    return size1 > size2 ? size1: size2;
+}
+
 /* Min size. */
 inline static size_t min_size(size_t size1, size_t size2) {
     return size1 < size2 ? size1 : size2;
