@@ -33,8 +33,7 @@ List *get_table_list() {
     struct dirent *entry;
     if ((dir = opendir(conf->data_dir)) == NULL) {
         db_log(PANIC, "System error, not found directory: ", conf->data_dir); 
-    }
-    else {
+    } else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
                 append_list(list, replace_once(entry->d_name, ".dbt", ""));

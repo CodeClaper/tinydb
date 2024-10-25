@@ -47,7 +47,7 @@ static void flush_log(char* msg) {
     FILE *file;
     file = fopen(log_path, "a");
     if (file == NULL) {
-        fprintf(stderr, "Try to open log file '%s' error, errno %d. \n", log_path, errno);
+        fprintf(stderr, "Try to open log file '%s', error info: %s. \n", log_path, strerror(errno));
         exit(1);
     }
     fputs(msg, file);

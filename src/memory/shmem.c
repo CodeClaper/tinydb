@@ -7,6 +7,7 @@
  * The shared memory is important for table cache, table reg and transaction.
  * 
 *********************************************************************************************/
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -43,8 +44,10 @@ void init_shmem() {
 static void create_shmem() {
     ShmemHeader init_shmrd;
     void *shm_ptr = mmap(NULL, SHMEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    if (shm_ptr == MAP_FAILED) 
-        db_log(PANIC, "Try to create shared memory fail.");
+    if (shm_ptr == MAP_FAILED) {
+        perror("Try to create shared memory fail.");
+        exit(1);
+    }
     bzero(shm_ptr, SHMEM_SIZE);
         
     /* Init. */
@@ -108,8 +111,10 @@ static void *shmem_alloc_inner(size_t size) {
 /* Allocate memory in Shmem. */
 void *shmem_alloc(size_t size) {
     void *ptr = shmem_alloc_inner(size);
-    if (is_null(ptr))
-        db_log(ERROR, "Out of shared memory.");
+    if (is_null(ptr)) {
+        perror("Out of shared memory.");
+        exit(1);
+    }
     return ptr;
 }
 
