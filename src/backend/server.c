@@ -22,6 +22,7 @@
 #include "log.h"
 #include "auth.h"
 #include "timer.h"
+#include "banner.h"
 
 /* Start up the server. */
 int startup(u_short port) {
@@ -74,10 +75,13 @@ static bool auth_request(intptr_t client) {
     if (chars_num > 0) {
         buf[chars_num] = '\0';
         bool pass = auth(buf);
+
         
         /* Banner. */
-        if (pass)
-            sprintf(sbuf, "Welcome to TinyDb.\nYour TinyDb version is 0.0.1.\n\nCopyright (c) 2024, Inspur.\n");
+        if (pass) {
+            sprintf(sbuf, LOG);
+            // sprintf(sbuf, "Welcome to TinyDb.\nYour TinyDb version is 0.0.1.\n\nCopyright (c) 2024, Inspur.\n");
+        }
         else
             sprintf(sbuf, "No access.");
 

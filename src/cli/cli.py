@@ -99,6 +99,7 @@ def exec_cmd(cmd):
 def login() -> bool:
     account = input("Your account: ")
     password = getpass.getpass("Your password: ")
+    clear()
     return client.login(account, password)
 
 def fetchTables():
