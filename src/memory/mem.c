@@ -48,7 +48,8 @@ inline void switch_local() {
 static void *dalloc_shared_in_free_list(size_t size) {
 
     void *ptr = NULL;
-
+    
+    /* Acquire lock. */
     acquire_spin_lock(&header->lock);
     
     size_t offset = SHM_OFFSET;
@@ -61,10 +62,10 @@ static void *dalloc_shared_in_free_list(size_t size) {
             entry->isFree = false;
             break;
         }
-
         offset += (entry->size + SHM_OFFSET);
     }
 
+    /* Release lock. */
     release_spin_lock(&header->lock);
 
     return ptr;
@@ -105,15 +106,10 @@ static void *dalloc_shared(size_t size) {
     void *ptr = dalloc_shared_in_free_list(size);
 
     if (is_null(ptr)) {
-
         void *nptr = shmem_alloc(size + SHM_OFFSET);
-
         ShMemFreeEntry entry = { .size = size, .isFree = false };
-
         memcpy(nptr, &entry, SHM_OFFSET);
-
         ptr = nptr + SHM_OFFSET;
-
         header->num++;
     }
 
@@ -173,13 +169,9 @@ static void *drealloc_shared(void *ptr, size_t size) {
     Assert(ptr);
 
     ShMemFreeEntry *entry = ptr - SHM_OFFSET;
-
     void *new_ptr = dalloc_shared(size);
-
     memcpy(new_ptr, ptr, min_size(entry->size, size));
-
     try_dfree_shared(ptr);
-
     return new_ptr;
 }
 

@@ -16,7 +16,6 @@ typedef struct ShMemFreeEntry {
 
 #define SHM_OFFSET sizeof(ShMemFreeEntry)
 
-
 typedef struct LoMemEntry {
     size_t size;
     bool isFree;
