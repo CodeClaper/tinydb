@@ -78,10 +78,8 @@ static bool auth_request(intptr_t client) {
 
         
         /* Banner. */
-        if (pass) {
+        if (pass) 
             sprintf(sbuf, LOG);
-            // sprintf(sbuf, "Welcome to TinyDb.\nYour TinyDb version is 0.0.1.\n\nCopyright (c) 2024, Inspur.\n");
-        }
         else
             sprintf(sbuf, "No access.");
 
