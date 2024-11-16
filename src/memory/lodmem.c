@@ -1,16 +1,14 @@
-/***************************** Shared Memory Module ****************************************** 
- * Auth:        JerryZhou 
- * Created:     2024/11/16 
- * Modify:      2024/11/16
- * Locataion:   src/memory/lodmem.c
- *
+/***************************** Local memory Module ****************************************** 
+ * Auth:            JerryZhou 
+ * Created:         2024/11/16 
+ * Modify:          2024/11/16
+ * Locataion:       src/memory/lodmem.c
+ * Description:     This is the implement of mem for local memory.
  *********************************************************************************************/
-
 #include <stdlib.h>
 #include <string.h>
 #include "lodmem.h"
 #include "utils.h"
-
 
 /* Alloc for local. */
 void *lodalloc(size_t size) {
