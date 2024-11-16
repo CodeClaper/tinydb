@@ -3,23 +3,16 @@
 #include "spinlock.h"
 
 typedef enum MemType {
-    MEM_LOCAL,
+    MEM_LOCAL = 0,
     MEM_SHARED
 } MemType;
 
-typedef struct ShMemFreeEntry {
-    size_t  size;
-    bool    isFree;
-    size_t  num;
-    s_lock  lock;
-} ShMemFreeEntry;
-
-#define SHM_OFFSET sizeof(ShMemFreeEntry)
-
-typedef struct LoMemEntry {
-    size_t size;
-    bool isFree;
-} LoMemEntry;
+typedef struct MemMethods {
+    void *(*dalloc)(size_t size);
+    void (*dfree)(void *ptr);
+    void *(*drealloc)(void *ptr, size_t size);
+    char *(*dstrdup)(char *str);
+} MemMethods;
 
 #define instance(_type_)  ((_type_ *) dalloc(sizeof(_type_)))
 
@@ -34,10 +27,6 @@ typedef struct LoMemEntry {
 	(((uintptr_t) (LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t) ((ALIGNVAL) - 1)))
 
 #define MAXALIGN(LEN)			TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
-
-
-/* Init mem. */
-void init_mem();
 
 
 /* Swith Shared Memory. */

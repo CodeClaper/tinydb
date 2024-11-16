@@ -4,7 +4,7 @@
 extern "C" {
 #include "data.h"
 #include "shmem.h"
-#include "mem.h"
+#include "shdmem.h"
 #include "log.h"
 #include "session.h"
 #include "trans.h"
