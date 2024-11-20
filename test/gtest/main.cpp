@@ -13,6 +13,7 @@ extern "C" {
 #include "buffer.h"
 #include "conf.h"
 #include "refer.h"
+#include "mctx.h"
 }
 Conf *conf; /* Conf */
 jmp_buf errEnv; /* jmp_buf for error. */
@@ -20,6 +21,9 @@ jmp_buf errEnv; /* jmp_buf for error. */
 
 /* DB Start. */
 static void db_start() {
+
+    /* MemoryContext init.*/
+    MemoryContextInit();
 
     /* Initialise shmem. */
     init_shmem();
