@@ -1,4 +1,5 @@
 #include "data.h"
+#include <stdlib.h>
 
 #ifndef MCTX_H
 #define MCTX_H
@@ -34,6 +35,9 @@ typedef struct MemoryContextData {
 } MemoryContextData;
 
 
+/* MemoryContextInit. */
+void MemoryContextInit(void);
+
 /* Create MemoryContext.
  * Thist abstract function not really to create MemoryContext and it just
  * make up the relation of MemoryContext.
@@ -41,6 +45,21 @@ typedef struct MemoryContextData {
 MemoryContext MemoryContextCreate(MemoryContext node, MemoryContext parent, const char *name, ContextType type, MemoryContextMethodID id);
 
 /* Delete the MemoryContext. */
-void MemoryContextDelete(MemoryContext node, ContextType type);
+void MemoryContextDelete(MemoryContext node);
+
+/* Switch to MemoryContext. */
+void *MemoryContextSwitchTo(MemoryContext currentConext);
+
+/* Alloc from MemoryContext. */
+void *MemoryContextAlloc(size_t size);
+
+/* Free from MemoryContext. */
+void MemoryContextFree(void *ptr);
+
+/* Realloc from MemoryContext. */
+void *MemoryContextRealloc(void *pointer, size_t size);
+
+/* Strdup from MemoryContext. */
+char *MemoryContextStrdup(char *str);
 
 #endif

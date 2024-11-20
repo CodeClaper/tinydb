@@ -41,6 +41,9 @@ static void sigchild();
 /* DB Start. */
 static void db_start() {
 
+    /* MemoryContext init.*/
+    MemoryContextInit();
+
     /* Initialise shmem. */
     init_shmem();
 

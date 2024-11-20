@@ -74,7 +74,7 @@ static LogLevel define_log_level(char *level) {
 
 /* Append directory end character [/] */
 static char* append_dir_end(char *dir) {
-    assert_not_null(dir, "");
+    Assert(dir);
     size_t size = strlen(dir);
     if (dir[size - 1] == '/')
         return dir;

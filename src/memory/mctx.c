@@ -7,6 +7,8 @@
  *********************************************************************************************/
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "data.h"
 #include "mctx.h"
@@ -16,6 +18,7 @@
 MemoryContext CURRENT_MEMORY_CONTEXT;
 
 MemoryContext TOP_MEMORY_CONTEXT;
+MemoryContext MASTER_MEMORY_CONTEXT;
 MemoryContext MESSAGE_MEMORY_CONTEXT;
 
 
@@ -26,6 +29,13 @@ static MemoryContextMethods mctx_methods[] = {
     [ALLOC_SET_ID].realloc = AllocSetRealloc,
     [ALLOC_SET_ID].delete_context = AllocSetDelete
 };
+
+/* MemoryContextInit.
+ * Start up the memory-context subsystem. */
+void MemoryContextInit(void) {
+    TOP_MEMORY_CONTEXT = AllocSetMemoryContextCreate(NULL, "TopMemoryContext", DEFAULT_MAX_BLOCK_SIZE);
+    MemoryContextSwitchTo(TOP_MEMORY_CONTEXT);
+}
 
 
 /* Create MemoryContext.
@@ -56,13 +66,43 @@ MemoryContext MemoryContextCreate(MemoryContext node, MemoryContext parent,
     return node;
 }
 
-void MemoryContextDelete(MemoryContext node, ContextType type) {
-
+/* Delete the MemoryContext. */
+void MemoryContextDelete(MemoryContext node) {
+    MemoryContext current = node;
 }
 
 
+/* Switch to MemoryContext. */
 void *MemoryContextSwitchTo(MemoryContext currentConext) {
     MemoryContext old = currentConext;
     CURRENT_MEMORY_CONTEXT = currentConext;
     return old;
+}
+
+
+/* Alloc from MemoryContext. */
+void *MemoryContextAlloc(size_t size) {
+    MemoryContext context = CURRENT_MEMORY_CONTEXT;
+    return context->context_methods->alloc(context, size);
+}
+
+
+/* Free from MemoryContext. */
+void MemoryContextFree(void *ptr) {
+    MemoryContext context = CURRENT_MEMORY_CONTEXT;
+    context->context_methods->free(ptr);
+}
+
+/* Realloc from MemoryContext. */
+void *MemoryContextRealloc(void *pointer, size_t size) {
+    MemoryContext context = CURRENT_MEMORY_CONTEXT;
+    return context->context_methods->realloc(pointer, size);
+}
+
+/* Strdup from MemoryContext. */
+char *MemoryContextStrdup(char *str) {
+    size_t len = strlen(str) + 1;
+    char *nstr = MemoryContextAlloc(len);
+    memcpy(nstr, str, len);
+    return nstr;
 }

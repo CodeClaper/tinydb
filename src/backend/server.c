@@ -14,6 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "server.h"
+#include "defs.h"
 #include "mem.h"
 #include "common.h"
 #include "stmt.h"
@@ -23,6 +24,8 @@
 #include "auth.h"
 #include "timer.h"
 #include "banner.h"
+#include "mctx.h"
+#include "asctx.h"
 
 /* Start up the server. */
 int startup(u_short port) {
@@ -74,10 +77,8 @@ static bool auth_request(intptr_t client) {
     size_t chars_num = recv(client, buf, SPOOL_SIZE, 0);
     if (chars_num > 0) {
         buf[chars_num] = '\0';
-        bool pass = auth(buf);
-
-        
         /* Banner. */
+        bool pass = auth(buf);
         if (pass) 
             sprintf(sbuf, LOG);
         else
@@ -93,6 +94,8 @@ static bool auth_request(intptr_t client) {
     return false;
 }
 
+
+/* For loop request. */
 static void loop_request(intptr_t client) {
     size_t chars_num;
     char buf[SPOOL_SIZE];
@@ -116,7 +119,8 @@ static void loop_request(intptr_t client) {
 
 /* Accept request.*/
 void accept_request(intptr_t client) {
-
+    MASTER_MEMORY_CONTEXT = AllocSetMemoryContextCreate(TOP_MEMORY_CONTEXT, "MasterMemoryContext", DEFAULT_MAX_BLOCK_SIZE);
+    MemoryContextSwitchTo(MASTER_MEMORY_CONTEXT);
     /* Auth login message. */
     if (auth_request(client))
         loop_request(client);
@@ -124,4 +128,5 @@ void accept_request(intptr_t client) {
     /* Quite */
     close(client);
     exit(0);
+    MemoryContextDelete(MASTER_MEMORY_CONTEXT);
 }

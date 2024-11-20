@@ -22,15 +22,13 @@ typedef unsigned char *byte_pointer;
 
 int re_try;
 
-
-
 /* Check if empty string. */
 static bool is_empty(char *s) {
     if (s == NULL) return true;
     size_t size = strlen(s);
     if (size == 0)
         return true;
-    for(int i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
         if (*(s + i) != ' ')
             return false;
     }
@@ -128,7 +126,6 @@ int re_connect(struct sockaddr_in *address) {
     return sock_fd;
 }
 
-
 void show_bytes(byte_pointer start, size_t len) {
     size_t i;
     for (i = 0; i <len; i++)
@@ -136,13 +133,10 @@ void show_bytes(byte_pointer start, size_t len) {
     printf("\n");
 }
 
-
-
 /**
  * Protocol symbol
  * GET: get the server message
  * OVER: end of session.
- *
  */
 bool db_receive(int server_fd) {
     while(true) {

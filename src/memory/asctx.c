@@ -6,6 +6,7 @@
  * 
 *********************************************************************************************/
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,8 +20,8 @@
 #include "utils.h"
 #include "asserts.h"
 
-void *AllocSetAllocNewBlock(MemoryContext context, size_t size);
-void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_t size);
+void *AllocSetAllocNewBlock(MemoryContext context, size_t chksize);
+void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_t chksize);
 
 /* Index of AllocSet free size 
  * --------------------------
@@ -63,20 +64,84 @@ MemoryContext AllocSetMemoryContextCreate(MemoryContext parent, char *name, uint
 
     set->blocks = block;
     set->next_block_size = max_block_size;
+    memset(set->free_list, 0, sizeof(set->free_list));
 
     return MemoryContextCreate((MemoryContext) set, 
-                               NULL, 
-                               "AllocSet", 
+                               parent, 
+                               name,
                                ALLOC_SET_CTX, 
                                ALLOC_SET_ID);
 }
 
+/* Store details into chunk mask. 
+ * Details include:
+ * offset: offset to block.
+ * value: chunk allocated size.
+ * */
+static inline void AllocChunkSetMask(AllocChunk chunk, AllocBlock block, size_t value) {
+    size_t offset = (char *) chunk - (char *) block;
+    Assert(offset <= ALLOC_CHUNK_MAX_OFFSET);
+    chunk->mask = (((uint64_t) offset) << ALLOC_CHUNK_BLOCK_OFFSET_BASEBIT) | ((uint64_t) value) << ALLOC_CHUNK_VALUE_BASEBIT;
+}
+
+/* Set chunk as an externally managed chunk. */
+static inline void AllocChunkSetMaskExternal(AllocChunk chunk) {
+    chunk->mask = ALLOC_CHUNK_MAGIC | (((uint64_t) 1) << ALLOC_CHUNK_EXTERNAL_BASEBIT);
+}
+
+/* Return true if chunk is marked as external. */
+static inline bool AllocChunkIsExternal(AllocChunk chunk) {
+    Assert(!CHUNK_IS_EXTERNAL(chunk->mask) || CHUNK_CHECK_MAGIC(chunk->mask));
+    return CHUNK_IS_EXTERNAL(chunk->mask);
+}
+
+/* Get AllocBlock by AllocChunk. */
+static inline AllocBlock AllocChunkGetBlock(AllocChunk chunk) {
+    Assert(!CHUNK_IS_EXTERNAL(chunk->mask));
+    return (AllocBlock) ((char *) chunk - CHUNK_GET_OFFSET(chunk->mask));
+}
+
+/* Allocate for large memory.
+ * That allocates en entire block for the chunk. */
+static void *AllocSetAllocLarge(MemoryContext context, size_t size) {
+    AllocSet set = (AllocSet) context;
+    size_t blk_size;
+    AllocBlock block;
+    AllocChunk chunk;
+    
+    blk_size = MAXALIGN(size + ALLOC_BLOCK_SIZE + ALLOC_CHUNK_SIZE);
+    block = (AllocBlock) malloc(blk_size);
+
+    context->allocated_size += blk_size;
+    block->set = set;
+    block->freeptr = block->endptr = ((char *) block) + blk_size;
+    chunk = (AllocChunk) (((char *) block) + ALLOC_BLOCK_SIZE);
+    /* Mark the Chunk as externally managed. */
+    AllocChunkSetMaskExternal(chunk);
+
+    if (non_null(set->blocks)) {
+        block->pres = set->blocks;
+        block->next = set->blocks->next;
+        if (non_null(block->next))
+            block->next->pres = block;
+        set->blocks->next = block;
+    } else {
+        block->pres = NULL;
+        block->next = NULL;
+        set->blocks = block;
+    }
+
+    return CHUNK_GET_POINTER(chunk);
+}
+
 /* Allocate from AllocSetContext. */
 void *AllocSetAlloc(MemoryContext context, size_t size) {
-
-    size_t blk_size, free_size;
+    size_t chksize, freesize;
     int fdx;
     AllocChunk chunk;
+
+    if (size > ALLOC_CHUNK_LIMIT)
+        return AllocSetAllocLarge(context, size);
 
     AllocSet set = (AllocSet) context;
     Assert(set->blocks);
@@ -90,36 +155,34 @@ void *AllocSetAlloc(MemoryContext context, size_t size) {
         return CHUNK_GET_POINTER(chunk);
     }
 
-    blk_size = MAXALIGN(ALLOC_CHUNK_SIZE + size);
+    chksize = CHUNK_GET_SIZE_FROM_FREE_LIST_IDX(fdx);
+    Assert(chksize >= size);
 
     /* Get block free space size. 
      * If it has enough free space, allocate from current block. 
      * Otherwise, generate new block and allocate from that. */
-    free_size = block->endptr - block->freeptr;
-    if (free_size < size) 
-        return AllocSetAllocNewBlock(context, size);
+    freesize = block->endptr - block->freeptr;
+    if (freesize < chksize + ALLOC_CHUNK_SIZE) 
+        return AllocSetAllocNewBlock(context, chksize);
 
     /* There is enough space on the block. */
-    return AllocSetAllocChunkFromBlock(context, block, size);
+    return AllocSetAllocChunkFromBlock(context, block, chksize);
 }
 
 
 /* Allocate Chunk from Current Block. */
-void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_t size) {
-    /* Allocate chunk must less max limit.*/
-    Assert(size < MAX_ALLOC_CHUNK_SIZE);
+void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_t chksize) {
     AllocChunk chunk = (AllocChunk) block->freeptr;
-    block->endptr += (size + ALLOC_CHUNK_SIZE);
-    chunk->offset = block->freeptr - (char *)block;
-    chunk->msize = size;
-    chunk->next = NULL;
+    block->freeptr += (chksize + ALLOC_CHUNK_SIZE);
     Assert(block->freeptr <= block->endptr);
+    chunk->next = NULL;
+    AllocChunkSetMask(chunk, block, chksize);
     return CHUNK_GET_POINTER(chunk);
 }
 
 
 /* Allocate from New Block. */
-void *AllocSetAllocNewBlock(MemoryContext context, size_t size) {
+void *AllocSetAllocNewBlock(MemoryContext context, size_t chksize) {
     size_t blk_size;
     AllocSet set = (AllocSet) context;
 
@@ -133,34 +196,85 @@ void *AllocSetAllocNewBlock(MemoryContext context, size_t size) {
     block->set = set;
     block->next = set->blocks;
     block->pres = NULL;
-
-    set->blocks->pres = block;
+    
+    if (block->next)
+        block->next->pres = block;
     set->blocks = block;
 
     context->allocated_size += blk_size;
 
-    return AllocSetAllocChunkFromBlock(context, block, size);
+    return AllocSetAllocChunkFromBlock(context, block, chksize);
 }
 
 /* Free in AllocSetContext. */
 void AllocSetFree(void *ptr) {
     Assert(ptr);
+    AllocSet set;
     AllocChunk chunk = POINTER_GET_CHUNK(ptr);
-    AllocBlock block = CHUNK_GET_BLOCK(chunk);
-    AllocSet set = block->set;
-    int fdx = AllocSetFreeIndex(chunk->msize);
-    chunk->next = set->free_list[fdx];
-    set->free_list[fdx] = chunk;
+
+    if (AllocChunkIsExternal(chunk)) {
+        AllocBlock block = CHUNK_EXTERNAL_GET_BLOCK(chunk);
+        set = block->set;
+        if (block->pres)
+            block->pres->next = block->next;
+        else
+            set->blocks = block->next;
+        if (block->next)
+            block->next->pres = block->pres;
+        set->header.allocated_size -= block->endptr - (char *) block;
+        free(block);
+    } else {
+        AllocBlock block = AllocChunkGetBlock(chunk); 
+        set = block->set;
+        int fdx = AllocSetFreeIndex(CHUNK_GET_VALUE(chunk->mask));
+        chunk->next = set->free_list[fdx];
+        set->free_list[fdx] = chunk;
+    }
 }
 
 /* Reallocate in AllocSetContext. */
 void *AllocSetRealloc(void *ptr, size_t size) {
-
     AllocChunk chunk = POINTER_GET_CHUNK(ptr);
-    AllocBlock block = CHUNK_GET_BLOCK(chunk);
-    AllocSet set = block->set;
-    int fdx = AllocSetFreeIndex(chunk->msize);
-    size_t old_size = CHUNK_GET_SIZE_FROM_FREE_LIST_IDX(fdx);
+    AllocBlock block;
+    AllocSet set;
+    size_t old_size;
+
+    /* Way to external chunk. */
+    if (AllocChunkIsExternal(chunk)) {
+        size_t blksize;
+        size_t oldblksize;
+
+        block = CHUNK_EXTERNAL_GET_BLOCK(chunk);
+        set = block->set;
+        blksize = MAXALIGN(size + ALLOC_BLOCK_SIZE + ALLOC_CHUNK_SIZE);
+        oldblksize = block->endptr - ((char *) block);
+
+        block = realloc(block, blksize);
+        if (is_null(block)) {
+            fprintf(stderr, "Out of memory.");
+            exit(1);
+        }
+
+        set->header.allocated_size -= oldblksize;
+        set->header.allocated_size += blksize;
+
+        block->freeptr = block->endptr = ((char *) block) + blksize;
+        chunk = (AllocChunkData *) (((char *) block) + ALLOC_BLOCK_SIZE);
+
+        if (block->pres)
+            block->pres->next = block;
+        else
+            set->blocks = block;
+        if (block->next)
+            block->next->pres = block;
+
+        return CHUNK_GET_POINTER(chunk);
+    }
+
+    /* Way to normal chunk. */
+    block = AllocChunkGetBlock(chunk);
+    set = block->set;
+    old_size = CHUNK_GET_VALUE(chunk->mask);
 
     if (old_size >= size) 
         return ptr; 
