@@ -27,6 +27,7 @@ static MemoryContextMethods mctx_methods[] = {
     [ALLOC_SET_ID].alloc = AllocSetAlloc,
     [ALLOC_SET_ID].free = AllocSetFree,
     [ALLOC_SET_ID].realloc = AllocSetRealloc,
+    [ALLOC_SET_ID].reset = AllocSetReset,
     [ALLOC_SET_ID].delete_context = AllocSetDelete
 };
 
@@ -42,10 +43,9 @@ void MemoryContextInit(void) {
  * Thist abstract function not really to create MemoryContext and it just
  * make up base info and link to others MemoryContext.
  * */
-MemoryContext MemoryContextCreate(MemoryContext node, MemoryContext parent, 
+void MemoryContextCreate(MemoryContext node, MemoryContext parent, 
                                   const char *name, ContextType type, 
                                   MemoryContextMethodID id) {
-
     /* Make up base Info. */
     node->name = name;
     node->type = type;
@@ -62,13 +62,17 @@ MemoryContext MemoryContextCreate(MemoryContext node, MemoryContext parent,
             parent->firstChild->presChild = node;
         parent->firstChild = node;
     }
+}
 
-    return node;
+/* MemoryContextReset. 
+ * Release all space allocate within a context and also its children contexts. */
+void MemoryContextReset(MemoryContext context) {
+    context->context_methods->reset(context);
 }
 
 /* Delete the MemoryContext. */
-void MemoryContextDelete(MemoryContext node) {
-    MemoryContext current = node;
+void MemoryContextDelete(MemoryContext context) {
+    MemoryContext current = context;
 }
 
 

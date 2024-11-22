@@ -20,8 +20,8 @@
 #include "utils.h"
 #include "asserts.h"
 
-void *AllocSetAllocNewBlock(MemoryContext context, size_t chksize);
-void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_t chksize);
+void *AllocSetAllocNewBlock(MemoryContext context, Size chksize);
+void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, Size chksize);
 
 /* Index of AllocSet free size 
  * --------------------------
@@ -32,7 +32,7 @@ void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_
  *      leftmost_32_pos(size - 1) - ALLOC_MINBITS + 1
  * -------------------------
  * */
-static inline int AllocSetFreeIndex(size_t size) {
+static inline int AllocSetFreeIndex(Size size) {
     int idx = size > (1 << ALLOC_MINBITS) 
             ? leftmost_32_pos(size -1) - ALLOC_MINBITS + 1
             : 0;
@@ -42,17 +42,17 @@ static inline int AllocSetFreeIndex(size_t size) {
 
 /* The implement MemoryContextCreate in AllocSetContext. */
 MemoryContext AllocSetMemoryContextCreate(MemoryContext parent, char *name, uint32_t max_block_size) {
-    size_t blk_size;
+    Size size;
     AllocSet set;
     AllocBlock block;
 
     /* Block size at least include AllocSetContext size + AllocBlock size + at lest one AllocChunk size.*/
-    blk_size = ALLOC_SET_CXT_SIZE + ALLOC_BLOCK_SIZE + ALLOC_CHUNK_SIZE;
-    blk_size = max_size(blk_size, max_block_size);
-    blk_size = MAXALIGN(blk_size);
+    size = ALLOC_SET_CXT_SIZE + ALLOC_BLOCK_SIZE + ALLOC_CHUNK_SIZE;
+    size = max_size(size, max_block_size);
+    size = MAXALIGN(size);
 
     /* Alloc from system. */
-    set = (AllocSet) malloc(blk_size);
+    set = (AllocSet) malloc(size);
 
     /* Assignment. */
     block = KEEPER_ALLOC_BLOCK(set);
@@ -60,17 +60,23 @@ MemoryContext AllocSetMemoryContextCreate(MemoryContext parent, char *name, uint
     block->pres = NULL;
     block->next = NULL;
     block->freeptr = ((char *) block) + ALLOC_BLOCK_SIZE;
-    block->endptr = ((char *) set) + blk_size;
+    block->endptr = ((char *) set) + size;
 
     set->blocks = block;
     set->next_block_size = max_block_size;
+
+    /* Init the free list*/
     memset(set->free_list, 0, sizeof(set->free_list));
 
-    return MemoryContextCreate((MemoryContext) set, 
+    MemoryContextCreate((MemoryContext) set, 
                                parent, 
                                name,
                                ALLOC_SET_CTX, 
                                ALLOC_SET_ID);
+
+    set->header.allocated_size =  size;
+
+    return (MemoryContext) set;
 }
 
 /* Store details into chunk mask. 
@@ -78,8 +84,8 @@ MemoryContext AllocSetMemoryContextCreate(MemoryContext parent, char *name, uint
  * offset: offset to block.
  * value: chunk allocated size.
  * */
-static inline void AllocChunkSetMask(AllocChunk chunk, AllocBlock block, size_t value) {
-    size_t offset = (char *) chunk - (char *) block;
+static inline void AllocChunkSetMask(AllocChunk chunk, AllocBlock block, Size value) {
+    Size offset = (char *) chunk - (char *) block;
     Assert(offset <= ALLOC_CHUNK_MAX_OFFSET);
     chunk->mask = (((uint64_t) offset) << ALLOC_CHUNK_BLOCK_OFFSET_BASEBIT) | ((uint64_t) value) << ALLOC_CHUNK_VALUE_BASEBIT;
 }
@@ -103,9 +109,9 @@ static inline AllocBlock AllocChunkGetBlock(AllocChunk chunk) {
 
 /* Allocate for large memory.
  * That allocates en entire block for the chunk. */
-static void *AllocSetAllocLarge(MemoryContext context, size_t size) {
+static void *AllocSetAllocLarge(MemoryContext context, Size size) {
     AllocSet set = (AllocSet) context;
-    size_t blk_size;
+    Size blk_size;
     AllocBlock block;
     AllocChunk chunk;
     
@@ -119,10 +125,10 @@ static void *AllocSetAllocLarge(MemoryContext context, size_t size) {
     /* Mark the Chunk as externally managed. */
     AllocChunkSetMaskExternal(chunk);
 
-    if (non_null(set->blocks)) {
+    if (set->blocks != NULL) {
         block->pres = set->blocks;
         block->next = set->blocks->next;
-        if (non_null(block->next))
+        if (block->next != NULL)
             block->next->pres = block;
         set->blocks->next = block;
     } else {
@@ -135,8 +141,8 @@ static void *AllocSetAllocLarge(MemoryContext context, size_t size) {
 }
 
 /* Allocate from AllocSetContext. */
-void *AllocSetAlloc(MemoryContext context, size_t size) {
-    size_t chksize, freesize;
+void *AllocSetAlloc(MemoryContext context, Size size) {
+    Size chksize, freesize;
     int fdx;
     AllocChunk chunk;
 
@@ -171,7 +177,7 @@ void *AllocSetAlloc(MemoryContext context, size_t size) {
 
 
 /* Allocate Chunk from Current Block. */
-void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_t chksize) {
+void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, Size chksize) {
     AllocChunk chunk = (AllocChunk) block->freeptr;
     block->freeptr += (chksize + ALLOC_CHUNK_SIZE);
     Assert(block->freeptr <= block->endptr);
@@ -182,8 +188,8 @@ void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, size_
 
 
 /* Allocate from New Block. */
-void *AllocSetAllocNewBlock(MemoryContext context, size_t chksize) {
-    size_t blk_size;
+void *AllocSetAllocNewBlock(MemoryContext context, Size chksize) {
+    Size blk_size;
     AllocSet set = (AllocSet) context;
 
     Assert(set->blocks != NULL); 
@@ -221,7 +227,7 @@ void AllocSetFree(void *ptr) {
             set->blocks = block->next;
         if (block->next)
             block->next->pres = block->pres;
-        set->header.allocated_size -= block->endptr - (char *) block;
+        set->header.allocated_size -= block->endptr - ((char *) block);
         free(block);
     } else {
         AllocBlock block = AllocChunkGetBlock(chunk); 
@@ -233,16 +239,16 @@ void AllocSetFree(void *ptr) {
 }
 
 /* Reallocate in AllocSetContext. */
-void *AllocSetRealloc(void *ptr, size_t size) {
+void *AllocSetRealloc(void *ptr, Size size) {
     AllocChunk chunk = POINTER_GET_CHUNK(ptr);
     AllocBlock block;
     AllocSet set;
-    size_t old_size;
+    Size old_size;
 
     /* Way to external chunk. */
     if (AllocChunkIsExternal(chunk)) {
-        size_t blksize;
-        size_t oldblksize;
+        Size blksize;
+        Size oldblksize;
 
         block = CHUNK_EXTERNAL_GET_BLOCK(chunk);
         set = block->set;
@@ -287,27 +293,46 @@ void *AllocSetRealloc(void *ptr, size_t size) {
 }
 
 /* Reset AllocSetContext. 
- * Free all memory which is allocated in the given set.
+ * Free all allocated chunk memory which is allocated in the given set.
+ * To simply, we directly free the blocks, but keep the first block which 
+ * genrated when Memory Context created.
  * */
 void AllocSetReset(MemoryContext context) {
     AllocSet set = (AllocSet) context;
+    Size keepersize = KEEPER_ALLOC_BLOCK(set)->endptr - ((char *) set);
     AllocBlock block = set->blocks;
 
-    while (non_null(block)) {
+    /* Clean the free list*/
+    memset(set->free_list, 0, sizeof(set->free_list));
+
+    /* Reset first block as header. */
+    set->blocks = KEEPER_ALLOC_BLOCK(set);
+
+    while (block != NULL) {
         AllocBlock next = block->next;
-        context->allocated_size -= block->endptr - ((char *) block);
-        free(block);
+        if (IS_KEEPER_BLOCK(set, block)) {
+            // Way to handle first block.
+            char *start = ((char *) block) + ALLOC_BLOCK_SIZE;
+            block->freeptr = start;
+            block->next = NULL;
+            block->pres = NULL;
+        } else {
+            // Way to handle other block.
+            context->allocated_size -= block->endptr - ((char *) block);
+            free(block);
+        }
         block = next;
     }
+
+    /* Just check, if reset is successful. */
+    Assert(context->allocated_size == keepersize);
 }
 
 /* Delete AllocSetContext. 
  * Free all memory which is allocated in the given set.
- * Unlike AllocSetReset, this will also free AllocSet self.
+ * Unlike AllocSetReset, this will free free all resource include the set itself.
  * */
 void AllocSetDelete(MemoryContext context) {
     AllocSetReset(context);
     free((AllocSet) context);
 }
-
-

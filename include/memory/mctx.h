@@ -42,7 +42,11 @@ void MemoryContextInit(void);
  * Thist abstract function not really to create MemoryContext and it just
  * make up the relation of MemoryContext.
  * */
-MemoryContext MemoryContextCreate(MemoryContext node, MemoryContext parent, const char *name, ContextType type, MemoryContextMethodID id);
+void MemoryContextCreate(MemoryContext node, MemoryContext parent, const char *name, ContextType type, MemoryContextMethodID id);
+
+/* MemoryContextReset. 
+ * Release all space allocate within a context and also its children contexts. */
+void MemoryContextReset(MemoryContext context);
 
 /* Delete the MemoryContext. */
 void MemoryContextDelete(MemoryContext node);

@@ -48,8 +48,12 @@ typedef struct AllocChunkData {
 #define ALLOC_CHUNK_BLOCK_OFFSET_MASK       UINT64CONST(0x3FFFFFFF)
 #define ALLOC_CHUNK_MAGIC                   (UINT64CONST(0xBDEADB858E77BABA) >> ALLOC_CHUNK_VALUE_BASEBIT << ALLOC_CHUNK_VALUE_BASEBIT)
 
+
 #define KEEPER_ALLOC_BLOCK(set) \
             ((AllocBlockData *) ((char *) set + ALLOC_SET_CXT_SIZE))
+
+#define IS_KEEPER_BLOCK(set, block) \
+            (block == (KEEPER_ALLOC_BLOCK(set)))
 
 #define CHUNK_GET_POINTER(chunk) \
             ((void *) ((char *) chunk + ALLOC_CHUNK_SIZE))
@@ -61,7 +65,7 @@ typedef struct AllocChunkData {
             ((AllocBlockData *) ((char *) chunk - ALLOC_BLOCK_SIZE))
 
 #define CHUNK_GET_SIZE_FROM_FREE_LIST_IDX(fdx) \
-            ((((size_t) 1) << ALLOC_MINBITS) << (fdx))
+            ((((Size) 1) << ALLOC_MINBITS) << (fdx))
 
 #define CHUNK_IS_EXTERNAL(mask) \
             (mask & (((uint64_t) 1) << ALLOC_CHUNK_EXTERNAL_BASEBIT))
@@ -79,13 +83,13 @@ typedef struct AllocChunkData {
 MemoryContext AllocSetMemoryContextCreate(MemoryContext parent, char *name, uint32_t max_block_size);
 
 /* Allocate from AllocSetContext. */
-void *AllocSetAlloc(MemoryContext context, size_t size);
+void *AllocSetAlloc(MemoryContext context, Size size);
 
 /* Free in AllocSetContext. */
 void AllocSetFree(void *ptr);
 
 /* Reallocate in AllocSetContext. */
-void *AllocSetRealloc(void *ptr, size_t size);
+void *AllocSetRealloc(void *ptr, Size size);
 
 /* Reset AllocSetContext. */
 void AllocSetReset(MemoryContext context);
