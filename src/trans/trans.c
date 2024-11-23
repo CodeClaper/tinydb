@@ -100,7 +100,6 @@ static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntr
     entry->auto_commit = auto_commit;
     entry->next = next;
     switch_local();
-
     return entry;
 }
 
@@ -131,7 +130,6 @@ static void *get_trans_tail() {
     while (entry->next) {
         entry = entry->next;
     }
-
     return entry;
 }
 

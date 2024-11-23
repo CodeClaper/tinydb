@@ -117,7 +117,6 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
 void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
 
     XLogEntry *current = find_xlog_entry();
-
     if (current) {
         for (; current != NULL; current = current->next) {
             Refer *current_refer = current->refer;

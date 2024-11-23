@@ -249,7 +249,6 @@ void list_delete_ptr(List *list, void *item) {
  * this function will not automatically free the memory.
  * */
 void list_delete(List *list, void *item) {
-    
     switch (list->type) {
         case NODE_INT:
             list_delete_int(list, *(int *)item);

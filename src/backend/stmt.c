@@ -133,6 +133,7 @@ static void statement_delete(Statement *statement, DBResult *result) {
 static void statement_describe(Statement *statement, DBResult *result) {
     assert_true(statement->statement_type == DESCRIBE_STMT,
                "System error, describe statement type error."); 
+    auto_begin_transaction();
     List *list = exec_describe_statement(statement->describe_node);
     if (list) {
         /* Success resule. */

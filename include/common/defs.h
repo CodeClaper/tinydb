@@ -8,7 +8,9 @@ extern Conf *conf;  /* Configuration */
 extern jmp_buf errEnv; /* jmp_buf for error. */
 
 /* Gloabal MemoryContext. */
+extern MemoryContext CURRENT_MEMORY_CONTEXT;
 extern MemoryContext TOP_MEMORY_CONTEXT;
 extern MemoryContext MASTER_MEMORY_CONTEXT;
+extern MemoryContext CACHE_MEMORY_CONTEXT;
 extern MemoryContext MESSAGE_MEMORY_CONTEXT;
 #endif

@@ -5,7 +5,6 @@
  * Locataion:   src/memory/shmem.c
  * Description: The shared memory manager is a component of IPC (Inter process commnuication).
  * The shared memory is important for table cache, table reg and transaction.
- * 
 *********************************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>

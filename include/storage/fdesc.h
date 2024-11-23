@@ -9,6 +9,9 @@ typedef struct FDescEntry{
 /* Initilise fdesc. */
 void init_fdesc();
 
+/* Unregister fdesc. */
+void unregister_fdesc(char *table_name);
+
 /* Load file descriptor. */
 int load_file_desc(char *file_path);
 

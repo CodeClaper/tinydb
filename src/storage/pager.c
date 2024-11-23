@@ -145,6 +145,7 @@ static void flush_disk(Table *table) {
 
             /* Flush disk. */
             off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * i, SEEK_SET);
+            db_log(INFO, "file desc is %d", pager->file_descriptor);
             if (offset == -1) 
                 db_log(PANIC, "Error seeking: %s.", strerror(errno));
             

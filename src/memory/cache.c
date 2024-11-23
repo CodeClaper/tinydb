@@ -53,6 +53,7 @@ Table *find_table_cache(char *table_name) {
         Table *current = lfirst(lc);
         if (streq(current->meta_table->table_name, table_name)) {
             ptr = copy_table(current);
+            break;
         }
     }
     return ptr;

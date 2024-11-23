@@ -17,10 +17,9 @@
 #include "log.h"
 
 /*Get table name.*/
-static char *get_desc_table_name(DescribeNode *describe_node) {
+static inline char *get_desc_table_name(DescribeNode *describe_node) {
     return describe_node->table_name;
 }
-
 
 /* Generate DescribeResult. */
 static List *gen_describe_result(MetaTable *meta_table) {
@@ -105,6 +104,5 @@ List *exec_describe_statement(DescribeNode *describe_node) {
         db_log(ERROR, "Table '%s' not exists.", table_name);
         return NULL;
     }
-
     return gen_describe_result(table->meta_table);
 }

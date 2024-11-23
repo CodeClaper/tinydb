@@ -23,6 +23,7 @@
 #include "log.h"
 #include "tablelock.h"
 #include "index.h"
+#include "fdesc.h"
 
 /* Get table list. */
 List *get_table_list() {
@@ -253,6 +254,13 @@ bool drop_table(char *table_name) {
         return false;
     }
 
+    int fdesc = get_file_desc(table_name);
+
+    /* Unregister fdesc. */
+    unregister_fdesc(table_name);
+    /* Close fdesc. */
+    close(fdesc);
+
     /* Disk remove. */
     if (remove(file_path) == 0) {
         dfree(file_path);
@@ -260,6 +268,7 @@ bool drop_table(char *table_name) {
         remove_table_cache(table_name);
         /* Remove table buffer. */
         remove_table_buffer(table_name);
+
         return true;
     }
 

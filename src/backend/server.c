@@ -104,7 +104,7 @@ static void loop_request(intptr_t client) {
     db_log(INFO, "Client ID '%ld' connect successfully.", getpid());
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    while((chars_num = recv(client, buf, SPOOL_SIZE, 0)) > 0) {
+    while ((chars_num = recv(client, buf, SPOOL_SIZE, 0)) > 0) {
         buf[chars_num] = '\0';
         execute(buf);
         bzero(buf, SPOOL_SIZE);
@@ -118,16 +118,29 @@ static void loop_request(intptr_t client) {
     db_log(INFO, "Client ID '%ld' disconnect.", getpid());
 }
 
+/* At the MemoryContext start. */
+static void memory_context_start() {
+    /* Create the TOP_MEMORY_CONTEXT. */
+    MASTER_MEMORY_CONTEXT = AllocSetMemoryContextCreate(TOP_MEMORY_CONTEXT, "MasterMemoryContext", DEFAULT_MAX_BLOCK_SIZE);
+    CACHE_MEMORY_CONTEXT = AllocSetMemoryContextCreate(MASTER_MEMORY_CONTEXT, "CacheMemoryContext", DEFAULT_MAX_BLOCK_SIZE);
+    MemoryContextSwitchTo(MASTER_MEMORY_CONTEXT);
+}
+
+/* At the MemoryContext end. */
+static void memory_context_end() {
+    /* Delete the TOP_MEMORY_CONTEXT. */
+    MemoryContextDelete(MASTER_MEMORY_CONTEXT);
+}
+
 /* Accept request.*/
 void accept_request(intptr_t client) {
-    MASTER_MEMORY_CONTEXT = AllocSetMemoryContextCreate(TOP_MEMORY_CONTEXT, "MasterMemoryContext", DEFAULT_MAX_BLOCK_SIZE);
-    MemoryContextSwitchTo(MASTER_MEMORY_CONTEXT);
+    memory_context_start();
     /* Auth login message. */
-    if (auth_request(client))
+    if (auth_request(client)) {
         loop_request(client);
-    
-    /* Quite */
+    }
     close(client);
+    memory_context_end();
+    /* Quite */
     exit(0);
-    MemoryContextDelete(MASTER_MEMORY_CONTEXT);
 }

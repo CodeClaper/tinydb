@@ -15,11 +15,11 @@
 #include "asctx.h"
 #include "utils.h"
 
-MemoryContext CURRENT_MEMORY_CONTEXT;
-
-MemoryContext TOP_MEMORY_CONTEXT;
-MemoryContext MASTER_MEMORY_CONTEXT;
-MemoryContext MESSAGE_MEMORY_CONTEXT;
+MemoryContext CURRENT_MEMORY_CONTEXT = NULL;
+MemoryContext TOP_MEMORY_CONTEXT = NULL;
+MemoryContext MASTER_MEMORY_CONTEXT = NULL;
+MemoryContext CACHE_MEMORY_CONTEXT = NULL;
+MemoryContext MESSAGE_MEMORY_CONTEXT = NULL;
 
 
 static MemoryContextMethods mctx_methods[] = {
@@ -73,6 +73,7 @@ void MemoryContextReset(MemoryContext context) {
 /* Delete the MemoryContext. */
 void MemoryContextDelete(MemoryContext context) {
     MemoryContext current = context;
+    context->context_methods->delete_context(context);
 }
 
 
