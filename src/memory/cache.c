@@ -52,30 +52,13 @@ Table *find_table_cache(char *table_name) {
     foreach (lc, TableCache) {
         Table *current = lfirst(lc);
         if (streq(current->meta_table->table_name, table_name)) {
-            ptr = copy_table(current);
+            ptr = current;
             break;
         }
     }
     return ptr;
 }
 
-
-/* Find cache table by name, return null if not exist. 
- * User in inner, not return duplicate.
- * */
-static Table *find_table_cache_inner(char *table_name) {
-
-    void *ptr = NULL;
-
-    ListCell *lc;
-    foreach (lc, TableCache) {
-        Table *current = lfirst(lc);
-        if (streq(current->meta_table->table_name, table_name)) {
-            ptr = current;
-        }
-    }
-    return ptr;
-}
 
 /* Remove table cache. */
 void remove_table_cache(char *table_name) {
@@ -95,7 +78,7 @@ void remove_table_cache(char *table_name) {
 /* Synchronous page data. */
 bool sync_page(char *table_name, uint32_t page_num, void *page) {
 
-    Table *table = find_table_cache_inner(table_name);
+    Table *table = find_table_cache(table_name);
 
     if (table) {
         switch_shared();
@@ -121,18 +104,14 @@ bool sync_page(char *table_name, uint32_t page_num, void *page) {
 /* Synchronous page increase. */
 bool sync_page_increase(char *table_name, void *page) {
 
-    Table *table = find_table_cache_inner(table_name);
+    Table *table = find_table_cache(table_name);
 
     if (table) {
-
         switch_shared();
 
         Pager *pager = table->pager;
-
         append_list(pager->pages, copy_block(page, PAGE_SIZE));
-
         pager->size++;
-
         Assert(len_list(pager->pages) == pager->size);
 
         switch_local();
