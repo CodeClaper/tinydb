@@ -47,9 +47,11 @@ static void delete_row_for_update(Row *row, Table *table) {
     if (row_is_visible(row)) {
         Cursor *cursor = define_cursor(table, row->key);
         Refer *refer = convert_refer(cursor);
+
         update_transaction_state(row, TR_DELETE);
         update_row_data(row, cursor);
-        insert_xlog_entry(refer, DDL_UPDATE_DELETE);
+        record_xlog(refer, DDL_UPDATE_DELETE);
+
         free_cursor(cursor);
         free_refer(refer);
     }
@@ -67,7 +69,7 @@ static void insert_row_for_update(Row *row, Table *table) {
     Refer *new_ref = convert_refer(new_cur);
 
     /* Record xlog for insert. */
-    insert_xlog_entry(new_ref, DDL_UPDATE_INSERT);
+    record_xlog(new_ref, DDL_UPDATE_INSERT);
 
     free_cursor(new_cur);
     free_refer(new_ref);

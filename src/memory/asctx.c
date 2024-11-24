@@ -335,4 +335,5 @@ void AllocSetReset(MemoryContext context) {
 void AllocSetDelete(MemoryContext context) {
     AllocSetReset(context);
     free((AllocSet) context);
+    context = NULL;
 }

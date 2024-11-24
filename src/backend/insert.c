@@ -346,7 +346,7 @@ static Refer *insert_one_row(Table *table, Row *row) {
     Refer *refer = convert_refer(cursor);
 
     /* Record xlog for insert operation. */
-    insert_xlog_entry(refer, DDL_INSERT);
+    record_xlog(refer, DDL_INSERT);
 
     /* Free useless memeory */
     free_cursor(cursor);

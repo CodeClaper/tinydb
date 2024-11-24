@@ -35,7 +35,7 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table,
 
         /* Get refer and record xlog. */
         Refer *refer = convert_refer(cursor);
-        insert_xlog_entry(refer, DDL_DELETE);
+        record_xlog(refer, DDL_DELETE);
 
         select_result->row_size++;
 

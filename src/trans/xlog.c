@@ -71,7 +71,6 @@ static XLogEntry *find_xlog_entry() {
     XLogEntry *current = NULL;
 
     TransEntry *trans = find_transaction();
-
     Assert(trans);
 
     for (uint32_t i = 0; i < xtable->size; i++) {
@@ -84,11 +83,10 @@ static XLogEntry *find_xlog_entry() {
     return current;
 }
 
-/* Insert into XLogEntry. */
-void insert_xlog_entry(Refer *refer, DDLType type) {
+/* Record Xlog. */
+void record_xlog(Refer *refer, DDLType type) {
 
     TransEntry *trans = find_transaction();
-
     Assert(trans);
 
     pthread_mutex_lock(&mutex);
@@ -111,6 +109,7 @@ void insert_xlog_entry(Refer *refer, DDLType type) {
     xtable->size++;
 
     pthread_mutex_unlock(&mutex);
+
 }
 
 /* Update xlog entry refer. */
@@ -130,13 +129,12 @@ void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
 
 /* Commit XLog . */
 void commit_xlog() {
+
+    TransEntry *trans = find_transaction();
+    Assert(trans);
     
     /* Lock */
     pthread_mutex_lock(&mutex);
-
-    TransEntry *trans = find_transaction();
-
-    Assert(trans);
 
     uint32_t i, j;
     for (i = 0; i < xtable->size; i++) {
@@ -162,12 +160,11 @@ void commit_xlog() {
 
 /* Execute rollback. */
 void execute_roll_back() {
-    TransEntry *trans = find_transaction();
 
+    TransEntry *trans = find_transaction();
     Assert(trans);
 
     XLogEntry *current = find_xlog_entry();
-    
     if (is_null(current))
         return;
     
@@ -241,7 +238,6 @@ static void reverse_delete(Refer *refer, TransEntry *transaction) {
 static void reverse_update_delete(Refer *refer, TransEntry *transaction) {
 
     Row *row = define_row(refer);
-
     assert_true(row_is_deleted(row), "System error, row not been deleted.");
 
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
@@ -255,7 +251,6 @@ static void reverse_update_delete(Refer *refer, TransEntry *transaction) {
     
     /* Repositioning. */
     Cursor *new_cur = define_cursor(table, row->key);
-
     Refer *new_ref = convert_refer(new_cur);
 
     /* Lock update refer. */

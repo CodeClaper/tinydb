@@ -147,7 +147,6 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 
 /* Define Cursor. */
 Cursor *define_cursor(Table *table, void *key) {
-    /* Key can`t be NULL. */
     Assert(key);
 
     void *root_node = get_page(table->meta_table->table_name, table->pager, table->root_page_num);

@@ -222,7 +222,6 @@ Table *open_table(char *table_name) {
     /* Define root page is first page. */
     table->root_page_num = 0; 
     table->pager = pager;
-
     table->meta_table = gen_meta_table(table, table_name);
 
     if (pager->size == 0) {
@@ -232,14 +231,13 @@ Table *open_table(char *table_name) {
         initial_leaf_node(root_node, value_len, true);
     }
 
-
     /* Save table cache. */
     save_table_cache(table);
     
     /* Free memory. */
     dfree(file_path);
 
-    /* Only return buffer table to keep same table pointer in same thread. */
+    /* Only return buffer table to keep same table pointer in the same transaction. */
     return find_table_buffer(table_name);
 }
 

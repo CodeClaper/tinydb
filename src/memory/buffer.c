@@ -45,9 +45,6 @@ static Table *save_table_buffer(Table *table) {
     
     table->pager->file_descriptor = get_file_desc(table->meta_table->table_name);
 
-    MemoryContext old_context = CURRENT_MEMORY_CONTEXT;
-    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
-
     Table *dup_table = copy_table(table);
     
     /* Generate TableBufferEntry. */
@@ -58,8 +55,6 @@ static Table *save_table_buffer(Table *table) {
 
     /* Regist TableReg. */
     try_register_table_reg(table->meta_table->table_name);
-
-    MemoryContextSwitchTo(old_context);
 
     return dup_table;
 }
@@ -113,24 +108,16 @@ bool clear_table_buffer() {
     if (is_null(trans))
         return false;
 
-    MemoryContext old_context = CURRENT_MEMORY_CONTEXT;
-    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
-
     loop_clear_table_buffer(trans);
 
     /* Destroy TableReg also. */
     destroy_table_reg();
-
-    MemoryContextSwitchTo(old_context);
 
     return true;
 }
 
 /* Remove table buffer. */
 void remove_table_buffer(char *table_name) {
-
-    MemoryContext old_context = CURRENT_MEMORY_CONTEXT;
-    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
     uint32_t i;
     for (i = 0; i < len_list(buffer_list); i++) {
@@ -141,6 +128,4 @@ void remove_table_buffer(char *table_name) {
             i = 0; // Restart over.
         }  
     }
-
-    MemoryContextSwitchTo(old_context);
 }

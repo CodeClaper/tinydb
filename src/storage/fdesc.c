@@ -42,23 +42,15 @@ static int find_fdesc(char *table_name) {
 static void register_fdesc(char *table_name, int desc) {
     Assert(F_DESC_LIST != NIL);
 
-    MemoryContext old_context = CURRENT_MEMORY_CONTEXT;
-    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
-
     FDescEntry *entry = instance(FDescEntry);
     entry->desc = desc;
     strcpy(entry->table_name, table_name);
     append_list(F_DESC_LIST, entry);
-
-    MemoryContextSwitchTo(old_context);
 }
 
 /* Unregister fdesc. */
 void unregister_fdesc(char *table_name) {
     Assert(!is_empty(table_name));
-
-    MemoryContext old_context = CURRENT_MEMORY_CONTEXT;
-    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
     ListCell *lc;
     foreach(lc, F_DESC_LIST) {
@@ -68,8 +60,6 @@ void unregister_fdesc(char *table_name) {
             break;
         }
     }
-
-    MemoryContextSwitchTo(old_context);
 }
 
 
@@ -77,11 +67,12 @@ void unregister_fdesc(char *table_name) {
 int load_file_desc(char *file_path) {
     int desc= open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (desc == -1) 
-        db_log(PANIC,
-               "Open table file %d fail: %s.", 
-               file_path, 
-               strerror(errno));
-
+        db_log(
+            PANIC,
+            "Open table file %d fail: %s.", 
+            file_path, 
+            strerror(errno)
+        );
     return desc;
 }
 

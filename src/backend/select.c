@@ -595,7 +595,6 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
  * Return row not matter if it is deleted.
  * */
 Row *define_row(Refer *refer) {
-
     Assert(refer);
 
     /* Check table exists. */
