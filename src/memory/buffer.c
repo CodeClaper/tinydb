@@ -41,7 +41,11 @@ static Table *save_table_buffer(Table *table) {
     /* Try to get current transaction. */
     TransEntry *trans = find_transaction();
     if (is_null(trans)) 
-        return NULL;;
+        return NULL;
+    
+    /* Switch to CACHE_MEMORY_CONTEXT. */
+    MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
     
     table->pager->file_descriptor = get_file_desc(table->meta_table->table_name);
 
@@ -55,6 +59,9 @@ static Table *save_table_buffer(Table *table) {
 
     /* Regist TableReg. */
     try_register_table_reg(table->meta_table->table_name);
+
+    /* Recover the MemoryContext. */
+    MemoryContextSwitchTo(oldcontext);
 
     return dup_table;
 }
@@ -88,17 +95,17 @@ Table *find_table_buffer(char *table_name) {
 
 /* Loop remove TableBufferEntry. */
 static void loop_clear_table_buffer(TransEntry *trans) {
+    
     uint32_t i;
     for (i = 0; i < len_list(buffer_list); i++) {
         TableBufferEntry *entry = lfirst(list_nth_cell(buffer_list, i));
         if (entry->xid == trans->xid) {
             free_table_buffer_entry(entry);
             list_delete(buffer_list, entry);
-            loop_clear_table_buffer(trans); // Restart over.
+            loop_clear_table_buffer(trans);
             break;
         }
     }
-    
 }
 
 /* Clear all of TableBufferEntries releated whole current transaction. */
@@ -108,16 +115,27 @@ bool clear_table_buffer() {
     if (is_null(trans))
         return false;
 
+    /* Switch to CACHE_MEMORY_CONTEXT. */
+    MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+
+    /* Loop to clear the table buffer. */
     loop_clear_table_buffer(trans);
 
     /* Destroy TableReg also. */
     destroy_table_reg();
+
+    /* Recover the MemoryContext. */
+    MemoryContextSwitchTo(oldcontext);
 
     return true;
 }
 
 /* Remove table buffer. */
 void remove_table_buffer(char *table_name) {
+    /* Switch to CACHE_MEMORY_CONTEXT. */
+    MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
     uint32_t i;
     for (i = 0; i < len_list(buffer_list); i++) {
@@ -125,7 +143,12 @@ void remove_table_buffer(char *table_name) {
         if (streq(table_name, entry->table->meta_table->table_name)) {
             free_table_buffer_entry(entry);
             list_delete(buffer_list, entry);
-            i = 0; // Restart over.
+
+            /* Restart over. */
+            i = 0; 
         }  
     }
+
+    /* Recover the MemoryContext. */
+    MemoryContextSwitchTo(oldcontext);
 }

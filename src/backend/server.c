@@ -113,6 +113,7 @@ static void loop_request(intptr_t client) {
         gettimeofday(&end, NULL);
         db_log(INFO, "Loop duration: %lfs", time_span(end, start));
         start = end;
+        MemoryContextReset(MASTER_MEMORY_CONTEXT);
     }
     db_log(INFO, "Client ID '%ld' disconnect.", getpid());
 }

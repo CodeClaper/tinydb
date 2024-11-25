@@ -64,6 +64,10 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
     if (page_num >= pager->size) {
         Assert(page_num == pager->size);
 
+        /* Switch to CACHE_MEMORY_CONTEXT. */
+        MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+        MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+
         void *page = dalloc(PAGE_SIZE);
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
@@ -77,6 +81,9 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
         /* Sync Cache.*/
         sync_page_increase(table_name, page);
 
+        /* Recover the MemoryContext. */
+        MemoryContextSwitchTo(oldcontext);
+
         return page;
     }
 
@@ -84,6 +91,11 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
     /* Cache dismiss, allocate memory and load file. */
     if (is_null(lfirst(lc))) {
+
+        /* Switch to CACHE_MEMORY_CONTEXT. */
+        MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+        MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+
         void *page = dalloc(PAGE_SIZE);
 
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
@@ -94,6 +106,9 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
         lfirst(lc) = page;
 
         sync_page(table_name, page_num, page);
+
+        /* Recover the MemoryContext. */
+        MemoryContextSwitchTo(oldcontext);
     }
 
     return lfirst(lc);
@@ -163,9 +178,4 @@ void flush(char *table_name) {
             flush(table_name);
         }
     }
-}
-
-/* Close Pager. */
-void close_pager(Pager *pager) {
-    close(pager->file_descriptor);
 }

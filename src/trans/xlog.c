@@ -91,6 +91,10 @@ void record_xlog(Refer *refer, DDLType type) {
 
     pthread_mutex_lock(&mutex);
 
+    /* Switch to CACHE_MEMORY_CONTEXT. */
+    MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+
     XLogEntry *entry = new_xlog_entry(trans->xid, refer, type);
 
     uint32_t i;
@@ -99,6 +103,10 @@ void record_xlog(Refer *refer, DDLType type) {
         if (head->xid == entry->xid) {
             entry->next = head;
             xtable->list[i] = entry;
+
+            /* Recover the MemoryContext. */
+            MemoryContextSwitchTo(oldcontext);
+
             pthread_mutex_unlock(&mutex);
             return;
         }
@@ -107,6 +115,9 @@ void record_xlog(Refer *refer, DDLType type) {
     xtable->list = drealloc(xtable->list, sizeof(XLogEntry *) * (xtable->size + 1));
     xtable->list[i] = entry;
     xtable->size++;
+
+    /* Recover the MemoryContext. */
+    MemoryContextSwitchTo(oldcontext);
 
     pthread_mutex_unlock(&mutex);
 
@@ -120,8 +131,16 @@ void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
         for (; current != NULL; current = current->next) {
             Refer *current_refer = current->refer;
             if (refer_equals(current_refer, refer_update_entity->old_refer)) {
+
+                /* Switch to CACHE_MEMORY_CONTEXT. */
+                MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+                MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+
                 current->refer = copy_refer(refer_update_entity->new_refer);
                 free_refer(current_refer);
+
+                /* Recover the MemoryContext. */
+                MemoryContextSwitchTo(oldcontext);
             }
         }  
     }
@@ -135,6 +154,10 @@ void commit_xlog() {
     
     /* Lock */
     pthread_mutex_lock(&mutex);
+
+    /* Switch to CACHE_MEMORY_CONTEXT. */
+    MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
     uint32_t i, j;
     for (i = 0; i < xtable->size; i++) {
@@ -154,6 +177,9 @@ void commit_xlog() {
             break;     
         }
     }
+
+    /* Recover the MemoryContext. */
+    MemoryContextSwitchTo(oldcontext);
 
     pthread_mutex_unlock(&mutex);
 }

@@ -15,7 +15,6 @@
 /* FDescEntry cache. */
 static List *F_DESC_LIST = NIL;
 
-
 /* Initilise fdesc. */
 void init_fdesc() {
     F_DESC_LIST = create_list(NODE_VOID);
@@ -42,15 +41,26 @@ static int find_fdesc(char *table_name) {
 static void register_fdesc(char *table_name, int desc) {
     Assert(F_DESC_LIST != NIL);
 
+    /* Switch to CACHE_MEMORY_CONTEXT. */
+    MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+
     FDescEntry *entry = instance(FDescEntry);
     entry->desc = desc;
     strcpy(entry->table_name, table_name);
     append_list(F_DESC_LIST, entry);
+
+    /* Recover the MemoryContext. */
+    MemoryContextSwitchTo(oldcontext);
 }
 
 /* Unregister fdesc. */
 void unregister_fdesc(char *table_name) {
     Assert(!is_empty(table_name));
+
+    /* Switch to CACHE_MEMORY_CONTEXT. */
+    MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
+    MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
     ListCell *lc;
     foreach(lc, F_DESC_LIST) {
@@ -60,6 +70,9 @@ void unregister_fdesc(char *table_name) {
             break;
         }
     }
+
+    /* Recover the MemoryContext. */
+    MemoryContextSwitchTo(oldcontext);
 }
 
 

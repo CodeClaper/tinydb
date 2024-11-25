@@ -70,12 +70,31 @@ void MemoryContextReset(MemoryContext context) {
     context->context_methods->reset(context);
 }
 
-/* Delete the MemoryContext. */
-void MemoryContextDelete(MemoryContext context) {
-    MemoryContext current = context;
+/* Delete the MemoryContext only. */
+static void MemoryContextDeleteOnly(MemoryContext context) {
     context->context_methods->delete_context(context);
 }
 
+/* Delete the MemoryContext. */
+void MemoryContextDelete(MemoryContext context) {
+    Assert(context);
+
+    MemoryContext curcontext;
+    
+    curcontext = context;
+    for (;;) {
+        MemoryContext parentcontext;
+        while (curcontext->firstChild != NULL)
+            curcontext = curcontext->firstChild;
+
+        parentcontext = curcontext->parent;
+        MemoryContextDeleteOnly(curcontext);
+
+        if (context == curcontext)
+            break;
+        curcontext = parentcontext;
+    }
+}
 
 /* Switch to MemoryContext. */
 void *MemoryContextSwitchTo(MemoryContext currentConext) {
