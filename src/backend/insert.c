@@ -85,9 +85,11 @@ static SelectNode *convert_select_node(QuerySpecNode *query_spec) {
 static KeyValue *new_sys_id_column() {
     /* Automatically insert sys_id using current sys time. */
     int64_t sys_id = get_current_sys_time(NANOSECOND);
-    return new_key_value(dstrdup(SYS_RESERVED_ID_COLUMN_NAME), 
-                                         copy_value(&sys_id, T_LONG), 
-                                         T_LONG);
+    return new_key_value(
+        dstrdup(SYS_RESERVED_ID_COLUMN_NAME), 
+        copy_value(&sys_id, T_LONG), 
+        T_LONG
+    );
 }
 
 /* Generate new created_xid column.*/
@@ -97,18 +99,22 @@ static KeyValue *new_created_xid_column() {
     
     Assert(current_trans);
 
-    return new_key_value(dstrdup(CREATED_XID_COLUMN_NAME), 
-                                              copy_value(&current_trans->xid, T_LONG), 
-                                              T_LONG);
+    return new_key_value(
+        dstrdup(CREATED_XID_COLUMN_NAME), 
+        copy_value(&current_trans->xid, T_LONG), 
+        T_LONG
+    );
 }
 
 /* Generate new expired_xid column. */
 static KeyValue *new_expired_xid_column() {
     /* For expired_xid */
     int64_t zero = 0;
-    return new_key_value(dstrdup(EXPIRED_XID_COLUMN_NAME),
-                                              copy_value(&zero, T_LONG),
-                                              T_LONG);
+    return new_key_value(
+        dstrdup(EXPIRED_XID_COLUMN_NAME),
+        copy_value(&zero, T_LONG),
+        T_LONG
+    );
 }
 
 /* Supplement system reserved column. */
@@ -157,9 +163,11 @@ static Row *generate_insert_row_for_all2(MetaTable *meta_table, List *value_item
         if (meta_column->sys_reserved) 
             continue;
 
-        KeyValue *key_value = new_key_value(dstrdup(meta_column->column_name),
-                                            get_insert_value(value_item_list, i, meta_column),
-                                            meta_column->column_type);
+        KeyValue *key_value = new_key_value(
+            dstrdup(meta_column->column_name),
+            get_insert_value(value_item_list, i, meta_column),
+            meta_column->column_type
+        );
         /* Check if primary key column. */
         if (meta_column->is_primary) 
             row->key = copy_value2(key_value->value, meta_column);
@@ -227,9 +235,11 @@ static Row *generate_insert_row_for_part2(MetaTable *meta_table, List *column_li
                    column->column_name,
                    meta_table->table_name);
 
-        KeyValue *key_value = new_key_value(dstrdup(meta_column->column_name), 
-                                            get_insert_value(value_item_list, i, meta_column), 
-                                            meta_column->column_type);
+        KeyValue *key_value = new_key_value(
+            dstrdup(meta_column->column_name), 
+            get_insert_value(value_item_list, i, meta_column), 
+            meta_column->column_type
+        );
 
         /* Value of KeyValue may be null when it is Refer. */
         if (key_value->data_type == T_REFERENCE && key_value->value == NULL)
@@ -322,15 +332,17 @@ static Row *convert2_insert_row(Row *row, Table *table) {
 static Refer *insert_one_row(Table *table, Row *row) {
 
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
-
     Assert(primary_key_meta_column);
 
     Cursor *cursor = define_cursor(table, row->key);
 
     if (has_user_primary_key(table->meta_table) && check_duplicate_key(cursor, row->key) && !cursor_is_deleted(cursor)) {
-        db_log(ERROR, "key '%s' in table '%s' already exists, not allow duplicate key.", 
-               get_key_str(row->key, primary_key_meta_column->column_type), 
-               get_table_name(table));
+        db_log(
+            ERROR,
+            "key '%s' in table '%s' already exists, not allow duplicate key.", 
+            get_key_str(row->key, primary_key_meta_column->column_type), 
+            get_table_name(table)
+        );
         /* Free unuesed memeory */
         free_cursor(cursor);
         return NULL;

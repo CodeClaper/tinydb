@@ -79,8 +79,8 @@ static void insert_row_for_update(Row *row, Table *table) {
 /* Update row 
  * Update operation can be regarded as delete + re-insert operation. 
  * It makes transaction roll back simpler. */
-static void update_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
-
+static void update_row(Row *row, SelectResult *select_result, Table *table, 
+                       ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only update row that is visible for current transaction. */
     if (!row_is_visible(row)) 
         return;
@@ -137,7 +137,8 @@ static void update_row(Row *row, SelectResult *select_result, Table *table, ROW_
         
     /* Free memory. */
     free_refer_update_entity(refer_update_entity);
-
+    
+    /* Flush. */
     flush(get_table_name(table));
 }
 
@@ -168,8 +169,8 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
     ConditionNode *condition_node = get_condition_from_where(update_node->where_clause);
 
     /* Query with update row operation. */
-    query_with_condition(condition_node, select_result, update_row, ARG_ASSIGNMENT_LIST, update_node->assignment_list);
-
+    query_with_condition(condition_node, select_result, update_row, 
+                         ARG_ASSIGNMENT_LIST, update_node->assignment_list);
     result->success = true;
     result->rows = select_result->row_size;
     result->message = format("Successfully updated %d row data.", result->rows);

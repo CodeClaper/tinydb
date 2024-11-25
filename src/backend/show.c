@@ -43,24 +43,25 @@ static List *gen_table_map_list() {
                 assert_true(stat(full_path, &info) == 0, "Try to get file '%s' info fail.", full_path);
 
                 /* name */
-                append_list(child_list, new_key_value(dstrdup("table_name"), 
-                                                replace_once(entry->d_name, ".dbt", ""), 
-                                                T_STRING));
+                append_list(
+                    child_list, 
+                    new_key_value(dstrdup("table_name"), replace_once(entry->d_name, ".dbt", ""), T_STRING)
+                );
 
                 /* size */
-                append_list(child_list, new_key_value(dstrdup("table_size"), 
-                                                copy_value(&info.st_size, T_INT), 
-                                                T_INT));
+                append_list(
+                    child_list,
+                    new_key_value(dstrdup("table_size"), copy_value(&info.st_size, T_INT), T_INT));
 
                 /* blk_size */
-                append_list(child_list, new_key_value(dstrdup("blk_size"),
-                                                copy_value(&info.st_blksize, T_INT), 
-                                                T_INT));
+                append_list(
+                    child_list, 
+                    new_key_value(dstrdup("blk_size"), copy_value(&info.st_blksize, T_INT), T_INT));
 
                 /* create_time */
-                append_list(child_list, new_key_value(dstrdup("create_time"),
-                                                format_time("%Y-%m-%d", info.st_ctim.tv_sec), 
-                                                T_STRING));
+                append_list(
+                    child_list, 
+                    new_key_value(dstrdup("create_time"), format_time("%Y-%m-%d", info.st_ctim.tv_sec), T_STRING));
 
                 append_list(list, child_list);
             }

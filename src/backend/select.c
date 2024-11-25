@@ -4,7 +4,6 @@
  * Besides, Update statement, delete statement also use these module for query under conditon.
  * ===========================================================================================
  * */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -111,14 +110,15 @@ inline static LimitClauseNode *get_limit_clause(SelectNode *select_node) {
 
 
 /* Check if include internal comparison predicate for Value type. */
-static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
+static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, 
+                                                        CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
+
+    bool result = false;
     void *target_key = get_value_from_value_item_node(value_item, meta_column);
     if (!target_key)
         return true;
 
     DataType data_type = meta_column->column_type;
-
-    bool result = false;
     switch (type) {
         case O_EQ:
             result = less(min_key, target_key, data_type) && less_equal(target_key, max_key, data_type);
@@ -174,12 +174,14 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
     ScalarExpNode *comparsion_value = comparison->value;
     switch (comparsion_value->type) {
         case SCALAR_VALUE:
-            return include_internal_comparison_predicate_value(select_result, 
-                                                               min_key, 
-                                                               max_key, 
-                                                               comparison->type, 
-                                                               comparsion_value->value, 
-                                                               meta_column);
+            return include_internal_comparison_predicate_value(
+                select_result, 
+                min_key, 
+                max_key, 
+                comparison->type, 
+                comparsion_value->value, 
+                meta_column
+            );
         /* Other comparison value type, regarded as true for including internal predicate. */
         case SCALAR_COLUMN:
         case SCALAR_FUNCTION:
@@ -196,11 +198,13 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
 static bool include_internal_predicate(SelectResult *select_result, void *min_key, void *max_key, PredicateNode *predicate, MetaTable *meta_table) {
     switch (predicate->type) {
         case PRE_COMPARISON:
-            return include_internal_comparison_predicate(select_result, 
-                                                         min_key, 
-                                                         max_key, 
-                                                         predicate->comparison, 
-                                                         meta_table);
+            return include_internal_comparison_predicate(
+                select_result, 
+                min_key, 
+                max_key, 
+                predicate->comparison, 
+                meta_table
+            );
         /* For in or like predicate, no skip include. */
         case PRE_IN:
         case PRE_LIKE:
@@ -232,9 +236,9 @@ static bool include_logic_internal_node(SelectResult *select_result, void *min_k
 }
 
 /* Check if include the internal node if condition is exec condition. */
-static bool include_exec_internal_node(SelectResult *select_result, void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
-
-    assert_true(condition_node->conn_type == C_NONE, "System logic error.");
+static bool include_exec_internal_node(SelectResult *select_result, void *min_key, void *max_key, 
+                                       ConditionNode *condition_node, MetaTable *meta_table) {
+    Assert(condition_node->conn_type == C_NONE);
     
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node->predicate, meta_table);
 
@@ -249,8 +253,8 @@ static bool include_exec_internal_node(SelectResult *select_result, void *min_ke
 }
 
 /* Check if include the internal node. */
-static bool include_internal_node(SelectResult *select_result, void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
-
+static bool include_internal_node(SelectResult *select_result, void *min_key, void *max_key, 
+                                  ConditionNode *condition_node, MetaTable *meta_table) {
     /* If without condition, of course return true. */
     if (condition_node == NULL)
         return true;
@@ -287,7 +291,8 @@ static bool include_logic_leaf_node(SelectResult *select_result, Row *row, Condi
 }
 
 /* Check the row predicate for column. */
-static bool check_row_predicate_column(SelectResult *select_result, Row *row, void *value, ColumnNode *column, CompareType type, MetaColumn *meta_column) {
+static bool check_row_predicate_column(SelectResult *select_result, Row *row, void *value, 
+                                       ColumnNode *column, CompareType type, MetaColumn *meta_column) {
     char *table_name = search_table_via_alias(select_result, column->range_variable);
     if (select_result->last_derived && table_name == NULL) {
         db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
@@ -311,7 +316,8 @@ static bool check_row_predicate_column(SelectResult *select_result, Row *row, vo
 }
 
 /* Check the row predicate for value. */
-static bool check_row_predicate_value(SelectResult *select_result, void *value, ValueItemNode *value_item, CompareType type, MetaColumn *meta_column) {
+static bool check_row_predicate_value(SelectResult *select_result, void *value, 
+                                      ValueItemNode *value_item, CompareType type, MetaColumn *meta_column) {
     bool ret = false;
     void *target = get_value_from_value_item_node(value_item, meta_column);
     ret = eval(type, value, target, meta_column->column_type);
@@ -363,9 +369,22 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
                 ScalarExpNode *comparison_value = comparison->value;
                 switch (comparison_value->type) {
                     case SCALAR_COLUMN:
-                        return check_row_predicate_column(select_result, row, key_value->value, comparison_value->column, comparison->type, meta_column);    
+                        return check_row_predicate_column(
+                            select_result, 
+                            row, 
+                            key_value->value, 
+                            comparison_value->column, 
+                            comparison->type, 
+                            meta_column
+                        );    
                     case SCALAR_VALUE: 
-                        return check_row_predicate_value(select_result, key_value->value, comparison_value->value, comparison->type, meta_column);
+                        return check_row_predicate_value(
+                            select_result,
+                            key_value->value,
+                            comparison_value->value,
+                            comparison->type, 
+                            meta_column
+                        );
                     case SCALAR_FUNCTION:
                         db_log(ERROR, "Not support function as comparison value.");
                         return false;
@@ -576,7 +595,10 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
         /* Generate a key value pair. */
         KeyValue *key_value = is_null_cell(destination + offset) 
                             ? new_key_value(dstrdup(meta_column->column_name), NULL, meta_column->column_type)
-                            : new_key_value(dstrdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
+                            : new_key_value(dstrdup(meta_column->column_name), 
+                                            assign_row_value(destination + offset, meta_column), 
+                                            meta_column->column_type);
+
         key_value->is_array = meta_column->array_dim > 0;
         key_value->table_name = dstrdup(meta_table->table_name);
     

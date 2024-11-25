@@ -102,17 +102,12 @@ static void loop_request(intptr_t client) {
     bzero(buf, SPOOL_SIZE);
     new_session(client);
     db_log(INFO, "Client ID '%ld' connect successfully.", getpid());
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
     while ((chars_num = recv(client, buf, SPOOL_SIZE, 0)) > 0) {
         buf[chars_num] = '\0';
         execute(buf);
         bzero(buf, SPOOL_SIZE);
         if (!db_send_over())
             break;
-        gettimeofday(&end, NULL);
-        db_log(INFO, "Loop duration: %lfs", time_span(end, start));
-        start = end;
         MemoryContextReset(MASTER_MEMORY_CONTEXT);
     }
     db_log(INFO, "Client ID '%ld' disconnect.", getpid());

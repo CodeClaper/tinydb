@@ -1,7 +1,7 @@
 /***************************** Memory Context Module. *************************************** 
  * Auth:        JerryZhou 
  * Created:     2024/10/16 
- * Modify:      2024/10/16 
+ * Modify:      2024/11/24 
  * Locataion:   src/memory/mectx.c
  *
  *********************************************************************************************/
@@ -15,9 +15,14 @@
 #include "asctx.h"
 #include "utils.h"
 
+/* Current MemoryContext. */
 MemoryContext CURRENT_MEMORY_CONTEXT = NULL;
+
+/* Store start-up and initialization info, */
 MemoryContext TOP_MEMORY_CONTEXT = NULL;
+/* Store Poster master info. */
 MemoryContext MASTER_MEMORY_CONTEXT = NULL;
+/* Store table buffer, pager of table buffer, xlog info. */
 MemoryContext CACHE_MEMORY_CONTEXT = NULL;
 MemoryContext MESSAGE_MEMORY_CONTEXT = NULL;
 
