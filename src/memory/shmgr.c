@@ -1,4 +1,4 @@
-/***************************** Shared memory Module ****************************************** 
+/***************************** Shared Memory Mamnager ****************************************** 
  * Auth:            JerryZhou 
  * Created:         2024/11/16 
  * Modify:          2024/11/16
@@ -7,7 +7,7 @@
  *********************************************************************************************/
 #include <stdlib.h>
 #include <string.h>
-#include "shdmem.h"
+#include "shmgr.h"
 #include "shmem.h"
 #include "mem.h"
 #include "utils.h"
@@ -20,7 +20,12 @@ static void try_shdfree(void *ptr);
 
 /* Init mem. */
 void init_mem() {
-    ShMemFreeEntry entry = { .size = 0, .num = 0, .isFree = false, .lock = SPIN_UN_LOCKED_STATUS };
+    ShMemFreeEntry entry = { 
+        .size = 0, 
+        .num = 0, 
+        .isFree = false, 
+        .lock = SPIN_UN_LOCKED_STATUS 
+    };
     void *ptr = shmem_alloc(SHM_OFFSET);
     memcpy(ptr, &entry, SHM_OFFSET);
     header = ptr;

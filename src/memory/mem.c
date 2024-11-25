@@ -8,12 +8,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/types.h>
-#include <time.h>
 #include "mem.h"
-#include "shdmem.h"
-#include "lodmem.h"
+#include "shmgr.h"
+#include "lomgr.h"
 #include "list.h"
 #include "spinlock.h"
 #include "asserts.h"

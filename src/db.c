@@ -28,7 +28,7 @@
 #include "fdesc.h"
 #include "tablelock.h"
 #include "log.h"
-#include "shdmem.h"
+#include "shmgr.h"
 #include "shmem.h"
 #include "tablereg.h"
 

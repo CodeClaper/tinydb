@@ -1,4 +1,4 @@
-/***************************** Local memory Module ****************************************** 
+/***************************** Local memory Mangager ****************************************** 
  * Auth:            JerryZhou 
  * Created:         2024/11/16 
  * Modify:          2024/11/16
@@ -7,7 +7,7 @@
  *********************************************************************************************/
 #include <stdlib.h>
 #include <string.h>
-#include "lodmem.h"
+#include "lomgr.h"
 #include "utils.h"
 #include "mctx.h"
 

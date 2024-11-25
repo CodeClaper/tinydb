@@ -84,9 +84,8 @@ static void *shmem_alloc_inner_unlock(size_t size) {
 
 /* Allocate memory in Shmem for inner. */
 static void *shmem_alloc_inner(size_t size) {
-    void *ptr;
-
     Assert(shmrd);
+    void *ptr;
 
     acquire_spin_lock(lock);
 
