@@ -1,9 +1,12 @@
-/*
- * ================================ Select Module ============================================
- * Select modeule support select statment. 
+/********************************** Select Module ********************************************
+ * Auth:        JerryZhou
+ * Created:     2023/08/13
+ * Modify:      2024/11/26
+ * Locataion:   src/backend/select.c
+ * Description: Select modeule support select statment. 
  * Besides, Update statement, delete statement also use these module for query under conditon.
- * ===========================================================================================
- * */
+ ********************************************************************************************
+ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -50,37 +53,15 @@
 #define MUL_NAME "mul"
 #define DIV_NAME "div"
 
-/* Check if include the internal node. */
 static bool include_internal_node(SelectResult *select_result, void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table);
-
-/* Check if the key include the leaf node. */
 static bool include_leaf_node(SelectResult *select_result, Row *row, ConditionNode *condition_node);
-
-/* Get meta column by condition name. */
 static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *meta_table);
-
-/* Query column value. */
 static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *select_result);
-
-/* Query value item in scalar_exp. */
 static KeyValue *query_value_item(ValueItemNode *value_item, Row *row);
-
-/* Query row value. */
 static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *scalar_exp, Row *row);
-
-/* Query a Row of Selection,
- * Actually, the Selection is all-column. */
 static Row *query_plain_row_selection(SelectResult *select_result, List *scalar_exp_set, Row *row);
-
-/* Generate select row. */
 static Row *generate_row(void *destinct, MetaTable *meta_table);
-
-/* Search table via alias name in SelectResult. 
- * Note: range variable may be table name or table alias name.
- * */
 static char *search_table_via_alias(SelectResult *select_result, char *range_variable);
-
-/* Query column value. */
 static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row);
 
 /* Calulate offset of every column in cell. */

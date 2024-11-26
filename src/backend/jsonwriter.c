@@ -3,13 +3,12 @@
  * Created:     2023/12/29
  * Modify:      2024/09/13
  * Locataion:   src/backend/jsonwriter.c
- * Description:
- *  DBResult is the json format that db finally output, include flows:
- *  [success]  Whether execution result is successful or unsuccessful, its value is true or false.
- *  [message]  Output message to client.
- *  [data]     Query data, only used when select statement.
- *  [rows]     The number of rows affected.
- *  [duration] The execution time.
+ * Description: DBResult is the json format that db finally output, include flows:
+ * [success]    Whether execution result is successful or unsuccessful, its value is true or false.
+ * [message]    Output message to client.
+ * [data]       Query data, only used when select statement.
+ * [rows]       The number of rows affected.
+ * [duration]   The execution time.
  ****************************************************************************************************/
 
 #include <stdint.h>

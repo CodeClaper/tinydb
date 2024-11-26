@@ -1,8 +1,11 @@
-/*
- *====================== Create Module =================================
- * Create Module supports ways to create a table.
- *======================================================================
- * */
+/********************************** Create Module ********************************************
+ * Auth:        JerryZhou
+ * Created:     2023/11/08
+ * Modify:      2024/11/26
+ * Locataion:   src/backend/create.c
+ * Description: Create Module is intended to create a table.
+ ********************************************************************************************
+ */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

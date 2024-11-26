@@ -1,3 +1,11 @@
+/********************************** Update Module ********************************************
+ * Auth:        JerryZhou
+ * Created:     2023/11/14
+ * Modify:      2024/11/26
+ * Locataion:   src/backend/update.c
+ * Description: Update modeule support Update statment. 
+ ********************************************************************************************
+ */
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

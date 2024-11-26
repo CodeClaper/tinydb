@@ -1,3 +1,11 @@
+/********************************** Desc Module ********************************************
+ * Auth:        JerryZhou
+ * Created:     2024/05/21
+ * Modify:      2024/05/21
+ * Locataion:   src/backend/desc.c
+ * Description: Desc modeule is intended to desc or describe table to get table meta info. 
+ ********************************************************************************************
+ */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

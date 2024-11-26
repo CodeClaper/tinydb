@@ -1,3 +1,10 @@
+/********************************* Auth Module ************************************
+ * Auth:        JerryZhou
+ * Created:     2023/09/25
+ * Modify:      2024/09/25
+ * Locataion:   src/backend/auth.c
+ * Description: Auth modeule is intended to check login info. 
+ **********************************************************************************/
 #include <stdbool.h>
 #include <stdio.h>
 #include "auth.h"

@@ -1,3 +1,11 @@
+/********************************** Delete Module ********************************************
+ * Auth:        JerryZhou
+ * Created:     2023/10/28
+ * Modify:      2024/11/26
+ * Locataion:   src/backend/delete.c
+ * Description: Delete modeule support delete statment. 
+ ********************************************************************************************
+ */
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>

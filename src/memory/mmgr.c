@@ -1,10 +1,10 @@
-/****************************** The memory manager ***************************
+/****************************** The memory manager *******************************
  * Auth:        JerryZhou
  * Created:     2024/08/14
  * Modify:      2024/08/14
  * Locataion:   src/memory/mem.c
  * Description: The memory manager supports local memory and share memory manager.
-******************************************************************************/
+***********************************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>

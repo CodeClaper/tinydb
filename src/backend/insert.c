@@ -3,9 +3,9 @@
  * Created:     2023/08/22
  * Modify:      2024/09/13
  * Locataion:   src/backend/insert.c
- * Description:
- *  (1) plain insert values statment, support for all column or special part column.
- *  (2) insert with subselect statment.
+ * Description: Insert modeule support insert statment. 
+ * (1) Plain insert values statment, includes all column or special part column.
+ * (2) Insert with subselect statment.
  *********************************************************************************************/
 #include <stdbool.h>
 #include <stdint.h>

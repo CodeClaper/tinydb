@@ -1,3 +1,11 @@
+/********************************** Drop Module ********************************************
+ * Auth:        JerryZhou
+ * Created:     2024/05/21
+ * Modify:      2024/05/21
+ * Locataion:   src/backend/drop.c
+ * Description: Drop modeule is intended to drop table. 
+ ********************************************************************************************
+ */
 #include "data.h"
 #include "check.h"
 #include "table.h"

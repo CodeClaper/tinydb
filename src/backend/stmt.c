@@ -1,3 +1,22 @@
+/********************************* Statement Module ************************************
+ * Auth:        JerryZhou
+ * Created:     2023/08/31
+ * Modify:      2024/11/26
+ * Locataion:   src/backend/stmt.c
+ * Description: Statement module is the entry to execute statements.
+ * Now supported statments:
+ * (1) SELECT
+ * (2) UPDATE
+ * (3) INSERT
+ * (4) DELETE
+ * (5) CREATE TABLE
+ * (6) DEROP TABLE
+ * (6) SHOW TABLES AND SHOW MEMORY
+ * (7) DESCRIBE TABLE
+ * (8) BEGIN TRANSACTION
+ * (9) COMMIT TRANSACTION
+ *********************************************************************************
+ */
 #include <bits/types/struct_timeval.h>
 #include <stdbool.h>
 #include <stdint.h>
