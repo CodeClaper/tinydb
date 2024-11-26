@@ -39,15 +39,14 @@ class TinyDbClient:
             ret = writer.getvalue()
             writer.close()
             return ret
-               
         except ConnectionError:
             exit(1)
         except Exception as e:
             print(f"Error: {e}")
-
         return ""
 
     def execute(self, sql) -> dict:
+        ret = ''
         try:
             self.client.send(sql.encode("utf-8")[:65535])
             writer = io.StringIO()
@@ -60,12 +59,10 @@ class TinyDbClient:
             ret = writer.getvalue()
             writer.close()
             return json.loads(ret)
-               
         except ConnectionError:
             exit(1)
         except Exception as e:
-            print(f"Error: {e}")
-
+            print(f"Error: {e}, and Raw is {ret}")
         return {}
 
     def close(self):

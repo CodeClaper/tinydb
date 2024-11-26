@@ -7,9 +7,12 @@ import connector
 import getpass
 
 client = connector.TinyDbClient('127.0.0.1', 4083)
-keywords = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'DROP', 'CREATE', 'TABLE', 'FROM', 'WHERE', 
-           'AND', 'OR', 'ALTER', 'DESC', 'DESCRIBE']
 
+## System keywords.
+keywords = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'DROP', 'CREATE', 'TABLE', 'FROM', 'WHERE', 
+           'AND', 'OR', 'ALTER', 'DESC', 'DESCRIBE', 'SHOW', 'SET']
+
+## Load keywords.
 def completer(text, state):
     options = [i for i in keywords if i.startswith(text) or i.startswith(text.upper())]
     try:
@@ -21,35 +24,36 @@ readline.set_completer(completer)
 readline.parse_and_bind('tab: complete')
 readline.parse_and_bind('Control-v: paste')
 
-def generateSql(cmd: str):
+## Hanle sql.
+def handleSql(cmd: str):
     if not cmd.endswith(';'):
         cmd +=';'
     return cmd
 
-## exec exit.
+## Execute exit.
 def exit():
+    client.close()
     print('\nBye...\n')
     sys.exit(0)
 
-## exec clear 
+## Execute clear.
 def clear():
     os.system("clear")
 
-
-## execute tinydb
+## Execute sql statement.
 def tinydb(cmd):
-    sql = generateSql(cmd)
+    sql = handleSql(cmd)
     ret = client.execute(sql)    
     print(ret)
 
-## read command.
+## Read command.
 def readCmd():
     try:
         return input('tinydb > ')
     except KeyboardInterrupt:
         exit()
 
-## source file.
+## Source sql file.
 def source(file):
     try:
         with open(file) as file:
@@ -65,12 +69,13 @@ def source(file):
     except KeyboardInterrupt:
         exit()
 
+## Output result to file.
 def output(cmd: str):
     list = cmd.split(">>")
     if (len(list) != 2):
         print("Error input for >>")
         return
-    sql = generateSql(list[0].strip())
+    sql = handleSql(list[0].strip())
     filePath = list[1].rstrip(';').strip()
     ret = client.directExecute(sql)
     with open(filePath, 'w', encoding='utf-8') as file:
@@ -80,8 +85,9 @@ def output(cmd: str):
 
 ## Execute command.
 def exec_cmd(cmd):
+    cmd = cmd.strip()
     if cmd.upper().startswith("SOURCE "):
-        source(cmd.strip("SOURCE ").strip("source" ).strip())
+        source(cmd.strip("SOURCE ").strip("source").strip())
     elif ">>" in cmd:
         output(cmd)
     else:
@@ -102,6 +108,7 @@ def login() -> bool:
     clear()
     return client.login(account, password)
 
+## Fetch Tables.
 def fetchTables():
     ret = client.execute("show tables;")
     assert ret["success"] == True
@@ -109,6 +116,7 @@ def fetchTables():
         keywords.append(item["table_name"])
 
 
+## Main.
 if __name__ == "__main__":
     try:
         if login():
