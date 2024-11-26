@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "free.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "refer.h"
 #include "asserts.h"
 #include "table.h"

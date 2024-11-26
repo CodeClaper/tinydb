@@ -8,7 +8,7 @@
 #include "stmt.h"
 #include "list.h"
 #include "defs.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "common.h"
 #include "asserts.h"
 #include "parser.h"
@@ -270,10 +270,10 @@ void execute(char *sql) {
     json_list(result_list);
 
     /* Free statements.*/
-    free_list_deep(statements);
+    // free_list_deep(statements);
 
     /* Free result_set. */
-    free_list_deep(result_list);
+    // free_list_deep(result_list);
 
     /* Commit transction manually. */
     auto_commit_transaction();

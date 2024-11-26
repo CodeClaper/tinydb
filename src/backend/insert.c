@@ -17,7 +17,7 @@
 #define __USE_XOPEN
 #include <time.h>
 #include "insert.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "common.h"
 #include "table.h"
 #include "meta.h"

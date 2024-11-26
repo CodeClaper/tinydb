@@ -10,7 +10,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include "log.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "defs.h"
 #include "free.h"
 #include "data.h"

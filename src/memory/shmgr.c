@@ -9,7 +9,7 @@
 #include <string.h>
 #include "shmgr.h"
 #include "shmem.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "utils.h"
 
 static ShMemFreeEntry *header = NULL;

@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include "server.h"
 #include "defs.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "common.h"
 #include "stmt.h"
 #include "free.h"

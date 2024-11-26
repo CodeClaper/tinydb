@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "show.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "common.h"
 #include "utils.h"
 #include "free.h"

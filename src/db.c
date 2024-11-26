@@ -11,7 +11,7 @@
 #include <signal.h>
 #include "data.h"
 #include "defs.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "trans.h"
 #include "xlog.h"
 #include "parser.h"
@@ -32,9 +32,15 @@
 #include "shmem.h"
 #include "tablereg.h"
 
+/* 
+ * Conf 
+ */
+Conf *conf; 
 
-Conf *conf; /* Conf */
-jmp_buf errEnv; /* jmp_buf for error. */
+/* 
+ * jmp_buf for error. 
+ */
+jmp_buf errEnv; 
 
 static void sigchild();
 
@@ -110,6 +116,7 @@ static void db_run() {
 
 /* DB End */
 static void db_end() {
+    MemoryContextDelete(TOP_MEMORY_CONTEXT);
 }
 
 static void sigchild() {

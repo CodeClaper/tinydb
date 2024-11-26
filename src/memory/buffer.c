@@ -4,7 +4,7 @@
 #include "buffer.h"
 #include "data.h"
 #include "cache.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "log.h"
 #include "copy.h"
 #include "free.h"

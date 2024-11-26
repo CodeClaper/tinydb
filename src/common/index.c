@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include "index.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "pager.h"
 #include "ltree.h"
 #include "meta.h"

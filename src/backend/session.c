@@ -12,7 +12,7 @@
 #include <pthread.h>
 #include "session.h"
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "log.h"
 #include "utils.h"
 #include "asserts.h"

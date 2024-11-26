@@ -17,7 +17,7 @@
 #include "pager.h"
 #include "cache.h"
 #include "log.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "utils.h"
 #include "ltree.h"
 #include "table.h"

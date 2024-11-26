@@ -75,7 +75,7 @@
 #include <stdbool.h>
 #include "list.h"
 #include "intpr.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "log.h"
 #include "utils.h"
 #include "y.tab.h"

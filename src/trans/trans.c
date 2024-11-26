@@ -66,7 +66,7 @@
 #include "data.h"
 #include "defs.h"
 #include "trans.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "log.h"
 #include "copy.h"
 #include "free.h"

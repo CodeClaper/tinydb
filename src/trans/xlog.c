@@ -20,7 +20,7 @@
 #include <string.h>
 #include "xlog.h"
 #include "log.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "trans.h"
 #include "copy.h"
 #include "free.h"

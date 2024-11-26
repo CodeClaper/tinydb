@@ -13,7 +13,7 @@
 #include "const.h"
 #include "common.h"
 #include "table.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "meta.h"
 #include "session.h"
 #include "asserts.h"

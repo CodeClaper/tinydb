@@ -7,7 +7,7 @@
 #include <errno.h>
 #include "fdesc.h"
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "table.h"
 #include "utils.h"
 #include "log.h"

@@ -16,7 +16,7 @@
 #include <time.h>
 #include "refer.h"
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "copy.h"
 #include "free.h"
 #include "select.h"

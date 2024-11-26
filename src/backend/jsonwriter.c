@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "jsonwriter.h"
 #include "log.h"
 #include "utils.h"

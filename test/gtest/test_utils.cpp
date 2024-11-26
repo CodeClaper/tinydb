@@ -4,7 +4,7 @@
 
 extern "C" {
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "utils.h"
 }
 

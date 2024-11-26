@@ -12,7 +12,7 @@
 #include <time.h>
 #include <float.h>
 #include "utils.h"
-#include "mem.h"
+#include "mmgr.h"
 
 /* Left trim. 
  * Notice: not use the s directly, 

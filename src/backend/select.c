@@ -20,7 +20,7 @@
 #include "free.h"
 #include "index.h"
 #include "log.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "meta.h"
 #include "ltree.h"
 #include "pager.h"
@@ -149,7 +149,8 @@ static bool include_internal_comparison_predicate_value(SelectResult *select_res
 }
 
 /* Check if include internal comparison predicate. */
-static bool include_internal_comparison_predicate(SelectResult *select_result, void *min_key, void *max_key, ComparisonNode *comparison, MetaTable *meta_table) {
+static bool include_internal_comparison_predicate(SelectResult *select_result, void *min_key, void *max_key, 
+                                                  ComparisonNode *comparison, MetaTable *meta_table) {
     ColumnNode *column = comparison->column;
 
     /* Other table query condition regard as true. */
@@ -195,7 +196,8 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
 
 
 /* Check if include the internal predicate. */
-static bool include_internal_predicate(SelectResult *select_result, void *min_key, void *max_key, PredicateNode *predicate, MetaTable *meta_table) {
+static bool include_internal_predicate(SelectResult *select_result, void *min_key, void *max_key, 
+                                       PredicateNode *predicate, MetaTable *meta_table) {
     switch (predicate->type) {
         case PRE_COMPARISON:
             return include_internal_comparison_predicate(
@@ -217,7 +219,8 @@ static bool include_internal_predicate(SelectResult *select_result, void *min_ke
 
 
 /* Check if include the internal node if condition is logic condition. */
-static bool include_logic_internal_node(SelectResult *select_result, void *min_key, void *max_key, ConditionNode *condition_node, MetaTable *meta_table) {
+static bool include_logic_internal_node(SelectResult *select_result, void *min_key, void *max_key, 
+                                        ConditionNode *condition_node, MetaTable *meta_table) {
     /* For logic condition node, check left node and right node. */
     switch(condition_node->conn_type) {
         case C_AND:
@@ -496,10 +499,9 @@ static bool include_exec_leaf_node(SelectResult *select_result, Row *row, Condit
     if (condition_node == NULL)
         return true;
 
-    assert_true(condition_node->conn_type == C_NONE, "System logic error.");
+    Assert(condition_node->conn_type == C_NONE);
 
     PredicateNode *predicate = condition_node->predicate;
-
     switch (predicate->type) {
         case PRE_COMPARISON:
             return include_leaf_comparison_predicate(select_result, row, predicate->comparison);
@@ -672,7 +674,8 @@ static char *search_table_via_alias(SelectResult *select_result, char *range_var
         db_log(PANIC, "Support SelectResult. ");
 
     /* Either table name or range variable is equal. */
-    if (streq(select_result->table_name, range_variable) || streq(select_result->range_variable, range_variable))
+    if (streq(select_result->table_name, range_variable) 
+        || streq(select_result->range_variable, range_variable))
         return select_result->table_name;
 
     if (select_result->derived)
@@ -708,7 +711,6 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         Row *row = generate_row(destinct, table->meta_table);
 
         SelectResult *derived = select_result->derived;
-
         if (derived) {
 
             /* Cartesian product. */
@@ -729,8 +731,8 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
             continue;
         }
 
-        /* Check if the row data include, in another word, 
-         * check if the row data satisfy the condition. */
+        /* Check if the row data include.
+         * In another word, check if the row data satisfy the condition. */
         if (include_leaf_node(select_result, row, condition)) 
             row_handler(row, select_result, table, type, arg);
         else
@@ -763,8 +765,9 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         {
             /* Current internal node cell key as max key, previous cell key as min key. */
             void *max_key = get_internal_node_key(internal_node, i, key_len, value_len); 
-            void *min_key = i == 0 ? NULL : get_internal_node_key(internal_node, i - 1, key_len, value_len);
-
+            void *min_key = i == 0 
+                    ? NULL 
+                    : get_internal_node_key(internal_node, i - 1, key_len, value_len);
             if (!include_internal_node(select_result, min_key, max_key, condition, table->meta_table))
                 continue;
         }
@@ -774,10 +777,26 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         void *node = get_page(table->meta_table->table_name, table->pager, page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
-                select_from_leaf_node(select_result, condition, page_num, table, row_handler, type, arg);
+                select_from_leaf_node(
+                    select_result, 
+                    condition, 
+                    page_num, 
+                    table, 
+                    row_handler, 
+                    type, 
+                    arg
+                );
                 break;
             case INTERNAL_NODE:
-                select_from_internal_node(select_result, condition, page_num, table, row_handler, type, arg);
+                select_from_internal_node(
+                    select_result, 
+                    condition, 
+                    page_num, 
+                    table, 
+                    row_handler, 
+                    type, 
+                    arg
+                );
                 break;
             default:
                 db_log(PANIC, "Unknown node type.");
@@ -799,10 +818,26 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     NodeType node_type = get_node_type(right_child);
     switch (node_type) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, condition, right_child_page_num, table, row_handler, type, arg);
+            select_from_leaf_node(
+                select_result, 
+                condition, 
+                right_child_page_num, 
+                table, 
+                row_handler, 
+                type, 
+                arg
+            );
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, condition, right_child_page_num, table, row_handler, type, arg);
+            select_from_internal_node(
+                select_result, 
+                condition, 
+                right_child_page_num, 
+                table, 
+                row_handler, 
+                type, 
+                arg
+            );
             break;
         default:
             UNEXPECTED_VALUE(node_type);
@@ -821,10 +856,26 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
     void *root = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
     switch (get_node_type(root)) {
         case LEAF_NODE:
-            select_from_leaf_node(select_result, condition, table->root_page_num, table, row_handler, type, arg);
+            select_from_leaf_node(
+                select_result, 
+                condition, 
+                table->root_page_num, 
+                table,
+                row_handler, 
+                type, 
+                arg
+            );
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(select_result, condition, table->root_page_num, table, row_handler, type, arg);
+            select_from_internal_node(
+                select_result, 
+                condition,
+                table->root_page_num,
+                table, 
+                row_handler,
+                type, 
+                arg
+            );
             break;
         default:
             db_log(PANIC, "Unknown data type occurs in <query_with_condition>.");
@@ -832,7 +883,8 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
 }
 
 /* Count number of row, used in the sql function count(1) */
-void count_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type,void *arg) {
+void count_row(Row *row, SelectResult *select_result, Table *table, 
+               ROW_HANDLER_ARG_TYPE type,void *arg) {
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
@@ -858,7 +910,8 @@ static void* purge_row(Row *row) {
 }
 
 /* Select row data. */
-void select_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
+void select_row(Row *row, SelectResult *select_result, Table *table, 
+                ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only select visible row. */
     if (!row_is_visible(row)) 
         return;
@@ -916,7 +969,6 @@ static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_
 
         free_key_value(key_value);
     }
-
     return new_key_value(dstrdup(SUM_NAME), 
                          copy_value(&sum, T_DOUBLE), 
                          T_DOUBLE);
@@ -961,7 +1013,6 @@ static KeyValue *calc_column_avg_value(ColumnNode *column, SelectResult *select_
         free_key_value(key_value);
     }
     avg = sum / len_list(select_result->rows);
-
     return new_key_value(dstrdup(AVG_NAME), 
                          copy_value(&avg, T_DOUBLE), 
                          T_DOUBLE);
@@ -985,7 +1036,6 @@ static KeyValue *calc_column_max_value(ColumnNode *column, SelectResult *select_
         }
         free_key_value(current);
     }
-
     return new_key_value(dstrdup(MAX_NAME), 
                          max_value, 
                          data_type);
@@ -1008,7 +1058,6 @@ static KeyValue *calc_column_min_value(ColumnNode *column, SelectResult *select_
         }
         free_key_value(current);
     }
-
     return new_key_value(dstrdup(MIN_NAME), 
                          min_value, 
                          data_type);
@@ -2067,7 +2116,13 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
         ConditionNode *condition = get_table_exp_condition(select_node->table_exp);
 
         /* Query with condition to filter satisfied conditions rows. */
-        query_with_condition(condition, current_result, select_row, ARG_LIMIT_CLAUSE_NODE, get_limit_clause(select_node));
+        query_with_condition(
+            condition, 
+            current_result, 
+            select_row,
+            ARG_LIMIT_CLAUSE_NODE, 
+            get_limit_clause(select_node)
+        );
 
         result = current_result;
     }

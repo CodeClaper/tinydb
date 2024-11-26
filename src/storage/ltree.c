@@ -40,7 +40,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include "ltree.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "copy.h"
 #include "free.h"
 #include "refer.h"

@@ -9,7 +9,7 @@
 #include "data.h"
 #include "asserts.h"
 #include "conf.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "utils.h"
 
 #define DEFAULT_CONF_FILE "/etc/tinydb.cnf"

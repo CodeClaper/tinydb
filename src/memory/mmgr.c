@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include "mem.h"
+#include "mmgr.h"
 #include "shmgr.h"
 #include "lomgr.h"
 #include "list.h"

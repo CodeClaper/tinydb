@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "list.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "free.h"
 #include "asserts.h"
 #include "data.h"

@@ -5,7 +5,7 @@
 #include "cache.h"
 #include "spinlock.h"
 #include "utils.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "copy.h"
 #include "free.h"
 #include "log.h"

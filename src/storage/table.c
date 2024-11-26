@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include "table.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "free.h"
 #include "cache.h"
 #include "buffer.h"

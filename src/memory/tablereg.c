@@ -3,7 +3,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "tablereg.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "utils.h"
 
 static TableRegEntry *regheader;

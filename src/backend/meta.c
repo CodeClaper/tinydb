@@ -10,7 +10,7 @@
 #include "meta.h"
 #include "data.h"
 #include "table.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "copy.h"
 #include "free.h"
 #include "log.h"

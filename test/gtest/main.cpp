@@ -3,8 +3,8 @@
 
 extern "C" {
 #include "data.h"
-#include "shmem.h"
-#include "shdmem.h"
+#include "shmmgr.h"
+#include "shdmmgr.h"
 #include "log.h"
 #include "session.h"
 #include "trans.h"

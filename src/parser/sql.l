@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "utils.h"
 #include "intpr.h"
 #include "log.h"

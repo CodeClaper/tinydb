@@ -4,7 +4,7 @@
 extern "C" {
 #include "list.h"
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 }
 
 /* Test for create list. */

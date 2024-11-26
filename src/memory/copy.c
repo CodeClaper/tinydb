@@ -12,7 +12,7 @@
 #include "log.h"
 #include "asserts.h"
 #include "common.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "utils.h"
 
 /* Copy value. */

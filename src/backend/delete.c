@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "delete.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "data.h"
 #include "table.h"
 #include "copy.h"

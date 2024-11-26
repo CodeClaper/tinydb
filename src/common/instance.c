@@ -2,7 +2,7 @@
 #include <time.h>
 #include "instance.h"
 #include "data.h"
-#include "mem.h"
+#include "mmgr.h"
 
 /* Generate new KeyValue instance. */
 KeyValue *new_key_value(char *key, void *value, DataType data_type) {

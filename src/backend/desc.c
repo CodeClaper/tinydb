@@ -7,7 +7,7 @@
 #include "data.h"
 #include "desc.h"
 #include "list.h"
-#include "mem.h"
+#include "mmgr.h"
 #include "table.h"
 #include "index.h"
 #include "meta.h"
