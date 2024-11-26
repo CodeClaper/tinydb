@@ -42,7 +42,10 @@ Conf *conf;
  */
 jmp_buf errEnv; 
 
-static void sigchild();
+/* Child process signal.*/
+static inline void sigchild() {
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+}
 
 /* DB Start. */
 static void db_start() {
@@ -88,6 +91,7 @@ static void db_start() {
 static void db_run() {
     int server_socket = -1;
     int client_secket = -1;
+
     struct sockaddr_in *client_name = dalloc(sizeof(struct sockaddr_in));
     socklen_t client_name_len = sizeof(*client_name);
 
@@ -96,11 +100,12 @@ static void db_run() {
     db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
 
     /* Listen client connecting. */
-    while(true) {
+    while (true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
         if (client_secket == -1)
             db_log(PANIC, "Socket accept fail.");
         
+        /* Signal child process. */
         signal(SIGCHLD, sigchild);
 
         /* Create new child process. */
@@ -117,16 +122,13 @@ static void db_run() {
 /* DB End */
 static void db_end() {
     MemoryContextDelete(TOP_MEMORY_CONTEXT);
+    exit(EXIT_SUCCESS);
 }
 
-static void sigchild() {
-    while (waitpid(-1, NULL, WNOHANG) > 0);
-}
 
 /* The main entry. */
 int main(void) {
     db_start();
     db_run();
     db_end();
-    return EXIT_SUCCESS;
 }
