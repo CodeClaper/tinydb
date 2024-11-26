@@ -79,11 +79,18 @@
 #include "instance.h"
 #include "spinlock.h"
 
-static TransEntry *xheader; /* Store activ transactions. */
+/* 
+ * Store active transactions. 
+ */
+static TransEntry *xheader; 
+
+/*
+ * Transaction lock
+ */
 static s_lock *xlock;
 
-static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next);
 static void create_xlock();
+static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next);
 
 /* Initialise transaction. */
 void init_trans() {
@@ -173,8 +180,7 @@ static void destroy_transaction() {
         if (current->pid == getpid()) {
             pres->next = current->next;
             dfree(current);
-        }
-        else
+        } else
             pres = current;
     }
 
@@ -216,7 +222,6 @@ void auto_begin_transaction() {
 void begin_transaction() {
 
     TransEntry *entry = find_transaction();
-
     Assert(!entry);
 
     /* Generate new transaction. */
@@ -226,8 +231,12 @@ void begin_transaction() {
     register_transaction(entry);
 
     /* Send message. */
-    db_log(SUCCESS, "Begin new transaction xid:%"PRId64" and pid: %"PRId64"successfully.", 
-           entry->xid, entry->pid);
+    db_log(
+        SUCCESS, 
+        "Begin new transaction xid:%"PRId64" and pid: %"PRId64"successfully.", 
+        entry->xid, 
+        entry->pid
+    );
 }
 
 /* Commit transaction manually. */
@@ -247,8 +256,11 @@ void commit_transaction() {
     /* Destroy transaction. */
     destroy_transaction(); 
     
-    db_log(INFO, "Commit the transaction xid: %"PRId64" successfully.", 
-           entry->xid);
+    db_log(
+        INFO,
+        "Commit the transaction xid: %"PRId64" successfully.", 
+        entry->xid
+    );
 
     db_log(SUCCESS, "Commit the transaction successfully");
 }
@@ -259,7 +271,6 @@ void auto_commit_transaction() {
 
     /* Only deal with auto-commit transaction. */
     if (entry && entry->auto_commit) {
-
         int64_t xid = entry->xid; 
 
         /* Clear table buffer. */
@@ -268,7 +279,11 @@ void auto_commit_transaction() {
         /* Destroy transaction. */
         destroy_transaction();
 
-        db_log(SUCCESS, "Auto commit the transaction xid: %"PRId64" successfully.", xid);
+        db_log(
+            SUCCESS, 
+            "Auto commit the transaction xid: %"PRId64" successfully.", 
+            xid
+        );
     }
 }
 
@@ -282,8 +297,11 @@ void rollback_transaction() {
     execute_roll_back();
     commit_transaction();
 
-    db_log(SUCCESS, "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
-           entry->xid);
+    db_log(
+        SUCCESS, 
+        "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
+        entry->xid
+    );
 }
 
 
@@ -299,8 +317,11 @@ void auto_rollback_transaction() {
 
         execute_roll_back();
 
-        db_log(INFO, "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
-               entry->xid);
+        db_log(
+            INFO, 
+            "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
+            entry->xid
+        );
     }
     
 }
@@ -348,21 +369,23 @@ static void transaction_insert_row(Row *row) {
 
     /* Get current transaction. */
     TransEntry *entry = find_transaction();
-
     Assert(entry);
 
     /* For created_xid */
-    KeyValue *created_xid_col = new_key_value(dstrdup(CREATED_XID_COLUMN_NAME), 
-                                              copy_value(&entry->xid, T_LONG), 
-                                              T_LONG);
-
+    KeyValue *created_xid_col = new_key_value(
+        dstrdup(CREATED_XID_COLUMN_NAME), 
+        copy_value(&entry->xid, T_LONG), 
+        T_LONG
+    );
     lfirst(second_last_cell(row->data)) = created_xid_col;
 
     /* For expired_xid */
     int64_t zero = 0;
-    KeyValue *expired_xid_col = new_key_value(dstrdup(EXPIRED_XID_COLUMN_NAME),
-                                              copy_value(&zero, T_LONG),
-                                              T_LONG);
+    KeyValue *expired_xid_col = new_key_value(
+        dstrdup(EXPIRED_XID_COLUMN_NAME),
+        copy_value(&zero, T_LONG),
+        T_LONG
+    );
     lfirst(last_cell(row->data)) = expired_xid_col;
 }
 
@@ -371,12 +394,10 @@ static void transaction_delete_row(Row *row) {
     
     /* Get current transaction. */
     TransEntry *entry = find_transaction();
-
     Assert(entry);
 
     /* Asssign current transaction id to expired_xid. */
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-
     *(int64_t *)expired_xid_col->value = entry->xid;
 }
 

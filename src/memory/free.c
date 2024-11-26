@@ -83,7 +83,6 @@ void free_row(Row *row) {
         /* free row data. */
         if (row->data) 
             free_list_deep(row->data);
-
         dfree(row);
     }
 }
@@ -133,7 +132,6 @@ void free_meta_table(MetaTable *meta_table) {
 /* Free column */
 void free_column_node(ColumnNode *column_node) {
     if (column_node) {
-
         /* Free subColumn. */
         if (column_node->has_sub_column && column_node->sub_column)
             free_column_node(column_node->sub_column);

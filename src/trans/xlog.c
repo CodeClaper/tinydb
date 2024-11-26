@@ -1,5 +1,5 @@
 /*
- * ========================================= Transaction Log Manager============================================================
+ ****************************************** Transaction Log Manager************************************************************
  * Auth:        JerryZhou
  * Created:     2024/01/11
  * Modify:      2024/09/05
@@ -12,10 +12,11 @@
  *  (1) Supports Transaction Roll Back.
  *  (2) Supports recovery data when server restart up.
  *  (3) Support Transaction replication in distributed cluster.
- * ==============================================================================================================================
+ *******************************************************************************************************************************
  * */
 
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include "xlog.h"
@@ -37,13 +38,8 @@ static pthread_mutex_t mutex;
 /* XLogTable Buffer. */
 static XLogTable *xtable;
 
-/* Reverse insert operation. */
 static void reverse_insert(Refer *refer, TransEntry *transaction);
-
-/* Reverse delete operation. */
 static void reverse_delete(Refer *refer, TransEntry *transaction);
-
-/* Reverse update delete transaction. */
 static void reverse_update_delete(Refer *refer, TransEntry *transaction);
 
 /* Initialise XLOG. */
@@ -83,8 +79,17 @@ static XLogEntry *find_xlog_entry() {
     return current;
 }
 
+/* Enlarge the xtable. */
+static void enlarge_xlog_table(XLogEntry *entry) {
+    xtable->list = drealloc(xtable->list, sizeof(XLogEntry *) * (xtable->size + 1));
+    xtable->list[xtable->size] = entry;
+    xtable->size++;
+}
+
 /* Record Xlog. */
 void record_xlog(Refer *refer, DDLType type) {
+
+    bool found = false;
 
     TransEntry *trans = find_transaction();
     Assert(trans);
@@ -103,19 +108,15 @@ void record_xlog(Refer *refer, DDLType type) {
         if (head->xid == entry->xid) {
             entry->next = head;
             xtable->list[i] = entry;
-
-            /* Recover the MemoryContext. */
-            MemoryContextSwitchTo(oldcontext);
-
-            pthread_mutex_unlock(&mutex);
-            return;
+            found = true;
+            break;
         }
     }
-
-    xtable->list = drealloc(xtable->list, sizeof(XLogEntry *) * (xtable->size + 1));
-    xtable->list[i] = entry;
-    xtable->size++;
-
+ 
+    if (!found)
+        /* Enlarge the xlog table. */
+        enlarge_xlog_table(entry);
+    
     /* Recover the MemoryContext. */
     MemoryContextSwitchTo(oldcontext);
 
