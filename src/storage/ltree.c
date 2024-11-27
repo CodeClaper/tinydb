@@ -1004,13 +1004,18 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     /* Check if the leaf node overflow after inserting, if overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
-    else {
+    else 
+    {
         if (cursor->cell_num < cell_num) {
             /* Make room for new cell. */
             int i;
             for (i = cell_num; i > cursor->cell_num; i--) {
                 /* Movement. */
-                memcpy(get_leaf_node_cell(node, key_len, value_len, i), get_leaf_node_cell(node, key_len, value_len, i - 1), cell_length);
+                memcpy(
+                    get_leaf_node_cell(node, key_len, value_len, i), 
+                    get_leaf_node_cell(node, key_len, value_len, i - 1), 
+                    cell_length
+                );
                 /* Update refer. */
                 update_refer(table_name, cursor->page_num, i - 1, cursor->page_num, i);
             }
@@ -1029,9 +1034,20 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
             MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
            
             /* Logic check.*/
-            assert_true(greater_equal(row->key, old_max_key, primary_key_meta_column->column_type), "Logic Error occurs in <insert_leaf_node_cell>");
+            assert_true(
+                greater_equal(row->key, old_max_key, primary_key_meta_column->column_type), 
+                "Logic Error occurs in <insert_leaf_node_cell>"
+            );
 
-            update_internal_node_key(cursor->table, parent_node, old_max_key, row->key, key_len, value_len, primary_key_meta_column->column_type);
+            update_internal_node_key(
+                cursor->table, 
+                parent_node, 
+                old_max_key, 
+                row->key, 
+                key_len, 
+                value_len, 
+                primary_key_meta_column->column_type
+            );
             flush_page(table_name, cursor->table->pager, parent_page_num);
         }
         
