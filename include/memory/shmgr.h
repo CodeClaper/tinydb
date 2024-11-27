@@ -9,8 +9,7 @@ typedef struct ShMemFreeEntry {
     s_lock  lock;
 } ShMemFreeEntry;
 
-#define SHM_OFFSET sizeof(ShMemFreeEntry)
-
+#define SHM_OFFSET MAXALIGN(sizeof(ShMemFreeEntry))
 
 /* Init mem. */
 void init_mem();

@@ -1,10 +1,10 @@
-/****************************** The memory manager *******************************
+/****************************** The memory manager *****************************************
  * Auth:        JerryZhou
  * Created:     2024/08/14
  * Modify:      2024/08/14
  * Locataion:   src/memory/mem.c
- * Description: The memory manager supports local memory and share memory manager.
-***********************************************************************************/
+ * Description: The memory manager is the abstract for local memory and share memory manager.
+*********************************************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -17,6 +17,9 @@
 #include "asserts.h"
 #include "utils.h"
 
+/*
+ * Current Memory Type.
+ */
 static MemType type = MEM_LOCAL;
 
 static MemMethods mem_methods[] = {
@@ -43,21 +46,21 @@ inline void switch_local() {
 }
 
 /* Allocate memory. */
-void *dalloc(size_t size) {
+inline void *dalloc(size_t size) {
     return mem_methods[type].dalloc(size);
 }
 
 /* Free memory. */
-void dfree(void *ptr) {
+inline void dfree(void *ptr) {
     mem_methods[type].dfree(ptr);
 }
 
 /* Reallocate memory. */
-void *drealloc(void *ptr, size_t size) {
+inline void *drealloc(void *ptr, size_t size) {
     return mem_methods[type].drealloc(ptr, size);
 }
 
 /* Strdup. */
-char *dstrdup(char *str) {
+inline char *dstrdup(char *str) {
     return mem_methods[type].dstrdup(str);
 }

@@ -1,12 +1,13 @@
-/***************************** Shared Memory Mamnager ****************************************** 
+/***************************** Shared Memory Mamnager Module *********************************
  * Auth:            JerryZhou 
  * Created:         2024/11/16 
  * Modify:          2024/11/16
  * Locataion:       src/memory/shdmem.c
- * Description:     This is the implement of mem for shared memory.
+ * Description:     This is the implement of mem for manipulating shared memory.
  *********************************************************************************************/
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "shmgr.h"
 #include "shmem.h"
 #include "mmgr.h"
@@ -37,12 +38,15 @@ void *shdalloc(size_t size) {
     Assert(size > 0);
 
     size = MAXALIGN(size);
+
     /* Firstly allocate from free list, if missing, shmem alloc. */
     void *ptr = dalloc_shared_in_free_list(size);
-
-    if (is_null(ptr)) {
+    if (ptr == NULL) {
         void *nptr = shmem_alloc(size + SHM_OFFSET);
-        ShMemFreeEntry entry = { .size = size, .isFree = false };
+        ShMemFreeEntry entry = { 
+            .size = size, 
+            .isFree = false 
+        };
         memcpy(nptr, &entry, SHM_OFFSET);
         ptr = nptr + SHM_OFFSET;
         header->num++;
@@ -106,7 +110,7 @@ static void *dalloc_shared_in_free_list(size_t size) {
     size_t offset = SHM_OFFSET;
     uint32_t i;
     for (i = 0; i < header->num; i++) {
-        ShMemFreeEntry *entry = BASE_LINE + offset;
+        ShMemFreeEntry *entry = (ShMemFreeEntry *) (((char *) BASE_LINE) + offset);
         if (entry->isFree && entry->size >= size) {
             ptr = (void *) ((char *) entry + SHM_OFFSET);
             entry->isFree = false;
