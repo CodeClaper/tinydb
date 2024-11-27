@@ -1,10 +1,24 @@
+/********************************** Compare Module **********************************************************
+ * Auth:        JerryZhou
+ * Created:     2023/10/07
+ * Modify:      2024/11/26
+ * Locataion:   src/common/compare.c
+ * Description: The compare module is intended to compare two values of all kind of data type TinyDb supports.
+ * The comparision operations include:
+ * (1) Equal.
+ * (2) Not Equal.
+ * (3) Greater.
+ * (4) Greater equal.
+ * (5) Less.
+ * (6) Less equal.
+ *************************************************************************************************************
+ */
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
 #include "compare.h"
 #include "refer.h"
 #include "log.h"
-
 
 /*Equal operation (=).*/
 bool equal(void *source, void *target, DataType data_type) {

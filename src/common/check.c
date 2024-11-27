@@ -1,3 +1,11 @@
+/********************************** Check Module ********************************************************
+ * Auth:        JerryZhou
+ * Created:     2024/01/09
+ * Modify:      2024/11/26
+ * Locataion:   src/common/check.c
+ * Description: The check module is intended to check user sql valid and it only works for static checking.
+ ***********************************************************************************************************
+ */
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>

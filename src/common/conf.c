@@ -1,3 +1,11 @@
+/********************************** Conf Module **********************************************************
+ * Auth:        JerryZhou
+ * Created:     202r/11/23
+ * Modify:      2024/11/26
+ * Locataion:   src/common/conf.c
+ * Description: The conf module is intended to load the conf file.
+ *************************************************************************************************************
+ */
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>

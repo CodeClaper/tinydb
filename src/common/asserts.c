@@ -1,13 +1,16 @@
-/* 
- * The assert module support some common determination of whether the condition is established. 
+/********************************** Asserts Module ********************************************************
+ * Auth:        JerryZhou
+ * Created:     2023/12/19
+ * Modify:      2024/11/26
+ * Locataion:   src/common/asserts.c
+ * Description: The assert module support some common determination of whether the condition is established. 
+ ***********************************************************************************************************
  */
-
 #include <stdarg.h>
 #include <stdio.h>
 #include "asserts.h"
 #include "data.h"
 #include "log.h"
-
 
 /* Assert condition is true. */
 void assert_true(bool condition, char *format, ...) {

@@ -1,3 +1,11 @@
+/********************************** Show Module ********************************************
+ * Auth:        JerryZhou
+ * Created:     2023/08/13
+ * Modify:      2024/11/26
+ * Locataion:   src/backend/show.c
+ * Description: Show module is intended to show owned tables info. 
+ ********************************************************************************************
+ */
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
