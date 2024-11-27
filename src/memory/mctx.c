@@ -75,8 +75,47 @@ void MemoryContextReset(MemoryContext context) {
     context->context_methods->reset(context);
 }
 
+/* MemoryContext set its parent. */
+void MemoryContextSetParent(MemoryContext context, MemoryContext new_parent) {
+    Assert(context);
+    Assert(context != new_parent);
+
+    if (context->parent == new_parent)
+        return;
+
+    /* Delink. */
+    if (context->parent) {
+        MemoryContext parent = context->parent;
+        
+        if (context->presChild) 
+            context->presChild->nextChild = context->nextChild;
+        else 
+        {
+            Assert(parent->firstChild == context);
+            parent->firstChild = context->nextChild;
+        }
+
+        if (context->nextChild) 
+            context->nextChild->presChild = context->presChild;
+    }
+
+    if (new_parent) {
+        context->parent = new_parent;
+        context->presChild = NULL;
+        context->nextChild = new_parent->firstChild;
+        if (new_parent->firstChild) 
+            new_parent->firstChild->presChild = context;
+        new_parent->firstChild = context;
+    } else {
+        context->parent = NULL;
+        context->presChild = NULL;
+        context->nextChild = NULL;
+    }
+}
+
 /* Delete the MemoryContext only. */
 static void MemoryContextDeleteOnly(MemoryContext context) {
+    MemoryContextSetParent(context, NULL);
     context->context_methods->delete_context(context);
 }
 
@@ -97,6 +136,7 @@ void MemoryContextDelete(MemoryContext context) {
 
         if (context == curcontext)
             break;
+
         curcontext = parentcontext;
     }
 }
