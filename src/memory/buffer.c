@@ -78,8 +78,8 @@ Table *find_table_buffer(char *table_name) {
         foreach (lc, buffer_list) {
             TableBufferEntry *entry = lfirst(lc);
             if (streq(table_name, entry->table->meta_table->table_name) 
-                && entry->xid == trans->xid ) {
-                    return entry->table;
+                    && entry->xid == trans->xid ) {
+                return entry->table;
             }  
         }
     }

@@ -119,11 +119,11 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
  * This function will not flush page to disk, 
  * just make page FLUSH_STATE flag. */
 void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
-
     ListCell *lc = list_nth_cell(pager->pages, page_num);
     void *node = lfirst(lc);
     Assert(node);
 
+    /* Mark FLUSH_STATE flag. */
     set_node_state(node, FLUSH_STATE);
 }
 
@@ -138,6 +138,7 @@ static void flush_disk(Table *table) {
         void *node = lfirst(list_nth_cell(pager->pages, i));
         Assert(node);
 
+        /* Only flush FLUSH_STATE page to disk. */
         if (get_node_state(node) == FLUSH_STATE) {
             /* Reset to INUSE_STATE. */
             set_node_state(node, INUSE_STATE);

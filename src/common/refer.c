@@ -253,7 +253,8 @@ static bool if_related_table(Table *table, char *refer_table_name) {
     int i;
     for(i = 0; i < meta_table->column_size; i++) {
         MetaColumn *current_meta_column = meta_table->meta_column[i];
-        if (current_meta_column->column_type == T_REFERENCE && strcmp(current_meta_column->table_name, refer_table_name) == 0)
+        if (current_meta_column->column_type == T_REFERENCE && 
+                strcmp(current_meta_column->table_name, refer_table_name) == 0)
             return true;
     }
 
@@ -379,6 +380,9 @@ void update_related_tables_refer(ReferUpdateEntity *refer_update_entity) {
     ListCell *lc;
     foreach (lc, table_list) {
         char *table_name = lfirst(lc);
+        /* Skip itself. */
+        if (streq(table_name, refer_update_entity->old_refer->table_name))
+            continue;
         Table *table = open_table(table_name);
         if (if_related_table(table, refer_update_entity->old_refer->table_name)) 
             update_table_refer(table, refer_update_entity);
