@@ -48,6 +48,9 @@ uint32_t calc_primary_key_length2(MetaTable *meta_table);
 MetaTable *gen_meta_table(Table *table, char *table_name);
 
 
+/* Get only meta table. */
+MetaTable *get_meta_table_only(char *table_name);
+
 /* Get meta column info by column name. */
 MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *name);
 

@@ -154,8 +154,8 @@ void free_column_node(ColumnNode *column_node) {
 /* Free Pager. */
 void free_pager(Pager *pager) {
     if (pager) {
-        if (pager->table_file_path)
-            dfree(pager->table_file_path);
+        if (pager->table_name)
+            dfree(pager->table_name);
 
         free_list_deep(pager->pages);
         dfree(pager);

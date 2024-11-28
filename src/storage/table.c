@@ -33,7 +33,7 @@ List *get_table_list() {
     DIR *dir;
     struct dirent *entry;
     if ((dir = opendir(conf->data_dir)) == NULL) {
-        db_log(PANIC, "System error, not found directory: ", conf->data_dir); 
+        db_log(PANIC, "System error, not found directory: %s", conf->data_dir); 
     } else {
         while((entry = readdir(dir)) != NULL) {
             if (entry->d_type == 8 && endwith(entry->d_name, ".dbt")) {
@@ -212,7 +212,7 @@ Table *open_table(char *table_name) {
     
     /* Combine table. */
     Table *table = instance(Table);
-    Pager *pager = open_pager(file_path);
+    Pager *pager = open_pager(table_name);
     if (pager == NULL) {
         free_table(table);
         dfree(file_path);

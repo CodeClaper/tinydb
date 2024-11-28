@@ -25,6 +25,8 @@
 #include "pager.h"
 #include "refer.h"
 #include "check.h"
+#include "cache.h"
+#include "tablelock.h"
 
 #define DEFAULT_BOOL_LENGTH         2
 #define DEFAULT_STRING_LENGTH       48
@@ -472,7 +474,7 @@ MetaColumn *get_all_meta_column_by_name(MetaTable *meta_table, char *name) {
 /* Generate table meta info. */
 MetaTable *gen_meta_table(Table *table, char *table_name) {
     /* Check valid. */
-    assert_not_null(table_name, "Input table name can`t be null.");
+    Assert(table_name != NULL);
 
     MetaTable *meta_table = instance(MetaTable);
     void *root_node = get_page(table_name, table->pager, table->root_page_num);
@@ -495,7 +497,59 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
         offset += current->column_length;
     }
 
-    assert_true(meta_table->all_column_size == column_size, "System Logic Error in <get_meta_table>");
+    Assert(meta_table->all_column_size == column_size);
+
+    return meta_table;
+}
+
+/* Get the meta table directly. 
+ * ------------
+ * Sometimes, we only want to fetch the meta table info. 
+ * The function <open_table> is too heavy. It`s not 
+ * neccessary to load the whole db file, and The root page 
+ * is enough to get meta table info. In fact, to improve 
+ * performance, this function find meta table info in cache firstly, 
+ * if missing, load from file disk.
+ * ------------
+ * */
+MetaTable *get_meta_table_only(char *table_name) {
+    /* Check valid. */
+    Assert(table_name != NULL);
+
+    /* Check table if locked, if locked, block here until acquire the table. */
+    check_table_locked(table_name);
+
+    /* Find in cache. */
+    Table *cachetable = find_table_cache(table_name);
+    if (cachetable != NULL)
+        return cachetable->meta_table;
+
+    /* Cache missing, load form file disk. */
+    MetaTable *meta_table = instance(MetaTable);
+
+    Pager *pager = open_pager(table_name);
+    void *root_node = get_page(table_name, pager, 0);
+
+    uint32_t column_size = get_column_size(root_node);
+
+    meta_table->table_name = dstrdup(table_name);
+    meta_table->column_size = 0;
+    meta_table->all_column_size = 0;
+    meta_table->meta_column = dalloc(sizeof(MetaColumn *) * column_size);
+
+    uint32_t offset = 0;
+    uint32_t i;
+    for (i = 0; i < column_size; i++) {
+        MetaColumn *current = get_meta_column_by_index(root_node, i, offset);
+        meta_table->meta_column[i] = current;
+        /* Skip to system reserved column. */
+        if (!current->sys_reserved)
+            meta_table->column_size++;
+        meta_table->all_column_size++;
+        offset += current->column_length;
+    }
+
+    Assert(meta_table->all_column_size == column_size);
 
     return meta_table;
 }

@@ -81,6 +81,7 @@ bool sync_page(char *table_name, uint32_t page_num, void *page) {
     Table *table = find_table_cache(table_name);
 
     if (table) {
+
         switch_shared();
 
         ListCell *lc = list_nth_cell(table->pager->pages, page_num);

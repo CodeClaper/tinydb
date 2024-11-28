@@ -48,6 +48,11 @@ void init_refer() {
     update_refer_lock_content->size = 0;
 }
 
+/* Get table name in ReferUpdateEntity. */
+static inline char* get_refer_table_name(ReferUpdateEntity *refer_update_entity) {
+    return refer_update_entity->old_refer->table_name;
+}
+
 /* Add Refer to UpdateReferLockContent. */
 void add_refer_update_lock(Refer *refer) {
     if (!include_update_refer_lock(refer)) {
@@ -246,9 +251,8 @@ Cursor *convert_cursor(Refer *refer) {
 }
 
 /* Check if table has column refer to. */
-static bool if_related_table(Table *table, char *refer_table_name) {
-    Assert(table);
-    MetaTable *meta_table = table->meta_table;
+static bool if_related_table(MetaTable *meta_table, char *refer_table_name) {
+    Assert(meta_table);
 
     int i;
     for(i = 0; i < meta_table->column_size; i++) {
@@ -263,16 +267,16 @@ static bool if_related_table(Table *table, char *refer_table_name) {
 
 /* Check if refer equals. */
 bool refer_equals(Refer *refer1, Refer *refer2) {
-    return streq(refer1->table_name, refer2->table_name)
-            && refer1->page_num == refer2->page_num 
-            && refer1->cell_num == refer2->cell_num;
+    return streq(refer1->table_name, refer2->table_name) && 
+                refer1->page_num == refer2->page_num && 
+                refer1->cell_num == refer2->cell_num;
 }
 
 /* Check if cursor equals. */
 bool cursor_equals(Cursor *cursor1, Cursor * cursor2) {
-    return streq(cursor1->table->meta_table->table_name, cursor2->table->meta_table->table_name)
-            && cursor1->page_num == cursor2->page_num 
-            && cursor1->cell_num == cursor2->cell_num;
+    return streq(cursor1->table->meta_table->table_name, cursor2->table->meta_table->table_name) && 
+                cursor1->page_num == cursor2->page_num && 
+                cursor1->cell_num == cursor2->cell_num;
 }
 
 /* Update single key value refer. */
@@ -305,21 +309,20 @@ static bool update_array_key_value_refer(KeyValue *key_value, ReferUpdateEntity 
 /* Update row key value. */
 static void update_key_value_refer(Row *row, MetaColumn *meta_column, 
                                    Cursor *cursor, ReferUpdateEntity *refer_update_entity) {
-    
     bool flag = false;
 
     ListCell *lc;
     foreach (lc, row->data) {
         KeyValue *key_value = lfirst(lc);
-        if (key_value->data_type == T_REFERENCE 
-            && streq(key_value->key, meta_column->column_name)) {
-                if (key_value->is_array) {
-                    if (update_array_key_value_refer(key_value, refer_update_entity))
-                        flag = true;
-                } else {
-                    if (update_single_key_value_refer(key_value, refer_update_entity))
-                        flag = true;
-                }
+        if (key_value->data_type == T_REFERENCE && 
+                streq(key_value->key, meta_column->column_name)) {
+            if (key_value->is_array) {
+                if (update_array_key_value_refer(key_value, refer_update_entity))
+                    flag = true;
+            } else {
+                if (update_single_key_value_refer(key_value, refer_update_entity))
+                    flag = true;
+            }
         }
     }
     
@@ -330,13 +333,17 @@ static void update_key_value_refer(Row *row, MetaColumn *meta_column,
 
 
 /* Update row refer. */
-static void update_row_refer(Row *row, SelectResult *select_result, Table *table,  ROW_HANDLER_ARG_TYPE type, void *arg) {
+static void update_row_refer(Row *row, SelectResult *select_result, Table *table, 
+                             ROW_HANDLER_ARG_TYPE type, void *arg) {
 
     Assert(arg);
 
     /* ReferUpdateEntity */
     Assert(type == ARG_REFER_UPDATE_ENTITY);
     ReferUpdateEntity *refer_update_entity = (ReferUpdateEntity *) arg;
+ 
+    /* Get self table name. */
+    char *self_table_name = get_refer_table_name(refer_update_entity);
 
     /* Curosr */
     Cursor *cursor = define_cursor(table, row->key);
@@ -347,8 +354,8 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        if (meta_column->column_type == T_REFERENCE 
-                && streq(meta_column->table_name, refer_update_entity->old_refer->table_name)) 
+        if (meta_column->column_type == T_REFERENCE && 
+                streq(meta_column->table_name, self_table_name)) 
             update_key_value_refer(row, meta_column, cursor, refer_update_entity);
     }
 
@@ -356,17 +363,23 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
 }
 
 /* Update table refer. */
-static void update_table_refer(Table *table, ReferUpdateEntity *refer_update_entity) {
+static void update_table_refer(MetaTable *meta_table, ReferUpdateEntity *refer_update_entity) {
 
     /* Skip update locked refer. */
     if (include_update_refer_lock(refer_update_entity->old_refer))
         return;
 
     /* Query with condition, and delete satisfied condition row. */
-    SelectResult *select_result = new_select_result(table->meta_table->table_name);
+    SelectResult *select_result = new_select_result(meta_table->table_name);
 
     /* Traverse rows to update refer. */
-    query_with_condition(NULL, select_result, update_row_refer, ARG_REFER_UPDATE_ENTITY, refer_update_entity);
+    query_with_condition(
+        NULL, 
+        select_result, 
+        update_row_refer, 
+        ARG_REFER_UPDATE_ENTITY, 
+        refer_update_entity
+    );
     
     free_select_result(select_result);
 }
@@ -374,18 +387,22 @@ static void update_table_refer(Table *table, ReferUpdateEntity *refer_update_ent
 /* Update releated tables reference. */
 void update_related_tables_refer(ReferUpdateEntity *refer_update_entity) {
 
-    List *table_list = get_table_list();
+    /* Get self name. */
+    char *self_table_name = get_refer_table_name(refer_update_entity);
 
+    List *table_list = get_table_list();
     /* Update table refer. */
     ListCell *lc;
     foreach (lc, table_list) {
         char *table_name = lfirst(lc);
         /* Skip itself. */
-        if (streq(table_name, refer_update_entity->old_refer->table_name))
+        if (streq(table_name, self_table_name)) 
             continue;
-        Table *table = open_table(table_name);
-        if (if_related_table(table, refer_update_entity->old_refer->table_name)) 
-            update_table_refer(table, refer_update_entity);
+        
+        /* Check other tables. */
+        MetaTable *meta_table = get_meta_table_only(table_name);
+        if (if_related_table(meta_table, self_table_name)) 
+            update_table_refer(meta_table, refer_update_entity);
     }
 
     free_list_deep(table_list);

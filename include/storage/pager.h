@@ -1,9 +1,8 @@
 #include <stdint.h>
 #include "data.h"
 
-
 /* Open Pager */
-Pager *open_pager(char *table_file_path);
+Pager *open_pager(char *table_name);
 
 /* Get page of a pager by page number. */
 void *get_page(char *table_name, Pager *pager, uint32_t page_num);

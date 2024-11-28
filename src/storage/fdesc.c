@@ -76,7 +76,9 @@ void unregister_fdesc(char *table_name) {
 }
 
 
-/* Load file descriptor. */
+/* Load file descriptor. 
+ * Notice, if file desc not register, need close it manually.
+ * */
 int load_file_desc(char *file_path) {
     int desc= open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (desc == -1) 
