@@ -13,7 +13,6 @@
 #include "mmgr.h"
 #include "free.h"
 #include "cache.h"
-#include "buffer.h"
 #include "common.h"
 #include "asserts.h"
 #include "utils.h"
@@ -199,7 +198,7 @@ Table *open_table(char *table_name) {
     check_table_locked(table_name);
 
     /* Firstly, try to find in buffer. */
-    Table *mtable = find_table_buffer(table_name);
+    Table *mtable = find_table_cache(table_name);
     if (mtable)
         return mtable;
 
@@ -238,7 +237,7 @@ Table *open_table(char *table_name) {
     dfree(file_path);
 
     /* Only return buffer table to keep same table pointer in the same transaction. */
-    return find_table_buffer(table_name);
+    return find_table_cache(table_name);
 }
 
 
@@ -261,16 +260,11 @@ bool drop_table(char *table_name) {
 
     /* Disk remove. */
     if (remove(file_path) == 0) {
-        dfree(file_path);
         /* Remove table cache. */
         remove_table_cache(table_name);
-        /* Remove table buffer. */
-        remove_table_buffer(table_name);
-
         return true;
     }
 
-    dfree(file_path);
     db_log(ERROR, "Table '%s' deleted fail, error : %d", table_name, errno);
 
     return false;

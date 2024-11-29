@@ -10,7 +10,6 @@ extern "C" {
 #include "trans.h"
 #include "xlog.h"
 #include "cache.h"
-#include "buffer.h"
 #include "conf.h"
 #include "refer.h"
 #include "mctx.h"
@@ -39,9 +38,6 @@ static void db_start() {
 
     /* Initialise table cache. */
     init_table_cache();
-
-    /* Initialise table buffer. */
-    init_table_buffer();
 
     /* Initialise refer. */
     init_refer();

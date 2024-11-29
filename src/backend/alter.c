@@ -17,7 +17,6 @@
 #include "check.h"
 #include "table.h"
 #include "cache.h"
-#include "buffer.h"
 #include "create.h"
 #include "tablelock.h"
 #include "utils.h"
@@ -40,7 +39,6 @@ static void try_capture_table(char *table_name) {
 /* Release Table. */
 static void release_table(char *table_name) {
     remove_table_cache(table_name);
-    remove_table_buffer(table_name);
     try_release_table(table_name);
 }
 

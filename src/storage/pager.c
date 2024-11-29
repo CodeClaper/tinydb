@@ -70,9 +70,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
     if (page_num >= pager->size) {
         Assert(page_num == pager->size);
 
-        /* Switch to CACHE_MEMORY_CONTEXT. */
-        MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
-        MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+        switch_shared();
 
         void *page = dalloc(PAGE_SIZE);
         lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
@@ -84,12 +82,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
         pager->size++;
         Assert(len_list(pager->pages) == pager->size);
 
-        /* Sync Cache.*/
-        sync_page_increase(table_name, page);
-
-        /* Recover the MemoryContext. */
-        MemoryContextSwitchTo(oldcontext);
-
+        switch_local();
         return page;
     }
 
@@ -98,9 +91,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
     /* Cache dismiss, allocate memory and load file. */
     if (is_null(lfirst(lc))) {
 
-        /* Switch to CACHE_MEMORY_CONTEXT. */
-        MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
-        MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
+        switch_shared();
 
         void *page = dalloc(PAGE_SIZE);
 
@@ -111,10 +102,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
         lfirst(lc) = page;
 
-        sync_page(table_name, page_num, page);
-
-        /* Recover the MemoryContext. */
-        MemoryContextSwitchTo(oldcontext);
+        switch_local();
     }
 
     return lfirst(lc);
@@ -149,11 +137,6 @@ static void flush_disk(Table *table) {
         if (get_node_state(node) == FLUSH_STATE) {
             /* Reset to INUSE_STATE. */
             set_node_state(node, INUSE_STATE);
-
-            /* Before flushing disk, synchronous page memory data. 
-             * If synchronous page memory fail, not to flush disk. */
-            if(!sync_page(table->meta_table->table_name, i, node))
-                return;
 
             /* Flush disk. */
             off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * i, SEEK_SET);

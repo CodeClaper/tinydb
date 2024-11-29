@@ -44,7 +44,6 @@
 #include "trans.h"
 #include "utils.h"
 #include "session.h"
-#include "buffer.h"
 #include "log.h"
 #include "free.h"
 #include "jsonwriter.h"

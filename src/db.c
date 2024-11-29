@@ -24,7 +24,6 @@
 #include "gc.h"
 #include "refer.h"
 #include "cache.h"
-#include "buffer.h"
 #include "fdesc.h"
 #include "tablelock.h"
 #include "log.h"
@@ -73,9 +72,6 @@ static void db_start() {
 
     /* Initialise table cache. */
     init_table_cache();
-
-    /* Initialise table buffer. */
-    init_table_buffer();
 
     /* Initialise refer. */
     init_refer();

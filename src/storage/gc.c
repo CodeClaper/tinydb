@@ -6,7 +6,6 @@
 * When GC working on the table, it will lock the table, any transaction that trying to write the table will block.
 * =================================================================================================================
 */
-
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -18,7 +17,6 @@
 #include "table.h"
 #include "ltree.h"
 #include "refer.h"
-#include "buffer.h"
 #include "cache.h"
 #include "select.h"
 #include "asserts.h"
@@ -52,9 +50,6 @@ void loop_gc() {
         }
 
         free_list_deep(table_list);
-
-        /* Clear Buffer. */
-        clear_table_buffer();
 
         /* Commit transction manually. */
         auto_commit_transaction();
