@@ -14,7 +14,7 @@ void init_spin_lock(volatile s_lock *lock);
 void acquire_spin_lock(volatile s_lock *lock);
 
 /* Release spin lock. */
-void  release_spin_lock(volatile s_lock *lock);
+void release_spin_lock(volatile s_lock *lock);
 
 /* Wait for spin lock released. */
 void wait_for_spin_lock(volatile s_lock *lock);

@@ -1009,12 +1009,14 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     cell_num = get_leaf_node_cell_num(node, value_len);
     cell_length = value_len + key_len;
 
-    /* Check if the leaf node overflow after inserting, if overflow, split the leaf node fist.*/
+    /* Check if the leaf node overflow after inserting, 
+     * If overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
     else 
     {
-        if (cursor->cell_num < cell_num) {
+        if (cursor->cell_num < cell_num)
+        {
             /* Make room for new cell. */
             int i;
             for (i = cell_num; i > cursor->cell_num; i--) {

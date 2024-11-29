@@ -1,11 +1,13 @@
-/**
- *========================================The Table Lock Module =================================
- * This module supports the table-level lock mechanism which depends on spinlock at the bottom layer.
- * The table-level lock is an exclusive lock which means only one thread could acquire the table at 
- * the time. 
- * Ony DDL statements will try to acquire the lock and call the function <try_acquire_table>,
- * Other DML or DQL statements just need to check the table if locked.
- *===============================================================================================
+/********************************************* Tabble Lock Module ***********************************************
+ * Auth:        JerryZhou
+ * Created:     2024/08/10
+ * Modify:      2024/11/28
+ * Locataion:   src/lock/tablelock.c
+ * Description: This module supports the table-level lock mechanism which depends on spinlock at the bottom layer.
+ * The table-level lock is an exclusive lock which means only one thread could acquire the table at the time. 
+ * Ony DDL statements executor will try to acquire the lock via the function <try_acquire_table>.
+ * Other DML or DQL statement executors need to check the table if locked.
+ *****************************************************************************************************************
  */
 
 #include <stdio.h>
@@ -60,7 +62,6 @@ void check_table_locked(char *table_name) {
     Assert(!is_empty(table_name));
     TableLockEntity *lock_entry = find_lock_entry(table_name);
     if (lock_entry) {
-
         /* Try to check exlock if unlolocked, maybe block here when locked. */
         wait_for_exlock(lock_entry->entry_lock);   
     }

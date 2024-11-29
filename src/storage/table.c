@@ -195,7 +195,7 @@ Table *open_table(char *table_name) {
     /* Check valid. */
     Assert(table_name);
 
-    /* Check table if locked, if locked, block here until acquire the table. */
+    /* Check table if locked. Block here until acquire the table if locked. */
     check_table_locked(table_name);
 
     /* Firstly, try to find in buffer. */
