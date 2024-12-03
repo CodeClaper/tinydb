@@ -245,7 +245,6 @@ Pager *copy_pager(Pager *pager) {
     Pager *pager_copy = instance(Pager);
     pager_copy->size = pager->size;
     pager_copy->file_length = pager->file_length;
-    pager_copy->file_descriptor = pager->file_descriptor;
     pager_copy->table_name = dstrdup(pager->table_name);
     pager_copy->pages = list_copy_deep(pager->pages);
 

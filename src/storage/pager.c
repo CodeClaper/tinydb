@@ -34,9 +34,8 @@ Pager *open_pager(char *table_name) {
 
     off_t file_length = lseek(file_descriptor, 0, SEEK_END);
     if (file_length == -1)
-        db_log(PANIC, "Error seeking: %s.", strerror(errno));
+        db_log(PANIC, "Error seek end: %s.", strerror(errno));
     
-    pager->file_descriptor = file_descriptor;
     pager->table_name = dstrdup(table_name);
     pager->file_length = file_length;
     pager->size = (file_length / PAGE_SIZE);
@@ -66,15 +65,18 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
             MAX_TABLE_PAGE
         );
 
+    int fdesc = get_file_desc(table_name);
+
     /* Exceeds the pager. */
     if (page_num >= pager->size) {
         Assert(page_num == pager->size);
 
+
         switch_shared();
 
         void *page = dalloc(PAGE_SIZE);
-        lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-        ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
+        lseek(fdesc, page_num * PAGE_SIZE, SEEK_SET);
+        ssize_t read_bytes = read(fdesc, page, PAGE_SIZE);
         if (read_bytes == -1) 
             db_log(PANIC, "Table file read error: %s", strerror(errno));
 
@@ -95,8 +97,8 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
         void *page = dalloc(PAGE_SIZE);
 
-        lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-        ssize_t read_bytes = read(pager->file_descriptor, page, PAGE_SIZE);
+        lseek(fdesc, page_num * PAGE_SIZE, SEEK_SET);
+        ssize_t read_bytes = read(fdesc, page, PAGE_SIZE);
         if (read_bytes == -1) 
             db_log(PANIC, "Table file read error: %s", strerror(errno));
 
@@ -130,6 +132,7 @@ static void flush_disk(Table *table) {
 
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
+
         void *node = lfirst(list_nth_cell(pager->pages, i));
         Assert(node);
 
@@ -139,12 +142,14 @@ static void flush_disk(Table *table) {
             set_node_state(node, INUSE_STATE);
 
             /* Flush disk. */
-            off_t offset = lseek(pager->file_descriptor, PAGE_SIZE * i, SEEK_SET);
+            int fdesc = get_file_desc(pager->table_name);
+            off_t offset = lseek(fdesc, PAGE_SIZE * i, SEEK_SET);
             if (offset == -1) 
-                db_log(PANIC, "Error seeking: %s.", strerror(errno));
+                db_log(PANIC, "Error seek set: %s. File descriptor: %d", 
+                       strerror(errno), fdesc);
             
             /* Write. */
-            ssize_t write_size = write(pager->file_descriptor, node, PAGE_SIZE);
+            ssize_t write_size = write(fdesc, node, PAGE_SIZE);
             if (write_size == -1) 
                 db_log(PANIC, "Try to write page error: %s.", strerror(errno));        
         }

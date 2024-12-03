@@ -561,7 +561,6 @@ typedef struct Statement {
 
 /* Pager */
 typedef struct Pager {
-    int file_descriptor;
     char *table_name;
     uint32_t file_length;
     uint32_t size;

@@ -253,10 +253,11 @@ bool drop_table(char *table_name) {
 
     int fdesc = get_file_desc(table_name);
 
-    /* Unregister fdesc. */
-    unregister_fdesc(table_name);
     /* Close fdesc. */
     close(fdesc);
+
+    /* Unregister fdesc. */
+    unregister_fdesc(table_name);
 
     /* Disk remove. */
     if (remove(file_path) == 0) {
