@@ -1,8 +1,14 @@
 #include "data.h"
 
-typedef struct FDescEntry{
-    int  desc;                              /* Table file descriptor. */
-    char table_name[MAX_TABLE_NAME_LEN];    /* Table Name */
+typedef int FDesc;
+
+/* 
+ * FDescEntry.
+ * Store the relation of fdesc and table.
+ */
+typedef struct FDescEntry {
+    FDesc desc;                              /* Table file descriptor. */
+    char  table_name[MAX_TABLE_NAME_LEN];    /* Table Name */
 } FDescEntry;
 
 
@@ -12,8 +18,7 @@ void init_fdesc();
 /* Unregister fdesc. */
 void unregister_fdesc(char *table_name);
 
-/* Load file descriptor. */
-int load_file_desc(char *file_path);
-
-/* Get file descriptor. */
-int get_file_desc(char *table_name);
+/* Get file descriptor. 
+ * Fistly find in F_DESC_LIST.
+ * If missing, load file descriptor and register it. */
+FDesc get_file_desc(char *table_name);

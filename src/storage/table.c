@@ -251,9 +251,10 @@ bool drop_table(char *table_name) {
         return false;
     }
 
-    int fdesc = get_file_desc(table_name);
+    /* Get file descriptor. */
+    FDesc fdesc = get_file_desc(table_name);
 
-    /* Close fdesc. */
+    /* Close file descriptor. */
     close(fdesc);
 
     /* Unregister fdesc. */
@@ -265,7 +266,8 @@ bool drop_table(char *table_name) {
         remove_table_cache(table_name);
         return true;
     }
-
+    
+    /* Not reach here logically. */
     db_log(ERROR, "Table '%s' deleted fail, error : %d", table_name, errno);
 
     return false;

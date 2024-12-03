@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -23,7 +22,7 @@ void init_fdesc() {
 /* Find file descriptor in F_DESC_LIST. 
  * Return file descriptor or -1 if not found.
  * */
-static int find_fdesc(char *table_name) {
+static FDesc find_fdesc(char *table_name) {
     Assert(F_DESC_LIST != NIL);
     
     ListCell *lc;
@@ -38,7 +37,7 @@ static int find_fdesc(char *table_name) {
 
 
 /* Register fdesc. */
-static void register_fdesc(char *table_name, int desc) {
+static void register_fdesc(char *table_name, FDesc desc) {
     Assert(F_DESC_LIST != NIL);
 
     /* Switch to CACHE_MEMORY_CONTEXT. */
@@ -79,8 +78,8 @@ void unregister_fdesc(char *table_name) {
 /* Load file descriptor. 
  * Notice, if file desc not register, need close it manually.
  * */
-int load_file_desc(char *file_path) {
-    int desc= open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
+static FDesc load_file_desc(char *file_path) {
+    FDesc desc= open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (desc == -1) 
         db_log(
             PANIC,
@@ -91,12 +90,14 @@ int load_file_desc(char *file_path) {
     return desc;
 }
 
-/* Get file descriptor. */
-int get_file_desc(char *table_name) {
+/* Get file descriptor. 
+ * Fistly find in F_DESC_LIST.
+ * If missing, load file descriptor and register it. */
+FDesc get_file_desc(char *table_name) {
     Assert(!is_empty(table_name));
 
     /* Fistly find in F_DESC_LIST. */
-    int desc = find_fdesc(table_name);
+    FDesc desc = find_fdesc(table_name);
 
     /* If missing cache.*/
     if (desc == -1) {

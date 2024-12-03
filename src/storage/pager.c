@@ -30,9 +30,9 @@
 Pager *open_pager(char *table_name) {
     Pager *pager = instance(Pager);
 
-    int file_descriptor = get_file_desc(table_name);
+    FDesc fdesc = get_file_desc(table_name);
 
-    off_t file_length = lseek(file_descriptor, 0, SEEK_END);
+    off_t file_length = lseek(fdesc, 0, SEEK_END);
     if (file_length == -1)
         db_log(PANIC, "Error seek end: %s.", strerror(errno));
     
@@ -65,12 +65,12 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
             MAX_TABLE_PAGE
         );
 
-    int fdesc = get_file_desc(table_name);
+    /* Get the file descriptor. */
+    FDesc fdesc = get_file_desc(table_name);
 
     /* Exceeds the pager. */
     if (page_num >= pager->size) {
         Assert(page_num == pager->size);
-
 
         switch_shared();
 
@@ -92,7 +92,6 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
     /* Cache dismiss, allocate memory and load file. */
     if (is_null(lfirst(lc))) {
-
         switch_shared();
 
         void *page = dalloc(PAGE_SIZE);
@@ -142,7 +141,7 @@ static void flush_disk(Table *table) {
             set_node_state(node, INUSE_STATE);
 
             /* Flush disk. */
-            int fdesc = get_file_desc(pager->table_name);
+            FDesc fdesc = get_file_desc(pager->table_name);
             off_t offset = lseek(fdesc, PAGE_SIZE * i, SEEK_SET);
             if (offset == -1) 
                 db_log(PANIC, "Error seek set: %s. File descriptor: %d", 
