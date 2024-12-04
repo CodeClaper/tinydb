@@ -151,13 +151,23 @@ void free_column_node(ColumnNode *column_node) {
 
 }
 
+/* Free BufferDesc. */
+void free_buffer_desc(BufferDesc *buf_desc) {
+    if (buf_desc) {
+        if (buf_desc->lock)
+            dfree(buf_desc->lock);
+        dfree(buf_desc);
+    }
+}
+
+
 /* Free Pager. */
 void free_pager(Pager *pager) {
     if (pager) {
         if (pager->table_name)
             dfree(pager->table_name);
-
         free_list_deep(pager->pages);
+        free_list_deep(pager->buffers);
         dfree(pager);
     }
 }

@@ -42,7 +42,6 @@ void release_exlock(ExLockEntry *lock_entry) {
 
     release_spin_lock(&lock_entry->lock);
     lock_entry->pid = 0;
-
 }
 
 /* Wait for exlock released. */

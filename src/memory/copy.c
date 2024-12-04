@@ -237,18 +237,41 @@ MetaTable *copy_meta_table(MetaTable *meta_table) {
     return copy;
 }
 
+ExLockEntry *copy_exlock_entry(ExLockEntry *exlock_entry) {
+    if (exlock_entry == NULL)
+        return NULL;
+
+    ExLockEntry *duplica = instance(ExLockEntry);
+    duplica->lock = exlock_entry->lock;
+    duplica->pid = exlock_entry->pid;
+    return duplica;
+}
+
+/* Copy BufferDesc. */
+BufferDesc *copy_buffer_desc(BufferDesc *buff_desc) {
+    if (buff_desc == NULL)
+        return NULL;
+
+    BufferDesc *duplica = instance(BufferDesc);
+    duplica->lock = buff_desc->lock;
+    duplica->refcount = buff_desc->refcount;
+    duplica->lock = copy_exlock_entry(buff_desc->lock);
+    return duplica;
+}
+
 /* Copy Pager. */
 Pager *copy_pager(Pager *pager) {
     if (pager == NULL)
         return NULL;
 
-    Pager *pager_copy = instance(Pager);
-    pager_copy->size = pager->size;
-    pager_copy->file_length = pager->file_length;
-    pager_copy->table_name = dstrdup(pager->table_name);
-    pager_copy->pages = list_copy_deep(pager->pages);
+    Pager *duplica = instance(Pager);
+    duplica->size = pager->size;
+    duplica->file_length = pager->file_length;
+    duplica->table_name = dstrdup(pager->table_name);
+    duplica->pages = list_copy_deep(pager->pages);
+    duplica->buffers = list_copy_deep(pager->buffers);
 
-    return pager_copy;
+    return duplica;
 }
 
 /* Copy Table. */

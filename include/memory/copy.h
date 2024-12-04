@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include "data.h"
+#include "bufmgr.h"
 
 /* Copy value. */
 void *copy_value(void *value, DataType data_type); 
@@ -69,3 +70,6 @@ ScalarExpNode *copy_scalar_exp_node(ScalarExpNode *scalar_exp_node);
 
 /* Copy a dymamic memory block */
 void *copy_block(void *value, size_t size);
+
+/* Copy BufferDesc. */
+BufferDesc *copy_buffer_desc(BufferDesc *buff_desc);

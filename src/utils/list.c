@@ -442,6 +442,14 @@ List *list_copy_deep(List *old_list) {
             }
             break;
         }
+        case NODE_BUFFER_DESC: {
+            ListCell *lc;
+            foreach (lc, old_list) {
+                void *replica = copy_buffer_desc(lfirst(lc));
+                append_list(new_list, replica);
+            }
+            break;
+        }
         default:
             UNEXPECTED_VALUE("Not support this node to copy.");
     }
@@ -530,6 +538,13 @@ void free_list_deep(List *list) {
                         dfree(page);
                 }
                 break;
+            }
+            case NODE_BUFFER_DESC: {
+                ListCell *lc;
+                foreach (lc, list) {
+                    BufferDesc *buff_desc = lfirst(lc);
+                    free_buffer_desc(buff_desc);
+                }
             }
             case NODE_TABLE: {
                 ListCell *lc;

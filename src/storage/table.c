@@ -209,7 +209,7 @@ Table *open_table(char *table_name) {
         return NULL;
     }
     
-    /* Combine table. */
+    /* New table. */
     Table *table = instance(Table);
     Pager *pager = open_pager(table_name);
     if (pager == NULL) {

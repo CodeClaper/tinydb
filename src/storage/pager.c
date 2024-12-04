@@ -4,10 +4,11 @@
  * Modify:      2024/11/26
  * Locataion:   src/storage/pager.c
  * Description: The pager manager supports manipulating disk data ways.
- * Page is the basic unit of which data is store/read/written to disk and memory.
+ * Page is the basic unit of which data is store/read/write to disk and memory.
  * PAGE_SIZE is the size of a page and data length of each IO operation.
  ***********************************************************************************************************
  */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +26,7 @@
 #include "ltree.h"
 #include "table.h"
 #include "fdesc.h"
+#include "bufmgr.h"
 
 /* Open the pager. */
 Pager *open_pager(char *table_name) {
@@ -40,12 +42,14 @@ Pager *open_pager(char *table_name) {
     pager->file_length = file_length;
     pager->size = (file_length / PAGE_SIZE);
     pager->pages = create_list(NODE_PAGE);
+    pager->buffers = create_list(NODE_BUFFER_DESC);
 
     if (file_length % PAGE_SIZE != 0) 
         db_log(PANIC, "Db file is not a whole number pages");
 
     for (int i = 0; i < pager->size; i++) {
         append_list(pager->pages, NULL);
+        append_list(pager->buffers, NULL);
     }
 
     Assert(len_list(pager->pages) == pager->size);
@@ -57,13 +61,14 @@ Pager *open_pager(char *table_name) {
 void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
     /* Exceeds limitation check. */
-    if (page_num >= MAX_TABLE_PAGE)
+    if (page_num >= MAX_TABLE_PAGE) {
         db_log(
             PANIC, 
             "Try to fetch page number out of bounds: %d >= %d", 
             page_num, 
             MAX_TABLE_PAGE
         );
+    }
 
     /* Get the file descriptor. */
     FDesc fdesc = get_file_desc(table_name);
@@ -74,6 +79,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
         switch_shared();
 
+        /* Generate new Page.*/
         void *page = dalloc(PAGE_SIZE);
         lseek(fdesc, page_num * PAGE_SIZE, SEEK_SET);
         ssize_t read_bytes = read(fdesc, page, PAGE_SIZE);

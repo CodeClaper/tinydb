@@ -565,6 +565,7 @@ typedef struct Pager {
     uint32_t file_length;
     uint32_t size;
     List *pages;
+    List *buffers;
 } Pager;
 
 typedef enum DefaultValueType {
