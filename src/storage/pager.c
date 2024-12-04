@@ -3,9 +3,10 @@
  * Created:     2023/12/19
  * Modify:      2024/11/26
  * Locataion:   src/storage/pager.c
- * Description: The pager manager supports manipulating disk data ways.
- * Page is the basic unit of which data is store/read/write to disk and memory.
+ * Description: The pager manager supports the ways to manipulate the disk file data.
+ * One page is the basic unit of which data is store/read/write to disk and memory.
  * PAGE_SIZE is the size of a page and data length of each IO operation.
+ * Not recommand that you get data via the pager manager direactly, but the buffer manager indireactly.
  ***********************************************************************************************************
  */
 

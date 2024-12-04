@@ -3,8 +3,8 @@
  * Created:     2024/08/10
  * Modify:      2024/08/10
  * Locataion:   src/lock/exlock.c
- * Description: The exclusive lock is a lock which only allowed one thread 
- * acuqires the lock. Ohters threads will wail unitil releasing the lock.
+ * Description: The exclusive lock is a lock which only allowed the same processor 
+ * acuqires the lock. Ohters processors will wail until releasing the lock.
 ******************************************************************************/
 
 #include <pthread.h>

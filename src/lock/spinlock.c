@@ -3,10 +3,9 @@
  * Created:     2024/01/24
  * Modify:      2024/01/24
  * Locataion:   src/memory/shmem.c
- * Description: TinydDb support tow ways of lock, spin lock and wrlock. 
- * Spin lock is an exclusieve lock, and wrlock is shared for all read operation threads, 
- * and exclusieve if including write operation thread. The current thread try to acquire a contended spin lock, 
- * and block for a while using usleep if fail, and then try again until success. This routine is known as Test-and-Set(TAS).
+ * Description: The spin lock is the foundation of the locking mechanism
+ * When waiting for a contented spin lock, we loop for a while and then try again. 
+ * This routine is also known as Test-and-Set(TAS).
  ***************************************************************************************************************************
  * */
 
