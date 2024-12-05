@@ -60,6 +60,11 @@
 #include "index.h"
 #include "utils.h"
 
+/*
+ * Sync lock for sync opreation.
+ */
+static volatile s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
+
 static void assign_row_value(void *destination, void *value, MetaColumn *meta_column);
 static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos);
 
@@ -88,19 +93,26 @@ static void make_obsolute_node(void *node) {
     set_node_state(node, OBSOLETE_STATE);
 }
 
-/* Get next avaliable page num. 
+/* Get next avaliable page num.
+ * ----------------------------
  * If page is obsolute, recycle to use it,
- * If there is no obsolute page, return new page. */
+ * If there is no obsolute page, return new page. 
+ * This function is synchronized and use sync_lock to release it.*/
 static uint32_t next_avaliable_page_num(Pager *pager) {
+
+    /* Sync next code. */
+    acquire_spin_lock(&sync_lock);
+
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
         void *node = lfirst(list_nth_cell(pager->pages, i));
         if (is_obsolute_node(node)) {
             set_node_state(node, INUSE_STATE);
-            return i;
+            break;
         }
     }
-    return pager->size;
+    release_spin_lock(&sync_lock);
+    return i;
 }
 
 /* Get node type */
@@ -500,37 +512,39 @@ void initial_internal_node(void *internal_node, bool is_root) {
 /* Update internal node node key. */
 static void update_internal_node_key(Table *table, void *internal_node, 
                                      void *old_key, void *new_key, 
-                                     uint32_t key_len, uint32_t value_len, 
-                                     DataType key_data_type) {
-    uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);  
+                                     uint32_t key_len, uint32_t value_len, DataType key_data_type) {
+    uint32_t keys_num;
+    keys_num = get_internal_node_keys_num(internal_node, value_len);  
     Assert(keys_num > 0);
 
     /* Get max key and absolute max key in internal node cell. */
     void *max_key = get_internal_node_key(internal_node, keys_num - 1, key_len, value_len);
     void *absolute_max_key = get_max_key(table, internal_node, key_len, value_len);
     
-    /* If old key greater than the max key, it means it exist in right child node. 
+    /* If old key greater than the max key, it means it exist in the right child node. 
      * No need to change cells key. Otherwise, it means the key in the cells, 
      * need to be replaced with new one. */
-    if (keys_num > 0 && !greater(old_key, max_key, key_data_type)) {
+    if (!greater(old_key, max_key, key_data_type)) {
         uint32_t key_index = get_internal_node_key_index(internal_node, old_key, keys_num, key_len, value_len, key_data_type);
         void *key = get_internal_node_key(internal_node, key_index, key_len, value_len);
 
         /* Theoretically equal, just for check.*/
-        if (equal(old_key, key, key_data_type)) 
-            set_internal_node_key(internal_node, key_index, new_key, key_len, value_len);
-        else
-            db_log(PANIC, "System error in update internal node key."); 
+        Assert (equal(old_key, key, key_data_type));
+        set_internal_node_key(internal_node, key_index, new_key, key_len, value_len);
     }
     
     /* If internal has parent node, and change its absolute max key, 
      * also need to change its parent key. */
     if (!is_root_node(internal_node) && 
             (equal(old_key, absolute_max_key, key_data_type) || equal(new_key, absolute_max_key, key_data_type))) { 
+
+        /* Get parent node buffer. */
         uint32_t parent_page_num = get_parent_pointer(internal_node);
         void *parent_node = ReadBuffer(table, parent_page_num);
         update_internal_node_key(table, parent_node, old_key, new_key, key_len, value_len, key_data_type);
         flush_page(table->meta_table->table_name, table->pager, parent_page_num);
+
+        /* Release parent node buffer. */
         ReleaseBuffer(table, parent_page_num);
     }
 }
@@ -711,17 +725,15 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num,
     ReleaseBuffer(table, table->root_page_num);
 }
 
-/* When internal node is full, there is need to generate a new internal node. 
+/* When internal node is full, there is a need to generate a new internal node. 
  * And half hight cells in the old internal node will be moved into the new one. */
 static void insert_and_split_internal_node(Table *table, uint32_t old_internal_page_num, 
                                            uint32_t new_child_page_num) {
 
-    uint32_t keys_num, next_unused_page_num, key_len, value_len, cell_len;
-    
     /* Get old internal node. */
     void *old_internal_node = ReadBuffer(table, old_internal_page_num);
 
-    /* Get keys number, key length, value length. cell_len */
+    uint32_t keys_num, next_unused_page_num, key_len, value_len, cell_len;
     value_len = calc_table_row_length(table);
     key_len = calc_primary_key_length(table);
     keys_num = get_internal_node_keys_num(old_internal_node, value_len);
