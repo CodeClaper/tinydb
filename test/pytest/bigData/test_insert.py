@@ -20,6 +20,25 @@ def test_1000_student_insert():
         ret = client.execute(sql)
         assert ret["success"] == True
 
+## query count
+def test_query_count():
+    sql = "select count(1) from Student;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"] == [{ "count": 999 }]
+
+## roll back after delete
+def test_roll_back_after_delete():
+    sql = "begin;\n"\
+          "delete from Student;\n"\
+          "select count(1) from Student;\n"\
+          "rollback;\n"\
+          "select count(1) from Student;"
+    ret = client.execute(sql)
+    assert_all(ret)
+    assert ret[2]["data"] == [{ "count": 0 }]
+    assert ret[4]["data"] == [{ "count": 999 }]
+
 # drop mock table
 def test_drop_mock_table():
     sql = "drop table Student;"
