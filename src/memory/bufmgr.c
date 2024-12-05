@@ -20,11 +20,8 @@
  * Get data via ReadBuffer and manipulate without lock. These lockless manipulations includes:
  *   (1) update row
  *   (2) append row witout moving page data.
- *   (3) update meta info at the final step of all operations (e.t. update the rows number).
  *
- * It`s not neccessary to use locking mechanisma for (1) and (2) under the MVVC mechanism.
- * If you update meta info at at the final step of all operations, you don`t need to lock
- * the data. Otherwise, locking mechanism is neccessary.
+ * It`s not neccessary to use locking mechanisma for manipulation (1) and (2) under the MVVC mechanism.
  *
  * When we get data via ReadBuffer and the refcount will increase. The refcount is import for
  * LockBuffer. After using the page data, must to release the data via ReadBuffer. And the 
@@ -36,7 +33,6 @@
  * These lock manipulations includes:
  * (1) Move page data.
  * (2) Split page.
- * (3) update meta info not at the final step of all operations (e.t. update the rows number).
  *
  * When calling LockBuffer, it maybe block until satisfing two condition:
  * (1) Acquire the exclusive lock.
@@ -51,6 +47,13 @@
 #include "mmgr.h"
 #include "table.h"
 #include "pager.h"
+
+
+/* Check Pager Buffers valid. */
+static void CheckPagerBuffersValid(Pager *pager) {
+    Assert(pager->buffers != NULL);
+    Assert(pager->size == pager->buffers->size);
+}
 
 /* Create BufferDesc. */
 static BufferDesc *CreateBufferDesc(Buffer buffer) {
@@ -68,10 +71,13 @@ static BufferDesc *CreateBufferDesc(Buffer buffer) {
  * */
 void *ReadBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
-    Assert(pager->buffers != NULL);
 
-    /* Expeed buffers. */
-    if (buffer > pager->buffers->size) {
+    /* Check Pager Buffer valid. */
+    CheckPagerBuffersValid(pager);
+
+    /* If buffers missing the buffer, we will create the 
+     * BufferDesc, and store it in shared memory. */
+    if (buffer >= pager->buffers->size) {
         switch_shared();
 
         BufferDesc *buff_desc = CreateBufferDesc(buffer);
@@ -83,8 +89,10 @@ void *ReadBuffer(Table *table, Buffer buffer) {
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     if (lfirst(lc) == NULL) {
         switch_shared();
+
         BufferDesc *buff_desc = CreateBufferDesc(buffer);
         lfirst(lc) = buff_desc;
+
         switch_local();
     }
 
@@ -110,7 +118,9 @@ void *ReadBuffer(Table *table, Buffer buffer) {
  * */
 void ReleaseBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
-    Assert(pager->buffers != NULL);
+
+    /* Check Pager Buffer valid. */
+    CheckPagerBuffersValid(pager);
 
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
@@ -121,17 +131,20 @@ void ReleaseBuffer(Table *table, Buffer buffer) {
 }
 
 
-/* LocK Buffer. 
+/* Lock Buffer. 
  * Lock Buffer must satisfy two conditions:
  * (1) Acquire the exclusive lock.
  * (2) The refcount to be one (only itself).
  * */
 void LockBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
-    Assert(pager->buffers != NULL);
 
-    /* Expeed buffers. */
-    if (buffer > pager->buffers->size) {
+    /* Check Pager Buffer valid. */
+    CheckPagerBuffersValid(pager);
+
+    /* If buffers missing the buffer, we will create the 
+     * BufferDesc, and store it in shared memory. */
+    if (buffer >= pager->buffers->size) {
         switch_shared();
 
         BufferDesc *buff_desc = CreateBufferDesc(buffer);
@@ -164,7 +177,9 @@ void LockBuffer(Table *table, Buffer buffer) {
  * */
 void UnlockBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
-    Assert(pager->buffers != NULL);
+
+    /* Check Pager Buffer valid. */
+    CheckPagerBuffersValid(pager);
 
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);

@@ -545,6 +545,7 @@ void free_list_deep(List *list) {
                     BufferDesc *buff_desc = lfirst(lc);
                     free_buffer_desc(buff_desc);
                 }
+                break;
             }
             case NODE_TABLE: {
                 ListCell *lc;
