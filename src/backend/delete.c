@@ -75,9 +75,6 @@ void exec_delete_statement(DeleteNode *delete_node, DBResult *result) {
     /* Query with condition and delete satisfied row. */
     query_with_condition(delete_node->condition_node, select_result, delete_row, ARG_NULL, NULL);
 
-    /* Root fall back. */
-    root_fall_back_root_node(table);
-
     /* Success Result . */
     result->success = true;
     result->rows = select_result->row_size;

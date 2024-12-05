@@ -477,7 +477,7 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
     Assert(table_name != NULL);
 
     MetaTable *meta_table = instance(MetaTable);
-    void *root_node = get_page(table_name, table->pager, table->root_page_num);
+    void *root_node = ReadBufferInner(table_name, table->pager, table->root_page_num);
     uint32_t column_size = get_column_size(root_node);
 
     meta_table->table_name = dstrdup(table_name);
@@ -498,6 +498,9 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
     }
 
     Assert(meta_table->all_column_size == column_size);
+
+    /* Release the buffer. */
+    ReleaseBufferInner(table->pager, table->root_page_num);
 
     return meta_table;
 }
@@ -528,7 +531,7 @@ MetaTable *get_meta_table_only(char *table_name) {
     MetaTable *meta_table = instance(MetaTable);
 
     Pager *pager = open_pager(table_name);
-    void *root_node = get_page(table_name, pager, 0);
+    void *root_node = ReadBufferInner(table_name, pager, 0);
 
     uint32_t column_size = get_column_size(root_node);
 
@@ -550,6 +553,9 @@ MetaTable *get_meta_table_only(char *table_name) {
     }
 
     Assert(meta_table->all_column_size == column_size);
+
+    /* Release the buffer. */
+    ReleaseBufferInner(pager, 0);
 
     return meta_table;
 }

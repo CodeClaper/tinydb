@@ -225,9 +225,10 @@ Table *open_table(char *table_name) {
 
     if (pager->size == 0) {
         /* New db file and initialize page 0 as leaf node. */
-        void *root_node = get_page(table_name, pager, 0);
+        void *root_node = ReadBuffer(table, 0);
         uint32_t value_len = calc_table_row_length(table);
         initial_leaf_node(root_node, value_len, true);
+        ReleaseBuffer(table, 0);
     }
 
     /* Save table cache. */

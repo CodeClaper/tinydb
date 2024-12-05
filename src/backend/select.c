@@ -554,7 +554,7 @@ static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_colum
 
 /* Assignment row value. */
 static void *assign_row_value(void *destination, MetaColumn *meta_column) {
-    return meta_column->array_dim ==  0
+    return (meta_column->array_dim == 0)
             /* For non-array data. */
             ? copy_value(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, meta_column->column_type) 
             /* For array data. */
@@ -578,9 +578,7 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
         /* Generate a key value pair. */
         KeyValue *key_value = is_null_cell(destination + offset) 
                             ? new_key_value(dstrdup(meta_column->column_name), NULL, meta_column->column_type)
-                            : new_key_value(dstrdup(meta_column->column_name), 
-                                            assign_row_value(destination + offset, meta_column), 
-                                            meta_column->column_type);
+                            : new_key_value(dstrdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
 
         key_value->is_array = meta_column->array_dim > 0;
         key_value->table_name = dstrdup(meta_table->table_name);
@@ -611,16 +609,19 @@ Row *define_row(Refer *refer) {
     if (refer_null(refer))
         return NULL;
 
-    /* Data */
     uint32_t key_len, value_len;
-
     value_len = calc_table_row_length(table);
     key_len = calc_primary_key_length(table);
 
-    void *leaf_node = get_page(table->meta_table->table_name, table->pager, refer->page_num);
+    /* Get the leaf node buffer. */
+    void *leaf_node = ReadBuffer(table, refer->page_num);
     void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
 
-    return generate_row(destinct, table->meta_table);
+    Row *row = generate_row(destinct, table->meta_table);
+    
+    /* Release the buffer. */
+    ReleaseBuffer(table, refer->page_num);
+    return row;
 }
 
 /* Define row by refer. 
@@ -674,7 +675,8 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
     if (type == ARG_LIMIT_CLAUSE_NODE && limit_clause_full(arg))
         return;
 
-    void *leaf_node = get_page(table->meta_table->table_name, table->pager, page_num);
+    /* Get leaf node buffer. */
+    void *leaf_node = ReadBuffer(table, page_num);
 
     /* Get cell number, key length and value lenght. */
     uint32_t key_len, value_len, cell_num ;
@@ -684,7 +686,6 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
 
     uint32_t i;
     for (i = 0; i < cell_num; i++) {
-
         /* Get leaf node cell value. */
         void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, i);
 
@@ -693,17 +694,15 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
 
         SelectResult *derived = select_result->derived;
         if (derived) {
-
             /* Cartesian product. */
             ListCell *lc;
             foreach (lc, derived->rows) {
-
                 /* Merge derived-row. */
                 Row *derived_row = lfirst(lc);
                 merge_row(derived_row, row);
 
-                /* Check if the row data include, 
-                 * in another word, check if the row data satisfy the condition. */
+                /* Check if the row data include,in another word, 
+                 * check if the row data satisfy the condition. */
                 if (include_leaf_node(select_result, derived_row, condition)) 
                     row_handler(derived_row, select_result, table, type, arg);
                 else
@@ -712,13 +711,16 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
             continue;
         }
 
-        /* Check if the row data include.
-         * In another word, check if the row data satisfy the condition. */
+        /* Check if the row data include. In another word, 
+         * check if the row data satisfy the condition. */
         if (include_leaf_node(select_result, row, condition)) 
             row_handler(row, select_result, table, type, arg);
         else
             free_row(row);
     }
+
+    /* Release the buffer. */
+    ReleaseBuffer(table, page_num);
 }
 
 /* Select through internal node. */
@@ -730,7 +732,8 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     if (non_null(arg) && limit_clause_full(arg))
         return;
 
-    void *internal_node = get_page(table->meta_table->table_name, table->pager, page_num);
+    /* Get the internal node buffer. */
+    void *internal_node = ReadBuffer(table, page_num);
 
     /* Get keys number, key length. */
     uint32_t keys_num, key_len, value_len;
@@ -741,27 +744,26 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     /* Loop each interanl node cell to check if satisfy condition. */
     uint32_t i;
     for (i = 0; i < keys_num; i++) {
-    
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key. */
             void *max_key = get_internal_node_key(internal_node, i, key_len, value_len); 
-            void *min_key = i == 0 
-                    ? NULL 
-                    : get_internal_node_key(internal_node, i - 1, key_len, value_len);
+            void *min_key = (i == 0) 
+                        ? NULL 
+                        : get_internal_node_key(internal_node, i - 1, key_len, value_len);
             if (!include_internal_node(select_result, min_key, max_key, condition, table->meta_table))
                 continue;
         }
 
         /* Check other non-key column */
-        uint32_t page_num = get_internal_node_child(internal_node, i, key_len, value_len);
-        void *node = get_page(table->meta_table->table_name, table->pager, page_num);
+        uint32_t child_page_num = get_internal_node_child(internal_node, i, key_len, value_len);
+        void *node = ReadBuffer(table, child_page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
                 select_from_leaf_node(
                     select_result, 
                     condition, 
-                    page_num, 
+                    child_page_num, 
                     table, 
                     row_handler, 
                     type, 
@@ -772,7 +774,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                 select_from_internal_node(
                     select_result, 
                     condition, 
-                    page_num, 
+                    child_page_num, 
                     table, 
                     row_handler, 
                     type, 
@@ -783,6 +785,9 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                 db_log(PANIC, "Unknown node type.");
                 break;
         }
+
+        /* Release the child buffer. */
+        ReleaseBuffer(table, child_page_num);
     }
 
     /* Don`t forget the right child. */
@@ -795,7 +800,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     } 
     
     /* Fetch right child. */
-    void *right_child = get_page(table->meta_table->table_name, table->pager, right_child_page_num);
+    void *right_child = ReadBuffer(table, right_child_page_num);
     NodeType node_type = get_node_type(right_child);
     switch (node_type) {
         case LEAF_NODE:
@@ -824,6 +829,12 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
             UNEXPECTED_VALUE(node_type);
             break;
     }
+
+    /* Release the right child buffer. */
+    ReleaseBuffer(table, right_child_page_num);
+
+    /* Release the buffer. */
+    ReleaseBuffer(table, page_num);
 }
 
 
@@ -834,7 +845,8 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
     Table *table = open_table(select_result->table_name);
     if (table == NULL)
         return;
-    void *root = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
+
+    void *root = ReadBuffer(table, table->root_page_num);
     switch (get_node_type(root)) {
         case LEAF_NODE:
             select_from_leaf_node(
@@ -861,6 +873,9 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
         default:
             db_log(PANIC, "Unknown data type occurs in <query_with_condition>.");
     }
+
+    /* Release the root node buffer. */
+    ReleaseBuffer(table, table->root_page_num);
 }
 
 /* Count number of row, used in the sql function count(1) */

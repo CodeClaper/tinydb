@@ -17,11 +17,22 @@ typedef struct BufferDesc {
  * */
 void *ReadBuffer(Table *table, Buffer buffer);
 
+/* Read Buffer Inner.
+ * Get shared buffer data via Buffer value. 
+ * */
+void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer);
+
 /* Release Buffer.
  * Release Buffer after using. 
  * And the function is called aftert ReadBuffer. 
  * */
 void ReleaseBuffer(Table *table, Buffer buffer);
+
+/* Release Buffer Inner.
+ * Release Buffer after using. 
+ * And the function is called aftert ReadBuffer. 
+ * */
+void ReleaseBufferInner(Pager *pager, Buffer buffer);
 
 /* LocK Buffer. 
  * Try to acquire the exclusive content lock in BufferDesc.

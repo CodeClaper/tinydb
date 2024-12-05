@@ -130,42 +130,62 @@ static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t p
 
 /* Define cursor when meet internal node. */
 static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
+    Cursor *cursor;
 
-    uint32_t key_len = calc_primary_key_length(table);
-    uint32_t value_len = calc_table_row_length(table);
-    uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
+    uint32_t key_len, value_len, keys_num;
+    key_len = calc_primary_key_length(table);
+    value_len = calc_table_row_length(table);
+    keys_num = get_internal_node_keys_num(internal_node, value_len);
+
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type);
-    void *child_node = get_page(table->meta_table->table_name, table->pager, child_page_num);
-    
+
+    /* Get the child node buffer. */
+    void *child_node = ReadBuffer(table, child_page_num);
     NodeType node_type = get_node_type(child_node);
     switch(node_type) {
         case LEAF_NODE:
-            return define_cursor_leaf_node(table, child_node, child_page_num, key);
+            cursor = define_cursor_leaf_node(table, child_node, child_page_num, key);
+            break;
         case INTERNAL_NODE:
-            return define_cursor_internal_node(table, child_node, key);
+            cursor = define_cursor_internal_node(table, child_node, key);
+            break;
         default:
             UNEXPECTED_VALUE(node_type);
             return NULL;
     }
+
+    /* Release the child node buffer. */
+    ReleaseBuffer(table, child_page_num);
+
+    return cursor;
 }
 
 /* Define Cursor. */
 Cursor *define_cursor(Table *table, void *key) {
     Assert(key);
 
-    void *root_node = get_page(table->meta_table->table_name, table->pager, table->root_page_num);
-    NodeType node_type = get_node_type(root_node);
+    Cursor *cursor;
 
+    /* Get root node buffer. */
+    void *root_node = ReadBuffer(table, table->root_page_num);
+    NodeType node_type = get_node_type(root_node);
     switch(node_type) {
         case LEAF_NODE:
-            return define_cursor_leaf_node(table, root_node, table->root_page_num, key);
+            cursor = define_cursor_leaf_node(table, root_node, table->root_page_num, key);
+            break;
         case INTERNAL_NODE:
-            return define_cursor_internal_node(table, root_node, key);
+            cursor = define_cursor_internal_node(table, root_node, key);
+            break;
         default:
             UNEXPECTED_VALUE(node_type);
             return NULL;
     }
+
+    /* Release the root buffer. */
+    ReleaseBuffer(table, table->root_page_num);
+
+    return cursor;
 }
 
 /* Define Refer */

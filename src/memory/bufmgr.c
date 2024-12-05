@@ -67,10 +67,18 @@ static BufferDesc *CreateBufferDesc(Buffer buffer) {
 }
 
 /* Read Buffer.
- * Get shared buffer data via Buffer value. 
- * */
+ * Get shared buffer data via Buffer value. */
 void *ReadBuffer(Table *table, Buffer buffer) {
-    Pager *pager = table->pager;
+    return ReadBufferInner(
+        get_table_name(table), 
+        table->pager, 
+        buffer
+    );
+}
+
+/* Read Buffer.
+ * Get shared buffer data via Buffer value. */
+void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
 
     /* Check Pager Buffer valid. */
     CheckPagerBuffersValid(pager);
@@ -105,19 +113,21 @@ void *ReadBuffer(Table *table, Buffer buffer) {
     buff_desc->refcount++;
 
     /* Get the shared buffer data. */
-    return get_page(
-        get_table_name(table), 
-        table->pager, 
-        buffer
-    );
+    return get_page(table_name, pager, buffer);
 }
 
 /* Release Buffer.
  * Release Buffer after using. 
+ * And the function is called aftert ReadBuffer. */
+void ReleaseBuffer(Table *table, Buffer buffer) {
+    ReleaseBufferInner(table->pager, buffer);
+}
+
+/* Release Buffer Inner.
+ * Release Buffer after using. 
  * And the function is called aftert ReadBuffer. 
  * */
-void ReleaseBuffer(Table *table, Buffer buffer) {
-    Pager *pager = table->pager;
+void ReleaseBufferInner(Pager *pager, Buffer buffer) {
 
     /* Check Pager Buffer valid. */
     CheckPagerBuffersValid(pager);
@@ -134,8 +144,7 @@ void ReleaseBuffer(Table *table, Buffer buffer) {
 /* Lock Buffer. 
  * Lock Buffer must satisfy two conditions:
  * (1) Acquire the exclusive lock.
- * (2) The refcount to be one (only itself).
- * */
+ * (2) The refcount to be one (only itself). */
 void LockBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
 
@@ -173,8 +182,7 @@ void LockBuffer(Table *table, Buffer buffer) {
 }
 
 /* Unlock Buffer
- * Unlock the exclusive content lock in BufferDesc.
- * */
+ * Unlock the exclusive content lock in BufferDesc. */
 void UnlockBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
 

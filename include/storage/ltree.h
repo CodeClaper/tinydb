@@ -94,9 +94,6 @@ bool cursor_is_deleted(Cursor *cursor);
 /* Update row data. */
 void update_row_data(Row *row, Cursor *cursor);
 
-/* Root fall back. */
-void root_fall_back_root_node(Table *table);
-
 /* Deserialize meta column. */
 MetaColumn *deserialize_meta_column(void *destination);
 

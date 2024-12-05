@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,15 +12,24 @@
 #include "compare.h"
 #include "common.h"
 #include "log.h"
-
+#include "bufmgr.h"
 
 /* Check if key already exists  */
  bool check_duplicate_key(Cursor *cursor, void *key) {
-    void *node = get_page(cursor->table->meta_table->table_name, cursor->table->pager, cursor->page_num);
-    uint32_t value_len = calc_table_row_length(cursor->table);
-    uint32_t key_len = calc_primary_key_length(cursor->table);
+    /* Get the buffer. */
+    void *node = ReadBuffer(cursor->table, cursor->page_num);
+
+    uint32_t key_len, value_len;
+    value_len = calc_table_row_length(cursor->table);
+    key_len = calc_primary_key_length(cursor->table);
+
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
     void *target = get_leaf_node_cell_key(node, cursor->cell_num, key_len, value_len);
+
+    /* Release the buffer. */
+    ReleaseBuffer(cursor->table, cursor->page_num);
+
+    /* Get result. */
     return (target < node + PAGE_SIZE) && equal(target, key, primary_key_meta_column->column_type);
 }
 

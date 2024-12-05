@@ -6,7 +6,6 @@ client2 = TinyDbClient("127.0.0.1", 4083)
 client1.login("root", "Zc120130211")
 client2.login("root", "Zc120130211")
 
-
 ## create mock table:
 def test_create_mock_table():
     sql = "create table Class (id string primary key, location string);\n" \
