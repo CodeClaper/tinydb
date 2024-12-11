@@ -2,6 +2,7 @@
 
 import readline
 import os
+import socket
 import sys
 import connector
 import getpass
@@ -125,4 +126,10 @@ if __name__ == "__main__":
                 cmd = readCmd()
                 exec_cmd(cmd)
     except KeyboardInterrupt:
+        exit()
+    except socket.timeout:
+        print("timout.")
+        exit()
+    except Exception as e:
+        print(f"Error:{e}")
         exit()

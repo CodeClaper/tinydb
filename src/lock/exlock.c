@@ -37,8 +37,9 @@ void acquire_exlock(ExLockEntry *lock_entry) {
 /* Release the exclusive lock. */
 void release_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
-    pid_t pid = getpid();
+
     /* Only the same processor that has acuqired the lock can release the lock.*/
+    pid_t pid = getpid();
     Assert(pid == lock_entry->pid);
 
     release_spin_lock(&lock_entry->lock);

@@ -1,4 +1,4 @@
-#include "exlock.h"
+#include "rwlock.h"
 
 #ifndef BUFMGR_H
 #define BUFMGR_H
@@ -9,7 +9,7 @@ typedef int Buffer;
 typedef struct BufferDesc {
     Buffer buffer;          /* Buffer value, corresponding to page number. */
     volatile int refcount;  /* Reference count. */
-    ExLockEntry *lock;      /* Exclusive lock. */
+    RWLockEntry *lock;      /* Exclusive lock. */
 } BufferDesc;
 
 /* Read Buffer.

@@ -4,8 +4,8 @@
  * Modify:      2024/12/04
  * Locataion:   src/memory/bufmgr.c
  * Description: The buffer manager supports the way to manipulate the page data.
- * Not recommand that you get data via the pager manager direactly, but the buffer manager indireactly.
- * It aims to avoid page data update conficting and minimize the impact on read and write performance 
+ * Not recommand that you get page data via the pager manager direactly, but the buffer manager indireactly.
+ * This module aims to avoid page data update conficting and minimize the impact on read and write performance 
  * in concurrent scenarios.
  *
  * -----------------
@@ -61,8 +61,8 @@ static BufferDesc *CreateBufferDesc(Buffer buffer) {
     BufferDesc *buff_desc = instance(BufferDesc);
     buff_desc->refcount = 0;
     buff_desc->buffer = buffer; 
-    buff_desc->lock = instance(ExLockEntry);
-    init_exlock(buff_desc->lock);
+    buff_desc->lock = instance(RWLockEntry);
+    init_rwlock(buff_desc->lock);
     return buff_desc;
 }
 
@@ -106,8 +106,8 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
 
     BufferDesc *buff_desc = lfirst(lc);
     
-    /* Wait until the exclusive lock released. */
-    wait_for_exlock(buff_desc->lock);
+    /* Acquire the Rwlock in RW_READERS mode. */
+    acquire_rwlock(buff_desc->lock, RW_READERS);
     
     /* Increase the refcount. */
     buff_desc->refcount++;
@@ -135,6 +135,9 @@ void ReleaseBufferInner(Pager *pager, Buffer buffer) {
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
     Assert(buff_desc != NULL);
+
+    /* Release the Rwlock. */
+    release_rwlock(buff_desc->lock);
 
     /* Descrease the refcount. */
     buff_desc->refcount--;
@@ -171,14 +174,12 @@ void LockBuffer(Table *table, Buffer buffer) {
     }
 
     BufferDesc *buff_desc = lfirst(lc);
+
+    /* Release the lock. */
+    release_rwlock(buff_desc->lock);
     
     /* Try to acquire the exclusive lock. */
-    acquire_exlock(buff_desc->lock);
-
-    /* Wait for refcount to one (left only itself). */
-    while (buff_desc->refcount != 1) {
-        usleep(DEFAULT_SPIN_INTERVAL);
-    }
+    acquire_rwlock(buff_desc->lock, RW_WRITER);
 }
 
 /* Unlock Buffer
@@ -193,7 +194,7 @@ void UnlockBuffer(Table *table, Buffer buffer) {
     BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
     Assert(buff_desc != NULL);
     
-    /* Try to release the exclusive lock. */
-    release_exlock(buff_desc->lock);
+    /* Release the Rwlock. */
+    release_rwlock(buff_desc->lock);
 }
 

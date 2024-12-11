@@ -237,13 +237,15 @@ MetaTable *copy_meta_table(MetaTable *meta_table) {
     return copy;
 }
 
-ExLockEntry *copy_exlock_entry(ExLockEntry *exlock_entry) {
-    if (exlock_entry == NULL)
+RWLockEntry *copy_rwlock_entry(RWLockEntry *lock_entry) {
+    if (lock_entry == NULL)
         return NULL;
 
-    ExLockEntry *duplica = instance(ExLockEntry);
-    duplica->lock = exlock_entry->lock;
-    duplica->pid = exlock_entry->pid;
+    RWLockEntry *duplica = instance(RWLockEntry);
+    duplica->mode = lock_entry->mode;
+    duplica->readernum = lock_entry->readernum;
+    duplica->glock = lock_entry->glock;
+    duplica->rlock = lock_entry->rlock;
     return duplica;
 }
 
@@ -255,7 +257,7 @@ BufferDesc *copy_buffer_desc(BufferDesc *buff_desc) {
     BufferDesc *duplica = instance(BufferDesc);
     duplica->lock = buff_desc->lock;
     duplica->refcount = buff_desc->refcount;
-    duplica->lock = copy_exlock_entry(buff_desc->lock);
+    duplica->lock = copy_rwlock_entry(buff_desc->lock);
     return duplica;
 }
 

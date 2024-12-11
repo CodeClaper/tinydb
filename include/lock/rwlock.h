@@ -1,28 +1,31 @@
+#include <stdint.h>
 #include "spinlock.h"
+
+#ifndef RWLOCK_H
+#define RWLOCK_H
 
 /* Rwlock mode. */
 typedef enum RWLockMode {
+    RW_INIT,
     RW_READERS,
-    RW_WRITEER
+    RW_WRITER
 } RWLockMode;
 
 /* Rwlock Entry. */
 typedef struct RWLockEntry {
-    RWLockMode mode;        /* Rwlock mode. */
-    volatile s_lock lock;   /* Spinlock. */
-    volatile pid_t pid;     /* The process that acquires the lock. */
+    RWLockMode mode;                /* Rwlock mode. */
+    volatile uint32_t readernum;    /* The number of readers. */
+    s_lock glock;                   /* Global lock. */
+    s_lock rlock;                   /* Reader lock to make sure reader numer atomically increases or descreases.*/
 } RWLockEntry;
 
 /* Init the rwlock. */
-void InitRwlock(RWLockEntry *lock_entry);
+void init_rwlock(RWLockEntry *lock_entry);
 
 /* Acuqire the rwlock. */
-void AcquireRwlock(RWLockEntry *lock_entry);
+void acquire_rwlock(RWLockEntry *lock_entry, RWLockMode mode);
 
 /* Release the rwlock. */
-void ReleaseRwlock(RWLockEntry *lock_entry);
+void release_rwlock(RWLockEntry *lock_entry);
 
-/* Wait for the rwlock. */
-void WaitForRwlock(RWLockEntry *lock_entry);
-
-
+#endif

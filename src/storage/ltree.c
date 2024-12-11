@@ -97,7 +97,8 @@ static void make_obsolute_node(void *node) {
  * ----------------------------
  * If page is obsolute, recycle to use it,
  * If there is no obsolute page, return new page. 
- * This function is synchronized and use sync_lock to release it.*/
+ * This function is synchronized and use sync_lock to release it.
+ * */
 static uint32_t next_avaliable_page_num(Pager *pager) {
 
     /* Sync next code. */
@@ -1101,7 +1102,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 /* Insert a new cell in leaf node */
 void insert_leaf_node_cell(Cursor *cursor, Row *row) {
 
-    char *table_name = cursor->table->meta_table->table_name;
+    /* Get the node buffer. */
     void *node = ReadBuffer(cursor->table, cursor->page_num); 
     
     /* Get data. */ 
@@ -1111,6 +1112,8 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     cell_num = get_leaf_node_cell_num(node, value_len);
     cell_length = value_len + key_len;
 
+    char *table_name = cursor->table->meta_table->table_name;
+
     /* Check if the leaf node overflow after inserting, 
      * If overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
@@ -1119,6 +1122,9 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     {
         if (cursor->cell_num < cell_num)
         {
+            /* Lock buffer to move cells. */
+            LockBuffer(cursor->table, cursor->page_num);
+
             /* Make room for new cell. */
             int i;
             for (i = cell_num; i > cursor->cell_num; i--) {
@@ -1131,6 +1137,9 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
                 /* Update refer. */
                 update_refer(table_name, cursor->page_num, i - 1, cursor->page_num, i);
             }
+            
+            /* Unlock buffer. */
+            UnlockBuffer(cursor->table, cursor->page_num);
         }
         
         /* Insert the new row. */
