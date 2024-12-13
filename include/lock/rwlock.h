@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdint.h>
 #include "spinlock.h"
 
@@ -17,7 +18,14 @@ typedef struct RWLockEntry {
     volatile uint32_t readernum;    /* The number of readers. */
     s_lock glock;                   /* Global lock. */
     s_lock rlock;                   /* Reader lock to make sure reader numer atomically increases or descreases.*/
+    pid_t  pid;                     /* The process acquring the lock. */
 } RWLockEntry;
+
+#define IS_READERS_LOCK(entry) \
+        (entry->mode == RW_READERS)
+
+#define IS_WRITER_LOCK(entry) \
+        (entry->mode == RW_WRITER)
 
 /* Init the rwlock. */
 void init_rwlock(RWLockEntry *lock_entry);
@@ -27,5 +35,8 @@ void acquire_rwlock(RWLockEntry *lock_entry, RWLockMode mode);
 
 /* Release the rwlock. */
 void release_rwlock(RWLockEntry *lock_entry);
+
+/* Degrade the rwlock. */
+void degrade_rwlock(RWLockEntry *lock_entry);
 
 #endif

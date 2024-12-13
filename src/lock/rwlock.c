@@ -23,17 +23,21 @@
 void init_rwlock(RWLockEntry *lock_entry) {
     lock_entry->mode = RW_INIT;
     lock_entry->readernum = 0;
+    lock_entry->pid = 0;
     init_spin_lock(&lock_entry->glock);
     init_spin_lock(&lock_entry->rlock);
 }
 
+/* Atomically increase the readernum. */
 static void atomic_increase(RWLockEntry *lock_entry) {
     acquire_spin_lock(&lock_entry->rlock);
     lock_entry->readernum++;
     release_spin_lock(&lock_entry->rlock);
 }
 
+/* Atomically decrease the readernum. */
 static void atomic_decrease(RWLockEntry *lock_entry) {
+    Assert(lock_entry->readernum > 0);
     acquire_spin_lock(&lock_entry->rlock);
     lock_entry->readernum--;
     release_spin_lock(&lock_entry->rlock);
@@ -49,6 +53,7 @@ void acquire_rwlock(RWLockEntry *lock_entry, RWLockMode mode) {
             Assert(lock_entry->readernum == 0);
             acquire_spin_lock(&lock_entry->glock);
             lock_entry->mode = mode;
+            lock_entry->pid = getpid();
             if (mode == RW_READERS)
                 atomic_increase(lock_entry);
             break;
@@ -57,12 +62,16 @@ void acquire_rwlock(RWLockEntry *lock_entry, RWLockMode mode) {
             if (mode == RW_WRITER) {
                 acquire_spin_lock(&lock_entry->glock);
                 lock_entry->mode = mode;
+                lock_entry->pid = getpid();
             } else if (mode == RW_READERS) {
                 atomic_increase(lock_entry);
             }
             break;
         }
         case RW_WRITER: {
+            /* Allow reenter. */
+            if (lock_entry->pid == getpid())
+                return;
             acquire_spin_lock(&lock_entry->glock);
             lock_entry->mode = mode;
             if (mode == RW_READERS)
@@ -72,7 +81,9 @@ void acquire_rwlock(RWLockEntry *lock_entry, RWLockMode mode) {
     }
 }
 
-/* Release the rwlock. */
+/* Release the rwlock. 
+ * For reader lock, only the readernum equal zero, it will really release the lock.
+ * */
 void release_rwlock(RWLockEntry *lock_entry) {
     Assert(lock_entry->mode != RW_INIT);
     switch (lock_entry->mode) {
@@ -89,5 +100,16 @@ void release_rwlock(RWLockEntry *lock_entry) {
         default:
             break;
     }
+}
+
+/* Degrade the rwlock. 
+ * Degrade means the writer process not release the lock,
+ * rather than changing the mode to RW_READERS and still acquring the lock.
+ * */
+void degrade_rwlock(RWLockEntry *lock_entry) {
+    Assert(IS_WRITER_LOCK(lock_entry));
+
+    lock_entry->mode = RW_READERS;
+    atomic_increase(lock_entry);
 }
 

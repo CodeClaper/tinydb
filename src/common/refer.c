@@ -152,7 +152,7 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
             break;
         default:
             UNEXPECTED_VALUE(node_type);
-            return NULL;
+            break;
     }
 
     /* Release the child node buffer. */
@@ -179,7 +179,7 @@ Cursor *define_cursor(Table *table, void *key) {
             break;
         default:
             UNEXPECTED_VALUE(node_type);
-            return NULL;
+            break;
     }
 
     /* Release the root buffer. */
