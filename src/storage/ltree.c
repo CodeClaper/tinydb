@@ -559,14 +559,16 @@ static void update_internal_node_key(Table *table, void *internal_node,
     if (!is_root_node(internal_node) && 
             (equal(old_key, absolute_max_key, key_data_type) || equal(new_key, absolute_max_key, key_data_type))) { 
 
-        /* Get parent node buffer. */
+        /* Get parent node buffer and lock it. */
         uint32_t parent_page_num = get_parent_pointer(internal_node);
         void *parent_node = ReadBuffer(table, parent_page_num);
+        LockBuffer(table, parent_page_num);
 
         update_internal_node_key(table, parent_node, old_key, new_key, key_len, value_len, key_data_type);
         flush_page(table->meta_table->table_name, table->pager, parent_page_num);
 
-        /* Release parent node buffer. */
+        /* Unlock parent node buffer and release it. */
+        UnlockBuffer(table, parent_page_num);
         ReleaseBuffer(table, parent_page_num);
     }
 }
@@ -1151,7 +1153,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
         if (cursor->cell_num < cell_num)
         {
             /* Lock buffer to move cells. */
-            // LockBuffer(cursor->table, cursor->page_num);
+            LockBuffer(cursor->table, cursor->page_num);
 
             /* Make room for new cell. */
             int i;
@@ -1167,7 +1169,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
             }
             
             /* Unlock buffer. */
-            //UnlockBuffer(cursor->table, cursor->page_num);
+            UnlockBuffer(cursor->table, cursor->page_num);
         }
         
         /* Insert the new row. */
@@ -1178,7 +1180,10 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
         /* Check if the max key in leaf node has changed, that may impact the parent internal node. */
         if (!is_root_node(node) && cursor->cell_num == cell_num) {
             uint32_t parent_page_num = get_parent_pointer(node);
+
+            /* Reader parent page buffer and lock it. */
             void *parent_node = ReadBuffer(cursor->table, parent_page_num);
+            LockBuffer(cursor->table, parent_page_num);
 
             void *old_max_key = get_leaf_node_cell_key(node, cell_num - 1, key_len, value_len);
             MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
@@ -1199,7 +1204,8 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
             /* Flush parent page. */
             flush_page(table_name, cursor->table->pager, parent_page_num);
 
-            /* Release parent buffer., */
+            /* Unlock parent buffer and release it*/
+            UnlockBuffer(cursor->table, parent_page_num);
             ReleaseBuffer(cursor->table, parent_page_num);
         }
         
