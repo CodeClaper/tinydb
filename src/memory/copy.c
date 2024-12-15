@@ -243,9 +243,9 @@ RWLockEntry *copy_rwlock_entry(RWLockEntry *lock_entry) {
 
     RWLockEntry *duplica = instance(RWLockEntry);
     duplica->mode = lock_entry->mode;
-    duplica->readernum = lock_entry->readernum;
+    duplica->pids = list_copy_deep(lock_entry->pids);
     duplica->glock = lock_entry->glock;
-    duplica->rlock = lock_entry->rlock;
+    duplica->plock = lock_entry->plock;
     return duplica;
 }
 

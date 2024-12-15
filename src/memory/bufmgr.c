@@ -177,9 +177,6 @@ void LockBuffer(Table *table, Buffer buffer) {
     Assert(buff_desc != NULL);
     Assert(IS_READERS_LOCK(buff_desc->lock));
 
-    /* Release the reader lock. */
-    release_rwlock(buff_desc->lock);
-
     /* Try to acquire the exclusive lock. */
     acquire_rwlock(buff_desc->lock, RW_WRITER);
 }
@@ -195,8 +192,5 @@ void UnlockBuffer(Table *table, Buffer buffer) {
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
     Assert(buff_desc != NULL);
-    
-    /* Degrade the Rwlock. */
-    degrade_rwlock(buff_desc->lock);
 }
 

@@ -15,11 +15,13 @@ typedef enum RWLockMode {
 /* Rwlock Entry. */
 typedef struct RWLockEntry {
     RWLockMode mode;                /* Rwlock mode. */
-    volatile uint32_t readernum;    /* The number of readers. */
     s_lock glock;                   /* Global lock. */
-    s_lock rlock;                   /* Reader lock to make sure reader numer atomically increases or descreases.*/
-    pid_t  pid;                     /* The process acquring the lock. */
+    s_lock plock;                   /* Pids change lock to make sure pids append and delete atomically.*/
+    List  *pids;                    /* Acuqire processes. */
 } RWLockEntry;
+
+#define NOT_INIT_LOCK(entry) \
+        (entry->mode != RW_INIT)
 
 #define IS_READERS_LOCK(entry) \
         (entry->mode == RW_READERS)
@@ -35,8 +37,5 @@ void acquire_rwlock(RWLockEntry *lock_entry, RWLockMode mode);
 
 /* Release the rwlock. */
 void release_rwlock(RWLockEntry *lock_entry);
-
-/* Degrade the rwlock. */
-void degrade_rwlock(RWLockEntry *lock_entry);
 
 #endif

@@ -130,6 +130,9 @@ static inline bool list_empty(List *list) {
  * */
 List *create_list(NodeTag type);
 
+/* Append int item to list. */
+void append_list_int(List *list, int item);
+
 /* Append item to list. */
 void append_list(List *list, void *item);
 
