@@ -15,8 +15,10 @@ typedef enum RWLockMode {
 /* Rwlock Entry. */
 typedef struct RWLockEntry {
     RWLockMode mode;                /* Rwlock mode. */
-    s_lock glock;                   /* Global lock. */
-    s_lock plock;                   /* Pids change lock to make sure pids append and delete atomically.*/
+    volatile s_lock glock;          /* Global spinlock. */
+    volatile s_lock slock;          /* Sync spinlock. */
+    volatile s_lock rlock;          /* Sync spinlock. */
+    volatile s_lock plock;          /* This spinlock to make sure pids append and delete atomically.*/
     List  *pids;                    /* Acuqire processes. */
 } RWLockEntry;
 
@@ -30,12 +32,12 @@ typedef struct RWLockEntry {
         (entry->mode == RW_WRITER)
 
 /* Init the rwlock. */
-void init_rwlock(RWLockEntry *lock_entry);
+void InitRWlock(RWLockEntry *lock_entry);
 
 /* Acuqire the rwlock. */
-void acquire_rwlock(RWLockEntry *lock_entry, RWLockMode mode);
+void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode);
 
 /* Release the rwlock. */
-void release_rwlock(RWLockEntry *lock_entry);
+void ReleaseRWlock(RWLockEntry *lock_entry);
 
 #endif

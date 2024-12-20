@@ -6,7 +6,6 @@
 
 typedef int s_lock;
 
-
 /* Init spin lock. */
 void init_spin_lock(volatile s_lock *lock);
 

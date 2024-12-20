@@ -48,6 +48,8 @@
 #include "table.h"
 #include "pager.h"
 
+static s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
+
 
 /* Check Pager Buffers valid. */
 static void CheckPagerBuffersValid(Pager *pager) {
@@ -62,7 +64,7 @@ static BufferDesc *CreateBufferDesc(Buffer buffer) {
     buff_desc->refcount = 0;
     buff_desc->buffer = buffer; 
     buff_desc->lock = instance(RWLockEntry);
-    init_rwlock(buff_desc->lock);
+    InitRWlock(buff_desc->lock);
     return buff_desc;
 }
 
@@ -86,12 +88,21 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
     /* If buffers missing the buffer, we will create the 
      * BufferDesc, and store it in shared memory. */
     if (buffer >= pager->buffers->size) {
-        switch_shared();
 
-        BufferDesc *buff_desc = CreateBufferDesc(buffer);
-        append_list(pager->buffers, buff_desc);
+        acquire_spin_lock(&sync_lock);
 
-        switch_local();
+        /* Double check. */
+        if (buffer >= pager->buffers->size) {
+
+            switch_shared();
+
+            BufferDesc *buff_desc = CreateBufferDesc(buffer);
+            append_list(pager->buffers, buff_desc);
+
+            switch_local();
+        }
+
+        release_spin_lock(&sync_lock);
     }
 
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
@@ -107,7 +118,7 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
     BufferDesc *buff_desc = lfirst(lc);
     
     /* Acquire the Rwlock in RW_READERS mode. */
-    acquire_rwlock(buff_desc->lock, RW_READERS);
+    AcquireRWlock(buff_desc->lock, RW_READERS);
     
     /* Increase the refcount. */
     buff_desc->refcount++;
@@ -137,7 +148,7 @@ void ReleaseBufferInner(Pager *pager, Buffer buffer) {
     Assert(buff_desc != NULL);
 
     /* Release the Rwlock. */
-    release_rwlock(buff_desc->lock);
+    ReleaseRWlock(buff_desc->lock);
 
     /* Descrease the refcount. */
     buff_desc->refcount--;
@@ -157,12 +168,20 @@ void LockBuffer(Table *table, Buffer buffer) {
     /* If buffers missing the buffer, we will create the 
      * BufferDesc, and store it in shared memory. */
     if (buffer >= pager->buffers->size) {
-        switch_shared();
+        acquire_spin_lock(&sync_lock);
 
-        BufferDesc *buff_desc = CreateBufferDesc(buffer);
-        append_list(pager->buffers, buff_desc);
+        /* Double check. */
+        if (buffer >= pager->buffers->size) {
 
-        switch_local();
+            switch_shared();
+
+            BufferDesc *buff_desc = CreateBufferDesc(buffer);
+            append_list(pager->buffers, buff_desc);
+
+            switch_local();
+        }
+
+        release_spin_lock(&sync_lock);
     }
 
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
@@ -178,7 +197,7 @@ void LockBuffer(Table *table, Buffer buffer) {
     Assert(IS_READERS_LOCK(buff_desc->lock));
 
     /* Try to acquire the exclusive lock. */
-    acquire_rwlock(buff_desc->lock, RW_WRITER);
+    AcquireRWlock(buff_desc->lock, RW_WRITER);
 }
 
 /* Unlock Buffer
@@ -192,5 +211,8 @@ void UnlockBuffer(Table *table, Buffer buffer) {
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
     Assert(buff_desc != NULL);
+
+    /* Release the writer lock. */
+    ReleaseRWlock(buff_desc->lock);
 }
 

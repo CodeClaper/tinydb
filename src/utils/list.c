@@ -165,6 +165,15 @@ bool list_member(List *list, void *item) {
     }
 }
 
+/* Check if the int item is all the member of list. */
+bool list_all_int(List *list, int item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_int(lc) != item) 
+            return false;
+    }
+    return true;
+}
 
 /* Delete nth cell in List. */
 void list_delete_nth_cell(List *list, int n) {
@@ -265,6 +274,20 @@ void list_delete(List *list, void *item) {
         default:
             list_delete_ptr(list, item);
             break;
+    }
+}
+
+
+/* Delete first target int item in List. 
+ * Skip if not found in list.
+ * */
+void list_delete_int_first(List *list, int item) {
+    ListCell *lc;
+    foreach (lc, list) {
+        if (lfirst_int(lc) == item) {
+            list_delete_cell(list, lc);
+            break;
+        }
     }
 }
 

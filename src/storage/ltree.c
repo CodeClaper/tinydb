@@ -1024,6 +1024,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 
     /* Get the old leaf node and lock. */
     void *old_node = ReadBuffer(cursor->table, cursor->page_num);
+    LockBuffer(cursor->table, cursor->page_num);
 
     /* Get the old leaf node cell count.*/
     uint32_t cell_num = get_leaf_node_cell_num(old_node, value_len);
@@ -1036,6 +1037,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 
     /* Get new leaf node, if not exists, pager will generate a new one. */
     void *new_node = ReadBuffer(cursor->table, next_unused_page_num);
+    LockBuffer(cursor->table, next_unused_page_num);
     initial_leaf_node(new_node, value_len, false);
 
     /* Both of old leaf node and new leaf node have same parent internal node. */
@@ -1101,6 +1103,8 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
          * Maybe the max key change, need update max key in parent internal node. */
         uint32_t parent_page_num = get_parent_pointer(old_node);
         void *parent = ReadBuffer(cursor->table, parent_page_num);
+        LockBuffer(cursor->table, parent_page_num);
+
         void *new_max_key = get_max_key(cursor->table, old_node, key_len, value_len);
         update_internal_node_key(
             cursor->table, 
@@ -1119,13 +1123,16 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         flush_page(table_name, cursor->table->pager, parent_page_num);
 
         /* Release parent page buffer. */
-
+        UnlockBuffer(cursor->table, parent_page_num);
         ReleaseBuffer(cursor->table, parent_page_num);
     }
 
     /* Release new page buffer. */
+    UnlockBuffer(cursor->table, next_unused_page_num);
     ReleaseBuffer(cursor->table, next_unused_page_num);
+
     /* Release the buffer. */
+    UnlockBuffer(cursor->table, cursor->page_num);
     ReleaseBuffer(cursor->table, cursor->page_num);
 }
 

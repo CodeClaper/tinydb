@@ -246,6 +246,8 @@ RWLockEntry *copy_rwlock_entry(RWLockEntry *lock_entry) {
     duplica->pids = list_copy_deep(lock_entry->pids);
     duplica->glock = lock_entry->glock;
     duplica->plock = lock_entry->plock;
+    duplica->rlock = lock_entry->rlock;
+    duplica->slock = lock_entry->slock;
     return duplica;
 }
 
