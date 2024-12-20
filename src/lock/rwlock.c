@@ -30,7 +30,8 @@ void InitRWlock(RWLockEntry *lock_entry) {
     lock_entry->mode = RW_INIT;
     lock_entry->pids = create_list(NODE_INT);
     init_spin_lock(&lock_entry->content_lock);
-    init_spin_lock(&lock_entry->sync_lock);
+    init_spin_lock(&lock_entry->sync_acquire_lock);
+    init_spin_lock(&lock_entry->sync_release_lock);
 }
 
 /* Atomically increase the readernum. */
@@ -81,7 +82,7 @@ static inline void ReleaseRWLockInner(RWLockEntry *lock_entry) {
 /* Acuqire the rwlock. */
 void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
     Assert(mode != RW_INIT);
-    acquire_spin_lock(&lock_entry->sync_lock);
+    acquire_spin_lock(&lock_entry->sync_acquire_lock);
     switch (lock_entry->mode) {
         case RW_INIT: {
             Assert(ReleaseRlockCondition(lock_entry));
@@ -115,7 +116,7 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
             break;
         }
     }
-    release_spin_lock(&lock_entry->sync_lock);
+    release_spin_lock(&lock_entry->sync_acquire_lock);
 }
 
 /* Release the rwlock. 
@@ -124,7 +125,7 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
 void ReleaseRWlock(RWLockEntry *lock_entry) {
     Assert(NOT_INIT_LOCK(lock_entry));
     Assert(lock_entry->content_lock == SPIN_LOCKED_STATUS);
-    acquire_spin_lock(&lock_entry->sync_lock);
+    acquire_spin_lock(&lock_entry->sync_release_lock);
     switch (lock_entry->mode) {
         case RW_READERS: {
             AtomicRemovePid(lock_entry);
@@ -145,5 +146,5 @@ void ReleaseRWlock(RWLockEntry *lock_entry) {
         default:
             break;
     }
-    release_spin_lock(&lock_entry->sync_lock);
+    release_spin_lock(&lock_entry->sync_release_lock);
 }
