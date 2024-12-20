@@ -244,10 +244,8 @@ RWLockEntry *copy_rwlock_entry(RWLockEntry *lock_entry) {
     RWLockEntry *duplica = instance(RWLockEntry);
     duplica->mode = lock_entry->mode;
     duplica->pids = list_copy_deep(lock_entry->pids);
-    duplica->glock = lock_entry->glock;
-    duplica->plock = lock_entry->plock;
-    duplica->rlock = lock_entry->rlock;
-    duplica->slock = lock_entry->slock;
+    duplica->content_lock = lock_entry->content_lock;
+    duplica->sync_lock = lock_entry->sync_lock;
     return duplica;
 }
 
