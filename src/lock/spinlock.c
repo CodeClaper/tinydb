@@ -10,7 +10,16 @@
  * */
 
 #include <unistd.h>
+#include <stdatomic.h>
 #include "spinlock.h"
+
+/* Lock sleep. */
+static void lock_sleep (int cnt) {
+    struct timespec ts[1];
+	ts->tv_sec = 0;
+	ts->tv_nsec = cnt;
+	nanosleep(ts, NULL);
+}
 
 /* Init spin lock. */
 void init_spin_lock(volatile s_lock *lock) {
@@ -19,16 +28,17 @@ void init_spin_lock(volatile s_lock *lock) {
 
 /* Acquire spin lock, if fail, it will block. */
 void acquire_spin_lock(volatile s_lock *lock) {
-
-    while (*lock) {
-        usleep(DEFAULT_SPIN_INTERVAL);
+    while (__sync_lock_test_and_set(lock, 1)) {
+        while (*lock) {
+            lock_sleep(DEFAULT_SPIN_INTERVAL);
+        }
     }
-
     *lock = SPIN_LOCKED_STATUS;
 }
 
 /* Release spin lock. */
 void release_spin_lock(volatile s_lock *lock) {
+	__sync_synchronize();
     *lock = SPIN_UN_LOCKED_STATUS;
 }
 
