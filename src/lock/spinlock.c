@@ -8,7 +8,6 @@
  * This routine is also known as Test-and-Set(TAS).
  ***************************************************************************************************************************
  * */
-
 #include <stdint.h>
 #include <unistd.h>
 #include <stdatomic.h>
@@ -61,6 +60,7 @@ void release_spin_lock(volatile s_lock *lock) {
 /* Wait for spin lock released. */
 void wait_for_spin_lock(volatile s_lock *lock) {
     while (*lock) {
-        usleep(DEFAULT_SPIN_INTERVAL);
+        if (lock_spin(DEFAULT_SPIN_INTERVAL))
+            lock_sleep(DEFAULT_SPIN_INTERVAL);
     }
 }
