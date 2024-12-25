@@ -9,12 +9,27 @@
  ***************************************************************************************************************************
  * */
 
+#include <stdint.h>
 #include <unistd.h>
 #include <stdatomic.h>
 #include "spinlock.h"
 
+/* Lock spin.
+ * If cnt < 1024, it will PAUSE.
+ * Else, it will sleep. 
+ * */
+int lock_spin(uint32_t cnt) {
+    volatile int idx;
+	if (cnt < 1024 )
+	  for (idx = 0; idx < cnt; idx++)
+	    PAUSE();
+	else
+		return 1;
+	return 0;
+}
+
 /* Lock sleep. */
-static void lock_sleep (int cnt) {
+void lock_sleep (int cnt) {
     struct timespec ts[1];
 	ts->tv_sec = 0;
 	ts->tv_nsec = cnt;
@@ -30,7 +45,8 @@ void init_spin_lock(volatile s_lock *lock) {
 void acquire_spin_lock(volatile s_lock *lock) {
     while (__sync_lock_test_and_set(lock, 1)) {
         while (*lock) {
-            lock_sleep(DEFAULT_SPIN_INTERVAL);
+            if (lock_spin(DEFAULT_SPIN_INTERVAL))
+                lock_sleep(DEFAULT_SPIN_INTERVAL);
         }
     }
     *lock = SPIN_LOCKED_STATUS;

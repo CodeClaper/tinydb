@@ -66,16 +66,20 @@ static inline bool ReenterCondition(RWLockEntry *lock_entry) {
 void AcquireRWLockInner(RWLockEntry *lock_entry) {
     if (lock_entry->content_lock == SPIN_UN_LOCKED_STATUS)
         Assert(list_empty(lock_entry->pids));
-    while (lock_entry->content_lock) {
+    while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
         if (ReenterCondition(lock_entry)) 
             break;
-        usleep(DEFAULT_SPIN_INTERVAL);
+        while (lock_entry->content_lock) {
+            if (lock_spin(DEFAULT_SPIN_INTERVAL))
+                lock_sleep(DEFAULT_SPIN_INTERVAL);
+        }
     }
     lock_entry->content_lock = SPIN_LOCKED_STATUS;
 }
 
 /* Try to release rwlock.*/
 static inline void ReleaseRWLockInner(RWLockEntry *lock_entry) {
+	__sync_synchronize();
     lock_entry->content_lock = SPIN_UN_LOCKED_STATUS;
 }
 

@@ -6,6 +6,21 @@
 
 typedef int s_lock;
 
+#if defined(__x86_64__) || defined(__i386__)
+    #define PAUSE() __asm__ volatile("pause\n": : : "memory")
+#elif defined(__arm__) || defined(__aarch64__)
+    #define PAUSE() __asm__ volatile("yield" ::: "memory")
+#else
+    #define PAUSE() ((void)0)
+#endif
+
+
+/* Lock spin. */
+int lock_spin(uint32_t cnt);
+
+/* Lock sleep. */
+void lock_sleep (int cnt);
+
 /* Init spin lock. */
 void init_spin_lock(volatile s_lock *lock);
 
