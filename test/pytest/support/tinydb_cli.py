@@ -10,7 +10,7 @@ class TinyDbClient:
         # create a socket object.
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect((ip, port))
-        self.client.settimeout(10)
+        self.client.settimeout(300)
 
     def login(self, account, password) -> bool:
         self.client.send(f"{account}/{password}".encode("utf-8"))

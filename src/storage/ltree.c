@@ -1023,7 +1023,17 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
 
     /* Get the old leaf node and lock. */
-    void *old_node = ReadBuffer(cursor->table, cursor->page_num);
+    void *old_node, *parent_node;
+    old_node = ReadBuffer(cursor->table, cursor->page_num);
+
+    /* If exsits parent node, lock parent node first to keep the princile: lock from top to bottom. */
+    uint32_t parent_page_num = get_parent_pointer(old_node);
+    if (!is_root_node(old_node)) {
+        parent_node = ReadBuffer(cursor->table, parent_page_num);
+        LockBuffer(cursor->table, parent_page_num);
+    }
+
+    /* Lock the current page buffer. */
     LockBuffer(cursor->table, cursor->page_num);
 
     /* Get the old leaf node cell count.*/
@@ -1041,7 +1051,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     initial_leaf_node(new_node, value_len, false);
 
     /* Both of old leaf node and new leaf node have same parent internal node. */
-    set_parent_pointer(new_node, get_parent_pointer(old_node));
+    set_parent_pointer(new_node, parent_page_num);
     set_leaf_node_next_leaf(new_node, value_len, get_leaf_node_next_leaf(old_node, value_len));
     set_leaf_node_next_leaf(old_node, value_len, next_unused_page_num);
 
@@ -1101,14 +1111,12 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     else {
         /* Otherwise, it`s a normal leaf node. 
          * Maybe the max key change, need update max key in parent internal node. */
-        uint32_t parent_page_num = get_parent_pointer(old_node);
-        void *parent = ReadBuffer(cursor->table, parent_page_num);
-        LockBuffer(cursor->table, parent_page_num);
+        // LockBuffer(cursor->table, parent_page_num);
 
         void *new_max_key = get_max_key(cursor->table, old_node, key_len, value_len);
         update_internal_node_key(
             cursor->table, 
-            parent, 
+            parent_node, 
             old_max_key,
             new_max_key, 
             key_len, 

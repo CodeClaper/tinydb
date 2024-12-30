@@ -287,12 +287,6 @@ void execute(char *sql) {
 
     json_list(result_list);
 
-    /* Free statements.*/
-    // free_list_deep(statements);
-
-    /* Free result_set. */
-    // free_list_deep(result_list);
-
     /* Commit transction manually. */
     auto_commit_transaction();
 

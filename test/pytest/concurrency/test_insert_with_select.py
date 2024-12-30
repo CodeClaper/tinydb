@@ -19,7 +19,7 @@ def thread_insert():
     try:
         names = ["zhangsan", "lisi", "Sun", "July", "Kaili", "James", "Max"]
         for i in range(1, 20000):
-            sql = f"insert into Student values ('{uuid.uuid4()}', '{names[i % 7]}', { random.randint(6, 15) });"
+            sql = f"insert into Student values ('{i}', '{names[i % 7]}', { random.randint(6, 15) });"
             ret = client1.execute(sql)
             assert ret["success"] == True
     except Exception as e:
@@ -66,5 +66,7 @@ def test_drop_mock_table():
     sql = "drop table Student;"
     ret = client1.execute(sql)
     assert ret["success"] == True
+    client1.close()
+    client2.close()
 
 

@@ -36,9 +36,11 @@ void InitRWlock(RWLockEntry *lock_entry) {
 
 /* Atomically increase the readernum. */
 static void AtomicAppendPid(RWLockEntry *lock_entry) {
+    acquire_spin_lock(&lock_entry->sync_acquire_lock);
     switch_shared();
     append_list_int(lock_entry->pids, GetCurrentPid());
     switch_local();
+    release_spin_lock(&lock_entry->sync_acquire_lock);
 }
 
 /* Atomically decrease the readernum. */
@@ -54,26 +56,28 @@ static inline bool ReleaseRlockCondition(RWLockEntry *lock_entry) {
 }
 
 /* The reenter condition.
- * Condition includes:
- * (1) only exists one process acuqires the content_lock. 
- * (2) the last one process is current process. 
+ * Reenter condition includes:
+ * (1) All process in pids is the current process. 
+ * (2) RWLockMode in RWLockMode mode, and the request also RWLockMode. 
  * */
-static inline bool ReenterCondition(RWLockEntry *lock_entry) {
-    return list_all_int(lock_entry->pids, GetCurrentPid());
+static inline bool ReenterCondition(RWLockEntry *lock_entry, RWLockMode mode) {
+    return list_all_int(lock_entry->pids, GetCurrentPid()) || 
+            (lock_entry->mode == RW_READERS && mode == RW_READERS);
 }
 
 /* Try acquire rwlock with reenter condition. */
-void AcquireRWLockInner(RWLockEntry *lock_entry) {
+void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     if (lock_entry->content_lock == SPIN_UN_LOCKED_STATUS)
         Assert(list_empty(lock_entry->pids));
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
-        if (ReenterCondition(lock_entry)) 
-            break;
         while (lock_entry->content_lock) {
+            if (ReenterCondition(lock_entry, mode)) 
+                goto unlock;
             if (lock_spin(DEFAULT_SPIN_INTERVAL))
                 lock_sleep(DEFAULT_SPIN_INTERVAL);
         }
     }
+unlock:
     lock_entry->content_lock = SPIN_LOCKED_STATUS;
 }
 
@@ -86,41 +90,9 @@ static inline void ReleaseRWLockInner(RWLockEntry *lock_entry) {
 /* Acuqire the rwlock. */
 void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
     Assert(mode != RW_INIT);
-    acquire_spin_lock(&lock_entry->sync_acquire_lock);
-    switch (lock_entry->mode) {
-        case RW_INIT: {
-            Assert(ReleaseRlockCondition(lock_entry));
-            AcquireRWLockInner(lock_entry);
-            AtomicAppendPid(lock_entry);
-            lock_entry->mode = mode;
-            Assert(len_list(lock_entry->pids) == 1);
-            break;
-        }
-        case RW_READERS: {
-            Assert(lock_entry->content_lock == SPIN_LOCKED_STATUS);
-            /* If RW_READERS mode, the lock entry is shared. 
-             * Just append the current reader process pid .*/
-            if (mode == RW_READERS) 
-                AtomicAppendPid(lock_entry);
-            /* If RW_WRITER mode, we firstly check if current process is the only one who acuqires the content_lock.
-             * If yes, same process reenter and just change the lock mode. If not, acuqire the content_lock. */
-            else if (mode == RW_WRITER) {
-                AcquireRWLockInner(lock_entry);
-                lock_entry->mode = RW_WRITER;
-                AtomicAppendPid(lock_entry);
-            }
-            break;
-        }
-        case RW_WRITER: {
-            Assert(lock_entry->content_lock == SPIN_LOCKED_STATUS);
-            /* At most one process acuqires the content_lock in RW_WRITER mode. */
-            AcquireRWLockInner(lock_entry);
-            lock_entry->mode = mode;
-            AtomicAppendPid(lock_entry);
-            break;
-        }
-    }
-    release_spin_lock(&lock_entry->sync_acquire_lock);
+    AcquireRWLockInner(lock_entry, mode);
+    AtomicAppendPid(lock_entry);
+    lock_entry->mode = mode;
 }
 
 /* Release the rwlock. 
@@ -130,25 +102,10 @@ void ReleaseRWlock(RWLockEntry *lock_entry) {
     Assert(NOT_INIT_LOCK(lock_entry));
     Assert(lock_entry->content_lock == SPIN_LOCKED_STATUS);
     acquire_spin_lock(&lock_entry->sync_release_lock);
-    switch (lock_entry->mode) {
-        case RW_READERS: {
-            AtomicRemovePid(lock_entry);
-            if (ReleaseRlockCondition(lock_entry)) {
-                ReleaseRWLockInner(lock_entry);
-                lock_entry->mode = RW_INIT;
-            }
-            break;
-        }
-        case RW_WRITER: {
-            AtomicRemovePid(lock_entry);
-            if (list_empty(lock_entry->pids))
-                lock_entry->mode = RW_INIT;
-            else
-                lock_entry->mode = RW_READERS;
-            break;
-        }
-        default:
-            break;
-    }
+    AtomicRemovePid(lock_entry);
+    if (list_empty(lock_entry->pids))
+        lock_entry->mode = RW_INIT;
+    else
+        lock_entry->mode = RW_READERS;
     release_spin_lock(&lock_entry->sync_release_lock);
 }

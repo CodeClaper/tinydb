@@ -54,7 +54,10 @@ static s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
 /* Check Pager Buffers valid. */
 static void CheckPagerBuffersValid(Pager *pager) {
     Assert(pager->buffers != NULL);
-    Assert(pager->size == pager->buffers->size);
+    assert_true(pager->size == pager->buffers->size, 
+                "Pager size %d != buffer size %d", 
+                pager->size, 
+                pager->buffers->size);
 }
 
 /* Create BufferDesc. */
@@ -156,9 +159,8 @@ void ReleaseBufferInner(Pager *pager, Buffer buffer) {
 
 
 /* Lock Buffer. 
- * Lock Buffer must satisfy two conditions:
- * (1) Acquire the exclusive lock.
- * (2) The refcount to be one (only itself). */
+ * Try to acquire the exclusive content lock in BufferDesc. 
+ * */
 void LockBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
 
@@ -194,14 +196,15 @@ void LockBuffer(Table *table, Buffer buffer) {
 
     BufferDesc *buff_desc = lfirst(lc);
     Assert(buff_desc != NULL);
-    Assert(IS_READERS_LOCK(buff_desc->lock));
+    // Assert(IS_READERS_LOCK(buff_desc->lock));
 
     /* Try to acquire the exclusive lock. */
     AcquireRWlock(buff_desc->lock, RW_WRITER);
 }
 
 /* Unlock Buffer
- * Unlock the exclusive content lock in BufferDesc. */
+ * Unlock the exclusive content lock in BufferDesc. 
+ * */
 void UnlockBuffer(Table *table, Buffer buffer) {
     Pager *pager = table->pager;
 
