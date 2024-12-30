@@ -48,8 +48,8 @@ typedef union ListCell {
 /* List */
 typedef struct List {
     NodeTag type;
-    uint32_t size;
-    uint32_t capacity;
+    volatile uint32_t size;
+    volatile uint32_t capacity;
     ListCell *elements;
     ListCell initial_elements[INIT_LIST_CELL_SIZE];
 } List;

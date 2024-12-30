@@ -563,7 +563,7 @@ typedef struct Statement {
 typedef struct Pager {
     char *table_name;
     uint32_t file_length;
-    uint32_t size;
+    volatile uint32_t size;
     List *pages;
     List *buffers;
 } Pager;
