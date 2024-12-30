@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include "spinlock.h"
+#include "c.h"
 
 #ifndef RWLOCK_H
 #define RWLOCK_H

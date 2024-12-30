@@ -7,3 +7,8 @@
  * Size of any memory resident object.
  */
 typedef size_t Size;
+
+/* Pid
+ * The processor id.
+ * */
+typedef pid_t Pid;
