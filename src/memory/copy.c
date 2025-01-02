@@ -245,8 +245,7 @@ RWLockEntry *copy_rwlock_entry(RWLockEntry *lock_entry) {
     duplica->mode = lock_entry->mode;
     duplica->pids = list_copy_deep(lock_entry->pids);
     duplica->content_lock = lock_entry->content_lock;
-    duplica->sync_acquire_lock = lock_entry->sync_acquire_lock;
-    duplica->sync_release_lock = lock_entry->sync_release_lock;
+    duplica->sync_lock = lock_entry->sync_lock;
     return duplica;
 }
 

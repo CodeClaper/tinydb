@@ -17,8 +17,7 @@ typedef enum RWLockMode {
 typedef struct RWLockEntry {
     RWLockMode mode;                    /* Rwlock mode. */
     volatile s_lock content_lock;       /* Content spinlock. */
-    volatile s_lock sync_acquire_lock;  /* Sync spinlock. */
-    volatile s_lock sync_release_lock;  /* Sync spinlock. */
+    volatile s_lock sync_lock;          /* Sync spinlock. */
     List  *pids;                        /* Acuqire processes. */
 } RWLockEntry;
 
