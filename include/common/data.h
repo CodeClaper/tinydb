@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <time.h>
+#include "c.h"
 #include "list.h"
 
 #ifndef DATA_H
@@ -703,7 +704,7 @@ typedef struct {
 /* TransactionHandle */
 typedef struct TransEntry {
     int64_t xid;                /* transaction id. */ 
-    pid_t pid;                  /* processor id. */
+    Pid pid;                    /* processor id. */
     bool auto_commit;           /* auto commit. */
     struct TransEntry *next;    /* next */
 } TransEntry;

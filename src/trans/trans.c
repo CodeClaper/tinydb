@@ -67,6 +67,7 @@
 #include "defs.h"
 #include "trans.h"
 #include "mmgr.h"
+#include "shmem.h"
 #include "log.h"
 #include "copy.h"
 #include "free.h"
@@ -89,7 +90,7 @@ static TransEntry *xheader;
 static s_lock *xlock;
 
 static void create_xlock();
-static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next);
+static void *new_trans_entry(int64_t xid, Pid pid, bool auto_commit, TransEntry *next);
 
 /* Initialise transaction. */
 void init_trans() {
@@ -98,7 +99,7 @@ void init_trans() {
 }
 
 /* Generate new TransEntry. */
-static void *new_trans_entry(int64_t xid, pid_t pid, bool auto_commit, TransEntry *next) {
+static void *new_trans_entry(int64_t xid, Pid pid, bool auto_commit, TransEntry *next) {
     switch_shared();
     TransEntry *entry = instance(TransEntry);
     entry->xid = xid;
@@ -144,7 +145,7 @@ static void *get_trans_tail() {
 TransEntry *find_transaction() {
 
     /* Current thread id. */
-    pid_t pid = getpid();
+    Pid pid = getpid();
 
     TransEntry *current = xheader;
     while ((current = current->next)) {
@@ -158,11 +159,14 @@ TransEntry *find_transaction() {
 
 /* Register transaction. */
 static void register_transaction(TransEntry *entry) {
+    Assert(entry != NULL);
+    /* New TransEntry should all be shared memory pointer. */
+    Assert(shmem_addr_valid(entry));
     
     acquire_spin_lock(xlock);
 
     TransEntry *tail = get_trans_tail();
-    Assert(tail);
+    Assert(tail != NULL);
     tail->next = entry;
 
     release_spin_lock(xlock);
@@ -189,28 +193,36 @@ static void destroy_transaction() {
 
 /* Check if a transaction active(uncommitted). */
 static bool is_active(int64_t xid) {
+    bool active = false;
+    acquire_spin_lock(xlock);
     TransEntry *current;
     for (current = xheader; current != NULL; current = current->next) {
-        if (current->xid == xid) 
-            return true;
+        if (!shmem_addr_valid(current)) {
+            db_log(DEBUGER, "Error transaction %p and xheader %p and %d.", 
+                   current, xheader, shmem_addr_valid(xheader));
+        }
+        Assert(shmem_addr_valid(current));
+        if (current->xid == xid) {
+            active = true;
+            break;
+        }
     }
-    return false;
+    release_spin_lock(xlock);
+    return active;
 }
 
 /* New transaction which will be committed automatically. */
 void auto_begin_transaction() {
-
     TransEntry *entry = find_transaction();
 
     /* Already exists transaction, no need to auto begin transaction. */
-    if (entry) 
+    if (entry != NULL) 
         return;
 
     /* Generate new transaction. */
     entry = new_trans_entry(next_xid(), getpid(), true, NULL);
     db_log(INFO, "Auto begin transaction xid: %"PRId64" and pid: %"PRId64".", 
-           entry->xid, 
-           entry->pid);
+           entry->xid, entry->pid);
 
     /* Register the transaction. */
     register_transaction(entry);
@@ -230,12 +242,8 @@ void begin_transaction() {
     register_transaction(entry);
 
     /* Send message. */
-    db_log(
-        SUCCESS, 
-        "Begin new transaction xid:%"PRId64" and pid: %"PRId64"successfully.", 
-        entry->xid, 
-        entry->pid
-    );
+    db_log(SUCCESS, "Begin new transaction xid:%"PRId64" and pid: %"PRId64"successfully.",
+           entry->xid, entry->pid);
 }
 
 /* Commit transaction manually. */
@@ -340,11 +348,17 @@ bool row_is_visible(Row *row) {
     int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
 
     /* Three satisfied conditions. */
-    if (row_created_xid == entry->xid && row_expired_xid == 0)
+    if (row_created_xid == entry->xid && 
+            row_expired_xid == 0)
         return true;
-    if (row_created_xid != entry->xid && !is_active(row_created_xid) && row_expired_xid == 0)
+    if (row_created_xid != entry->xid && 
+            !is_active(row_created_xid) && 
+                row_expired_xid == 0)
         return true;
-    if (row_expired_xid != 0 && row_expired_xid != entry->xid && is_active(row_expired_xid) && row_created_xid != row_expired_xid)
+    if (row_expired_xid != 0 && 
+            row_expired_xid != entry->xid && 
+                is_active(row_expired_xid) && 
+                    row_created_xid != row_expired_xid)
         return true;
     
     return false;

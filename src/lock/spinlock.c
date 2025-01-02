@@ -48,13 +48,21 @@ void acquire_spin_lock(volatile s_lock *lock) {
                 lock_sleep(DEFAULT_SPIN_INTERVAL);
         }
     }
-    *lock = SPIN_LOCKED_STATUS;
 }
 
 /* Release spin lock. */
 void release_spin_lock(volatile s_lock *lock) {
+    /* Tell the c compiler and the CPU to not move loads or stores
+     * past this point, to ensure that all the stores in the critical
+     * section are visible to other CPUs before the  lock is released,
+     * and that load in the critical seciton occrur strictly before
+     * the lock is released. */
 	__sync_synchronize();
-    *lock = SPIN_UN_LOCKED_STATUS;
+
+    /* Release the lock, equivalent to lock_entry->content_lock = 0. 
+     * This code does`t use a C assignment, since the C standard implies
+     * that an assignment might be implemented with multiple store instructions. */
+    __sync_lock_release(lock);
 }
 
 /* Wait for spin lock released. */

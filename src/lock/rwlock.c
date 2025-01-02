@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <unistd.h>
+#include <stdatomic.h>
 #include "rwlock.h"
 #include "mmgr.h"
 #include "list.h"
@@ -79,13 +80,23 @@ static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
         }
     }
 modify_mode:
+    __sync_synchronize();
     lock_entry->mode = mode;
 }
 
 /* Try to release rwlock.*/
 static inline void ReleaseRWLockInner(RWLockEntry *lock_entry) {
+    /* Tell the c compiler and the CPU to not move loads or stores
+     * past this point, to ensure that all the stores in the critical
+     * section are visible to other CPUs before the  lock is released,
+     * and that load in the critical seciton occrur strictly before
+     * the lock is released. */
 	__sync_synchronize();
-    lock_entry->content_lock = SPIN_UN_LOCKED_STATUS;
+
+    /* Release the lock, equivalent to lock_entry->content_lock = 0. 
+     * This code does`t use a C assignment, since the C standard implies
+     * that an assignment might be implemented with multiple store instructions. */
+    __sync_lock_release(&lock_entry->content_lock);
 }
 
 /* Acuqire the rwlock. */
