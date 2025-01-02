@@ -242,7 +242,6 @@ static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap ali
 /* Check if type convert pass. */
 static bool check_value_data_type(DataType column_type, AtomNode *atom_node, 
                                   char *column_name, char *table_name) {
-
     switch(column_type) {
         case T_BOOL: {
             if (atom_node->type == A_BOOL)
@@ -281,10 +280,10 @@ static bool check_value_data_type(DataType column_type, AtomNode *atom_node,
         default:
             UNEXPECTED_VALUE(column_type);
     }
-    db_log(ERROR, "Incorrect %s value for column '%s' in table '%s'", 
+    db_log(ERROR, "Incorrect %s value for column '%s' with type %s in table '%s'", 
            data_type_name(convert_data_type(atom_node->type)),
-           data_type_name(column_type), 
            column_name, 
+           data_type_name(column_type), 
            table_name);
     return false;
 }
@@ -360,7 +359,9 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             int comp_result, exe_result;
 
             /* Jump https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
-            comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", REG_EXTENDED);
+            comp_result = regcomp(&reegex, 
+                                  "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", 
+                                  REG_EXTENDED);
             if (comp_result != 0)
                 db_log(ERROR, "Regex compile fail.");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
@@ -389,8 +390,8 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
             switch (value_item_node->type) {
                 case V_ATOM: {
                     AtomNode *atom_node = value_item_node->value.atom;
-                    return check_value_data_type(meta_column->column_type, atom_node, column_name, meta_table->table_name) 
-                        && check_value_valid(meta_column, atom_node);
+                    return check_value_data_type(meta_column->column_type, atom_node, column_name, meta_table->table_name) && 
+                                check_value_valid(meta_column, atom_node);
                 }
                 case V_NULL: {
                     if (meta_column->not_null)
@@ -466,8 +467,8 @@ static bool check_function_node(FunctionNode *function, AliasMap alias_map) {
             ColumnNode *column = value_node->column;
             MetaTable *meta_table = confirm_meta_table_via_column(column, alias_map);
             MetaColumn *meta_column = get_meta_column_by_name(meta_table, column->column_name);
-            return check_funtion_value_type(function->type, column, meta_column) 
-                && check_column_node(column, meta_table); 
+            return check_funtion_value_type(function->type, column, meta_column) && 
+                        check_column_node(column, meta_table); 
         }
         default: {
             UNEXPECTED_VALUE(value_node->value_type);
@@ -557,8 +558,8 @@ static bool check_in_node(InNode *in_node, AliasMap alias_map) {
     /* Confirm MetaTable. */
     MetaTable *current_meta_table = confirm_meta_table_via_column(column, alias_map);
 
-    return check_column_node(in_node->column, current_meta_table) // check select column
-           && check_value_item_set_node(current_meta_table, column->column_name, in_node->value_list);
+    return check_column_node(in_node->column, current_meta_table) && // check select column
+                check_value_item_set_node(current_meta_table, column->column_name, in_node->value_list);
 }
 
 /* Check like data type. */
@@ -578,9 +579,9 @@ static bool check_like_node(LikeNode *like_node, AliasMap alias_map) {
     MetaTable *current_meta_table = confirm_meta_table_via_column(column, alias_map);
     MetaColumn *meta_column = get_meta_column_by_name(current_meta_table, column->column_name);
 
-    return check_column_node(column, current_meta_table) // check select column
-           && check_like_data_type(meta_column)
-           && check_value_item_node(current_meta_table, column->column_name, like_node->value);
+    return check_column_node(column, current_meta_table) && // check select column
+                check_like_data_type(meta_column) && 
+                    check_value_item_node(current_meta_table, column->column_name, like_node->value);
 }
 
 /* Check PredicateNode. */
@@ -607,8 +608,8 @@ static bool check_condition_node(ConditionNode *condition_node, AliasMap alias_e
     switch(condition_node->conn_type) {
         case C_AND:
         case C_OR:
-            return check_condition_node(condition_node->left, alias_entry) 
-                && check_condition_node(condition_node->right, alias_entry);
+            return check_condition_node(condition_node->left, alias_entry) && 
+                        check_condition_node(condition_node->right, alias_entry);
         case C_NONE: 
             return check_predicate_node(condition_node->predicate, alias_entry);
         default:
@@ -686,9 +687,9 @@ static bool check_limit_clause(LimitClauseNode *limit_clause) {
 
 /* Check TableExpNode. */
 static bool check_table_exp(TableExpNode *table_exp, AliasMap alias_map) {
-    return check_from_clause(table_exp->from_clause)
-        && check_where_clause(table_exp->where_clause, alias_map)
-        && check_limit_clause(table_exp->limit_clause);
+    return check_from_clause(table_exp->from_clause) && 
+                check_where_clause(table_exp->where_clause, alias_map) && 
+                    check_limit_clause(table_exp->limit_clause);
 }
 
 
@@ -710,13 +711,13 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
         AssignmentNode *assignment_node = lfirst(lc);
         ColumnNode *column_node = assignment_node->column;
         ValueItemNode *value_node = assignment_node->value;
-        assert_not_null(column_node, 
-                       "System error, there is no column node in assignment set node.\n");
-        MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
+        Assert(column_node != NULL);
 
+        MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_node->column_name);
         if (is_null(meta_column)) {
             db_log(ERROR, "Not found column %s in table %s.", 
-                   column_node->column_name, get_table_name(table));
+                   column_node->column_name, 
+                   get_table_name(table));
             return false;
         }
 
@@ -728,7 +729,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
 
         /* Check column, check type, check if value valid. */
         if (!(check_column_node(column_node, table->meta_table) && 
-            check_value_item_node(table->meta_table, meta_column->column_name, value_node))) {
+                check_value_item_node(table->meta_table, meta_column->column_name, value_node))) {
                 free_select_result(select_result);
                 if (change_priamry)
                     free_value(new_key, primary_meta_column->column_type);
@@ -985,7 +986,7 @@ static bool check_insert_node_for_value_items(InsertNode *insert_node, List *val
 
     /* Check table exist.*/
     Table *table = open_table(insert_node->table_name);
-    if (!table)
+    if (table == NULL)
         return false;
 
     MetaTable *meta_table = table->meta_table;
@@ -1234,9 +1235,9 @@ bool check_update_node(UpdateNode *update_node) {
     alias_map.map[0].name = update_node->table_name;
     alias_map.map[0].alias = update_node->table_name;
 
-    return check_table(update_node->table_name)
-           && check_assignment_set_node(update_node) 
-           && check_where_clause(update_node->where_clause, alias_map);
+    return check_table(update_node->table_name) && 
+                check_assignment_set_node(update_node) && 
+                    check_where_clause(update_node->where_clause, alias_map);
 }
 
 /* Check for delete node. */
@@ -1247,14 +1248,14 @@ bool check_delete_node(DeleteNode *delete_node) {
     alias_map.map[0].name = delete_node->table_name;
     alias_map.map[0].alias = delete_node->table_name;
 
-    return check_table(delete_node->table_name)
-        && check_condition_node(delete_node->condition_node, alias_map);
+    return check_table(delete_node->table_name) && 
+                check_condition_node(delete_node->condition_node, alias_map);
 }
 
 /* Check for create table node. */
 bool check_create_table_node(CreateTableNode *create_table_node) {
-    return check_duplicate_table(create_table_node->table_name)
-        && check_table_element_commalist(create_table_node->base_table_element_commalist);
+    return check_duplicate_table(create_table_node->table_name) && 
+                check_table_element_commalist(create_table_node->base_table_element_commalist);
 }
 
 

@@ -199,7 +199,7 @@ Table *open_table(char *table_name) {
 
     /* Firstly, try to find in buffer. */
     Table *mtable = find_table_cache(table_name);
-    if (mtable)
+    if (mtable != NULL)
         return mtable;
 
     /* Memory missing, get from disk. */
