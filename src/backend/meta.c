@@ -504,60 +504,6 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
     return meta_table;
 }
 
-/* Get the meta table directly. 
- * ------------
- * Sometimes, we only want to fetch the meta table info. 
- * The function <open_table> is too heavy. It`s not 
- * neccessary to load the whole db file, and The root page 
- * is enough to get meta table info. In fact, to improve 
- * performance, this function find meta table info in cache firstly, 
- * if missing, load from file disk.
- * ------------
- * */
-MetaTable *get_meta_table_only(char *table_name) {
-    /* Check valid. */
-    Assert(table_name != NULL);
-
-    /* Check table if locked, if locked, block here until acquire the table. */
-    check_table_locked(table_name);
-
-    /* Find in cache. */
-    Table *cachetable = find_table_cache(table_name);
-    if (cachetable != NULL)
-        return cachetable->meta_table;
-
-    /* Cache missing, load form file disk. */
-    MetaTable *meta_table = instance(MetaTable);
-
-    Pager *pager = open_pager(table_name);
-    void *root_node = ReadBufferInner(table_name, pager, 0);
-
-    uint32_t column_size = get_column_size(root_node);
-
-    meta_table->table_name = dstrdup(table_name);
-    meta_table->column_size = 0;
-    meta_table->all_column_size = 0;
-    meta_table->meta_column = dalloc(sizeof(MetaColumn *) * column_size);
-
-    uint32_t offset = 0;
-    uint32_t i;
-    for (i = 0; i < column_size; i++) {
-        MetaColumn *current = get_meta_column_by_index(root_node, i, offset);
-        meta_table->meta_column[i] = current;
-        /* Skip to system reserved column. */
-        if (!current->sys_reserved)
-            meta_table->column_size++;
-        meta_table->all_column_size++;
-        offset += current->column_length;
-    }
-
-    Assert(meta_table->all_column_size == column_size);
-
-    /* Release the buffer. */
-    ReleaseBufferInner(pager, 0);
-
-    return meta_table;
-}
 
 /* Get data string name. 
  * Return value string name and it need be free`d
