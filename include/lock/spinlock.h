@@ -6,12 +6,20 @@
 
 typedef int s_lock;
 
+/* PAUSE. */
 #if defined(__x86_64__) || defined(__i386__)
     #define PAUSE() __asm__ volatile("pause\n": : : "memory")
 #elif defined(__arm__) || defined(__aarch64__)
-    #define PAUSE() __asm__ volatile("yield" ::: "memory")
+    #define PAUSE() __asm__ volatile("wfe" ::: "memory")
 #else
     #define PAUSE() ((void)0)
+#endif
+
+/* NOTICE. */
+#if defined(__arm__) || defined(__aarch64__)
+    #define NOTICE() __asm__ volatile("sev" ::: "memory")
+#else
+    #define NOTICE() ((void)0)
 #endif
 
 

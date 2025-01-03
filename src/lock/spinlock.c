@@ -19,7 +19,7 @@
  * */
 int lock_spin(uint32_t cnt) {
     volatile int idx;
-	if (cnt < 1024 )
+	if (cnt > 1024 )
 	  for (idx = 0; idx < cnt; idx++)
 	    PAUSE();
 	else
@@ -63,6 +63,9 @@ void release_spin_lock(volatile s_lock *lock) {
      * This code does`t use a C assignment, since the C standard implies
      * that an assignment might be implemented with multiple store instructions. */
     __sync_lock_release(lock);
+
+    /* Notice block processor. */
+    NOTICE();
 }
 
 /* Wait for spin lock released. */

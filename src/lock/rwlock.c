@@ -96,6 +96,9 @@ static inline void ReleaseRWLockInner(RWLockEntry *lock_entry) {
      * This code does`t use a C assignment, since the C standard implies
      * that an assignment might be implemented with multiple store instructions. */
     __sync_lock_release(&lock_entry->content_lock);
+
+    /* Notice block processor. */
+    NOTICE();
 }
 
 /* Acuqire the rwlock. */
