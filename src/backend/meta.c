@@ -385,9 +385,9 @@ uint32_t calc_table_row_length2(MetaTable *meta_table) {
 uint32_t calc_primary_key_length(Table *table) {
     uint32_t i;
     for (i = 0; i < table->meta_table->all_column_size; i++) {
-       MetaColumn *meta_column = table->meta_table->meta_column[i];
-       if (meta_column->is_primary)
-           return meta_column->column_length;
+        MetaColumn *meta_column = table->meta_table->meta_column[i];
+        if (meta_column->is_primary)
+            return meta_column->column_length;
     }
     panic("Not found primary key.");
     return -1;
@@ -423,9 +423,9 @@ static MetaColumn *get_meta_column_by_index(void *root_node, uint32_t index, uin
 MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *column_name) {
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
-      MetaColumn *meta_column = meta_table->meta_column[i];
-      if (streq(meta_column->column_name, column_name))
-        return meta_column;
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (streq(meta_column->column_name, column_name))
+            return meta_column;
     }
     return NULL;
 }
@@ -437,9 +437,9 @@ MetaColumn *get_meta_column_by_name(MetaTable *meta_table, char *column_name) {
 int get_meta_column_pos_by_name(MetaTable *meta_table, char *column_name) {
     uint32_t i;
     for (i = 0; i < meta_table->column_size; i++) {
-      MetaColumn *meta_column = meta_table->meta_column[i];
-      if (streq(meta_column->column_name, column_name))
-        return i;
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (streq(meta_column->column_name, column_name))
+            return i;
     }
 
     return -1;
@@ -463,9 +463,9 @@ MetaColumn *get_primary_key_meta_column(MetaTable *meta_table) {
 MetaColumn *get_all_meta_column_by_name(MetaTable *meta_table, char *name) {
     uint32_t i;
     for (i = 0; i < meta_table->all_column_size; i++) {
-      MetaColumn *meta_column = meta_table->meta_column[i];
-      if (streq(meta_column->column_name, name))
-        return meta_column;
+        MetaColumn *meta_column = meta_table->meta_column[i];
+        if (streq(meta_column->column_name, name))
+            return meta_column;
     }
     return NULL;
 }
@@ -509,7 +509,7 @@ MetaTable *gen_meta_table(Table *table, char *table_name) {
  * Return value string name and it need be free`d
  * */
 char *stringify_value(void *value, DataType data_type) {
-    if (!value)
+    if (value == NULL)
         return dstrdup("NULL");
 
     char buff[BUFF_SIZE];

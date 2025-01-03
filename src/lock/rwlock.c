@@ -29,7 +29,7 @@ static inline int GetCurrentPid() {
 /* Init the rwlock. */
 void InitRWlock(RWLockEntry *lock_entry) {
     lock_entry->mode = RW_INIT;
-    lock_entry->pids = create_list(NODE_INT);
+    lock_entry->owner = create_list(NODE_INT);
     init_spin_lock(&lock_entry->content_lock);
     init_spin_lock(&lock_entry->sync_lock);
 }
@@ -38,7 +38,7 @@ void InitRWlock(RWLockEntry *lock_entry) {
 static void AtomicAppendPid(RWLockEntry *lock_entry) {
     acquire_spin_lock(&lock_entry->sync_lock);
     switch_shared();
-    append_list_int(lock_entry->pids, GetCurrentPid());
+    append_list_int(lock_entry->owner, GetCurrentPid());
     switch_local();
     release_spin_lock(&lock_entry->sync_lock);
 }
@@ -46,29 +46,29 @@ static void AtomicAppendPid(RWLockEntry *lock_entry) {
 /* Atomically decrease the readernum. */
 static void AtomicRemovePid(RWLockEntry *lock_entry) {
     switch_shared();
-    list_delete_int_first(lock_entry->pids, GetCurrentPid());
+    list_delete_int_first(lock_entry->owner, GetCurrentPid());
     switch_local();
 }
 
 /* The condition to release rlock. .*/
 static inline bool ReleaseRlockCondition(RWLockEntry *lock_entry) {
-    return list_empty(lock_entry->pids);
+    return list_empty(lock_entry->owner);
 }
 
 /* The reenter condition.
  * Reenter condition includes:
- * (1) All process in pids is the current process. 
+ * (1) All process in owner is the current process. 
  * (2) RWLockMode in RWLockMode mode, and the request also RWLockMode. 
  * */
 static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
-    return list_all_int(lock_entry->pids, curpid) || 
+    return list_all_int(lock_entry->owner, curpid) || 
             (lock_entry->mode == RW_READERS && mode == RW_READERS);
 }
 
 /* Try acquire rwlock with reenter condition. */
 static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     if (lock_entry->content_lock == SPIN_UN_LOCKED_STATUS)
-        Assert(list_empty(lock_entry->pids));
+        Assert(list_empty(lock_entry->owner));
     Pid curpid = GetCurrentPid();
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
         while (lock_entry->content_lock) {
@@ -111,7 +111,7 @@ void ReleaseRWlock(RWLockEntry *lock_entry) {
     Assert(lock_entry->content_lock == SPIN_LOCKED_STATUS);
     acquire_spin_lock(&lock_entry->sync_lock);
     AtomicRemovePid(lock_entry);
-    lock_entry->mode = list_empty(lock_entry->pids) 
+    lock_entry->mode = list_empty(lock_entry->owner) 
                 ? RW_INIT 
                 : RW_READERS;
     release_spin_lock(&lock_entry->sync_lock);
