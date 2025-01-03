@@ -45,11 +45,9 @@ static void AtomicAppendPid(RWLockEntry *lock_entry) {
 
 /* Atomically decrease the readernum. */
 static void AtomicRemovePid(RWLockEntry *lock_entry) {
-    acquire_spin_lock(&lock_entry->sync_lock);
     switch_shared();
     list_delete_int_first(lock_entry->pids, GetCurrentPid());
     switch_local();
-    release_spin_lock(&lock_entry->sync_lock);
 }
 
 /* The condition to release rlock. .*/
@@ -111,10 +109,10 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
 void ReleaseRWlock(RWLockEntry *lock_entry) {
     Assert(NOT_INIT_LOCK(lock_entry));
     Assert(lock_entry->content_lock == SPIN_LOCKED_STATUS);
+    acquire_spin_lock(&lock_entry->sync_lock);
     AtomicRemovePid(lock_entry);
-    __sync_synchronize();
-    if (list_empty(lock_entry->pids))
-        lock_entry->mode = RW_INIT;
-    else
-        lock_entry->mode = RW_READERS;
+    lock_entry->mode = list_empty(lock_entry->pids) 
+                ? RW_INIT 
+                : RW_READERS;
+    release_spin_lock(&lock_entry->sync_lock);
 }

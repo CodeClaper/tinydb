@@ -221,6 +221,7 @@ Table *open_table(char *table_name) {
     /* Define root page is first page. */
     table->root_page_num = 0; 
     table->pager = pager;
+    table->creator = getpid();
     table->meta_table = gen_meta_table(table, table_name);
 
     if (pager->size == 0) {

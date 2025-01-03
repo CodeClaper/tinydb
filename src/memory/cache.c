@@ -14,18 +14,24 @@
 
 static List *TableCache;
 
+/*
+ * Table Cache lock.
+ */
+static s_lock *tlock;
+
 /* Initialise table cache. */
 void init_table_cache() {
     switch_shared();
     TableCache = create_list(NODE_TABLE);
+    tlock = instance(s_lock);
+    init_spin_lock(tlock);
     switch_local();
 }
 
 /* Save table cache. */
 void save_table_cache(Table *table) {
-
+    acquire_spin_lock(tlock);
     switch_shared();
-
     ListCell *lc;
     foreach (lc, TableCache) {
         Table *current = lfirst(lc);
@@ -35,11 +41,10 @@ void save_table_cache(Table *table) {
             free_table(current);
         }
     }
-
     /* Insert new table cache. */
     append_list(TableCache, copy_table(table));
-
     switch_local();
+    release_spin_lock(tlock);
 }
 
 
@@ -62,7 +67,7 @@ Table *find_table_cache(char *table_name) {
 
 /* Remove table cache. */
 void remove_table_cache(char *table_name) {
-
+    acquire_spin_lock(tlock);
     ListCell *lc;
     foreach (lc, TableCache) {
         Table *current = lfirst(lc);
@@ -73,5 +78,6 @@ void remove_table_cache(char *table_name) {
             switch_local();
         }
     }
+    release_spin_lock(tlock);
 }
 

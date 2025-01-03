@@ -281,12 +281,13 @@ Table *copy_table(Table *table) {
     if (table == NULL)
         return NULL;
 
-    Table *table_copy = instance(Table);
-    table_copy->root_page_num = table->root_page_num;
-    table_copy->pager = copy_pager(table->pager);
-    table_copy->meta_table = copy_meta_table(table->meta_table);
+    Table *duplica = instance(Table);
+    duplica->root_page_num = table->root_page_num;
+    duplica->pager = copy_pager(table->pager);
+    duplica->meta_table = copy_meta_table(table->meta_table);
+    duplica->creator = table->creator;
 
-    return table_copy;
+    return duplica;
 }
 
 /* Copy column node. */

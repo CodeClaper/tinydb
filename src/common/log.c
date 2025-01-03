@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <pthread.h>
 #include <setjmp.h>
 #include <stddef.h>
@@ -9,6 +8,7 @@
 #include <stdarg.h>
 #include <strings.h>
 #include <unistd.h>
+#include <errno.h>
 #include "log.h"
 #include "mmgr.h"
 #include "defs.h"
@@ -34,7 +34,7 @@ static void save_stack_message(char *msg) {
 
 
 /* Get stack message. */
-char *get_stack_message() {
+inline char *get_stack_message() {
     return CurrentMessage;
 }
 
@@ -56,8 +56,7 @@ static void flush_log(char* msg) {
 }
 
 /* Db log. */
-void db_log(LogLevel lev, char *format, ...) {
-
+void db_log(LogLevel level, char *format, ...) {
     /* Combinate message. */
     char message[BUFF_SIZE];
     va_list ap;
@@ -66,10 +65,12 @@ void db_log(LogLevel lev, char *format, ...) {
     va_end(ap);
 
     /* Only print higher level log. */
-    if (lev >= conf->log_level) {
+    if (level >= conf->log_level) {
         char *sys_time = get_current_sys_time2(MICROSECOND);
         char buff[BUFF_SIZE * 2];
-        sprintf(buff, "[%s][%d][%s]:\t%s\n", sys_time, getpid(), LOG_LEVEL_NAME_LIST[lev], message);
+        sprintf(buff, "[%s][%d][%s]:\t%s\n", 
+                sys_time, getpid(), 
+                LOG_LEVEL_NAME_LIST[level], message);
         fprintf(stdout, "%s", buff);
         flush_log(buff);
         dfree(sys_time);
@@ -82,39 +83,32 @@ void db_log(LogLevel lev, char *format, ...) {
      * FATAL:   abort session.
      * PANIC:   for unexpected error, caused by system error, take down the server.
      * */
-    switch(lev) {
+    switch(level) {
         case SUCCESS:
         case WARN: {
             save_stack_message(message);
             break;
         }
         case ERROR: {
-
             /* Save message to stack. */
             save_stack_message(message);
-
             /* Auto rollback*/
             auto_rollback_transaction();
-
             /* Stop the process, goto stmt. */
             longjmp(errEnv, 1);
             break;
         }
         case SYS_ERROR: {
-
             /* Save message to stack. */
             save_stack_message(message);
-
             /* Stop the process, goto stmt. */
             longjmp(errEnv, 1);
             break;
         }
         case FATAL:
         case PANIC: {
-
             /* Save message to stack. */
             save_stack_message("System inner error.");
-
             exit(EXIT_FAILURE);
         }
         default:
