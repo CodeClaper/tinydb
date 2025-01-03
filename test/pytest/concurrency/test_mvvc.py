@@ -14,6 +14,12 @@ def test_mock_table():
     ret = client1.execute(sql)
     assert ret["success"] == True
 
+def test_desc_mock_table():
+    sql = "desc Student;"
+    ret = client2.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"][0]["type"] ==  "int"
+
 ## begin transcaction.
 def test_begin_trans():
     sql = "begin;"

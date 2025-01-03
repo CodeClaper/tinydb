@@ -68,5 +68,3 @@ def test_drop_mock_table():
     assert ret["success"] == True
     client1.close()
     client2.close()
-
-
