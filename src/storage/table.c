@@ -212,11 +212,7 @@ Table *open_table(char *table_name) {
     /* New table. */
     Table *table = instance(Table);
     Pager *pager = open_pager(table_name);
-    if (pager == NULL) {
-        free_table(table);
-        dfree(file_path);
-        return NULL;
-    }
+    Assert(pager != NULL);
 
     /* Define root page is first page. */
     table->root_page_num = 0; 

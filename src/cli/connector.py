@@ -8,10 +8,10 @@ class TinyDbClient:
     def __init__(self, ip, port):
         # create a socket object.
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        socket.setdefaulttimeout(10)
+        socket.setdefaulttimeout(300)
         try:
             self.client.connect((ip, port))
-            self.client.settimeout(10)
+            self.client.settimeout(300)
         except socket.timeout:
             print(f"Connect to {ip}:{port} timeout.")
         except socket.error as e:
@@ -20,7 +20,7 @@ class TinyDbClient:
     def login(self, account, password) -> bool:
         self.client.send(f"{account}/{password}".encode("utf-8"))
         resp_bytes = self.client.recv(65535)
-        self.client.settimeout(10)
+        self.client.settimeout(300)
         response = resp_bytes.decode("utf-8").rstrip("\x00")
         print(response)
         return response != 'No access.'

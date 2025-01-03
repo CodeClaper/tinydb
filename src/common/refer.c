@@ -420,7 +420,9 @@ void update_related_tables_refer(ReferUpdateEntity *refer_update_entity) {
             continue;
         
         /* Check other tables. */
-        MetaTable *meta_table = get_meta_table_only(table_name);
+        // MetaTable *meta_table = get_meta_table_only(table_name);
+        Table *table = open_table(table_name);
+        MetaTable *meta_table = table->meta_table;
         if (if_related_table(meta_table, self_table_name)) 
             update_table_refer(meta_table, refer_update_entity);
     }

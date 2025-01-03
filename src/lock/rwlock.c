@@ -22,7 +22,7 @@
 #include "mmgr.h"
 #include "list.h"
 
-static int GetCurrentPid() {
+static inline int GetCurrentPid() {
     return getpid();
 }
 
