@@ -57,8 +57,8 @@ static inline bool ReleaseRlockCondition(RWLockEntry *lock_entry) {
 
 /* The reenter condition.
  * Reenter condition includes:
- * (1) All process in owner is the current process. 
- * (2) RWLockMode in RWLockMode mode, and the request also RWLockMode. 
+ * (1) All process in owner is the same process. 
+ * (2) RWLock in RWLockMode mode, and the request also RWLockMode lock. 
  * */
 static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
     return list_all_int(lock_entry->owner, curpid) || 
@@ -67,7 +67,7 @@ static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockM
 
 /* Try acquire rwlock with reenter condition. */
 static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
-    if (lock_entry->content_lock == SPIN_UN_LOCKED_STATUS)
+    if (UN_LOCKED(lock_entry->content_lock))
         Assert(list_empty(lock_entry->owner));
     Pid curpid = GetCurrentPid();
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
@@ -111,7 +111,7 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
 /* Release the rwlock. */
 void ReleaseRWlock(RWLockEntry *lock_entry) {
     Assert(NOT_INIT_LOCK(lock_entry));
-    Assert(lock_entry->content_lock == SPIN_LOCKED_STATUS);
+    Assert(LOCKED(lock_entry->content_lock));
     acquire_spin_lock(&lock_entry->sync_lock);
     AtomicRemovePid(lock_entry);
     lock_entry->mode = list_empty(lock_entry->owner) 

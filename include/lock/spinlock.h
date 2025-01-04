@@ -22,6 +22,11 @@ typedef int s_lock;
     #define NOTICE() ((void)0)
 #endif
 
+#define LOCKED(lock) \
+    lock == SPIN_LOCKED_STATUS 
+#define UN_LOCKED(lock) \
+    lock == SPIN_UN_LOCKED_STATUS 
+
 
 /* Lock spin. */
 int lock_spin(uint32_t cnt);
