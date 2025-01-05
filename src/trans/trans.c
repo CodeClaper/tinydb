@@ -80,7 +80,7 @@
 #include "spinlock.h"
 
 /* 
- * Store active transactions. 
+ * Chain stores active transactions. 
  */
 static TransEntry *xheader; 
 
@@ -89,17 +89,17 @@ static TransEntry *xheader;
  */
 static s_lock *xlock;
 
-static void create_xlock();
-static void *new_trans_entry(int64_t xid, Pid pid, bool auto_commit, TransEntry *next);
+static void CreateXlock();
+static void *NewTransEntry(Xid xid, Pid pid, bool auto_commit, TransEntry *next);
 
 /* Initialise transaction. */
 void init_trans() {
-    xheader = new_trans_entry(0, 0, false, NULL);
-    create_xlock();
+    xheader = NewTransEntry(0, 0, false, NULL);
+    CreateXlock();
 }
 
 /* Generate new TransEntry. */
-static void *new_trans_entry(int64_t xid, Pid pid, bool auto_commit, TransEntry *next) {
+static void *NewTransEntry(Xid xid, Pid pid, bool auto_commit, TransEntry *next) {
     switch_shared();
     TransEntry *entry = instance(TransEntry);
     entry->xid = xid;
@@ -112,7 +112,7 @@ static void *new_trans_entry(int64_t xid, Pid pid, bool auto_commit, TransEntry 
 
 
 /* Create the xlog. */
-static void create_xlock() {
+static void CreateXlock() {
     switch_shared();
     xlock = instance(s_lock);
     init_spin_lock(xlock);
@@ -121,7 +121,7 @@ static void create_xlock() {
 
 /* Generate next xid. 
  * return next xid, if return -1, there is an error. */
-static int64_t next_xid() {
+static inline Xid NextXid() {
     return get_current_sys_time(NANOSECOND);
 }
 
@@ -129,7 +129,6 @@ static int64_t next_xid() {
 bool any_transaction_running() {
     return !is_null(xheader->next);
 }
-
 
 /* Get the tail of TransEntry list. */
 static void *get_trans_tail() {
@@ -192,7 +191,7 @@ static void destroy_transaction() {
 }
 
 /* Check if a transaction active(uncommitted). */
-static bool is_active(int64_t xid) {
+static bool is_active(Xid xid) {
     bool active = false;
     acquire_spin_lock(xlock);
     TransEntry *current;
@@ -220,7 +219,7 @@ void auto_begin_transaction() {
         return;
 
     /* Generate new transaction. */
-    entry = new_trans_entry(next_xid(), getpid(), true, NULL);
+    entry = NewTransEntry(NextXid(), getpid(), true, NULL);
     db_log(INFO, "Auto begin transaction xid: %"PRId64" and pid: %"PRId64".", 
            entry->xid, entry->pid);
 
@@ -236,7 +235,7 @@ void begin_transaction() {
     Assert(!entry);
 
     /* Generate new transaction. */
-    entry = new_trans_entry(next_xid(), getpid(), false, NULL);
+    entry = NewTransEntry(NextXid(), getpid(), false, NULL);
 
     /* Register the transaction. */
     register_transaction(entry);
@@ -274,8 +273,8 @@ void auto_commit_transaction() {
     TransEntry *entry = find_transaction();
 
     /* Only deal with auto-commit transaction. */
-    if (entry && entry->auto_commit) {
-        int64_t xid = entry->xid; 
+    if (entry != NULL && entry->auto_commit) {
+        Xid xid = entry->xid; 
 
         /* Destroy transaction. */
         destroy_transaction();
@@ -344,10 +343,11 @@ bool row_is_visible(Row *row) {
     /* Get row created_xid and expired_xid. */
     KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    int64_t row_created_xid = *(int64_t *)created_xid_col->value;
-    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
+    Xid row_created_xid = *(Xid *)created_xid_col->value;
+    Xid row_expired_xid = *(Xid *)expired_xid_col->value;
 
-    /* Three satisfied conditions. */
+    /* If satisfy above three conditions, 
+     * row is visible for current transaction. */
     if (row_created_xid == entry->xid && 
             row_expired_xid == 0)
         return true;
@@ -361,13 +361,14 @@ bool row_is_visible(Row *row) {
                     row_created_xid != row_expired_xid)
         return true;
     
+    /* Else not visible. */
     return false;
 }
 
 /* Check if a row has been deleted. */
 bool row_is_deleted(Row *row) {
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
+    Xid row_expired_xid = *(Xid *)expired_xid_col->value;
     return row_expired_xid != 0;
 }
 
@@ -387,7 +388,7 @@ static void transaction_insert_row(Row *row) {
     lfirst(second_last_cell(row->data)) = created_xid_col;
 
     /* For expired_xid */
-    int64_t zero = 0;
+    Xid zero = 0;
     KeyValue *expired_xid_col = new_key_value(
         dstrdup(EXPIRED_XID_COLUMN_NAME),
         copy_value(&zero, T_LONG),
@@ -405,7 +406,7 @@ static void transaction_delete_row(Row *row) {
 
     /* Asssign current transaction id to expired_xid. */
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    *(int64_t *)expired_xid_col->value = entry->xid;
+    *(Xid *)expired_xid_col->value = entry->xid;
 }
 
 /* Update transaction state. */

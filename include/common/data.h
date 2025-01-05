@@ -704,7 +704,7 @@ typedef struct {
 
 /* TransactionHandle */
 typedef struct TransEntry {
-    int64_t xid;                /* transaction id. */ 
+    Xid xid;                /* transaction id. */ 
     Pid pid;                    /* processor id. */
     bool auto_commit;           /* auto commit. */
     struct TransEntry *next;    /* next */

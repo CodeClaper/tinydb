@@ -65,20 +65,24 @@ static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockM
             (lock_entry->mode == RW_READERS && mode == RW_READERS);
 }
 
-/* Try acquire rwlock with reenter condition. */
+/* Try acquire the rwlock. 
+ * Two ways to acquire the rwlock:
+ * (1) Directly acquire the rwlock.
+ * (2) Not acquired directly the rwlock but satisfy the ReenterCondition.
+ * */
 static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     if (UN_LOCKED(lock_entry->content_lock))
         Assert(list_empty(lock_entry->owner));
-    Pid curpid = GetCurrentPid();
+    Pid cur_pid = GetCurrentPid();
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
         while (lock_entry->content_lock) {
-            if (ReenterCondition(lock_entry, curpid, mode)) 
-                goto modify_mode;
+            if (ReenterCondition(lock_entry, cur_pid, mode)) 
+                goto acquire_lock;
             if (lock_spin(DEFAULT_SPIN_INTERVAL))
                 lock_sleep(DEFAULT_SPIN_INTERVAL);
         }
     }
-modify_mode:
+acquire_lock:
     __sync_synchronize();
     lock_entry->mode = mode;
 }

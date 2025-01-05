@@ -1,4 +1,5 @@
 #include <sched.h>
+#include <stdint.h>
 
 #define INT64CONST(x)  (x##L)
 #define UINT64CONST(x) (x##UL)
@@ -9,6 +10,11 @@
 typedef size_t Size;
 
 /* Pid
- * The processor id.
+ * The processor Id.
  * */
 typedef pid_t Pid;
+
+/* Xid
+ * The transaction Id.
+ * */
+typedef int64_t Xid;
