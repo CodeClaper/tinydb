@@ -80,7 +80,7 @@
 #include "spinlock.h"
 
 /* 
- * Chain stores active transactions. 
+ * The trans Chain stores active transactions. 
  */
 static TransEntry *xheader; 
 
@@ -126,16 +126,16 @@ static inline Xid NextXid() {
 }
 
 /* Any running transaction. */
-bool any_transaction_running() {
+bool inline any_transaction_running() {
     return !is_null(xheader->next);
 }
 
 /* Get the tail of TransEntry list. */
 static void *get_trans_tail() {
     TransEntry *entry = xheader;
-    while (entry->next) {
+    while (entry->next) 
         entry = entry->next;
-    }
+
     return entry;
 }
 
@@ -190,16 +190,15 @@ static void destroy_transaction() {
     release_spin_lock(xlock);
 }
 
-/* Check if a transaction active(uncommitted). */
+/* Check if a transaction is active()
+ * Active transaction is an uncommitted transaction. */
 static bool is_active(Xid xid) {
     bool active = false;
+    /* Lock here is necessary to avoid to read 
+     * the trans chain while it is being modified. */
     acquire_spin_lock(xlock);
     TransEntry *current;
     for (current = xheader; current != NULL; current = current->next) {
-        if (!shmem_addr_valid(current)) {
-            db_log(DEBUGER, "Error transaction %p and xheader %p and %d.", 
-                   current, xheader, shmem_addr_valid(xheader));
-        }
         Assert(shmem_addr_valid(current));
         if (current->xid == xid) {
             active = true;
@@ -215,8 +214,7 @@ void auto_begin_transaction() {
     TransEntry *entry = find_transaction();
 
     /* Already exists transaction, no need to auto begin transaction. */
-    if (entry != NULL) 
-        return;
+    if (entry != NULL) return;
 
     /* Generate new transaction. */
     entry = NewTransEntry(NextXid(), getpid(), true, NULL);
@@ -258,13 +256,11 @@ void commit_transaction() {
 
     /* Destroy transaction. */
     destroy_transaction(); 
-    
     db_log(
         INFO,
         "Commit the transaction xid: %"PRId64" successfully.", 
         entry->xid
     );
-
     db_log(SUCCESS, "Commit the transaction successfully");
 }
 
@@ -278,7 +274,6 @@ void auto_commit_transaction() {
 
         /* Destroy transaction. */
         destroy_transaction();
-
         db_log(
             SUCCESS, 
             "Auto commit the transaction xid: %"PRId64" successfully.", 
@@ -296,7 +291,6 @@ void rollback_transaction() {
 
     execute_roll_back();
     commit_transaction();
-
     db_log(
         SUCCESS, 
         "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
@@ -316,7 +310,6 @@ void auto_rollback_transaction() {
             return;
 
         execute_roll_back();
-
         db_log(
             INFO, 
             "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
