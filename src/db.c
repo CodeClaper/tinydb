@@ -67,9 +67,6 @@ static void db_start() {
     /* Initialise transaction. */
     init_trans();
 
-    /* Initialise xlog. */
-    init_xlog();
-
     /* Initialise table cache. */
     init_table_cache();
 

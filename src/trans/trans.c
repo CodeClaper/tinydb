@@ -271,14 +271,16 @@ void auto_commit_transaction() {
 
     /* Only deal with auto-commit transaction. */
     if (entry != NULL && entry->auto_commit) {
-        Xid xid = entry->xid; 
+
+        /* Commit Xlog. */
+        commit_xlog();
 
         /* Destroy transaction. */
         destroy_transaction();
         db_log(
             SUCCESS, 
             "Auto commit the transaction xid: %"PRId64" successfully.", 
-            xid
+            entry->xid
         );
     }
 }

@@ -35,18 +35,12 @@
 
 
 /* XLogTable Buffer. */
-static XLogTable *xtable;
+static XLogEntry *XLHeader = NULL;
 
 static void reverse_insert(Refer *refer, TransEntry *transaction);
 static void reverse_delete(Refer *refer, TransEntry *transaction);
 static void reverse_update_delete(Refer *refer, TransEntry *transaction);
 
-/* Initialise XLOG. */
-void init_xlog() {
-    xtable = instance(XLogTable);
-    xtable->size = 0;
-    xtable->list = dalloc(sizeof(XLogEntry *) * xtable->size);
-}
 
 /* Genrate new XLogEntry. */
 static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
@@ -58,31 +52,6 @@ static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
     return entry;
 }
 
-
-/* Find Xlog entry. */
-static XLogEntry *find_xlog_entry() {
-
-    XLogEntry *current = NULL;
-
-    TransEntry *trans = find_transaction();
-    Assert(trans);
-
-    for (uint32_t i = 0; i < xtable->size; i++) {
-        XLogEntry *head = xtable->list[i];
-        if (head->xid == trans->xid) {
-            current = head;         
-        }
-    }
-
-    return current;
-}
-
-/* Enlarge the xtable. */
-static void enlarge_xlog_table(XLogEntry *entry) {
-    xtable->list = drealloc(xtable->list, sizeof(XLogEntry *) * (xtable->size + 1));
-    xtable->list[xtable->size] = entry;
-    xtable->size++;
-}
 
 /* Record Xlog. */
 void record_xlog(Refer *refer, DDLType type) {
@@ -97,21 +66,8 @@ void record_xlog(Refer *refer, DDLType type) {
     MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
     XLogEntry *entry = new_xlog_entry(trans->xid, refer, type);
-
-    uint32_t i;
-    for (i = 0; i < xtable->size; i++) {
-        XLogEntry *head = xtable->list[i];
-        if (head->xid == entry->xid) {
-            entry->next = head;
-            xtable->list[i] = entry;
-            found = true;
-            break;
-        }
-    }
- 
-    if (!found)
-        /* Enlarge the xlog table. */
-        enlarge_xlog_table(entry);
+    entry->next = XLHeader;
+    XLHeader = entry;
     
     /* Recover the MemoryContext. */
     MemoryContextSwitchTo(oldcontext);
@@ -120,7 +76,7 @@ void record_xlog(Refer *refer, DDLType type) {
 /* Update xlog entry refer. */
 void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
 
-    XLogEntry *current = find_xlog_entry();
+    XLogEntry *current = XLHeader;
     if (current) {
         for (; current != NULL; current = current->next) {
             Refer *current_refer = current->refer;
@@ -142,32 +98,13 @@ void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
 
 /* Commit XLog . */
 void commit_xlog() {
-
-    TransEntry *trans = find_transaction();
-    Assert(trans);
-    
     /* Switch to CACHE_MEMORY_CONTEXT. */
     MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
     MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
-    uint32_t i, j;
-    for (i = 0; i < xtable->size; i++) {
-        XLogEntry *head = xtable->list[i];
-        if (head->xid == trans->xid) {
-            /* Right move forward. */
-            for (j = i; j < xtable->size - 1; j++) {
-                memcpy(xtable->list + j, xtable->list + j + 1, sizeof(XLogEntry *));
-            }
-            memset(xtable->list + j, 0, sizeof(XLogEntry *));
-
-            /* Free memory. */
-            free_xlog_entry(head);
-
-            xtable->size--;
-            xtable->list = drealloc(xtable->list, sizeof(XLogEntry *) * xtable->size);
-            break;     
-        }
-    }
+    /* Free memory. */
+    free_xlog_entry(XLHeader);
+    XLHeader = NULL;
 
     /* Recover the MemoryContext. */
     MemoryContextSwitchTo(oldcontext);
@@ -179,12 +116,11 @@ void execute_roll_back() {
     TransEntry *trans = find_transaction();
     Assert(trans);
 
-    XLogEntry *current = find_xlog_entry();
-    if (is_null(current))
+    if (is_null(XLHeader))
         return;
     
     /* Loop to rollback. */
-    for (; current != NULL; current = current->next) {
+    for (XLogEntry *current = XLHeader; current != NULL; current = current->next) {
         switch (current->type) {
             case DDL_INSERT:
                 reverse_insert(current->refer, trans);

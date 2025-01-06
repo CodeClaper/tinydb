@@ -718,12 +718,6 @@ typedef struct XLogEntry {
     struct XLogEntry *next;     /* Next XLogEntry */
 } XLogEntry;
 
-/* XLogEntry */
-typedef struct XLogTable {
-    XLogEntry **list;
-    uint32_t size;
-} XLogTable;
-
 /* AliasEntry */
 typedef struct AliasEntry {
     char *name;

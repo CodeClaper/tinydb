@@ -1,8 +1,5 @@
 #include "data.h"
 
-/* Initialise XLOG. */
-void init_xlog();
-
 /* Record Xlog. */
 void record_xlog(Refer *refer, DDLType type);
 
