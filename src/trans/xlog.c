@@ -33,7 +33,6 @@
 #include "utils.h"
 #include "pager.h"
 
-static pthread_mutex_t mutex;
 
 /* XLogTable Buffer. */
 static XLogTable *xtable;
@@ -47,7 +46,6 @@ void init_xlog() {
     xtable = instance(XLogTable);
     xtable->size = 0;
     xtable->list = dalloc(sizeof(XLogEntry *) * xtable->size);
-    pthread_mutex_init(&mutex, NULL);
 }
 
 /* Genrate new XLogEntry. */
@@ -94,8 +92,6 @@ void record_xlog(Refer *refer, DDLType type) {
     TransEntry *trans = find_transaction();
     Assert(trans);
 
-    pthread_mutex_lock(&mutex);
-
     /* Switch to CACHE_MEMORY_CONTEXT. */
     MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
     MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
@@ -119,9 +115,6 @@ void record_xlog(Refer *refer, DDLType type) {
     
     /* Recover the MemoryContext. */
     MemoryContextSwitchTo(oldcontext);
-
-    pthread_mutex_unlock(&mutex);
-
 }
 
 /* Update xlog entry refer. */
@@ -153,9 +146,6 @@ void commit_xlog() {
     TransEntry *trans = find_transaction();
     Assert(trans);
     
-    /* Lock */
-    pthread_mutex_lock(&mutex);
-
     /* Switch to CACHE_MEMORY_CONTEXT. */
     MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
     MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
@@ -181,8 +171,6 @@ void commit_xlog() {
 
     /* Recover the MemoryContext. */
     MemoryContextSwitchTo(oldcontext);
-
-    pthread_mutex_unlock(&mutex);
 }
 
 /* Execute rollback. */
