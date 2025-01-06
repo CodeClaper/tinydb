@@ -58,7 +58,7 @@ static void delete_row_for_update(Row *row, Table *table) {
 
         update_transaction_state(row, TR_DELETE);
         update_row_data(row, cursor);
-        record_xlog(refer, HEAP_UPDATE_DELETE);
+        RecordXlog(refer, HEAP_UPDATE_DELETE);
 
         free_cursor(cursor);
         free_refer(refer);
@@ -77,7 +77,7 @@ static void insert_row_for_update(Row *row, Table *table) {
     Refer *new_ref = convert_refer(new_cur);
 
     /* Record xlog for insert. */
-    record_xlog(new_ref, HEAP_UPDATE_INSERT);
+    RecordXlog(new_ref, HEAP_UPDATE_INSERT);
 
     free_cursor(new_cur);
     free_refer(new_ref);

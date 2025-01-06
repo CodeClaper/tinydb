@@ -59,7 +59,7 @@ static XLogEntry *NewXLogEntry(Xid xid, Refer *refer, XLogHeapType type) {
 }
 
 /* Record Xlog. */
-void record_xlog(Refer *refer, XLogHeapType type) {
+void RecordXlog(Refer *refer, XLogHeapType type) {
     /* First, find current transaction and it should exist.*/
     TransEntry *trans = find_transaction();
     Assert(trans != NULL);
@@ -77,7 +77,7 @@ void record_xlog(Refer *refer, XLogHeapType type) {
 }
 
 /* Update xlog entry refer. */
-void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
+void UpdateXlogEntryRefer(ReferUpdateEntity *refer_update_entity) {
     if (XLHeader) {
         for (XLogEntry *current = XLHeader; current != NULL; current = current->next) {
             Refer *current_refer = current->refer;
@@ -97,7 +97,7 @@ void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
 }
 
 /* Commit XLog . */
-void commit_xlog() {
+void CommitXlog() {
     /* Switch to CACHE_MEMORY_CONTEXT. */
     MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
     MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
@@ -111,7 +111,7 @@ void commit_xlog() {
 }
 
 /* Execute rollback. */
-void execute_roll_back() {
+void ExecuteRollback() {
     /* First, find current transaction and it should exist.*/
     TransEntry *trans = find_transaction();
     Assert(trans != NULL);

@@ -20,15 +20,15 @@ typedef struct XLogEntry {
 } XLogEntry;
 
 /* Record Xlog. */
-void record_xlog(Refer *refer, XLogHeapType type);
+void RecordXlog(Refer *refer, XLogHeapType type);
 
 /* Update xlog entry refer. */
-void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity);
+void UpdateXlogEntryRefer(ReferUpdateEntity *refer_update_entity);
 
 /* Commit Xlog. */
-void commit_xlog();
+void CommitXlog();
 
 /* Execute rollback. */
-void execute_roll_back();
+void ExecuteRollback();
 
 #endif

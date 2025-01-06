@@ -445,7 +445,7 @@ void update_refer(char *table_name, int32_t old_page_num, int32_t old_cell_num,
     update_related_tables_refer(refer_update_entity);
 
     /* Update Xlog. */
-    update_xlog_entry_refer(refer_update_entity);
+    UpdateXlogEntryRefer(refer_update_entity);
 
     /* Free memory. */
     free_refer_update_entity(refer_update_entity);

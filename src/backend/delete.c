@@ -43,7 +43,7 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table,
 
         /* Get refer and record xlog. */
         Refer *refer = convert_refer(cursor);
-        record_xlog(refer, HEAP_DELETE);
+        RecordXlog(refer, HEAP_DELETE);
 
         select_result->row_size++;
 

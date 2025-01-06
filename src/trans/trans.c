@@ -112,7 +112,7 @@ static void *NewTransEntry(Xid xid, Pid pid, bool auto_commit, TransEntry *next)
 }
 
 
-/* Create the xlog. */
+/* Create the xlock. */
 static void CreateXlock() {
     switch_shared();
     xlock = instance(s_lock);
@@ -253,7 +253,7 @@ void commit_transaction() {
         db_log(ERROR, "Not in any transaction, please begin a transaction");
 
     /* Commit Xlog. */
-    commit_xlog();
+    CommitXlog();
 
     /* Destroy transaction. */
     destroy_transaction(); 
@@ -273,7 +273,7 @@ void auto_commit_transaction() {
     if (entry != NULL && entry->auto_commit) {
 
         /* Commit Xlog. */
-        commit_xlog();
+        CommitXlog();
 
         /* Destroy transaction. */
         destroy_transaction();
@@ -292,7 +292,7 @@ void rollback_transaction() {
     if (is_null(entry) || entry->auto_commit)
         db_log(ERROR, "Not in any transaction, please begin a transaction");
 
-    execute_roll_back();
+    ExecuteRollback();
     commit_transaction();
     db_log(
         SUCCESS, 
@@ -304,15 +304,14 @@ void rollback_transaction() {
 
 /* Auto transaction rollback. */
 void auto_rollback_transaction() {
-
     if (conf->auto_rollback) {
-        
         /* Return if not exists transaction. */
         TransEntry *entry = find_transaction();
         if (is_null(entry))
             return;
 
-        execute_roll_back();
+        /* Rollback Xlog. */
+        ExecuteRollback();
         db_log(
             INFO, 
             "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
