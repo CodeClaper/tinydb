@@ -80,12 +80,13 @@
 #include "spinlock.h"
 
 /* 
- * The trans Chain stores active transactions. 
+ * The trans chain stores active transactions. 
+ * The chain header not store any info.
  */
 static TransEntry *xheader; 
 
 /*
- * Transaction lock
+ * Transaction sync lock
  */
 static s_lock *xlock;
 

@@ -704,7 +704,7 @@ typedef struct {
 
 /* TransactionHandle */
 typedef struct TransEntry {
-    Xid xid;                /* transaction id. */ 
+    Xid xid;                    /* transaction id. */ 
     Pid pid;                    /* processor id. */
     bool auto_commit;           /* auto commit. */
     struct TransEntry *next;    /* next */
@@ -712,11 +712,11 @@ typedef struct TransEntry {
 
 /* XLogEntry */
 typedef struct XLogEntry {
-    int64_t xid;                /* Transaction Id */
+    Xid xid;                    /* Transaction Id */
     Refer *refer;               /* Row refer. */
     DDLType type;               /* DDL type. */
     struct XLogEntry *next;     /* Next XLogEntry */
-}XLogEntry;
+} XLogEntry;
 
 /* XLogEntry */
 typedef struct XLogTable {

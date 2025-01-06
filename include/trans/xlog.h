@@ -1,6 +1,5 @@
 #include "data.h"
 
-
 /* Initialise XLOG. */
 void init_xlog();
 
