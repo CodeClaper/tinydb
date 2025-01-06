@@ -1,18 +1,23 @@
 /*
- ****************************************** Transaction Log Manager************************************************************
+ ********************************* Transaction Log Manager ************************************
  * Auth:        JerryZhou
  * Created:     2024/01/11
  * Modify:      2024/09/05
  * Locataion:   src/trans/xlog.c
  * Description: 
- *  TinyDb transaction log is Write-Ahead Log (WAL). Transaction Log records all transactions and the database modifications 
- *  that are made by each transaction. The transaction log is a critical component of the database and, if there`s a system failure, 
- *  the transaction log might be required to bring your database back to a consistent state.
+ *  TinyDb transaction log is Write-Ahead Log (WAL). Transaction Log records all transactions 
+ *  and the database modifications that are made by each transaction. The transaction log is 
+ *  a critical component of the database and, if there`s a system failure, the transaction
+ *  log might be required to bring your database back to a consistent state.
  *  The Transaction log manager basically supports three functions:
  *  (1) Supports Transaction Roll Back.
  *  (2) Supports recovery data when server restart up.
  *  (3) Support Transaction replication in distributed cluster.
- *******************************************************************************************************************************
+ * Besides:
+ *  Transaction Log is stored in a FIFO XLogEntry chain and the memory is allocated by 
+ *  the CACHE_MEMORY_CONTEXT memory context. It`s local memory and works in single thread of 
+ *  the endback. So there are not the concurrent security issues.
+ ***********************************************************************************************
  * */
 
 #include <pthread.h>
@@ -34,16 +39,17 @@
 #include "pager.h"
 
 
-/* XLogTable Buffer. */
+/* 
+ * The XLogEntry Chain.
+ */
 static XLogEntry *XLHeader = NULL;
 
-static void reverse_insert(Refer *refer, TransEntry *transaction);
-static void reverse_delete(Refer *refer, TransEntry *transaction);
-static void reverse_update_delete(Refer *refer, TransEntry *transaction);
-
+static void HeapInsertXLog(Refer *refer, TransEntry *transaction);
+static void HeapDeleteXLog(Refer *refer, TransEntry *transaction);
+static void HeadUpdateDeleteXlog(Refer *refer, TransEntry *transaction);
 
 /* Genrate new XLogEntry. */
-static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
+static XLogEntry *NewXLogEntry(Xid xid, Refer *refer, XLogHeapType type) {
     XLogEntry *entry = instance(XLogEntry);
     entry->type = type;
     entry->next = NULL;
@@ -52,20 +58,17 @@ static XLogEntry *new_xlog_entry(int64_t xid, Refer *refer, DDLType type) {
     return entry;
 }
 
-
 /* Record Xlog. */
-void record_xlog(Refer *refer, DDLType type) {
-
-    bool found = false;
-
+void record_xlog(Refer *refer, XLogHeapType type) {
+    /* First, find current transaction and it should exist.*/
     TransEntry *trans = find_transaction();
-    Assert(trans);
+    Assert(trans != NULL);
 
     /* Switch to CACHE_MEMORY_CONTEXT. */
     MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
     MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
 
-    XLogEntry *entry = new_xlog_entry(trans->xid, refer, type);
+    XLogEntry *entry = NewXLogEntry(trans->xid, refer, type);
     entry->next = XLHeader;
     XLHeader = entry;
     
@@ -75,13 +78,10 @@ void record_xlog(Refer *refer, DDLType type) {
 
 /* Update xlog entry refer. */
 void update_xlog_entry_refer(ReferUpdateEntity *refer_update_entity) {
-
-    XLogEntry *current = XLHeader;
-    if (current) {
-        for (; current != NULL; current = current->next) {
+    if (XLHeader) {
+        for (XLogEntry *current = XLHeader; current != NULL; current = current->next) {
             Refer *current_refer = current->refer;
             if (refer_equals(current_refer, refer_update_entity->old_refer)) {
-
                 /* Switch to CACHE_MEMORY_CONTEXT. */
                 MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
                 MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
@@ -112,47 +112,49 @@ void commit_xlog() {
 
 /* Execute rollback. */
 void execute_roll_back() {
-
+    /* First, find current transaction and it should exist.*/
     TransEntry *trans = find_transaction();
-    Assert(trans);
+    Assert(trans != NULL);
 
-    if (is_null(XLHeader))
-        return;
+    /* XLHeader might be NULL, when there is no XLogs. */
+    if (XLHeader == NULL) return;
     
     /* Loop to rollback. */
     for (XLogEntry *current = XLHeader; current != NULL; current = current->next) {
         switch (current->type) {
-            case DDL_INSERT:
-                reverse_insert(current->refer, trans);
+            case HEAP_INSERT:
+                HeapInsertXLog(current->refer, trans);
                 break;
-            case DDL_DELETE:
-                reverse_delete(current->refer, trans);
+            case HEAP_DELETE:
+                HeapDeleteXLog(current->refer, trans);
                 break;
-            case DDL_UPDATE_INSERT:
-                reverse_insert(current->refer, trans);
+            case HEAP_UPDATE_INSERT:
+                HeapInsertXLog(current->refer, trans);
                 break;
-            case DDL_UPDATE_DELETE:
-                reverse_update_delete(current->refer, trans);
+            case HEAP_UPDATE_DELETE:
+                HeadUpdateDeleteXlog(current->refer, trans);
                 break;
             default:
-                db_log(PANIC, "Unknown DDLType.");
+                db_log(PANIC, "Unknown XLogHeapType.");
         }        
     }
 }
 
 /* Reverse insert operation. */
-static void reverse_insert(Refer *refer, TransEntry *transaction) {
+static void HeapInsertXLog(Refer *refer, TransEntry *transaction) {
     Row *row = define_row(refer);
 
     KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    int64_t created_xid = *(int64_t *)created_xid_col->value;
-    assert_true(created_xid == transaction->xid, "System error, row created xid not equals transaction xid");
+    Xid created_xid = *(Xid *)created_xid_col->value;
+    Assert(created_xid == transaction->xid);
 
     /* Delete the insered row. */
-    *(int64_t *)expired_xid_col->value = transaction->xid;
-
-    update_row_data(row, convert_cursor(refer));
+    *(Xid *)expired_xid_col->value = transaction->xid;
+    update_row_data(
+        row, 
+        convert_cursor(refer)
+    );
 
     flush(refer->table_name);
 }
@@ -162,46 +164,46 @@ static void reverse_insert(Refer *refer, TransEntry *transaction) {
  * rather than re-insert the row to keep the principle that visible row always 
  * lies in the forefront of the same key cells.
  * */
-static void reverse_delete(Refer *refer, TransEntry *transaction) {
+static void HeapDeleteXLog(Refer *refer, TransEntry *transaction) {
     Row *row = define_row(refer);
-
-    assert_true(row_is_deleted(row), "System error, row not been deleted.");
+    Assert(row_is_deleted(row));
     
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
-    assert_true(row_expired_xid == transaction->xid, "System error, row expired xid not equals transaction xid");
+    Xid row_expired_xid = *(Xid *)expired_xid_col->value;
+    Assert(row_expired_xid == transaction->xid);
 
     /* Make the row visible. */
-    *(int64_t *)expired_xid_col->value = 0;
-
-    Table *table = open_table(refer->table_name);
+    *(Xid *)expired_xid_col->value = 0;
     
     /* Repositioning. */
-    Cursor *new_cur = define_cursor(table, row->key);
+    Cursor *new_cur = define_cursor(
+        open_table(refer->table_name), 
+        row->key
+    );
 
     /* Re-insert. */
     insert_leaf_node_cell(new_cur, row);
 
-    flush(get_table_name(table));
+    flush(refer->table_name);
 }
 
 /* Reverse update delete transaction. */
-static void reverse_update_delete(Refer *refer, TransEntry *transaction) {
-
+static void HeadUpdateDeleteXlog(Refer *refer, TransEntry *transaction) {
     Row *row = define_row(refer);
-    assert_true(row_is_deleted(row), "System error, row not been deleted.");
+    Assert(row_is_deleted(row));
 
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    int64_t row_expired_xid = *(int64_t *)expired_xid_col->value;
+    Xid row_expired_xid = *(Xid *)expired_xid_col->value;
     Assert(row_expired_xid == transaction->xid); 
 
     /* Make the row visible. */
-    *(int64_t *)expired_xid_col->value = 0;
+    *(Xid *)expired_xid_col->value = 0;
 
-    Table *table = open_table(refer->table_name);
-    
     /* Repositioning. */
-    Cursor *new_cur = define_cursor(table, row->key);
+    Cursor *new_cur = define_cursor(
+        open_table(refer->table_name), 
+        row->key
+    );
     Refer *new_ref = convert_refer(new_cur);
 
     /* Lock update refer. */

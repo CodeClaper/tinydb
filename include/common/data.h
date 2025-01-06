@@ -140,8 +140,6 @@ typedef enum LockMode { RD_MODE, WR_MODE } LockMode;
 /* The Four Transaction Isolation Level. */
 typedef enum { READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE } TransIsolationLevel;
 
-/* DDL Type. */
-typedef enum DDLType { DDL_INSERT, DDL_DELETE, DDL_UPDATE_INSERT, DDL_UPDATE_DELETE } DDLType;
 
 /* DataTypeNode */
 typedef struct DataTypeNode {
@@ -710,13 +708,6 @@ typedef struct TransEntry {
     struct TransEntry *next;    /* next */
 } TransEntry;
 
-/* XLogEntry */
-typedef struct XLogEntry {
-    Xid xid;                    /* Transaction Id */
-    Refer *refer;               /* Row refer. */
-    DDLType type;               /* DDL type. */
-    struct XLogEntry *next;     /* Next XLogEntry */
-} XLogEntry;
 
 /* AliasEntry */
 typedef struct AliasEntry {

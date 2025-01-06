@@ -1,4 +1,5 @@
 #include "data.h"
+#include "xlog.h"
 #include "bufmgr.h"
 
 /* Copy value */

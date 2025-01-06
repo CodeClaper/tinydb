@@ -163,7 +163,8 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 
 /* Define Cursor. */
 Cursor *define_cursor(Table *table, void *key) {
-    Assert(key);
+    Assert(table != NULL);
+    Assert(key != NULL);
 
     Cursor *cursor;
 
