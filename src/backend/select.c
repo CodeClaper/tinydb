@@ -629,7 +629,7 @@ Row *define_row(Refer *refer) {
  * */
 Row *define_visible_row(Refer *refer) {
     Row *row = define_row(refer);
-    if (row_is_deleted(row)) {
+    if (RowIsDeleted(row)) {
         free_row(row);
         return NULL;
     } else {
@@ -882,7 +882,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
 void count_row(Row *row, SelectResult *select_result, Table *table, 
                ROW_HANDLER_ARG_TYPE type,void *arg) {
     /* Only select visible row. */
-    if (!row_is_visible(row)) 
+    if (!RowIsVisible(row)) 
         return;
     select_result->row_size++;
 }
@@ -909,7 +909,7 @@ static void* purge_row(Row *row) {
 void select_row(Row *row, SelectResult *select_result, Table *table, 
                 ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only select visible row. */
-    if (!row_is_visible(row)) 
+    if (!RowIsVisible(row)) 
         return;
 
     /* If has limit clause. */

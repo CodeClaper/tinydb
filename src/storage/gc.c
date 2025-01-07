@@ -39,7 +39,7 @@ void loop_gc() {
 
 
         /* Each check loop opens a new transaction. */
-        auto_begin_transaction();
+        AutoBeginTransaction();
 
         /* loop each of tables to gc. */
         List *table_list = get_table_list();
@@ -52,7 +52,7 @@ void loop_gc() {
         free_list_deep(table_list);
 
         /* Commit transction manually. */
-        auto_commit_transaction();
+        AutoCommitTransaction();
     }
 }
 
@@ -62,16 +62,17 @@ void loop_gc() {
  * */
 static bool allow_gc() {
     /* Wait all transaction committed. */
-    while(any_transaction_running()) {
+    while(AnyTransactionRunning()) {
         usleep(10);
     }
     return true;
 }
 
 /* Gc row*/
-void gc_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
+void gc_row(Row *row, SelectResult *select_result, 
+            Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only for deleted row. */
-    if (!row_is_deleted(row))
+    if (!RowIsDeleted(row))
         return;
 
     /* Cursor */

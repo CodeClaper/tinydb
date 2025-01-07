@@ -61,7 +61,6 @@
 #include <pthread.h>
 #include <string.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 #include "data.h"
 #include "defs.h"
@@ -81,7 +80,7 @@
 
 /* 
  * The trans chain stores active transactions. 
- * The chain header not store any info.
+ * Note: The header of chain does not store any info.
  */
 static TransEntry *xheader; 
 
@@ -94,7 +93,7 @@ static void CreateXlock();
 static void *NewTransEntry(Xid xid, Pid pid, bool auto_commit, TransEntry *next);
 
 /* Initialise transaction. */
-void init_trans() {
+void InitTrans() {
     xheader = NewTransEntry(0, 0, false, NULL);
     CreateXlock();
 }
@@ -127,23 +126,21 @@ static inline Xid NextXid() {
 }
 
 /* Any running transaction. */
-bool inline any_transaction_running() {
+bool inline AnyTransactionRunning() {
     return !is_null(xheader->next);
 }
 
 /* Get the tail of TransEntry list. */
-static void *get_trans_tail() {
+static void *GetTransTail() {
     TransEntry *entry = xheader;
     while (entry->next) 
         entry = entry->next;
-
     return entry;
 }
 
 /* Find transaction handle by thread id. 
  * If not found, return NULL. */
-TransEntry *find_transaction() {
-
+TransEntry *FindTransaction() {
     /* Current thread id. */
     Pid pid = getpid();
 
@@ -158,14 +155,14 @@ TransEntry *find_transaction() {
 
 
 /* Register transaction. */
-static void register_transaction(TransEntry *entry) {
+static void RegisterTransaction(TransEntry *entry) {
     Assert(entry != NULL);
     /* New TransEntry should all be shared memory pointer. */
     Assert(shmem_addr_valid(entry));
     
     acquire_spin_lock(xlock);
 
-    TransEntry *tail = get_trans_tail();
+    TransEntry *tail = GetTransTail();
     Assert(tail != NULL);
     tail->next = entry;
 
@@ -173,7 +170,7 @@ static void register_transaction(TransEntry *entry) {
 }
 
 /* Destroy transaction. */
-static void destroy_transaction() {
+static void DestroyTransaction() {
     acquire_spin_lock(xlock);
     switch_shared();
 
@@ -193,7 +190,7 @@ static void destroy_transaction() {
 
 /* Check if a transaction is active()
  * Active transaction is an uncommitted transaction. */
-static bool is_active(Xid xid) {
+static bool IsActive(Xid xid) {
     bool active = false;
     /* Lock here is necessary to avoid to read 
      * the trans chain while it is being modified. */
@@ -211,8 +208,8 @@ static bool is_active(Xid xid) {
 }
 
 /* New transaction which will be committed automatically. */
-void auto_begin_transaction() {
-    TransEntry *entry = find_transaction();
+void AutoBeginTransaction() {
+    TransEntry *entry = FindTransaction();
 
     /* Already exists transaction, no need to auto begin transaction. */
     if (entry != NULL) return;
@@ -223,21 +220,20 @@ void auto_begin_transaction() {
            entry->xid, entry->pid);
 
     /* Register the transaction. */
-    register_transaction(entry);
+    RegisterTransaction(entry);
 
 }
 
 /* Begin a new transaction which need be committed manually. */
-void begin_transaction() {
-
-    TransEntry *entry = find_transaction();
+void BeginTransaction() {
+    TransEntry *entry = FindTransaction();
     Assert(!entry);
 
     /* Generate new transaction. */
     entry = NewTransEntry(NextXid(), getpid(), false, NULL);
 
     /* Register the transaction. */
-    register_transaction(entry);
+    RegisterTransaction(entry);
 
     /* Send message. */
     db_log(SUCCESS, "Begin new transaction xid:%"PRId64" and pid: %"PRId64"successfully.",
@@ -245,9 +241,8 @@ void begin_transaction() {
 }
 
 /* Commit transaction manually. */
-void commit_transaction() {
-
-    TransEntry *entry = find_transaction();
+void CommitTransaction() {
+    TransEntry *entry = FindTransaction();
 
     if (is_null(entry) || entry->auto_commit)
         db_log(ERROR, "Not in any transaction, please begin a transaction");
@@ -256,7 +251,7 @@ void commit_transaction() {
     CommitXlog();
 
     /* Destroy transaction. */
-    destroy_transaction(); 
+    DestroyTransaction(); 
     db_log(
         INFO,
         "Commit the transaction xid: %"PRId64" successfully.", 
@@ -266,8 +261,8 @@ void commit_transaction() {
 }
 
 /* Commit transaction automatically. */
-void auto_commit_transaction() {
-    TransEntry *entry = find_transaction();
+void AutoCommitTransaction() {
+    TransEntry *entry = FindTransaction();
 
     /* Only deal with auto-commit transaction. */
     if (entry != NULL && entry->auto_commit) {
@@ -276,7 +271,7 @@ void auto_commit_transaction() {
         CommitXlog();
 
         /* Destroy transaction. */
-        destroy_transaction();
+        DestroyTransaction();
         db_log(
             SUCCESS, 
             "Auto commit the transaction xid: %"PRId64" successfully.", 
@@ -286,14 +281,13 @@ void auto_commit_transaction() {
 }
 
 /* Tranasction rollback. */
-void rollback_transaction() {
-    TransEntry *entry = find_transaction();
-
+void RollbackTransaction() {
+    TransEntry *entry = FindTransaction();
     if (is_null(entry) || entry->auto_commit)
         db_log(ERROR, "Not in any transaction, please begin a transaction");
 
     ExecuteRollback();
-    commit_transaction();
+    CommitTransaction();
     db_log(
         SUCCESS, 
         "Transaction xid: %"PRId64" rollbacked and commited successfully.", 
@@ -303,10 +297,10 @@ void rollback_transaction() {
 
 
 /* Auto transaction rollback. */
-void auto_rollback_transaction() {
+void AutoRollbackTransaction() {
     if (conf->auto_rollback) {
         /* Return if not exists transaction. */
-        TransEntry *entry = find_transaction();
+        TransEntry *entry = FindTransaction();
         if (is_null(entry))
             return;
 
@@ -328,12 +322,10 @@ void auto_rollback_transaction() {
  * (2) other transaction creates the row, and transaction is committed and the row is not deleted.
  * (3) the row is deleted by another uncommitted transaction (which not creates the row)
  * */
-bool row_is_visible(Row *row) {
-
+bool RowIsVisible(Row *row) {
     /* Get current transaction. */
-    TransEntry *entry = find_transaction();
-    
-    Assert(entry);
+    TransEntry *entry = FindTransaction();
+    Assert(entry != NULL);
 
     /* Get row created_xid and expired_xid. */
     KeyValue *created_xid_col = lfirst(second_last_cell(row->data));
@@ -347,12 +339,12 @@ bool row_is_visible(Row *row) {
             row_expired_xid == 0)
         return true;
     if (row_created_xid != entry->xid && 
-            !is_active(row_created_xid) && 
+            !IsActive(row_created_xid) && 
                 row_expired_xid == 0)
         return true;
     if (row_expired_xid != 0 && 
             row_expired_xid != entry->xid && 
-                is_active(row_expired_xid) && 
+                IsActive(row_expired_xid) && 
                     row_created_xid != row_expired_xid)
         return true;
     
@@ -361,18 +353,17 @@ bool row_is_visible(Row *row) {
 }
 
 /* Check if a row has been deleted. */
-bool row_is_deleted(Row *row) {
+bool RowIsDeleted(Row *row) {
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
     Xid row_expired_xid = *(Xid *)expired_xid_col->value;
     return row_expired_xid != 0;
 }
 
 /* Transaction operation for insert row. */
-static void transaction_insert_row(Row *row) {
-
+static void TransactionInsertRow(Row *row) {
     /* Get current transaction. */
-    TransEntry *entry = find_transaction();
-    Assert(entry);
+    TransEntry *entry = FindTransaction();
+    Assert(entry != NULL);
 
     /* For created_xid */
     KeyValue *created_xid_col = new_key_value(
@@ -393,11 +384,10 @@ static void transaction_insert_row(Row *row) {
 }
 
 /* Tranasction operation for delete row. */
-static void transaction_delete_row(Row *row) {
-    
+static void TransactionDeleteRow(Row *row) {
     /* Get current transaction. */
-    TransEntry *entry = find_transaction();
-    Assert(entry);
+    TransEntry *entry = FindTransaction();
+    Assert(entry != NULL);
 
     /* Asssign current transaction id to expired_xid. */
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
@@ -405,15 +395,15 @@ static void transaction_delete_row(Row *row) {
 }
 
 /* Update transaction state. */
-void update_transaction_state(Row *row, TransOpType trans_op_type) {
+void UpdateTransactionState(Row *row, TransOpType trans_op_type) {
     switch(trans_op_type) {
         case TR_SELECT:
             break;
         case TR_INSERT:
-            transaction_insert_row(row);  
+            TransactionInsertRow(row);  
             break;
         case TR_DELETE:
-            transaction_delete_row(row);
+            TransactionDeleteRow(row);
             break;
         case TR_UPDATE:
             break;

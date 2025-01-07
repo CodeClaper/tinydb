@@ -93,7 +93,7 @@ void db_log(LogLevel level, char *format, ...) {
             /* Save message to stack. */
             save_stack_message(message);
             /* Auto rollback*/
-            auto_rollback_transaction();
+            AutoRollbackTransaction();
             /* Stop the process, goto stmt. */
             longjmp(errEnv, 1);
             break;

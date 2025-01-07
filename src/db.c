@@ -65,7 +65,7 @@ static void db_start() {
     init_fdesc();
 
     /* Initialise transaction. */
-    init_trans();
+    InitTrans();
 
     /* Initialise table cache. */
     init_table_cache();

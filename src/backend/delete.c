@@ -32,11 +32,11 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table,
                        ROW_HANDLER_ARG_TYPE type, void *arg) {
 
     /* Only deal with row that is visible for current transaction. */
-    if (row_is_visible(row)) {
+    if (RowIsVisible(row)) {
         Cursor *cursor = define_cursor(table, row->key);
 
         /* Update transaction state. */
-        update_transaction_state(row, TR_DELETE);
+        UpdateTransactionState(row, TR_DELETE);
 
         /* Sync row data */
         update_row_data(row, cursor);

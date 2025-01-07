@@ -61,7 +61,7 @@ static XLogEntry *NewXLogEntry(Xid xid, Refer *refer, XLogHeapType type) {
 /* Record Xlog. */
 void RecordXlog(Refer *refer, XLogHeapType type) {
     /* First, find current transaction and it should exist.*/
-    TransEntry *trans = find_transaction();
+    TransEntry *trans = FindTransaction();
     Assert(trans != NULL);
 
     /* Switch to CACHE_MEMORY_CONTEXT. */
@@ -113,7 +113,7 @@ void CommitXlog() {
 /* Execute rollback. */
 void ExecuteRollback() {
     /* First, find current transaction and it should exist.*/
-    TransEntry *trans = find_transaction();
+    TransEntry *trans = FindTransaction();
     Assert(trans != NULL);
 
     /* XLHeader might be NULL, when there is no XLogs. */
@@ -166,7 +166,7 @@ static void HeapInsertXLog(Refer *refer, TransEntry *transaction) {
  * */
 static void HeapDeleteXLog(Refer *refer, TransEntry *transaction) {
     Row *row = define_row(refer);
-    Assert(row_is_deleted(row));
+    Assert(RowIsDeleted(row));
     
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
     Xid row_expired_xid = *(Xid *)expired_xid_col->value;
@@ -190,7 +190,7 @@ static void HeapDeleteXLog(Refer *refer, TransEntry *transaction) {
 /* Reverse update delete transaction. */
 static void HeadUpdateDeleteXlog(Refer *refer, TransEntry *transaction) {
     Row *row = define_row(refer);
-    Assert(row_is_deleted(row));
+    Assert(RowIsDeleted(row));
 
     KeyValue *expired_xid_col = lfirst(last_cell(row->data));
     Xid row_expired_xid = *(Xid *)expired_xid_col->value;

@@ -95,7 +95,7 @@ static KeyValue *new_sys_id_column() {
 /* Generate new created_xid column.*/
 static KeyValue *new_created_xid_column() {
     /* Get current transaction. */
-    TransEntry *current_trans = find_transaction();
+    TransEntry *current_trans = FindTransaction();
     
     Assert(current_trans);
 

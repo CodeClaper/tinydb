@@ -114,6 +114,7 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
 
 /* Release the rwlock. */
 void ReleaseRWlock(RWLockEntry *lock_entry) {
+    /* There is occasional bug here. */
     Assert(NOT_INIT_LOCK(lock_entry));
     Assert(LOCKED(lock_entry->content_lock));
     acquire_spin_lock(&lock_entry->sync_lock);

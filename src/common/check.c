@@ -754,7 +754,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
             Row *default_row = define_row(new_refer);
             free_cursor(new_cursor);
             free_refer(new_refer);
-            if (!row_is_deleted(default_row) && 
+            if (!RowIsDeleted(default_row) && 
                 equal(default_row->key, new_key, primary_meta_column->column_type)) {
                     free_row(default_row);
                     select_result->row_size = 0;

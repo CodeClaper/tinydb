@@ -2,39 +2,38 @@
 #include "data.h"
 
 /* Initialise transaction. */
-void init_trans();
+void InitTrans();
 
 /* Check if row is visible for current transaction. */
-bool row_is_visible(Row *row);
+bool RowIsVisible(Row *row);
 
 /* Check if a row has been deleted. */
-bool row_is_deleted(Row *row);
+bool RowIsDeleted(Row *row);
 
 /* Any running transaction. */
-bool any_transaction_running();
+bool AnyTransactionRunning();
 
 /* New transaction which will be committed automatically. */
-void auto_begin_transaction();
+void AutoBeginTransaction();
 
 /* New transaction which will be commited automatically. */
-void begin_transaction();
+void BeginTransaction();
 
 /* Get current thread transction handle. 
  * Return current thread transaction, return NULL if not found. */
-TransEntry *find_transaction();
+TransEntry *FindTransaction();
 
 /* Commit transaction manually. */
-void commit_transaction();
+void CommitTransaction();
 
 /* Commit transaction automatically. */
-void auto_commit_transaction();
+void AutoCommitTransaction();
 
 /* Rollback transaction. */
-void rollback_transaction();
+void RollbackTransaction();
 
 /* Auto transaction rollback. */
-void auto_rollback_transaction();
-
+void AutoRollbackTransaction();
 
 /* Update transaction state. */
-void update_transaction_state(Row *row, TransOpType trans_op_type);
+void UpdateTransactionState(Row *row, TransOpType trans_op_type);

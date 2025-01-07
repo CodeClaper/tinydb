@@ -52,11 +52,11 @@ static void update_cell(Row *row, AssignmentNode *assign_node, MetaColumn *meta_
 
 /* Delete row for update */
 static void delete_row_for_update(Row *row, Table *table) {
-    if (row_is_visible(row)) {
+    if (RowIsVisible(row)) {
         Cursor *cursor = define_cursor(table, row->key);
         Refer *refer = convert_refer(cursor);
 
-        update_transaction_state(row, TR_DELETE);
+        UpdateTransactionState(row, TR_DELETE);
         update_row_data(row, cursor);
         RecordXlog(refer, HEAP_UPDATE_DELETE);
 
@@ -69,7 +69,7 @@ static void delete_row_for_update(Row *row, Table *table) {
 static void insert_row_for_update(Row *row, Table *table) {
 
     Cursor *new_cur = define_cursor(table, row->key);
-    update_transaction_state(row, TR_INSERT);
+    UpdateTransactionState(row, TR_INSERT);
 
     /* Insert */
     insert_leaf_node_cell(new_cur, row);
@@ -90,7 +90,7 @@ static void insert_row_for_update(Row *row, Table *table) {
 static void update_row(Row *row, SelectResult *select_result, Table *table, 
                        ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only update row that is visible for current transaction. */
-    if (!row_is_visible(row)) 
+    if (!RowIsVisible(row)) 
         return;
 
     select_result->row_size++;
@@ -138,7 +138,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table,
     /* If Refer changed, update refer. */
     if (!refer_equals(old_refer, new_refer)) {
         Row *new_row = define_row(new_refer);
-        assert_true(row_is_visible(new_row), "System error, row not visible. ");
+        assert_true(RowIsVisible(new_row), "System error, row not visible. ");
         update_related_tables_refer(refer_update_entity);
         free_row(new_row);
     }

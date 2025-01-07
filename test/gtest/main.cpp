@@ -31,10 +31,7 @@ static void db_start() {
     init_mem();
 
     /* Initialise transaction. */
-    init_trans();
-
-    /* Initialise xlog. */
-    init_xlog();
+    InitTrans();
 
     /* Initialise table cache. */
     init_table_cache();
