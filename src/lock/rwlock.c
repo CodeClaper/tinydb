@@ -7,16 +7,19 @@
  * in concurrent scenarios.
  *
  * -------------------
- * The readers-writer lock has these meanings:
+ * The readers-writer lock has these features:
  * (1) The readers lock is a shared lock, it allowed other process to read the locked content and not allowd 
  * other process to write the locked content.
  * (2) The writer lock is an exclusive lock, it neither allowes other process to read nor other process to write 
  * the lock content.
+ * (3) The reader lock is allowed to upgrade to write lock. This means reader lock can upgrade to write lock directly 
+ * without release reader lock firstly. 
+ * (4) If one process acquire the writer lock, it not allowed to acquire the rwlock lock again. This operation is
+ * not useful but brings risks of concurrent security issues.
  ***************************************************************************************************************************
  * */
 
 #include <stdbool.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <stdatomic.h>
 #include "rwlock.h"
@@ -37,11 +40,9 @@ void InitRWlock(RWLockEntry *lock_entry) {
 
 /* Atomically increase the readernum. */
 static void AtomicAppendPid(RWLockEntry *lock_entry) {
-    acquire_spin_lock(&lock_entry->sync_lock);
     switch_shared();
     append_list_int(lock_entry->owner, GetCurrentPid());
     switch_local();
-    release_spin_lock(&lock_entry->sync_lock);
 }
 
 /* Atomically decrease the readernum. */
@@ -82,8 +83,10 @@ static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
         }
     }
 acquire_lock:
-    __sync_synchronize();
+    acquire_spin_lock(&lock_entry->sync_lock);
     lock_entry->mode = mode;
+    AtomicAppendPid(lock_entry);
+    release_spin_lock(&lock_entry->sync_lock);
 }
 
 /* Try to release rwlock.*/
@@ -107,8 +110,11 @@ static inline void ReleaseRWLockInner(RWLockEntry *lock_entry) {
 /* Acuqire the rwlock. */
 void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
     Assert(mode != RW_INIT);
+    /* Not alloed same process acquire the writer lock again. */
+    AssertFalse(lock_entry->mode == RW_WRITER && 
+                    mode == RW_WRITER && 
+                        list_member_int(lock_entry->owner, GetCurrentPid()));
     AcquireRWLockInner(lock_entry, mode); 
-    AtomicAppendPid(lock_entry);
 }
 
 /* Release the rwlock. */
@@ -121,7 +127,7 @@ void ReleaseRWlock(RWLockEntry *lock_entry) {
     if (ReleaseRWlockCondition(lock_entry))
         ReleaseRWLockInner(lock_entry);
     /* RWLockMode allowed mode upgrade from RW_READERS to RW_WRITE. 
-     * So, when relasing lock, if owner not empty, reset RW_READERS. */
+     * So, when relasing lock, if owner is not empty, reset RW_READERS mode. */
     lock_entry->mode = list_empty(lock_entry->owner) 
                 ? RW_INIT 
                 : RW_READERS;
