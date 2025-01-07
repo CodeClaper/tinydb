@@ -693,7 +693,7 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         Row *row = generate_row(destinct, table->meta_table);
 
         SelectResult *derived = select_result->derived;
-        if (derived) {
+        if (derived != NULL) {
             /* Cartesian product. */
             ListCell *lc;
             foreach (lc, derived->rows) {
@@ -1165,44 +1165,56 @@ static KeyValue *query_function_column_value(FunctionNode *function, SelectResul
 /* Query column value. */
 static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row) {
 
-    if (!row)
+    if (row == NULL) {
         return new_key_value(
             dstrdup(column->column_name), 
             NULL, 
-            T_ROW);
+            T_ROW
+        );
+    }
 
     /* Get table name via alias name. */
     char *table_name = search_table_via_alias(select_result, column->range_variable);
     if (column->range_variable && table_name == NULL) {
-        db_log(ERROR, "Unknown table alias '%s' in select items. ", column->range_variable);
+        db_log(ERROR, "Unknown table alias '%s' in select items. ", 
+               column->range_variable);
         return NULL;
     }
 
     ListCell *lc;
     foreach (lc, row->data) {
         KeyValue *key_value = lfirst(lc);
-        if (streq(column->column_name, key_value->key) 
-            && (table_name == NULL || streq(table_name, key_value->table_name))) {
-                /* Reference type and query sub column. */
-                if (key_value->data_type == T_REFERENCE) {
-                    Refer *refer = (Refer *)key_value->value;
-                    Row *sub_row = define_visible_row(refer);
-                    if (column->has_sub_column && column->sub_column) {
-                        KeyValue *sub_key_value = query_plain_column_value(select_result, column->sub_column, sub_row);
-                        free_row(sub_row);
-                        return sub_key_value;
-                    } else if (column->has_sub_column && column->scalar_exp_list) {
-                        Row *filtered_subrow = query_plain_row_selection(select_result, column->scalar_exp_list, sub_row);
-                        free_row(sub_row);
-                        return new_key_value(dstrdup(column->column_name), filtered_subrow, T_ROW);
-                    } else if (!column->has_sub_column) {
-                        return new_key_value(dstrdup(column->column_name), sub_row, T_ROW);
-                    }
+        if (streq(column->column_name, key_value->key) && 
+                (table_name == NULL || streq(table_name, key_value->table_name))) {
+            /* Reference type and query sub column. */
+            if (key_value->data_type == T_REFERENCE) {
+                Refer *refer = (Refer *)key_value->value;
+                Row *sub_row = define_visible_row(refer);
+                if (column->has_sub_column && column->sub_column) {
+                    KeyValue *sub_key_value = query_plain_column_value(select_result, column->sub_column, sub_row);
+                    free_row(sub_row);
+                    return sub_key_value;
+                } else if (column->has_sub_column && column->scalar_exp_list) {
+                    Row *filtered_subrow = query_plain_row_selection(select_result, column->scalar_exp_list, sub_row);
+                    free_row(sub_row);
+                    return new_key_value(
+                        dstrdup(column->column_name), 
+                        filtered_subrow, 
+                        T_ROW
+                    );
+                } else if (!column->has_sub_column) {
+                    return new_key_value(
+                        dstrdup(column->column_name), 
+                        sub_row, 
+                        T_ROW
+                    );
                 }
-                else if (column->has_sub_column) 
-                    db_log(ERROR, "Column '%s' is not Reference type, no sub column found.", column->column_name);
-                else
-                    return copy_key_value(key_value);
+            }
+            else if (column->has_sub_column) 
+                db_log(ERROR, "Column '%s' is not Reference type, no sub column found.", 
+                       column->column_name);
+            else
+                return copy_key_value(key_value);
         }
     }
     db_log(ERROR, "Not found column '%s'. ", column->column_name);
@@ -1529,7 +1541,7 @@ static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
                                          T_INT);
                 }
                 case T_LONG: {
-                    int64_t mul = *(int64_t *)left->value * *(int64_t *)right->value;
+                    int64_t mul = *(int32_t *)left->value * *(int64_t *)right->value;
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_LONG), 
                                          T_LONG);
@@ -1861,11 +1873,22 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
         case SCALAR_COLUMN: {
             ColumnNode *column = scalar_exp->column;
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column->column_name);
-            if (list_empty(select_result->rows))
-                return new_key_value(dstrdup(column->column_name), NULL, meta_column->column_type);
-            else
-                /* Default, when query function and column data, column only return first data. */
-                return query_plain_column_value(select_result, column, lfirst(first_cell(select_result->rows)));
+            if (list_empty(select_result->rows)) {
+                return new_key_value(
+                    dstrdup(column->column_name), 
+                    NULL, 
+                    meta_column->column_type
+                );
+            }
+            else {
+                /* Default, when query function and column data, 
+                 * column only return first data. */
+                return query_plain_column_value(
+                    select_result, 
+                    column, 
+                    lfirst(first_cell(select_result->rows))
+                );
+            }
         }
         case SCALAR_FUNCTION:
             return query_function_column_value(scalar_exp->function, select_result);
@@ -1874,7 +1897,11 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
         case SCALAR_VALUE: {
             ValueItemNode *value = scalar_exp->value;
             if (list_empty(select_result->rows)) 
-                return new_key_value(dstrdup("value"), NULL, convert_data_type(value->value.atom->type));
+                return new_key_value(
+                    dstrdup("value"), 
+                    NULL, 
+                    convert_data_type(value->value.atom->type)
+                );
             else
                 return query_value_item(value, lfirst(first_cell(select_result->rows)));
         }
@@ -1887,7 +1914,6 @@ static KeyValue *query_function_value(ScalarExpNode *scalar_exp, SelectResult *s
 
 /* Query function data. */
 static void query_fuction_selecton(List *scalar_exp_list, SelectResult *select_result) {
-
     Row *row = new_row(NULL, select_result->table_name);
 
     ListCell *lc;
