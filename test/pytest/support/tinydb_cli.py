@@ -16,7 +16,6 @@ class TinyDbClient:
         self.client.send(f"{account}/{password}".encode("utf-8"))
         response = self.client.recv(65535)
         response = response.decode("utf-8").rstrip("\x00")
-        print(response)
         return response != 'No access.'
 
     def execute(self, sql) -> dict:
@@ -31,7 +30,6 @@ class TinyDbClient:
                 break
             writer.write(response)
         ret = writer.getvalue()
-        print(ret)
         writer.close()
         return json.loads(ret)
                

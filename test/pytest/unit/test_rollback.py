@@ -16,6 +16,13 @@ def test_create_mock_table():
     assert ret[0]["success"] == True
     assert ret[1]["success"] == True
 
+# test nothing-to-do rollback.
+def test_nothing_to_do_rollback():
+    sql = "rollback;"
+    ret = client1.execute(sql)
+    assert ret["success"] == False
+    assert ret["message"] == "Not in any transaction, please begin a transaction"
+
 
 ## begin transaction and insert one row data.
 def test_insert_data():
