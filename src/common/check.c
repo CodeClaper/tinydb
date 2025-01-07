@@ -34,10 +34,7 @@
 #include "list.h"
 #include "cache.h"
 
-/* Check ValueItemSetNode. */
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, List *value_list);
-
-/* Check ScalarExpNode. */
 static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map);
 
 /* Get column name in ColumnDefNode. */
@@ -81,17 +78,16 @@ static void *get_value_from_atom(AtomNode *atom_node) {
  * Return meta column or NULL if not found.
  * */
 static MetaColumn *find_meta_column_in_table_ref_list(List *list, char *column_name) {
-
     ListCell *lc;
     foreach (lc, list) {
         TableRefNode *table_ref = lfirst(lc);
         Table *table = open_table(table_ref->table);
-        if (!table) {
+        if (table == NULL) {
             db_log(ERROR, "Table '%s' not exist.", table_ref->table);
             return NULL;
         }
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, column_name);
-        if (meta_column)
+        if (meta_column != NULL)
             return meta_column;
     }
 
@@ -187,9 +183,12 @@ static bool check_column_node(ColumnNode *column_node, MetaTable *meta_table) {
     
     /* Reach here, means column is unknown. */
     if (column_node->range_variable) 
-        db_log(ERROR, "Unknown column '%s.%s', ", column_node->range_variable, column_node->column_name);
+        db_log(ERROR, "Unknown column '%s.%s', ", 
+               column_node->range_variable, 
+               column_node->column_name);
     else 
-        db_log(ERROR, "Unknown column '%s', ", column_node->column_name);
+        db_log(ERROR, "Unknown column '%s', ", 
+               column_node->column_name);
 
     return false;
 }
@@ -207,7 +206,8 @@ static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap ali
         MetaTable *meta_table = table->meta_table;
 
         if (column->range_variable && 
-            (streq(column->range_variable, alias_entry.name) || streq(column->range_variable, alias_entry.alias))) 
+            (streq(column->range_variable, alias_entry.name) || 
+                streq(column->range_variable, alias_entry.alias))) 
                 current_meta_table = meta_table;
 
         if (column->range_variable == NULL) {
@@ -223,9 +223,11 @@ static MetaTable *confirm_meta_table_via_column(ColumnNode *column, AliasMap ali
 
     if (current_meta_table == NULL) {
         if (column->range_variable)
-            db_log(ERROR, "Unknown column name '%s.%s'. ", column->range_variable, column->column_name);
+            db_log(ERROR, "Unknown column name '%s.%s'. ", 
+                   column->range_variable, column->column_name);
         else
-            db_log(ERROR, "Unknown column name '%s'. ", column->column_name);
+            db_log(ERROR, "Unknown column name '%s'. ", 
+                   column->column_name);
 
         return current_meta_table;
     }
@@ -307,7 +309,10 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             return true;
         }
         case T_FLOAT: {
-            if (atom_node->type == A_FLOAT && (isinff(atom_node->value.floatval) || atom_node->value.floatval > FLT_MAX || atom_node->value.floatval < FLT_MIN))
+            if (atom_node->type == A_FLOAT && 
+                    (isinff(atom_node->value.floatval) || 
+                        atom_node->value.floatval > FLT_MAX || 
+                            atom_node->value.floatval < FLT_MIN))
                 db_log(ERROR, "Value is float overflow for column '%s'.", meta_column->column_name);
             return true;
         }

@@ -15,11 +15,10 @@ typedef enum RWLockMode {
 
 /* Rwlock Entry. */
 typedef struct RWLockEntry {
-    RWLockMode mode;                    /* Rwlock mode. */
+    volatile RWLockMode mode;           /* Rwlock mode. */
     volatile s_lock content_lock;       /* Content spinlock. */
     volatile s_lock sync_lock;          /* Sync spinlock. */
     List *owner;                        /* Content lock owner rocesses. */
-    // Pid  waiter;                        /* Content lock waiter process. */
 } RWLockEntry;
 
 #define NOT_INIT_LOCK(entry) \

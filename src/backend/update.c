@@ -67,15 +67,12 @@ static void delete_row_for_update(Row *row, Table *table) {
 
 /* Insert row for update. */
 static void insert_row_for_update(Row *row, Table *table) {
-
     Cursor *new_cur = define_cursor(table, row->key);
     UpdateTransactionState(row, TR_INSERT);
 
     /* Insert */
     insert_leaf_node_cell(new_cur, row);
-
     Refer *new_ref = convert_refer(new_cur);
-
     /* Record xlog for insert. */
     RecordXlog(new_ref, HEAP_UPDATE_INSERT);
 
@@ -138,7 +135,7 @@ static void update_row(Row *row, SelectResult *select_result, Table *table,
     /* If Refer changed, update refer. */
     if (!refer_equals(old_refer, new_refer)) {
         Row *new_row = define_row(new_refer);
-        assert_true(RowIsVisible(new_row), "System error, row not visible. ");
+        Assert(RowIsVisible(new_row));
         update_related_tables_refer(refer_update_entity);
         free_row(new_row);
     }
