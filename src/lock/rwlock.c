@@ -16,6 +16,7 @@
  * */
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <stdatomic.h>
 #include "rwlock.h"
@@ -50,8 +51,8 @@ static void AtomicRemovePid(RWLockEntry *lock_entry) {
     switch_local();
 }
 
-/* The condition to release rlock. .*/
-static inline bool ReleaseRlockCondition(RWLockEntry *lock_entry) {
+/* The condition to release rwlock. .*/
+static inline bool ReleaseRWlockCondition(RWLockEntry *lock_entry) {
     return list_empty(lock_entry->owner);
 }
 
@@ -71,8 +72,6 @@ static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockM
  * (2) Not acquired directly the rwlock but satisfy the ReenterCondition.
  * */
 static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
-    if (UN_LOCKED(lock_entry->content_lock))
-        Assert(list_empty(lock_entry->owner));
     Pid cur_pid = GetCurrentPid();
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
         while (lock_entry->content_lock) {
@@ -119,6 +118,10 @@ void ReleaseRWlock(RWLockEntry *lock_entry) {
     Assert(LOCKED(lock_entry->content_lock));
     acquire_spin_lock(&lock_entry->sync_lock);
     AtomicRemovePid(lock_entry);
+    if (ReleaseRWlockCondition(lock_entry))
+        ReleaseRWLockInner(lock_entry);
+    /* RWLockMode allowed mode upgrade from RW_READERS to RW_WRITE. 
+     * So, when relasing lock, if owner not empty, reset RW_READERS. */
     lock_entry->mode = list_empty(lock_entry->owner) 
                 ? RW_INIT 
                 : RW_READERS;

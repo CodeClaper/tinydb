@@ -8,7 +8,7 @@
 
 /* Rwlock mode. */
 typedef enum RWLockMode {
-    RW_INIT,
+    RW_INIT = 1,
     RW_READERS,
     RW_WRITER
 } RWLockMode;

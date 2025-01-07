@@ -1530,7 +1530,6 @@ static KeyValue *calulate_substraction(KeyValue *left, KeyValue *right) {
 
 /* Calulate multiplication .*/
 static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
-    
     switch (left->data_type) {
         case T_INT: {
             switch (right->data_type) {
@@ -1541,19 +1540,19 @@ static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
                                          T_INT);
                 }
                 case T_LONG: {
-                    int64_t mul = *(int32_t *)left->value * *(int64_t *)right->value;
+                    int64_t mul = (*(int32_t *)left->value) * (*(int64_t *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_LONG), 
                                          T_LONG);
                 }
                 case T_FLOAT: {
-                    float mul = *(int32_t *)left->value * *(float *)right->value;
+                    float mul = (*(int32_t *)left->value) * (*(float *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_FLOAT), 
                                          T_FLOAT);
                 }
                 case T_DOUBLE: {
-                    double mul = *(int32_t *)left->value * *(double *)right->value;
+                    double mul = (*(int32_t *)left->value) * (*(double *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_DOUBLE), 
                                          T_DOUBLE);
@@ -1570,25 +1569,25 @@ static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
         case T_LONG: {
             switch (right->data_type) {
                 case T_INT: {
-                    int64_t mul = *(int64_t *)left->value * *(int32_t *)right->value;
+                    int64_t mul = (*(int64_t *)left->value) * (*(int32_t *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_LONG), 
                                          T_LONG);
                 }
                 case T_LONG: {
-                    int64_t mul = *(int64_t *)left->value * *(int64_t *)right->value;
+                    int64_t mul = (*(int64_t *)left->value) * (*(int64_t *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_LONG), 
                                          T_LONG);
                 }
                 case T_FLOAT: {
-                    float mul = *(int64_t *)left->value * *(float *)right->value;
+                    float mul = (*(int64_t *)left->value) * (*(float *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_FLOAT), 
                                          T_FLOAT);
                 }
                 case T_DOUBLE: {
-                    double mul = *(int64_t *)left->value * *(double *)right->value;
+                    double mul = (*(int64_t *)left->value) * (*(double *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_LONG), 
                                          T_LONG);
@@ -1605,25 +1604,25 @@ static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
         case T_FLOAT: {
             switch (right->data_type) {
                 case T_INT: {
-                    float mul = *(float *)left->value * *(int32_t *)right->value;
+                    float mul = (*(float *)left->value) * (*(int32_t *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_FLOAT), 
                                          T_FLOAT);
                 }
                 case T_LONG: {
-                    float mul = *(float *)left->value * *(int64_t *)right->value;
+                    float mul = (*(float *)left->value) * (*(int64_t *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_FLOAT), 
                                          T_FLOAT);
                 }
                 case T_FLOAT: {
-                    float mul = *(float *)left->value * *(float *)right->value;
+                    float mul = (*(float *)left->value) * (*(float *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_FLOAT), 
                                          T_FLOAT);
                 }
                 case T_DOUBLE: {
-                    double mul = *(float *)left->value * *(double *)right->value;
+                    double mul = (*(float *)left->value) * (*(double *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_DOUBLE), 
                                          T_DOUBLE);
@@ -1640,25 +1639,25 @@ static KeyValue *calulate_multiplication(KeyValue *left, KeyValue *right) {
         case T_DOUBLE: {
             switch (right->data_type) {
                 case T_INT: {
-                    double mul = *(double *)left->value * *(int32_t *)right->value;
+                    double mul = (*(double *)left->value) * (*(int32_t *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_DOUBLE), 
                                          T_DOUBLE);
                 }
                 case T_LONG: {
-                    double mul = *(double *)left->value * *(int64_t *)right->value;
+                    double mul = (*(double *)left->value) * (*(int64_t *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_DOUBLE), 
                                          T_DOUBLE);
                 }
                 case T_FLOAT: {
-                    double mul = *(double *)left->value * *(float *)right->value;
+                    double mul = (*(double *)left->value) * (*(float *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_DOUBLE), 
                                          T_DOUBLE);
                 }
                 case T_DOUBLE: {
-                    double mul = *(double *)left->value * *(double *)right->value;
+                    double mul = (*(double *)left->value) * (*(double *)right->value);
                     return new_key_value(dstrdup(MUL_NAME), 
                                          copy_value(&mul, T_DOUBLE), 
                                          T_DOUBLE);
