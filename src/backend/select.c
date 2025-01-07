@@ -93,7 +93,6 @@ inline static LimitClauseNode *get_limit_clause(SelectNode *select_node) {
 /* Check if include internal comparison predicate for Value type. */
 static bool include_internal_comparison_predicate_value(SelectResult *select_result, void *min_key, void *max_key, 
                                                         CompareType type, ValueItemNode *value_item, MetaColumn *meta_column) {
-
     bool result = false;
     void *target_key = get_value_from_value_item_node(value_item, meta_column);
     if (!target_key)
@@ -137,12 +136,10 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
     /* Other table query condition regard as true. */
     if (column->range_variable) {
         char *table_mame = search_table_via_alias(select_result, column->range_variable);
-
         if (select_result->last_derived && !table_mame) {
             db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
             return false;
         }
-
         if (!table_mame || !streq(table_mame, meta_table->table_name))
             return true;
     }
@@ -205,11 +202,11 @@ static bool include_logic_internal_node(SelectResult *select_result, void *min_k
     /* For logic condition node, check left node and right node. */
     switch(condition_node->conn_type) {
         case C_AND:
-           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) 
-                && include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
+           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) && 
+                        include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
         case C_OR:
-           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) 
-                || include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
+           return include_internal_node(select_result, min_key, max_key, condition_node->left, meta_table) || 
+                        include_internal_node(select_result, max_key, max_key, condition_node->right, meta_table);
         case C_NONE:
             db_log(PANIC, "System logic error.");
             return false;
@@ -223,7 +220,6 @@ static bool include_logic_internal_node(SelectResult *select_result, void *min_k
 static bool include_exec_internal_node(SelectResult *select_result, void *min_key, void *max_key, 
                                        ConditionNode *condition_node, MetaTable *meta_table) {
     Assert(condition_node->conn_type == C_NONE);
-    
     MetaColumn *cond_meta_column = get_cond_meta_column(condition_node->predicate, meta_table);
 
     /* Skipped the internal node must satisfy flowing factors: 
@@ -231,9 +227,9 @@ static bool include_exec_internal_node(SelectResult *select_result, void *min_ke
      * (2) It is primary key
      * (3) not satisfied internal node condition. 
      */
-    return !cond_meta_column 
-           || !cond_meta_column->is_primary 
-           || include_internal_predicate(select_result, min_key, max_key, condition_node->predicate, meta_table);
+    return !cond_meta_column || 
+                !cond_meta_column->is_primary || 
+                    include_internal_predicate(select_result, min_key, max_key, condition_node->predicate, meta_table);
 }
 
 /* Check if include the internal node. */
@@ -247,9 +243,21 @@ static bool include_internal_node(SelectResult *select_result, void *min_key, vo
     switch(condition_node->conn_type) {
         case C_OR:
         case C_AND:
-            return include_logic_internal_node(select_result, min_key, max_key, condition_node, meta_table);
+            return include_logic_internal_node(
+                select_result, 
+                min_key, 
+                max_key, 
+                condition_node, 
+                meta_table
+            );
         case C_NONE:
-            return include_exec_internal_node(select_result, min_key, max_key, condition_node, meta_table);
+            return include_exec_internal_node(
+                select_result, 
+                min_key, 
+                max_key, 
+                condition_node, 
+                meta_table
+            );
         default:
             UNEXPECTED_VALUE(condition_node->conn_type);
             return false;
@@ -260,11 +268,11 @@ static bool include_internal_node(SelectResult *select_result, void *min_key, vo
 static bool include_logic_leaf_node(SelectResult *select_result, Row *row, ConditionNode *condition_node) {
     switch(condition_node->conn_type) {
         case C_AND:
-            return include_leaf_node(select_result, row, condition_node->left) 
-                && include_leaf_node(select_result, row, condition_node->right);
+            return include_leaf_node(select_result, row, condition_node->left) && 
+                        include_leaf_node(select_result, row, condition_node->right);
         case C_OR:
-            return include_leaf_node(select_result, row, condition_node->left) 
-                || include_leaf_node(select_result, row, condition_node->right);
+            return include_leaf_node(select_result, row, condition_node->left) || 
+                        include_leaf_node(select_result, row, condition_node->right);
         case C_NONE:
             db_log(PANIC, "System Logic Error");
             return false;
@@ -290,12 +298,13 @@ static bool check_row_predicate_column(SelectResult *select_result, Row *row, vo
     ListCell *lc;
     foreach (lc, row->data) {
         KeyValue *key_value = lfirst(lc);
-        if (streq(key_value->table_name, table_name) && streq(key_value->key, column->column_name)) {
+        if (streq(key_value->table_name, table_name) && 
+                streq(key_value->key, column->column_name)) 
             return eval(type, value, key_value->value, meta_column->column_type);
-        }
     }
-    
-    db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
+    db_log(ERROR, "Unknown column '%s.%s' in where clause. ", 
+           column->range_variable, 
+           column->column_name);
     return false;
 }
 
@@ -310,8 +319,8 @@ static bool check_row_predicate_value(SelectResult *select_result, void *value,
 }
 
 /* Check the row predicate. */
-static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNode *column, ComparisonNode *comparison) {
-
+static bool check_row_predicate(SelectResult *select_result, Row *row, 
+                                ColumnNode *column, ComparisonNode *comparison) {
     ListCell *lc;
     foreach (lc, row->data) {
         KeyValue *key_value = lfirst(lc);
@@ -330,16 +339,13 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
 
             Table *table = open_table(key_value->table_name);
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
-            
             if (meta_column == NULL) {
                 db_log(ERROR, "Not found column '%s'. ", column->column_name);
                 return false;
             }
-
             if (column->has_sub_column && column->sub_column) {
                 /* Just check, if column has sub column, it must be Reference type. */
                 Assert(meta_column->column_type == T_REFERENCE);
-
                 /* Get subrow, and recursion. */
                 Refer *refer = key_value->value;
                 Row *sub_row = define_visible_row(refer);
@@ -380,10 +386,8 @@ static bool check_row_predicate(SelectResult *select_result, Row *row, ColumnNod
                         return false;
                 }
             }
-
         }
     }
-
     /* When column skip test, 
      * it may exists in other tables when multi-table query. */
     return true;
@@ -398,7 +402,6 @@ static bool include_leaf_comparison_predicate(SelectResult *select_result, Row *
 /* Check if include in value item set. */
 static bool check_in_value_item_set(List *value_list, void *value, MetaColumn *meta_column) {
     bool ret = false;
-
     ListCell *lc;
     foreach (lc, value_list) {
         void *target = get_value_from_value_item_node(lfirst(lc), meta_column);
@@ -475,7 +478,6 @@ static bool include_leaf_like_predicate(Row *row, LikeNode *like_node) {
 
 /* Check if include leaf node if the condition is exec condition. */
 static bool include_exec_leaf_node(SelectResult *select_result, Row *row, ConditionNode *condition_node) {
-
     /* If without condition, of course the key include, so just return true. */
     if (condition_node == NULL)
         return true;
@@ -499,7 +501,6 @@ static bool include_exec_leaf_node(SelectResult *select_result, Row *row, Condit
 
 /* Check if the key include the leaf node. */
 static bool include_leaf_node(SelectResult *select_result, Row *row, ConditionNode *condition_node) {
-
     /* If without condition, of course the key include, so just return true. */
     if (condition_node == NULL) 
           return true;
@@ -537,13 +538,12 @@ static MetaColumn *get_cond_meta_column(PredicateNode *predicate, MetaTable *met
  * Return ArrayValue.
  * */
 static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_column) {
-
     uint32_t array_num = get_array_number(destination);
 
     /* Generate ArrayValue instance. */
     ArrayValue *array_value = new_array_value(meta_column->column_type, array_num);
-
     uint32_t span = (meta_column->column_length - LEAF_NODE_ARRAY_NUM_SIZE - LEAF_NODE_CELL_NULL_FLAG_SIZE) / meta_column->array_cap;
+
     uint32_t i;
     for (i = 0; i < array_num; i++) {
         void *value = get_array_value(destination, i, span);
@@ -563,7 +563,6 @@ static void *assign_row_value(void *destination, MetaColumn *meta_column) {
 
 /* Generate select row. */
 static Row *generate_row(void *destination, MetaTable *meta_table) {
-
     /* Instance new row. */
     Row *row = new_row(NULL, meta_table->table_name);
 
@@ -571,26 +570,22 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
     uint32_t i;
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-
         /* Get the column offset. */
         uint32_t offset = calc_offset(meta_table, meta_column->column_name);
-
         /* Generate a key value pair. */
         KeyValue *key_value = is_null_cell(destination + offset) 
                             ? new_key_value(dstrdup(meta_column->column_name), NULL, meta_column->column_type)
                             : new_key_value(dstrdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
-
         key_value->is_array = meta_column->array_dim > 0;
         key_value->table_name = dstrdup(meta_table->table_name);
-    
+
         /* Append to row data. */
         append_list(row->data, key_value);
-        
+
         /* Assign primary key. */
         if (meta_column->is_primary)
             row->key = assign_row_value(destination + offset, meta_column);
     }
-
     return row;
 }
 
@@ -598,11 +593,11 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
  * Return row not matter if it is deleted.
  * */
 Row *define_row(Refer *refer) {
-    Assert(refer);
+    Assert(refer != NULL);
 
     /* Check table exists. */
     Table *table = open_table(refer->table_name);
-    if (!table)
+    if (table == NULL)
         return NULL;
 
     /* Check if refer null. */
@@ -615,7 +610,12 @@ Row *define_row(Refer *refer) {
 
     /* Get the leaf node buffer. */
     void *leaf_node = ReadBuffer(table, refer->page_num);
-    void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
+    void *destinct = get_leaf_node_cell_value(
+        leaf_node, 
+        key_len, 
+        value_len, 
+        refer->cell_num
+    );
 
     Row *row = generate_row(destinct, table->meta_table);
     
@@ -656,8 +656,8 @@ static char *search_table_via_alias(SelectResult *select_result, char *range_var
         db_log(PANIC, "Support SelectResult. ");
 
     /* Either table name or range variable is equal. */
-    if (streq(select_result->table_name, range_variable) 
-        || streq(select_result->range_variable, range_variable))
+    if (streq(select_result->table_name, range_variable) || 
+            streq(select_result->range_variable, range_variable))
         return select_result->table_name;
 
     if (select_result->derived)
@@ -766,8 +766,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                     child_page_num, 
                     table, 
                     row_handler, 
-                    type, 
-                    arg
+                    type, arg
                 );
                 break;
             case INTERNAL_NODE:
@@ -777,8 +776,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                     child_page_num, 
                     table, 
                     row_handler, 
-                    type, 
-                    arg
+                    type, arg
                 );
                 break;
             default:
@@ -810,8 +808,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                 right_child_page_num, 
                 table, 
                 row_handler, 
-                type, 
-                arg
+                type, arg
             );
             break;
         case INTERNAL_NODE:
@@ -821,8 +818,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                 right_child_page_num, 
                 table, 
                 row_handler, 
-                type, 
-                arg
+                type, arg
             );
             break;
         default:
@@ -855,8 +851,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
                 table->root_page_num, 
                 table,
                 row_handler, 
-                type, 
-                arg
+                type, arg
             );
             break;
         case INTERNAL_NODE:
@@ -866,8 +861,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
                 table->root_page_num,
                 table, 
                 row_handler,
-                type, 
-                arg
+                type, arg
             );
             break;
         default:
@@ -919,7 +913,7 @@ void select_row(Row *row, SelectResult *select_result, Table *table,
         /* If has limit clause, only append row whose pindex > offset and pindex < offset + rows. */
         if (limit_clause->poffset >= limit_clause->offset && 
                 limit_clause->poffset < (limit_clause->offset + limit_clause->rows)) {
-            append_list(select_result->rows,purge_row(row));
+            append_list(select_result->rows, purge_row(row));
         }
         limit_clause->poffset++;
     } 
