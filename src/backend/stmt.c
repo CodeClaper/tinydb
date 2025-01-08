@@ -51,7 +51,6 @@
 #include "xlog.h"
 #include "timer.h"
 
-
 /* Begin tranasction statement. */
 static void statement_begin_transaction(Statement *stmt, DBResult *result) {
     assert_true(stmt->statement_type == BEGIN_TRANSACTION_STMT,
@@ -259,12 +258,13 @@ void execute(char *sql) {
             }
         } else {
             /* Catch routine. */
-            /* If the set is empty, which means sql syntax error, put an error result to the set. */
+            /* If the set is empty, which means sql syntax error, 
+             * put an error result to the set. */
             if (list_empty(result_list)) {
-                DBResult *err_result = new_db_result();
+                DBResult *errResult = new_db_result();
                 /* For error catch, result is false. */
-                err_result->success = false;
-                append_list(result_list, err_result);
+                errResult->success = false;
+                append_list(result_list, errResult);
             }
 
             /* If last result is error, it lack duration, make up. */
@@ -277,13 +277,17 @@ void execute(char *sql) {
             }
         }
     } else {
-        DBResult *empty_result = new_db_result();
-        empty_result->success = false;
-        empty_result->message = format("Input nothing");
-        append_list(result_list, empty_result);
+        DBResult *emptyResult = new_db_result();
+        emptyResult->success = false;
+        emptyResult->message = format("Input nothing");
+        append_list(result_list, emptyResult);
     }
 
+    /* Json result list. */
     json_list(result_list);
+
+    /* Free statements. */
+    free_list_deep(statements);
 
     /* Commit transction manually. */
     AutoCommitTransaction();

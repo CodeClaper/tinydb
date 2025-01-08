@@ -329,7 +329,8 @@ static bool check_row_predicate(SelectResult *select_result, Row *row,
             if (column->range_variable) {
                 char *table_name = search_table_via_alias(select_result, column->range_variable);
                 if (select_result->last_derived && table_name == NULL) {
-                    db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
+                    db_log(ERROR, "Unknown column '%s.%s' in where clause. ", 
+                           column->range_variable, column->column_name);
                     return false;
                 }
                 /* May subling tables, skip it temporarily. */
@@ -349,7 +350,12 @@ static bool check_row_predicate(SelectResult *select_result, Row *row,
                 /* Get subrow, and recursion. */
                 Refer *refer = key_value->value;
                 Row *sub_row = define_visible_row(refer);
-                bool ret = check_row_predicate(select_result, sub_row, column->sub_column, comparison); 
+                bool ret = check_row_predicate(
+                    select_result, 
+                    sub_row, 
+                    column->sub_column, 
+                    comparison
+                ); 
                 free_row(sub_row);
                 return ret;
             } else if (column->has_sub_column && column->scalar_exp_list) {
@@ -2021,7 +2027,10 @@ static Row *query_plain_row_selection(SelectResult *select_result, List *scalar_
     Table *table = open_table(row->table_name);
     MetaColumn *key_meta_column = get_primary_key_meta_column(table->meta_table);
 
-    Row *sub_row = new_row(copy_value(row->key, key_meta_column->column_type), row->table_name);
+    Row *sub_row = new_row(
+        copy_value(row->key, key_meta_column->column_type), 
+        row->table_name
+    );
 
     ListCell *lc;
     foreach (lc, scalar_exp_list) {
