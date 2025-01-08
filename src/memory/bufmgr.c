@@ -50,7 +50,6 @@
 
 static s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
 
-
 /* Check Pager Buffers valid. */
 static void CheckPagerBuffersValid(Pager *pager) {
     Assert(pager->buffers != NULL);
@@ -96,7 +95,6 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
 
         /* Double check. */
         if (buffer >= pager->buffers->size) {
-
             switch_shared();
 
             BufferDesc *buff_desc = CreateBufferDesc(buffer);
@@ -196,7 +194,6 @@ void LockBuffer(Table *table, Buffer buffer) {
 
     BufferDesc *buff_desc = lfirst(lc);
     Assert(buff_desc != NULL);
-    // Assert(IS_READERS_LOCK(buff_desc->lock));
 
     /* Try to acquire the exclusive lock. */
     AcquireRWlock(buff_desc->lock, RW_WRITER);

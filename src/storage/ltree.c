@@ -589,7 +589,8 @@ static void update_internal_node_key(Table *table, void *internal_node,
     /* If internal has parent node, and change its absolute max key, 
      * also need to change its parent key. */
     if (!is_root_node(internal_node) && 
-            (equal(old_key, absolute_max_key, key_data_type) || equal(new_key, absolute_max_key, key_data_type))) { 
+            (equal(old_key, absolute_max_key, key_data_type) || 
+                equal(new_key, absolute_max_key, key_data_type))) { 
 
         /* Get parent node buffer and lock it. */
         uint32_t parent_page_num = get_parent_pointer(internal_node);
@@ -1144,7 +1145,6 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         /* Otherwise, it`s a normal leaf node. 
          * Maybe the max key change, need update max key in parent internal node. */
         // LockBuffer(cursor->table, parent_page_num);
-
         void *new_max_key = get_max_key(cursor->table, old_node, key_len, value_len);
         update_internal_node_key(
             cursor->table, 
@@ -1156,8 +1156,14 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
             primary_key_meta_column->column_type
         );
         
-        /* And insert a new cell about the new leaf node to the parent internal node. */
-        insert_internal_node_cell(cursor->table, parent_page_num, next_unused_page_num, key_len, value_len);
+        /* And insert a new cell about the new 
+         * leaf node to the parent internal node. */
+        insert_internal_node_cell(
+            cursor->table, 
+            parent_page_num, 
+            next_unused_page_num, 
+            key_len, value_len
+        );
         flush_page(table_name, cursor->table->pager, cursor->page_num);
         flush_page(table_name, cursor->table->pager, next_unused_page_num);
         flush_page(table_name, cursor->table->pager, parent_page_num);
@@ -1195,10 +1201,8 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
      * If overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
-    else 
-    {
-        if (cursor->cell_num < cell_num)
-        {
+    else {
+        if (cursor->cell_num < cell_num) {
             /* Lock buffer to move cells. */
             LockBuffer(cursor->table, cursor->page_num);
 
