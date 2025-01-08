@@ -121,4 +121,3 @@ compile_commands.json
 src/tinydb
 src/tinydb_cli
 test/gtest/gtest
-test/pytest/bigData/sql
