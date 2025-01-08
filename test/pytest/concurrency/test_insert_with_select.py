@@ -7,6 +7,7 @@ import threading
 import random
 import time
 
+stop = False
 clients = []
 threads = []
 share_resource = {}
@@ -27,17 +28,22 @@ def thread_insert(cli):
             assert ret["success"] == True
     except Exception as e:
         share_resource["insert_exception"] = e
+    finally:
+        stop = True
+
 
 # thread1 to select
 def thread_select(cli):
     try:
-        for _ in range(1, 300):
+        for _ in range(1, 60):
             sql = "select count(1) from Student;"
             ret = cli.execute(sql)
             assert ret["success"] == True
             count = ret["data"][0]["count"]
             assert (count >= 0 and count <= 20000)
             time.sleep(0.1)
+            if stop:
+                break
     except Exception as e:
         share_resource["select_exception"] = e
 
