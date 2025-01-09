@@ -252,8 +252,9 @@ void *assign_value_from_value_item_node(ValueItemNode *value_item_node, MetaColu
 
 /* Get value from atom. */
 static void *get_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column) {
-    /* User can use '%s' fromat in sql to pass multiple types value including char, string, date, timestamp. 
-     * So we must use meta column data type to define which data type of the value. */
+    /* User can use '%s' fromat in sql to pass multiple types value 
+     * including char, string, date, timestamp. So we must use meta 
+     * column data type to define which data type of the value. */
     switch (meta_column->column_type) {
         case T_BOOL: 
             return copy_value(&atom_node->value.boolval, meta_column->column_type);

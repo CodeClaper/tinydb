@@ -122,9 +122,6 @@ static bool include_internal_comparison_predicate_value(SelectResult *select_res
             UNEXPECTED_VALUE("Unknown compare type.");
             break;
     }
-
-    free_value(target_key, data_type);
-
     return result;
 }
 
@@ -314,11 +311,8 @@ static bool check_row_predicate_column(SelectResult *select_result, Row *row, vo
 /* Check the row predicate for value. */
 static bool check_row_predicate_value(SelectResult *select_result, void *value, 
                                       ValueItemNode *value_item, CompareType type, MetaColumn *meta_column) {
-    bool ret = false;
     void *target = get_value_from_value_item_node(value_item, meta_column);
-    ret = eval(type, value, target, meta_column->column_type);
-    free_value(target, meta_column->column_type);
-    return ret;
+    return eval(type, value, target, meta_column->column_type);
 }
 
 /* Check the row predicate. */
@@ -410,16 +404,13 @@ static bool include_leaf_comparison_predicate(SelectResult *select_result, Row *
 
 /* Check if include in value item set. */
 static bool check_in_value_item_set(List *value_list, void *value, MetaColumn *meta_column) {
-    bool ret = false;
     ListCell *lc;
     foreach (lc, value_list) {
         void *target = get_value_from_value_item_node(lfirst(lc), meta_column);
-        ret = equal(value, target, meta_column->column_type);
-        free_value(target, meta_column->column_type);
-        if (ret)
-            break;
+        if (equal(value, target, meta_column->column_type))
+            return true;
     }
-    return ret;
+    return false;
 }
 
 /* Check if include leaf node satisfy in predicate. */
@@ -467,7 +458,6 @@ static bool check_like_string_value(char *value, char *target) {
 /* Check if include leaf node satisfy like predicate. */
 static bool include_leaf_like_predicate(Row *row, LikeNode *like_node) {
     Table *table = open_table(row->table_name);
-    bool ret = false;
 
     ListCell *lc;
     foreach (lc, row->data) {
@@ -476,13 +466,11 @@ static bool include_leaf_like_predicate(Row *row, LikeNode *like_node) {
         if (streq(key_value->key, like_node->column->column_name)) {
             MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, key_value->key);
             void *target_value = get_value_from_value_item_node(like_node->value, meta_column);
-            ret = check_like_string_value(key_value->value, target_value);
-            free_value(target_value, meta_column->column_type);
-            break;
+            return check_like_string_value(key_value->value, target_value);
         }
     }
 
-    return ret;
+    return false;
 }
 
 /* Check if include leaf node if the condition is exec condition. */
