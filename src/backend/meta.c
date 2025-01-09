@@ -165,8 +165,7 @@ static void *assign_value_from_atom(AtomNode *atom_node, MetaColumn *meta_column
         case T_CHAR:
         case T_STRING: 
         case T_VARCHAR: 
-            return copy_value2(atom_node->value.strval, 
-                              meta_column);
+            return copy_value2(atom_node->value.strval, meta_column);
         case T_DATE: {
             struct tm tmp_time;
             memset(&tmp_time, 0, sizeof(struct tm));
@@ -224,7 +223,10 @@ void *assign_value_from_array(List *value_list, MetaColumn *meta_column) {
     ListCell *lc;
     foreach (lc, value_list) {
         ValueItemNode *value_item = lfirst(lc);
-        append_list(array_value->list, assign_value_from_value_item_node(value_item, meta_column));
+        append_list(
+            array_value->list, 
+            assign_value_from_value_item_node(value_item, meta_column)
+        );
     }
 
     return array_value;

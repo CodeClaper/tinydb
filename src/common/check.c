@@ -322,7 +322,8 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             /* For CHAR type, only allow one character. */
             size_t len = strlen((char *) value);
             if (len != 1)
-                db_log(ERROR, "Try to convert value '%s' to char value type fail.", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to char value type fail.", 
+                       (char *) value);
             return len == 1;
         }
         case T_VARCHAR:
@@ -340,11 +341,12 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
         case T_TIMESTAMP: {   
             if (value == NULL)
                 return false;
-            /* when data type is TIMESTAMP, user`s input is a STIRNG type. */
+
+            /* When data type is TIMESTAMP, user`s input is a STIRNG type. */
             regex_t reegex;
             int comp_result, exe_result;
 
-            /* https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
+            /* Visit `https://www.regular-expressions.info/gnu.html` and notice there`s not "\\b". */
             comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
             if (comp_result != 0)
                 db_log(ERROR, "Regex compile fail.");
@@ -352,7 +354,8 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             regfree(&reegex);
 
             if (exe_result == REG_NOMATCH) 
-                db_log(ERROR, "Try to convert value '%s' to timestamp value fail.", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to timestamp value fail.", 
+                       (char *) value);
 
             return exe_result == REG_NOERROR;
         }
@@ -363,7 +366,7 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             regex_t reegex;
             int comp_result, exe_result;
 
-            /* Jump https://www.regular-expressions.info/gnu.html, and notice there`s not \\b. */
+            /* Visit `https://www.regular-expressions.info/gnu.html`, and notice there`s not "\\b". */
             comp_result = regcomp(&reegex, 
                                   "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", 
                                   REG_EXTENDED);
@@ -373,7 +376,8 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             regfree(&reegex);
 
             if (exe_result == REG_NOMATCH) 
-                db_log(ERROR, "Try to convert value '%s' to date value fail.", (char *) value);
+                db_log(ERROR, "Try to convert value '%s' to date value fail.", 
+                       (char *) value);
 
             return exe_result == REG_NOERROR;
         }
@@ -400,7 +404,8 @@ static bool check_value_item_node(MetaTable *meta_table, char *column_name, Valu
                 }
                 case V_NULL: {
                     if (meta_column->not_null)
-                        db_log(ERROR, "Column '%s' can`t be null.", column_name);
+                        db_log(ERROR, "Column '%s' can`t be null.", 
+                               column_name);
                     return true;
                 }
                 case V_ARRAY: {

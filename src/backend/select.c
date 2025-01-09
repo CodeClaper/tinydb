@@ -137,7 +137,8 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
     if (column->range_variable) {
         char *table_mame = search_table_via_alias(select_result, column->range_variable);
         if (select_result->last_derived && !table_mame) {
-            db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
+            db_log(ERROR, "Unknown column '%s.%s' in where clause. ", 
+                   column->range_variable, column->column_name);
             return false;
         }
         if (!table_mame || !streq(table_mame, meta_table->table_name))
@@ -161,7 +162,8 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
                 comparsion_value->value, 
                 meta_column
             );
-        /* Other comparison value type, regarded as true for including internal predicate. */
+        /* Other comparison value type, regarded as true 
+         * for including internal predicate. */
         case SCALAR_COLUMN:
         case SCALAR_FUNCTION:
         case SCALAR_CALCULATE:
@@ -287,7 +289,8 @@ static bool check_row_predicate_column(SelectResult *select_result, Row *row, vo
                                        ColumnNode *column, CompareType type, MetaColumn *meta_column) {
     char *table_name = search_table_via_alias(select_result, column->range_variable);
     if (select_result->last_derived && table_name == NULL) {
-        db_log(ERROR, "Unknown column '%s.%s' in where clause. ", column->range_variable, column->column_name);
+        db_log(ERROR, "Unknown column '%s.%s' in where clause. ", 
+               column->range_variable, column->column_name);
         return false;
     }
     
