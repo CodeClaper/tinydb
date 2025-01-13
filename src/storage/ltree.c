@@ -1491,12 +1491,13 @@ static void *gen_new_default_value_at_append_column(void *default_value, MetaTab
     switch (new_meta_column->default_value_type) {
         case DEFAULT_VALUE: {
             /* Maybe default value is null, when refer value not found any match row. */
-            if (!is_null(new_meta_column->default_value))
+            if (!is_null(new_meta_column->default_value)) {
                 memcpy(default_value + offset, 
                        new_meta_column->default_value, 
                        new_meta_column->column_length);
-            else
+            } else {
                 memset(default_value + offset, 0, new_meta_column->column_length);
+            }
             break;
         }
         case DEFAULT_VALUE_NONE:
@@ -1646,9 +1647,9 @@ static void split_root_internal_node_append_column(uint32_t page_num, Table *tab
     int i;
     for (i = keys_num - 1; i >= 0; i--) {
         /* Define which node. */ 
-        void *destination_node = (i >= LEFT_SPLIT_COUNT)
-                ? new_internal_node 
-                : old_internal_node;
+        void *destination_node = (i >= LEFT_SPLIT_COUNT) 
+                        ? new_internal_node 
+                        : old_internal_node;
         
         /* New position. */
         uint32_t index = i % LEFT_SPLIT_COUNT;
@@ -1749,18 +1750,19 @@ static void append_root_leaf_node_column(uint32_t page_num, Table *table, MetaCo
     /* Move meta column info. */
     uint32_t column_size = get_column_size(leaf_node);
     for (int i = column_size; i >= pos; i--) {
-        if (i == pos) 
+        if (i == pos) {
             memcpy(
                 get_meta_column_pointer(leaf_node, i), 
                 destination, 
                 ROOT_NODE_META_COLUMN_SIZE
             );
-        else if (i > pos) 
+        } else if (i > pos) {
             memcpy(
                 get_meta_column_pointer(leaf_node, i), 
                 get_meta_column_pointer(leaf_node, i - 1), 
                 ROOT_NODE_META_COLUMN_SIZE
             );
+        }
     }
     
     /* Increase column size. */
@@ -1882,18 +1884,19 @@ static void append_root_internal_node_column(uint32_t page_num, Table *table, Me
         /* Move meta column info. */
         uint32_t column_size = get_column_size(root_node);
         for (int i = column_size; i >= pos; i--) {
-            if (i == pos) 
+            if (i == pos) {
                 memcpy(
                     get_meta_column_pointer(root_node, i), 
                     destination, 
                     ROOT_NODE_META_COLUMN_SIZE
                 );
-            else if (i > pos) 
+            } else if (i > pos) {
                 memcpy(
                     get_meta_column_pointer(root_node, i), 
                     get_meta_column_pointer(root_node, i - 1), 
                     ROOT_NODE_META_COLUMN_SIZE
                 );
+            }
         }
         
         /* Increase column size. */
@@ -2033,7 +2036,8 @@ static void *cell_pointer_after_drop_column(void *leaf_node, MetaColumn *old_col
     /* Column size increases one. */
     uint32_t column_size = get_column_size(leaf_node) - 1;
     if (is_root_node(leaf_node))
-        return (leaf_node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + row_len * index); 
+        return (leaf_node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + 
+                ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + row_len * index); 
     else
         return (leaf_node + LEAF_NODE_CELL_OFFSET + row_len * index);
 
@@ -2353,7 +2357,8 @@ void update_row_data(Row *row, Cursor *cursor) {
     void *destination = serialize_row_data(row, cursor->table);
 
     /* Overcover leaf node. */
-    memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
+    memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), 
+           destination, value_len);
 
     /* Flush page. */
     flush_page(table->meta_table->table_name, table->pager, cursor->page_num);
@@ -2465,17 +2470,21 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
              * If the last cell, set NULL. */
             for (uint32_t i = key_index; i < key_num; i++) {
                 if (i != key_num - 1) 
+                {
                     memcpy(
                         get_internal_node_cell(internal_node, i, key_len, value_len), 
                         get_internal_node_cell(internal_node, i + 1, key_len, value_len), 
                         cell_len
                     );
+                }
                 else 
+                {
                     memset(
                         get_internal_node_cell(internal_node, i, key_len, value_len), 
                         0, 
                         cell_len
                     );
+                }
             }
             /* Decrease cell number. */
             set_internal_node_keys_num(internal_node, value_len, --key_num);
@@ -2682,8 +2691,7 @@ static void assign_row_array_value(void *destination, ArrayValue *array_value, M
     foreach (lc, array_value->list) {
         void *value = lfirst(lc);
         memcpy((destination + LEAF_NODE_CELL_NULL_FLAG_SIZE + LEAF_NODE_ARRAY_NUM_SIZE + span * i), 
-               value, 
-               span);        
+               value, span);        
         i++;
     }
 }
@@ -2693,14 +2701,14 @@ static void assign_row_value(void *destination, void *value, MetaColumn *meta_co
     /* If not array value, assign value to destination, 
      * if array value, assign values one by one. */
     if (meta_column->array_dim == 0) {
-        bool nflag = value == NULL ? true : false;
+        bool nflag = (value == NULL) ? true : false;
         memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
         if (!nflag)
             memcpy(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, value, meta_column->column_length);
         else
             memset(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, 0, meta_column->column_length);
     } else {
-        bool nflag = value == NULL ? true : false;
+        bool nflag = (value == NULL) ? true : false;
         memcpy(destination, &nflag, LEAF_NODE_CELL_NULL_FLAG_SIZE);
         if (!nflag)
             assign_row_array_value(destination, value, meta_column);
@@ -2719,8 +2727,8 @@ void *serialize_row_data(Row *row, Table *table) {
         MetaColumn *meta_column = meta_table->meta_column[i]; 
         void *value = get_value_from_row(row, meta_column);
         if (meta_column->not_null && is_null(value)) {
-            db_log(ERROR, "Column '%s' does`t have a default value.", meta_column->column_name);
-            return NULL;
+            db_log(ERROR, "Column '%s' does`t have a default value.", 
+                   meta_column->column_name);
         }
         /* Assign row value to destination. */
         assign_row_value(destination + offset, value, meta_column);
