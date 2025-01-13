@@ -387,7 +387,8 @@ Xid get_internal_node_right_child_expired_xid(void *node, uint32_t default_value
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
         return *(Xid *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + 
-                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_PAGE_NUM_SIZE + RIGHT_CHILD_CREATED_XID_SIZE);
+                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + 
+                RIGHT_CHILD_PAGE_NUM_SIZE + RIGHT_CHILD_CREATED_XID_SIZE);
     } else {
         return *(uint32_t *)(node + RIGHT_CHILD_OFFSET + RIGHT_CHILD_PAGE_NUM_SIZE + RIGHT_CHILD_CREATED_XID_SIZE);
     }
@@ -398,7 +399,8 @@ static void set_internal_node_right_child_expired_xid(void *node, uint32_t defau
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
         *(Xid *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + 
-                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_PAGE_NUM_SIZE + RIGHT_CHILD_CREATED_XID_SIZE) = expired_xid;
+                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + 
+                RIGHT_CHILD_PAGE_NUM_SIZE + RIGHT_CHILD_CREATED_XID_SIZE) = expired_xid;
     } else {
         *(Xid *)(node + RIGHT_CHILD_OFFSET + RIGHT_CHILD_PAGE_NUM_SIZE + RIGHT_CHILD_CREATED_XID_SIZE) = expired_xid;
     }
@@ -434,8 +436,8 @@ void set_internal_node_key(void *node, uint32_t index, void *key, uint32_t key_l
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
         memcpy(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + 
-                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
-                cell_len * index + INTERNAL_NODE_CELL_CHILD_SIZE, key, key_len);
+               ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
+               cell_len * index + INTERNAL_NODE_CELL_CHILD_SIZE, key, key_len);
     } else {
         memcpy(node + INTERNAL_NODE_CELL_OFFSET + cell_len * index + INTERNAL_NODE_CELL_CHILD_SIZE, key, key_len);
     }
@@ -447,8 +449,8 @@ uint32_t get_internal_node_child_page_num(void *node, uint32_t index, uint32_t k
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
         return *(uint32_t *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + 
-            ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
-            cell_len * index); 
+                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
+                cell_len * index); 
     } else {
         return *(uint32_t *)(node + INTERNAL_NODE_CELL_OFFSET + cell_len * index);
     }
@@ -473,8 +475,8 @@ Xid get_internal_node_child_created_xid(void *node, uint32_t index, uint32_t key
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
         return *(Xid *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + 
-            ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
-            cell_len * index + INTERNAL_NODE_CELL_PAGE_NUM_SIZE); 
+                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
+                cell_len * index + INTERNAL_NODE_CELL_PAGE_NUM_SIZE); 
     } else {
         return *(Xid *)(node + INTERNAL_NODE_CELL_OFFSET + cell_len * index + INTERNAL_NODE_CELL_PAGE_NUM_SIZE);
     }
@@ -499,8 +501,8 @@ Xid get_internal_node_child_expired_xid(void *node, uint32_t index, uint32_t key
     if (is_root_node(node)) {
         uint32_t column_size = get_column_size(node);
         return *(Xid *)(node + ROOT_NODE_META_COLUMN_SIZE_OFFSET + ROOT_NODE_META_COLUMN_SIZE_SIZE + 
-            ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
-            cell_len * index + INTERNAL_NODE_CELL_PAGE_NUM_SIZE + INTERNAL_NODE_CELL_CREATED_XID_SIZE); 
+                ROOT_NODE_META_COLUMN_SIZE * column_size + default_value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + 
+                cell_len * index + INTERNAL_NODE_CELL_PAGE_NUM_SIZE + INTERNAL_NODE_CELL_CREATED_XID_SIZE); 
     } else {
         return *(Xid *)(node + INTERNAL_NODE_CELL_OFFSET + cell_len * index + 
                 INTERNAL_NODE_CELL_PAGE_NUM_SIZE + INTERNAL_NODE_CELL_CREATED_XID_SIZE);
@@ -535,7 +537,8 @@ void *get_internal_node_cell(void *node, uint32_t index, uint32_t key_len, uint3
 }
 
 /* Get internal node index of key */
-uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, uint32_t key_len, uint32_t default_value_len , DataType key_data_type) {
+uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, uint32_t key_len, 
+                                     uint32_t default_value_len , DataType key_data_type) {
 
     /* Binary search */
     uint32_t min_index = 0;
@@ -711,7 +714,8 @@ static bool overflow_leaf_node(void *leaf_node, uint32_t key_len,
     uint32_t cell_len = key_len + value_len;
     if (is_root_node(leaf_node)) {
         uint32_t column_size = get_column_size(leaf_node);
-        return COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + cell_len * (cell_num + 1) > PAGE_SIZE;
+        return COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + 
+               value_len + CELL_NUM_SIZE + LEAF_NODE_NEXT_LEAF_SIZE + cell_len * (cell_num + 1) > PAGE_SIZE;
     } else {
         return LEAF_NODE_HEAD_SIZE + cell_len *(cell_num + 1) > PAGE_SIZE;
     }
@@ -723,7 +727,8 @@ static bool overflow_internal_node(void *internal_node, uint32_t keys_num,
     uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
     if (is_root_node(internal_node)) {
         uint32_t column_size = get_column_size(internal_node);
-        return COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + cell_len * (keys_num + 1) > PAGE_SIZE;
+        return COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + 
+               value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + cell_len * (keys_num + 1) > PAGE_SIZE;
     } else {
         return INTERNAL_NODE_HEAD_SIZE + cell_len * (keys_num + 1) > PAGE_SIZE;
     }
@@ -813,8 +818,16 @@ static void copy_root_to_internal_node(void *root, void *internal_node,
                                        uint32_t key_len, uint32_t value_len) {
     /* Copy header. */
     initial_internal_node(internal_node, false);
-    set_internal_node_keys_num(internal_node, value_len, get_internal_node_keys_num(root, value_len));
-    set_internal_node_right_child_page_num(internal_node, value_len, get_internal_node_right_child_page_num(root, value_len));
+    set_internal_node_keys_num(
+        internal_node, 
+        value_len, 
+        get_internal_node_keys_num(root, value_len)
+    );
+    set_internal_node_right_child_page_num(
+        internal_node, 
+        value_len, 
+        get_internal_node_right_child_page_num(root, value_len)
+    );
     uint32_t keys_num = get_internal_node_keys_num(root, value_len);
     uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
 
@@ -1059,9 +1072,10 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
     /* Get primary key column meta info. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
-    if (overflow_internal_node(internal_node, keys_num, key_len, value_len)) {
+    if (overflow_internal_node(internal_node, keys_num, key_len, value_len)) 
         insert_and_split_internal_node(table, page_num, new_child_page_num);
-    } else {
+    else 
+    {
         /* Get new child node max key and position in parent node. */
         void *new_child_max_key = get_max_key(table, new_child_node, key_len, value_len);
         uint32_t right_child_page_num = get_internal_node_right_child_page_num(internal_node, value_len);
