@@ -1224,9 +1224,9 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         uint32_t index_at_node = i % LEFT_SPLIT_COUNT;
         void *destination = get_leaf_node_cell(destination_node, key_len, value_len, index_at_node);
 
-        /* The cursor rigth cells should move one cell to the right to make space for the cursor, 
-         * include the cell having the old same num as cursor. The cursor leaf cells don`t need to make space.
-         * Because i start with cell number and decrease, right cells firstly move and make space. */
+        /* The cursor rigth cells should move one cell to the right to make space for the cursor cell, 
+         * include the cell having the same position as cursor`s. The cursor left cells don`t need to make space.
+         * Because i starts with cell number and decreases, right cells firstly move and make space. */
         if (i == cursor->cell_num) {
             /* Deposit cursor. */
             void *serial_data = serialize_row_data(row, cursor->table);
@@ -1257,7 +1257,6 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     else {
         /* Otherwise, it`s a normal leaf node. 
          * Maybe the max key change, need update max key in parent internal node. */
-        // LockBuffer(cursor->table, parent_page_num);
         void *new_max_key = get_max_key(cursor->table, old_node, key_len, value_len);
         update_internal_node_key(
             cursor->table, 
@@ -1314,7 +1313,8 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
      * If overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
-    else {
+    else 
+    {
         if (cursor->cell_num < cell_num) {
             /* Lock buffer to move cells. */
             LockBuffer(cursor->table, cursor->page_num);
