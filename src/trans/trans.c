@@ -154,6 +154,14 @@ TransEntry *FindTransaction() {
 }
 
 
+/* Get current transction xid. */
+Xid GetCurrentXid() {
+    TransEntry *transEntity = FindTransaction();
+    Assert(transEntity);
+    return transEntity->xid;
+}
+
+
 /* Register transaction. */
 static void RegisterTransaction(TransEntry *entry) {
     Assert(entry != NULL);

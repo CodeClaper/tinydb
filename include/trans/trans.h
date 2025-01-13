@@ -19,9 +19,12 @@ void AutoBeginTransaction();
 /* New transaction which will be commited automatically. */
 void BeginTransaction();
 
-/* Get current thread transction handle. 
+/* Get current transction handle. 
  * Return current thread transaction, return NULL if not found. */
 TransEntry *FindTransaction();
+
+/* Get current transction xid. */
+Xid GetCurrentXid();
 
 /* Commit transaction manually. */
 void CommitTransaction();
