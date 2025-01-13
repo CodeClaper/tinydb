@@ -1,8 +1,13 @@
 #include "c.h"
 #include "data.h"
 
+#define XID_NIL ((Xid) 0)
+
 /* Initialise transaction. */
 void InitTrans();
+
+/* Is visible by created_xid and expired_xid. */
+bool IsVisible(Xid created_xid, Xid expired_xid);
 
 /* Check if row is visible for current transaction. */
 bool RowIsVisible(Row *row);

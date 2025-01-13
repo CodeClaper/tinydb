@@ -38,13 +38,20 @@ uint32_t get_leaf_node_cell_num(void *node, uint32_t default_value_len);
 uint32_t get_internal_node_keys_num(void *node, uint32_t default_value_len);
 
 /* Get right child of internal node. */
-uint32_t get_internal_node_right_child(void *node, uint32_t default_value_len);
+uint32_t get_internal_node_right_child_page_num(void *node, uint32_t default_value_len);
+
 
 /* Get keys number in the node by index. */
 void* get_internal_node_key(void *node, uint32_t index, uint32_t key_len, uint32_t value_len);
 
 /* Get child value in the node by index. */
-uint32_t get_internal_node_child(void *node, uint32_t index, uint32_t key_len, uint32_t value_len);
+uint32_t get_internal_node_child_page_num(void *node, uint32_t index, uint32_t key_len, uint32_t value_len);
+
+/* Get child created_xid in the internal node by index. */
+Xid get_internal_node_child_created_xid(void *node, uint32_t index, uint32_t key_len, uint32_t default_value_len);
+
+/* Get child expired_xid in the internal node by index. */
+Xid get_internal_node_child_expired_xid(void *node, uint32_t index, uint32_t key_len, uint32_t default_value_len);
 
 /* Get internal node child page num. */
 uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, uint32_t value_len, DataType primary_key_data_type);

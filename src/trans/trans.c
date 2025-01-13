@@ -330,6 +330,37 @@ void AutoRollbackTransaction() {
  * (2) other transaction creates the row, and transaction is committed and the row is not deleted.
  * (3) the row is deleted by another uncommitted transaction (which not creates the row)
  * */
+bool IsVisible(Xid created_xid, Xid expired_xid) {
+    /* Get current transaction. */
+    TransEntry *entry = FindTransaction();
+    Assert(entry != NULL);
+
+    /* If satisfy above three conditions, 
+     * row is visible for current transaction. */
+    if (created_xid == entry->xid && 
+            expired_xid == 0)
+        return true;
+    if (created_xid != entry->xid && 
+            !IsActive(created_xid) && 
+                expired_xid == 0)
+        return true;
+    if (expired_xid != 0 && 
+            expired_xid != entry->xid && 
+                IsActive(expired_xid) && 
+                    created_xid != expired_xid)
+        return true;
+    
+    /* Else not visible. */
+    return false;
+}
+
+/* 
+ * Check if row is visible for current transaction. 
+ * Visible row must satisfy any of the follows conditions:
+ * (1) the current transaction create the row, and the row is not deleted.
+ * (2) other transaction creates the row, and transaction is committed and the row is not deleted.
+ * (3) the row is deleted by another uncommitted transaction (which not creates the row)
+ * */
 bool RowIsVisible(Row *row) {
     /* Get current transaction. */
     TransEntry *entry = FindTransaction();
