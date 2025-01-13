@@ -53,8 +53,7 @@
 
 /* Begin tranasction statement. */
 static void statement_begin_transaction(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == BEGIN_TRANSACTION_STMT,
-               "System error, begin tranasction statement type error.");
+    Assert(stmt->statement_type == BEGIN_TRANSACTION_STMT);
     BeginTransaction();
     result->success = true;
     result->message = format("Begin new transaction successfully." );
@@ -62,8 +61,7 @@ static void statement_begin_transaction(Statement *stmt, DBResult *result) {
 
 /* Commit tranasction statement. */
 static void statement_commit_transaction(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == COMMIT_TRANSACTION_STMT, 
-               "System error, commit tranasction statement type error.");
+    Assert(stmt->statement_type == COMMIT_TRANSACTION_STMT);
     CommitTransaction();
     result->success = true;
     result->message = format("Commit the transaction successfully.");
@@ -71,8 +69,7 @@ static void statement_commit_transaction(Statement *stmt, DBResult *result) {
 
 /* Rollback tranasction statement. */
 static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == ROLLBACK_TRANSACTION_STMT, 
-                "System error, rollback tranasction statement type error.");
+    Assert(stmt->statement_type == ROLLBACK_TRANSACTION_STMT);
     RollbackTransaction();
     result->success = true;
     result->message = format("Rollback and commit the transaction successfully.");
@@ -80,16 +77,14 @@ static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
 
 /* Create table Statement. */
 static void statement_create_table(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == CREATE_TABLE_STMT, 
-                "System error, create statement type error.");
+    Assert(stmt->statement_type == CREATE_TABLE_STMT);
     AutoBeginTransaction();
     exec_create_table_statement(stmt->create_table_node, result);
 }
 
 /* Drop table statement. */
 static void statement_drop_table(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == DROP_TABLE_STMT,
-               "System error, drop statement type error.");
+    Assert(stmt->statement_type == DROP_TABLE_STMT);
     char *table_name = stmt->drop_table_node->table_name;
     AutoBeginTransaction();
     exec_drop_table_statement(table_name, result);
@@ -97,16 +92,14 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
 
 /* Alter table statement. */
 static void statement_alter_table(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == ALTER_TABLE_STMT,
-               "System error, alter table statement type error.");
+    Assert(stmt->statement_type == ALTER_TABLE_STMT);
     AutoBeginTransaction();
     exec_alter_statement(stmt->alter_table_node, result);
 }
 
 /*Insert Statment*/
 static void statement_insert(Statement *stmt, DBResult *result) {
-    assert_true(stmt->statement_type == INSERT_STMT,
-               "System error, insert statement type error.");
+    Assert(stmt->statement_type == INSERT_STMT);
     AutoBeginTransaction();
     List *list = exec_insert_statement(stmt->insert_node);
     if (list) {
@@ -122,32 +115,28 @@ static void statement_insert(Statement *stmt, DBResult *result) {
 
 /*Select Statement*/
 static void statement_select(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == SELECT_STMT,
-               "System error, select statement type error.");
+    Assert(statement->statement_type == SELECT_STMT);
     AutoBeginTransaction();
     exec_select_statement(statement->select_node, result); 
 }
 
 /*Update statemetn*/
 static void statement_update(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == UPDATE_STMT,
-               "System error, update statement type error.");
+    Assert(statement->statement_type == UPDATE_STMT);
     AutoBeginTransaction();
     exec_update_statment(statement->update_node, result);
 }
 
 /*Delete Statement*/
 static void statement_delete(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == DELETE_STMT,
-               "System error, delete statement type error.");
+    Assert(statement->statement_type == DELETE_STMT);
     AutoBeginTransaction();
     exec_delete_statement(statement->delete_node, result);
 }
 
 /*Describe Statement*/
 static void statement_describe(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == DESCRIBE_STMT,
-               "System error, describe statement type error."); 
+    Assert(statement->statement_type == DESCRIBE_STMT);
     AutoBeginTransaction();
     List *list = exec_describe_statement(statement->describe_node);
     if (list) {
@@ -161,8 +150,7 @@ static void statement_describe(Statement *statement, DBResult *result) {
 
 /*Show tables Statment*/
 static void statement_show(Statement *statement, DBResult *result) {
-    assert_true(statement->statement_type == SHOW_STMT, 
-               "System error, show statmement type error."); 
+    Assert(statement->statement_type == SHOW_STMT);
     exec_show_statement(statement->show_node, result);
 }
 
