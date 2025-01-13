@@ -1362,12 +1362,12 @@ static void *gen_new_cell_after_append_column(void *old_cell, MetaTable *meta_ta
 static void *gen_new_default_value_at_append_column(void *default_value, MetaTable *meta_table, MetaColumn *new_meta_column, int pos) {
 
     /* Make sure. */
-    assert_true(pos > -1, "New column position index < 0");
+    Assert(pos > -1);
 
-    uint32_t value_len = calc_table_row_length2(meta_table);
-
-    /* Get new column offset. */
-    uint32_t offset = calc_offset_new_column(meta_table, pos);
+    /* Get value len, offset. */
+    uint32_t value_len, offset;
+    value_len = calc_table_row_length2(meta_table);
+    offset = calc_offset_new_column(meta_table, pos);
 
     /* Move after offset memory. */
     memmove(default_value + offset + new_meta_column->column_length,
@@ -2398,8 +2398,7 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
 
     /* Theoretically, key and obs_key should be equal. */
-    assert_true(equal(obs_key, key, primary_key_meta_column->column_type), 
-                "System error, should delete key '%s' but delete key '%s' in fact. ", (char *)key, (char *)obs_key);
+    Assert(equal(obs_key, key, primary_key_meta_column->column_type));
 
 
     /* Need to check if the last cell in the leaf node. */
@@ -2417,7 +2416,10 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
                 delete_internal_node_cell(cursor->table, parent_page, obs_key, primary_key_meta_column->column_type);
             else {
                 void *obs_previous_key = get_leaf_node_cell_key(leaf_node, cursor->cell_num - 1, key_len, value_len);
-                update_internal_node_key(cursor->table, parent_node, obs_key, obs_previous_key, key_len, value_len, primary_key_meta_column->column_type);
+                update_internal_node_key(cursor->table, 
+                                         parent_node, obs_key, obs_previous_key, 
+                                         key_len, value_len, 
+                                         primary_key_meta_column->column_type);
                 flush_page(table_name, cursor->table->pager, parent_page);
             }
 
@@ -2436,7 +2438,9 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
             if (i == cell_num - 1) 
                 memset(get_leaf_node_cell(leaf_node, key_len, value_len, i), 0, cell_length);
             else {
-                memcpy(get_leaf_node_cell(leaf_node, key_len, value_len, i), get_leaf_node_cell(leaf_node, key_len, value_len, i + 1), cell_length);
+                memcpy(get_leaf_node_cell(leaf_node, key_len, value_len, i), 
+                       get_leaf_node_cell(leaf_node, key_len, value_len, i + 1), 
+                       cell_length);
                 /* Update postion-changed row refer. */
                 update_refer(table_name, cursor->page_num, i + 1, cursor->page_num, i);
             }
