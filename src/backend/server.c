@@ -103,7 +103,7 @@ static void loop_request(intptr_t client) {
     db_log(INFO, "Client ID '%ld' connect successfully.", getpid());
     while ((chars_num = recv(client, buf, SPOOL_SIZE, 0)) > 0) {
         buf[chars_num] = '\0';
-        execute(buf);
+        Execute(buf);
         bzero(buf, SPOOL_SIZE);
         if (!db_send_over())
             break;

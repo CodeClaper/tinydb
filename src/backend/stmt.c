@@ -5,16 +5,17 @@
  * Locataion:   src/backend/stmt.c
  * Description: Statement module is the entry to execute statements.
  * Now supported statments:
- * (1) SELECT
- * (2) UPDATE
- * (3) INSERT
- * (4) DELETE
- * (5) CREATE TABLE
- * (6) DEROP TABLE
- * (6) SHOW TABLES AND SHOW MEMORY
- * (7) DESCRIBE TABLE
- * (8) BEGIN TRANSACTION
- * (9) COMMIT TRANSACTION
+ * (1)  SELECT
+ * (2)  UPDATE
+ * (3)  INSERT
+ * (4)  DELETE
+ * (5)  CREATE TABLE
+ * (6)  DEROP TABLE
+ * (6)  SHOW TABLES AND SHOW MEMORY
+ * (7)  DESCRIBE TABLE
+ * (8)  BEGIN TRANSACTION
+ * (9)  COMMIT TRANSACTION
+ * (10) ALTER TABLE ADD or DROP COLUMN.
  *********************************************************************************
  */
 #include <bits/types/struct_timeval.h>
@@ -52,7 +53,7 @@
 #include "timer.h"
 
 /* Begin tranasction statement. */
-static void statement_begin_transaction(Statement *stmt, DBResult *result) {
+static void ExecuteBeginTransactionStmt(Statement *stmt, DBResult *result) {
     Assert(stmt->statement_type == BEGIN_TRANSACTION_STMT);
     BeginTransaction();
     result->success = true;
@@ -60,7 +61,7 @@ static void statement_begin_transaction(Statement *stmt, DBResult *result) {
 }
 
 /* Commit tranasction statement. */
-static void statement_commit_transaction(Statement *stmt, DBResult *result) {
+static void ExecuteCommitTransactionStmt(Statement *stmt, DBResult *result) {
     Assert(stmt->statement_type == COMMIT_TRANSACTION_STMT);
     CommitTransaction();
     result->success = true;
@@ -68,7 +69,7 @@ static void statement_commit_transaction(Statement *stmt, DBResult *result) {
 }
 
 /* Rollback tranasction statement. */
-static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
+static void ExecuteRoolbackTransactionStmt(Statement *stmt, DBResult *result) {
     Assert(stmt->statement_type == ROLLBACK_TRANSACTION_STMT);
     RollbackTransaction();
     result->success = true;
@@ -76,14 +77,14 @@ static void statement_roolback_transaction(Statement *stmt, DBResult *result) {
 }
 
 /* Create table Statement. */
-static void statement_create_table(Statement *stmt, DBResult *result) {
+static void ExecuteCreateTableStmt(Statement *stmt, DBResult *result) {
     Assert(stmt->statement_type == CREATE_TABLE_STMT);
     AutoBeginTransaction();
     exec_create_table_statement(stmt->create_table_node, result);
 }
 
 /* Drop table statement. */
-static void statement_drop_table(Statement *stmt, DBResult *result) {
+static void ExecuteDropTableStmt(Statement *stmt, DBResult *result) {
     Assert(stmt->statement_type == DROP_TABLE_STMT);
     char *table_name = stmt->drop_table_node->table_name;
     AutoBeginTransaction();
@@ -91,14 +92,14 @@ static void statement_drop_table(Statement *stmt, DBResult *result) {
 }
 
 /* Alter table statement. */
-static void statement_alter_table(Statement *stmt, DBResult *result) {
+static void ExecuteAlterTableStmt(Statement *stmt, DBResult *result) {
     Assert(stmt->statement_type == ALTER_TABLE_STMT);
     AutoBeginTransaction();
     exec_alter_statement(stmt->alter_table_node, result);
 }
 
 /*Insert Statment*/
-static void statement_insert(Statement *stmt, DBResult *result) {
+static void ExecuteInsertStmt(Statement *stmt, DBResult *result) {
     Assert(stmt->statement_type == INSERT_STMT);
     AutoBeginTransaction();
     List *list = exec_insert_statement(stmt->insert_node);
@@ -114,28 +115,28 @@ static void statement_insert(Statement *stmt, DBResult *result) {
 }
 
 /*Select Statement*/
-static void statement_select(Statement *statement, DBResult *result) {
+static void ExecuteSelectStmt(Statement *statement, DBResult *result) {
     Assert(statement->statement_type == SELECT_STMT);
     AutoBeginTransaction();
     exec_select_statement(statement->select_node, result); 
 }
 
 /*Update statemetn*/
-static void statement_update(Statement *statement, DBResult *result) {
+static void ExecuteUpdateStmt(Statement *statement, DBResult *result) {
     Assert(statement->statement_type == UPDATE_STMT);
     AutoBeginTransaction();
     exec_update_statment(statement->update_node, result);
 }
 
 /*Delete Statement*/
-static void statement_delete(Statement *statement, DBResult *result) {
+static void ExecuteDeleteStmt(Statement *statement, DBResult *result) {
     Assert(statement->statement_type == DELETE_STMT);
     AutoBeginTransaction();
     exec_delete_statement(statement->delete_node, result);
 }
 
 /*Describe Statement*/
-static void statement_describe(Statement *statement, DBResult *result) {
+static void ExecuteDescribeStmt(Statement *statement, DBResult *result) {
     Assert(statement->statement_type == DESCRIBE_STMT);
     AutoBeginTransaction();
     List *list = exec_describe_statement(statement->describe_node);
@@ -149,52 +150,52 @@ static void statement_describe(Statement *statement, DBResult *result) {
 }
 
 /*Show tables Statment*/
-static void statement_show(Statement *statement, DBResult *result) {
+static void ExecuteShowStmt(Statement *statement, DBResult *result) {
     Assert(statement->statement_type == SHOW_STMT);
     exec_show_statement(statement->show_node, result);
 }
 
 /* Execute statment. */
-static void exec_statement(Statement *statement, DBResult *result) {
+static void ExecuteStatement(Statement *statement, DBResult *result) {
     /* Execute statment */
     if (statement) {
         result->stmt_type = statement->statement_type;
         switch(statement->statement_type) {
             case BEGIN_TRANSACTION_STMT:
-                statement_begin_transaction(statement, result);
+                ExecuteBeginTransactionStmt(statement, result);
                 break;
             case COMMIT_TRANSACTION_STMT:
-                statement_commit_transaction(statement, result);
+                ExecuteCommitTransactionStmt(statement, result);
                 break;
             case ROLLBACK_TRANSACTION_STMT:
-                statement_roolback_transaction(statement, result);
+                ExecuteRoolbackTransactionStmt(statement, result);
                 break;
             case CREATE_TABLE_STMT:
-                statement_create_table(statement, result);
+                ExecuteCreateTableStmt(statement, result);
                 break;
             case INSERT_STMT:
-                statement_insert(statement, result); 
+                ExecuteInsertStmt(statement, result); 
                 break; 
             case SELECT_STMT:
-                statement_select(statement, result); 
+                ExecuteSelectStmt(statement, result); 
                 break; 
             case UPDATE_STMT:
-                statement_update(statement, result); 
+                ExecuteUpdateStmt(statement, result); 
                 break; 
             case DELETE_STMT:
-                statement_delete(statement, result); 
+                ExecuteDeleteStmt(statement, result); 
                 break; 
             case DESCRIBE_STMT:
-                statement_describe(statement, result);
+                ExecuteDescribeStmt(statement, result);
                 break;
             case SHOW_STMT:
-                statement_show(statement, result);
+                ExecuteShowStmt(statement, result);
                 break;
             case DROP_TABLE_STMT:
-                statement_drop_table(statement, result);
+                ExecuteDropTableStmt(statement, result);
                 break;
             case ALTER_TABLE_STMT:
-                statement_alter_table(statement, result);
+                ExecuteAlterTableStmt(statement, result);
                 break;
             default:
                 UNEXPECTED_VALUE(statement->statement_type);
@@ -206,24 +207,24 @@ static void exec_statement(Statement *statement, DBResult *result) {
     result->end_time = clock();
     result->duration = (double)(result->end_time - result->start_time) / CLOCKS_PER_SEC;
     db_log(INFO, "Duration: %lfs", result->duration);
-
 }
 
 
 /* Execute SQL
  * Now supported statments:
- * (1) SELECT
- * (2) UPDATE
- * (3) INSERT
- * (4) DELETE
- * (5) CREATE TABLE
- * (6) DEROP TABLE
- * (6) SHOW TABLES AND SHOW MEMORY
- * (7) DESCRIBE TABLE
- * (8) BEGIN TRANSACTION
- * (9) COMMIT TRANSACTION
+ * (1)  SELECT
+ * (2)  UPDATE
+ * (3)  INSERT
+ * (4)  DELETE
+ * (5)  CREATE TABLE
+ * (6)  DEROP TABLE
+ * (6)  SHOW TABLES AND SHOW MEMORY
+ * (7)  DESCRIBE TABLE
+ * (8)  BEGIN TRANSACTION
+ * (9)  COMMIT TRANSACTION
+ * (10) ALTER TABLE ADD or DROP COLUMN.
  * */
-void execute(char *sql) {
+void Execute(char *sql) {
 
     struct timeval start_time, end_time;
     gettimeofday(&start_time, NULL);
@@ -242,7 +243,7 @@ void execute(char *sql) {
                 DBResult *result = new_db_result();
                 append_list(result_list, result);
                 Statement *statement = lfirst(lc);
-                exec_statement(statement, result);
+                ExecuteStatement(statement, result);
             }
         } else {
             /* Catch routine. */
