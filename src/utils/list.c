@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include "list.h"
 #include "mmgr.h"
@@ -653,6 +654,14 @@ void free_list_deep(List *list) {
                     free_table_buffer_entry(lfirst(lc));
                 }
                 break;
+            }
+            case NODE_INTERNAL_NODE_CELL_DESC: {
+                /* Fro InternalNodeCellDesc, only free itself, 
+                 * not care about the key.*/
+                ListCell *lc;
+                foreach(lc, list) {
+                    dfree(lfirst(lc));
+                }
             }
         }
 

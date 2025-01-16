@@ -63,12 +63,8 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
     /* Exceeds limitation check. */
     if (page_num >= MAX_TABLE_PAGE) {
-        db_log(
-            PANIC, 
-            "Try to fetch page number out of bounds: %d >= %d", 
-            page_num, 
-            MAX_TABLE_PAGE
-        );
+        db_log(PANIC, "Try to fetch page number out of bounds: %d >= %d", 
+               page_num, MAX_TABLE_PAGE);
     }
 
     /* Get the file descriptor. */

@@ -76,7 +76,7 @@ def test_duplicate_key_when_batch_update():
 
 ## test loop update
 def test_loop_update():
-    for i in range(1, 101):
+    for _ in range(1, 101):
         sql = "update A set name = 'change' where id = '2';\n" \
               "select a from B where id = '2';\n"
         ret = client.execute(sql)

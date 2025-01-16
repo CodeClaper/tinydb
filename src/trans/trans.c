@@ -204,7 +204,7 @@ static bool IsActive(Xid xid) {
      * the trans chain while it is being modified. */
     acquire_spin_lock(xlock);
     TransEntry *current;
-    for (current = xheader; current != NULL; current = current->next) {
+    for (current = xheader->next; current != NULL; current = current->next) {
         Assert(shmem_addr_valid(current));
         if (current->xid == xid) {
             active = true;
@@ -331,6 +331,7 @@ void AutoRollbackTransaction() {
  * (3) the row is deleted by another uncommitted transaction (which not creates the row)
  * */
 bool IsVisible(Xid created_xid, Xid expired_xid) {
+    Assert(created_xid != XID_NIL);
     /* Get current transaction. */
     TransEntry *entry = FindTransaction();
     Assert(entry != NULL);

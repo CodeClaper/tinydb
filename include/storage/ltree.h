@@ -1,6 +1,15 @@
 #include <stdint.h>
 #include "data.h"
 
+/* InternalNodeCellDesc. */
+typedef struct InternalNodeCellDesc{
+    void *key;
+    DataType key_type;
+    uint32_t page_num;
+    Xid created_xid;
+    Xid expired_xid;
+} InternalNodeCellDesc;
+
 /* If obsolute node. */
 bool is_obsolute_node(void *node);
 
@@ -40,6 +49,11 @@ uint32_t get_internal_node_keys_num(void *node, uint32_t default_value_len);
 /* Get right child of internal node. */
 uint32_t get_internal_node_right_child_page_num(void *node, uint32_t default_value_len);
 
+/* Get right child created_xid of internal node  */
+Xid get_internal_node_right_child_created_xid(void *node, uint32_t default_value_len);
+
+/* Get right child expired_xid of internal node  */
+Xid get_internal_node_right_child_expired_xid(void *node, uint32_t default_value_len);
 
 /* Get keys number in the node by index. */
 void* get_internal_node_key(void *node, uint32_t index, uint32_t key_len, uint32_t value_len);

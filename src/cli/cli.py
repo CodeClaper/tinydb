@@ -101,7 +101,7 @@ def handle(cmd: str):
     hanler = list[1].strip().upper()
     ret = client.execute(sql)
     match hanler:
-        case 'JSON_PP':
+        case 'JQ':
             handleJsonpp(ret)
         case _:
             print(f"Not support handler:{hanler}")
@@ -109,7 +109,10 @@ def handle(cmd: str):
 
 ## JSON_PP
 def handleJsonpp(raw: dict):
-    jsonpp = json.dumps(raw, sort_keys=False, indent=4, separators=(',', ':'))
+    jsonpp = json.dumps(
+        raw, sort_keys=False, ensure_ascii=False, 
+        indent=4, separators=(',', ':')
+    )
     print(jsonpp)
 
 

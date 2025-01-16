@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include <cstddef>
+#include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -49,4 +50,28 @@ TEST(qsort, int_sort_desc) {
             ASSERT_GE(lfirst_int(prev), lfirst_int(lc));
         prev = (lc);
     }
+}
+
+/* Test string value list qsort. */
+TEST(qsort, string_sort) {
+    List *list = create_list(NODE_STRING);
+    append_list(list, (char *)"Beijing");
+    append_list(list, (char *)"Nanjing");
+    append_list(list, (char *)"Hangzhou");
+    append_list(list, (char *)"Shanghai");
+    append_list(list, (char *)"Shenzhen");
+    append_list(list, (char *)"Xian");
+    append_list(list, (char *)"Hongkong");
+    append_list(list, (char *)"Chengdu");
+
+    list_qsort(list, implement_list_sort_comparator(T_STRING));
+
+    ListCell *prev = NULL;
+    ListCell *lc;
+    foreach (lc, list) {
+        if (prev != NULL)
+            ASSERT_TRUE(strcmp((char *) lfirst(prev), (char *) lfirst(lc)));
+        prev = (lc);
+    }
+
 }

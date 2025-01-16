@@ -153,9 +153,7 @@ static bool include_internal_comparison_predicate(SelectResult *select_result, v
         case SCALAR_VALUE:
             return include_internal_comparison_predicate_value(
                 select_result, 
-                min_key, 
-                max_key, 
-                comparison->type, 
+                min_key, max_key, comparison->type, 
                 comparsion_value->value, 
                 meta_column
             );
@@ -179,8 +177,7 @@ static bool include_internal_predicate(SelectResult *select_result, void *min_ke
         case PRE_COMPARISON:
             return include_internal_comparison_predicate(
                 select_result, 
-                min_key, 
-                max_key, 
+                min_key, max_key, 
                 predicate->comparison, 
                 meta_table
             );
@@ -244,16 +241,14 @@ static bool include_internal_node(SelectResult *select_result, void *min_key, vo
         case C_AND:
             return include_logic_internal_node(
                 select_result, 
-                min_key, 
-                max_key, 
+                min_key, max_key, 
                 condition_node, 
                 meta_table
             );
         case C_NONE:
             return include_exec_internal_node(
                 select_result, 
-                min_key, 
-                max_key, 
+                min_key, max_key, 
                 condition_node, 
                 meta_table
             );
@@ -363,8 +358,7 @@ static bool check_row_predicate(SelectResult *select_result, Row *row,
                 switch (comparison_value->type) {
                     case SCALAR_COLUMN:
                         return check_row_predicate_column(
-                            select_result, 
-                            row, 
+                            select_result, row, 
                             key_value->value, 
                             comparison_value->column, 
                             comparison->type, 
@@ -372,8 +366,7 @@ static bool check_row_predicate(SelectResult *select_result, Row *row,
                         );    
                     case SCALAR_VALUE: 
                         return check_row_predicate_value(
-                            select_result,
-                            key_value->value,
+                            select_result, key_value->value,
                             comparison_value->value,
                             comparison->type, 
                             meta_column
@@ -753,12 +746,12 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         }
 
         /* Check if the internla node is visible. */
-        // {
-        //     Xid created_xid = get_internal_node_child_created_xid(internal_node, i, key_len, value_len);
-        //     Xid expired_xid = get_internal_node_child_expired_xid(internal_node, i, key_len, value_len);
-        //     if (!IsVisible(created_xid, expired_xid))
-        //         continue;
-        // }
+        {
+            Xid created_xid = get_internal_node_child_created_xid(internal_node, i, key_len, value_len);
+            Xid expired_xid = get_internal_node_child_expired_xid(internal_node, i, key_len, value_len);
+            if (!IsVisible(created_xid, expired_xid))
+                continue;
+        }
 
         /* Check other non-key column */
         uint32_t child_page_num = get_internal_node_child_page_num(internal_node, i, key_len, value_len);
@@ -766,22 +759,14 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         switch (get_node_type(node)) {
             case LEAF_NODE:
                 select_from_leaf_node(
-                    select_result, 
-                    condition, 
-                    child_page_num, 
-                    table, 
-                    row_handler, 
-                    type, arg
+                    select_result, condition, child_page_num, 
+                    table, row_handler, type, arg
                 );
                 break;
             case INTERNAL_NODE:
                 select_from_internal_node(
-                    select_result, 
-                    condition, 
-                    child_page_num, 
-                    table, 
-                    row_handler, 
-                    type, arg
+                    select_result, condition, child_page_num, 
+                    table, row_handler, type, arg
                 );
                 break;
             default:
@@ -796,12 +781,18 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     /* Don`t forget the right child. */
     uint32_t right_child_page_num = get_internal_node_right_child_page_num(internal_node, value_len);
 
+    /* Check if the right node is visible. */
+    Xid created_xid = get_internal_node_right_child_created_xid(internal_node, value_len);
+    Xid expired_xid = get_internal_node_right_child_expired_xid(internal_node, value_len);
+    if (!IsVisible(created_xid, expired_xid))
+        return;
+
     /* Zero means there is no page. */
     if (right_child_page_num == 0) {
         free_block(internal_node);
         return;
     } 
-    
+
     /* Fetch right child. */
     void *right_child = ReadBuffer(table, right_child_page_num);
     NodeType node_type = get_node_type(right_child);
@@ -809,21 +800,15 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         case LEAF_NODE:
             select_from_leaf_node(
                 select_result, 
-                condition, 
-                right_child_page_num, 
-                table, 
-                row_handler, 
-                type, arg
+                condition, right_child_page_num, 
+                table, row_handler, type, arg
             );
             break;
         case INTERNAL_NODE:
             select_from_internal_node(
                 select_result, 
-                condition, 
-                right_child_page_num, 
-                table, 
-                row_handler, 
-                type, arg
+                condition, right_child_page_num, 
+                table, row_handler, type, arg
             );
             break;
         default:
@@ -833,7 +818,6 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 
     /* Release the right child buffer. */
     ReleaseBuffer(table, right_child_page_num);
-
     /* Release the buffer. */
     ReleaseBuffer(table, page_num);
 }
@@ -852,21 +836,15 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
         case LEAF_NODE:
             select_from_leaf_node(
                 select_result, 
-                condition, 
-                table->root_page_num, 
-                table,
-                row_handler, 
-                type, arg
+                condition, table->root_page_num, 
+                table, row_handler, type, arg
             );
             break;
         case INTERNAL_NODE:
             select_from_internal_node(
                 select_result, 
-                condition,
-                table->root_page_num,
-                table, 
-                row_handler,
-                type, arg
+                condition, table->root_page_num,
+                table, row_handler, type, arg
             );
             break;
         default:
