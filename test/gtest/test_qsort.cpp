@@ -63,12 +63,18 @@ TEST(qsort, string_sort) {
     append_list(list, (char *)"Xian");
     append_list(list, (char *)"Hongkong");
     append_list(list, (char *)"Chengdu");
+    append_list(list, (char *)"Hosten");
+    append_list(list, (char *)"Lindon");
+    append_list(list, (char *)"Jinan");
+    append_list(list, (char *)"Tokyo");
+    append_list(list, (char *)"LosAngle");
 
     list_qsort(list, implement_list_sort_comparator(T_STRING));
 
     ListCell *prev = NULL;
     ListCell *lc;
     foreach (lc, list) {
+        printf("current is: %s\n", (char *)lfirst(lc));
         if (prev != NULL)
             ASSERT_TRUE(strcmp((char *) lfirst(prev), (char *) lfirst(lc)));
         prev = (lc);

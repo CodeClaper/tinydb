@@ -29,7 +29,6 @@
  * */
 static void try_capture_table(char *table_name) {
     try_acquire_table(table_name);
-    
     /* Wait until capture the table exclusively. */
     while (if_shared_table(table_name)) {
         usleep(100);
@@ -89,7 +88,6 @@ static void drop_old_column(DropColumnDef *drop_column_def, char *table_name, DB
     /* Release table. */
     release_table(table_name);
 }
-
 
 /* Execute alter table statement. */
 void exec_alter_statement(AlterTableNode *alter_table_node, DBResult *result) {

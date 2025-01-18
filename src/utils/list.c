@@ -484,12 +484,9 @@ List *list_copy_deep(List *old_list) {
 /* Free all cells and objects that are 
  * point-to by cells in list DOES NOT be freed*/
 void free_list(List *list) {
-    
     if (list != NIL) {
-
         if (list->elements != list->initial_elements)
             dfree(list->elements);
-
         dfree(list);
     }
 }
@@ -497,7 +494,6 @@ void free_list(List *list) {
 /* Free all cells and any object that are 
  * point-to by cells in list will be freed*/
 void free_list_deep(List *list) {
-
     if (list != NIL) {
         switch (list->type) {
             case NODE_INT:

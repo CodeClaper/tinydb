@@ -270,3 +270,13 @@ bool eval(CompareType compare_type, void *source, void *target, DataType data_ty
     return false;
 }
 
+/* Compare. */
+int compare(void *source, void *taget, DataType data_type) {
+    if (equal(source, taget, data_type))
+        return 0;
+    else if (greater(source, taget, data_type))
+        return 1;
+    else 
+        return -1;
+}
+

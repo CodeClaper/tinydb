@@ -1,6 +1,5 @@
 from support.tinydb_cli import TinyDbClient
 from support.asserts import assert_all
-import random
 import uuid
 
 client = TinyDbClient("127.0.0.1", 4083)    
@@ -13,10 +12,10 @@ def test_mock_table():
     assert ret["success"] == True
 
 ## test insert 1000 students
-def test_1000_student_insert():
+def test_10000_student_insert():
     names = ["zhangsan", "lisi", "Sun", "July", "Kaili", "James", "Max"]
-    for i in range(1, 1000):
-        sql = f"insert into Student values ('{uuid.uuid4()}', '{names[i % 7]}', { random.randint(6, 15) });"
+    for i in range(1, 10000):
+        sql = f"insert into Student values ('{uuid.uuid4()}', '{names[i % 7]}', {i});"
         ret = client.execute(sql)
         assert ret["success"] == True
 
@@ -25,7 +24,7 @@ def test_query_count():
     sql = "select count(1) from Student;"
     ret = client.execute(sql)
     assert ret["success"] == True
-    assert ret["data"] == [{ "count": 999 }]
+    assert ret["data"] == [{ "count": 9999 }]
 
 ## roll back after delete
 def test_roll_back_after_delete():
@@ -37,7 +36,7 @@ def test_roll_back_after_delete():
     ret = client.execute(sql)
     assert_all(ret)
     assert ret[2]["data"] == [{ "count": 0 }]
-    assert ret[4]["data"] == [{ "count": 999 }]
+    assert ret[4]["data"] == [{ "count": 9999 }]
 
 # drop mock table
 def test_drop_mock_table():

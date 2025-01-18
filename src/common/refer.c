@@ -138,7 +138,11 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
     keys_num = get_internal_node_keys_num(internal_node, value_len);
 
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    uint32_t child_page_num = get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type);
+    uint32_t child_page_num = get_internal_node_cell_child_page_num(
+        internal_node, key, keys_num, 
+        key_len, value_len, 
+        primary_meta_column->column_type
+    );
 
     /* Get the child node buffer. */
     void *child_node = ReadBuffer(table, child_page_num);
