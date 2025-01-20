@@ -70,6 +70,9 @@ Xid get_internal_node_child_expired_xid(void *node, uint32_t index, uint32_t key
 /* Get internal node child page num. */
 uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, uint32_t value_len, DataType primary_key_data_type);
 
+/* Find internal node child page num. */
+uint32_t find_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, uint32_t default_value_len, DataType key_data_type);
+
 /* Get leaf node cell key. */
 void *get_leaf_node_cell_key(void *node, uint32_t index, uint32_t key_len,uint32_t value_len);
 

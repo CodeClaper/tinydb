@@ -26,7 +26,7 @@ def test_query_count():
     assert ret["success"] == True
     assert ret["data"] == [{ "count": 9999 }]
 
-## roll back after delete
+# roll back after delete
 def test_roll_back_after_delete():
     sql = "begin;\n"\
           "delete from Student;\n"\

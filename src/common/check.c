@@ -759,7 +759,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
         Assert(new_key);
         Assert(primary_meta_column);
         if (select_result->row_size == 1) {
-            Cursor *new_cursor = define_cursor(table, new_key);
+            Cursor *new_cursor = define_cursor(table, new_key, true);
             Refer *new_refer = convert_refer(new_cursor);
             Row *default_row = define_row(new_refer);
             free_cursor(new_cursor);

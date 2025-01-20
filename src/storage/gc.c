@@ -76,7 +76,7 @@ void gc_row(Row *row, SelectResult *select_result,
         return;
 
     /* Cursor */
-    Cursor * cursor = define_cursor(table, row->key);
+    Cursor * cursor = define_cursor(table, row->key, true);
 
     /* Delete row. */
     delete_leaf_node_cell(cursor, row->key);

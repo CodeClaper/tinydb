@@ -14,7 +14,7 @@ Cursor *new_cursor(Table *table, uint32_t page_num, uint32_t cell_num);
 ReferUpdateEntity *new_refer_update_entity(Refer *old_refer, Refer *new_refer);
 
 /* Define cursor. */
-Cursor *define_cursor(Table *table, void *key);
+Cursor *define_cursor(Table *table, void *key, bool if_exsits);
 
 /* Define Refer. */
 Refer *define_refer(Row *row);

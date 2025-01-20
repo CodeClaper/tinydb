@@ -129,7 +129,7 @@ static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t p
 }
 
 /* Define cursor when meet internal node. */
-static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key) {
+static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key, bool if_exsits) {
     Cursor *cursor;
 
     uint32_t key_len, value_len, keys_num;
@@ -138,11 +138,10 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
     keys_num = get_internal_node_keys_num(internal_node, value_len);
 
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
-    uint32_t child_page_num = get_internal_node_cell_child_page_num(
-        internal_node, key, keys_num, 
-        key_len, value_len, 
-        primary_meta_column->column_type
-    );
+    uint32_t child_page_num = if_exsits
+        ? find_internal_node_cell_child_page_num( internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type)
+        : get_internal_node_cell_child_page_num( internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type);
+    Assert(child_page_num != -1);
 
     /* Get the child node buffer. */
     void *child_node = ReadBuffer(table, child_page_num);
@@ -152,7 +151,7 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
             cursor = define_cursor_leaf_node(table, child_node, child_page_num, key);
             break;
         case INTERNAL_NODE:
-            cursor = define_cursor_internal_node(table, child_node, key);
+            cursor = define_cursor_internal_node(table, child_node, key, if_exsits);
             break;
         default:
             UNEXPECTED_VALUE(node_type);
@@ -166,7 +165,7 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 }
 
 /* Define Cursor. */
-Cursor *define_cursor(Table *table, void *key) {
+Cursor *define_cursor(Table *table, void *key, bool if_exsits) {
     Assert(table != NULL);
     Assert(key != NULL);
 
@@ -180,7 +179,7 @@ Cursor *define_cursor(Table *table, void *key) {
             cursor = define_cursor_leaf_node(table, root_node, table->root_page_num, key);
             break;
         case INTERNAL_NODE:
-            cursor = define_cursor_internal_node(table, root_node, key);
+            cursor = define_cursor_internal_node(table, root_node, key, if_exsits);
             break;
         default:
             UNEXPECTED_VALUE(node_type);
@@ -196,7 +195,7 @@ Cursor *define_cursor(Table *table, void *key) {
 /* Define Refer */
 Refer *define_refer(Row *row) {
     Table *table = open_table(row->table_name);
-    Cursor *cursor = define_cursor(table, row->key);
+    Cursor *cursor = define_cursor(table, row->key, true);
     Refer *refer = convert_refer(cursor);
     free_cursor(cursor);
     return refer;
@@ -371,7 +370,7 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
     char *self_table_name = get_refer_table_name(refer_update_entity);
 
     /* Curosr */
-    Cursor *cursor = define_cursor(table, row->key);
+    Cursor *cursor = define_cursor(table, row->key, true);
 
     /* MetaTable */
     MetaTable *meta_table = table->meta_table;

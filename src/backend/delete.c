@@ -33,7 +33,7 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table,
 
     /* Only deal with row that is visible for current transaction. */
     if (RowIsVisible(row)) {
-        Cursor *cursor = define_cursor(table, row->key);
+        Cursor *cursor = define_cursor(table, row->key, true);
 
         /* Update transaction state. */
         UpdateTransactionState(row, TR_DELETE);

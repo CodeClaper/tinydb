@@ -53,7 +53,7 @@ static void update_cell(Row *row, AssignmentNode *assign_node, MetaColumn *meta_
 /* Delete row for update */
 static void delete_row_for_update(Row *row, Table *table) {
     if (RowIsVisible(row)) {
-        Cursor *cursor = define_cursor(table, row->key);
+        Cursor *cursor = define_cursor(table, row->key, true);
         Refer *refer = convert_refer(cursor);
 
         UpdateTransactionState(row, TR_DELETE);
@@ -67,7 +67,7 @@ static void delete_row_for_update(Row *row, Table *table) {
 
 /* Insert row for update. */
 static void insert_row_for_update(Row *row, Table *table) {
-    Cursor *new_cur = define_cursor(table, row->key);
+    Cursor *new_cur = define_cursor(table, row->key, true);
     UpdateTransactionState(row, TR_INSERT);
 
     /* Insert */

@@ -551,20 +551,35 @@ void *get_internal_node_cell(void *node, uint32_t index, uint32_t key_len, uint3
 }
 
 /* Get internal node index of key */
-uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, uint32_t key_len, 
-                                     uint32_t default_value_len , DataType key_data_type) {
+static uint32_t get_internal_node_key_index(void *node, void *new_key, uint32_t keys_num, uint32_t key_len, 
+                                            uint32_t default_value_len , DataType key_data_type) {
     /* Binary search */
     uint32_t min_index = 0;
     uint32_t max_index = keys_num;
     while (min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
         void* index_key = get_internal_node_key(node, index, key_len, default_value_len);
-        if (greater_equal(index_key, key, key_data_type)) {
+        if (greater_equal(index_key, new_key, key_data_type)) {
             max_index = index;
         } else {
             min_index = index + 1;
         }
     }
+
+    /* Skip the expired cell. 
+     * Based on these assumptions:
+     * (1) Valid cell is always at the right position of the expired cell.
+     * (2) The right child is never expired.
+     * */
+    //while (min_index < keys_num) {
+    //    Xid created_xid = get_internal_node_child_created_xid(node, min_index, key_len, default_value_len);
+    //    Xid expired_xid = get_internal_node_child_expired_xid(node, min_index, key_len, default_value_len);
+    //    if (IsVisible(created_xid, expired_xid))
+    //        break;
+    //    min_index++;
+    //}
+    if (min_index > keys_num) 
+        db_log(PANIC, "Tried to access child_num %d > num_keys %d.", min_index, keys_num);
     return min_index;
 }
 
@@ -577,30 +592,24 @@ uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t k
     while(min_index != max_index) {
         uint32_t index = (max_index + min_index) / 2;
         void *index_key = get_internal_node_key(node, index, key_len, default_value_len);
+        Xid created_xid = get_internal_node_child_created_xid(node, index, key_len, default_value_len);
+        Xid expired_xid = get_internal_node_child_expired_xid(node, index, key_len, default_value_len);
         /* Notice: Greate Equal opreator is really import for store data, 
-         * when keep the prince: always keep visible row lie at the forefront of same key cells. */
-        if (greater_equal(index_key, key, key_data_type)) 
+         * when keep the prince: always keep visible row lie at the forefront of same key cells. 
+         * Skip the expired cell. 
+         * Based on these assumptions:
+         * (1) Valid cell is always in the right of the expired cell.
+         * (2) Right child is never expired.
+         * */
+        if (greater_equal(index_key, key, key_data_type) && IsVisible(created_xid, expired_xid)) 
             max_index = index;
         else 
             min_index = index + 1;
     }
-    /* Skip the expired cell. 
-     * Based on these assumptions:
-     * (1) Valid cell is always in the right of the expired cell.
-     * (2) Right child is never expired.
-     * */
-    while (min_index < keys_num) {
-        Xid created_xid = get_internal_node_child_created_xid(node, min_index, key_len, default_value_len);
-        Xid expired_xid = get_internal_node_child_expired_xid(node, min_index, key_len, default_value_len);
-        if (IsVisible(created_xid, expired_xid))
-            break;
-        min_index++;
-    }
 
-    if (min_index > keys_num) {
-        db_log(PANIC, "Tried to access child_num %d > num_keys %d.", 
-               min_index, keys_num);
-    } else if (min_index == keys_num) {
+    if (min_index > keys_num) 
+        db_log(PANIC, "Tried to access child_num %d > num_keys %d.", min_index, keys_num);
+    else if (min_index == keys_num) {
         Assert(IsVisible(
             get_internal_node_right_child_created_xid(node, default_value_len),
             get_internal_node_right_child_expired_xid(node, default_value_len)
@@ -611,6 +620,34 @@ uint32_t get_internal_node_cell_child_page_num(void *node, void *key, uint32_t k
              get_internal_node_child_created_xid(node, min_index, key_len, default_value_len),
              get_internal_node_child_expired_xid(node, min_index, key_len, default_value_len)
         ));
+        return get_internal_node_child_page_num(node, min_index, key_len, default_value_len);
+    } 
+    return -1;
+}
+
+/* Get internal node child page num. */
+uint32_t find_internal_node_cell_child_page_num(void *node, void *key, uint32_t keys_num, uint32_t key_len, 
+                                               uint32_t default_value_len, DataType key_data_type) {
+    /* Binary search */
+    uint32_t min_index = 0;
+    uint32_t max_index = keys_num;
+    while(min_index != max_index) {
+        uint32_t index = (max_index + min_index) / 2;
+        void *index_key = get_internal_node_key(node, index, key_len, default_value_len);
+        /* Notice: Greate Equal opreator is really import for store data, 
+         * when keep the prince: always keep visible row lie at the forefront of same key cells. 
+         * */
+        if (greater_equal(index_key, key, key_data_type)) 
+            max_index = index;
+        else 
+            min_index = index + 1;
+    }
+
+    if (min_index > keys_num) 
+        db_log(PANIC, "Tried to access child_num %d > num_keys %d.", min_index, keys_num);
+    else if (min_index == keys_num) {
+        return get_internal_node_right_child_page_num(node, default_value_len);
+    } else {
         return get_internal_node_child_page_num(node, min_index, key_len, default_value_len);
     } 
     return -1;
@@ -710,7 +747,7 @@ static void update_internal_node_key(Table *table, void *internal_node,
     /* If old key greater than the max key, it means it exist in the right child node. 
      * No need to change cells key. Otherwise, it means the key in the cells, 
      * need to be replaced with new one. */
-    if (!greater(old_key, max_key, key_data_type)) {
+    if (!greater_equal(old_key, max_key, key_data_type)) {
         uint32_t key_index = get_internal_node_key_index(
             internal_node, old_key, keys_num, 
             key_len, value_len, key_data_type
@@ -886,34 +923,18 @@ static void copy_root_to_leaf_node(Table *table, uint32_t new_page_num,
     ReleaseBuffer(table, table->root_page_num);
 }
 
-static uint32_t find_first_exipired_page_num(void *internal_node, uint32_t key_len, uint32_t value_len) {
-    uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
-    for (int i = 0; i < keys_num; i++) {
-        Xid created_xid = get_internal_node_child_created_xid(internal_node, i, key_len, value_len);
-        Xid expired_xid = get_internal_node_child_expired_xid(internal_node, i, key_len, value_len);
-        if (!IsVisible(created_xid, expired_xid))
-            return i;
-    }
-    return -1;
-}
-
-static uint32_t find_page_num_in_internal_node(void *internal_node, void *taget_key, uint32_t key_len, uint32_t value_len, DataType data_type) {
-    uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
-    for (int i = 0; i < keys_num; i++) {
-        void *key = get_internal_node_key(internal_node, i, key_len, value_len);
-        if (equal(key, taget_key, data_type))
-            return get_internal_node_child_page_num(internal_node, i, key_len, value_len);
-    }
-    return -1;
-}
-
+/* Check if the InternalNodeCellDesc already exists in the list. */
 static bool already_exists_internal_node_cell_desc(List *list, InternalNodeCellDesc *target_desc) {
+    if (list_empty(list))
+        return false;
+
     ListCell *lc;
     foreach (lc, list) {
         InternalNodeCellDesc *desc = (InternalNodeCellDesc *) lfirst(lc);
         if (equal(desc->key, target_desc->key, desc->key_type))
             return true;
     }
+
     return false;
 } 
 
@@ -1015,8 +1036,10 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num,
 }
 
 
-/* Create new root node. */
-static void create_new_root_node2(Table *table, uint32_t left_child_page_num, uint32_t right_child_page_num, 
+/* Reuse the old root node
+ * Register the new two child to the root.
+ * */
+static void reuse_old_root_node(Table *table, uint32_t left_child_page_num, uint32_t right_child_page_num, 
                                  uint32_t key_len, uint32_t value_len) {
     /* Get buffer. */
     void *root = ReadBuffer(table, table->root_page_num);
@@ -1051,181 +1074,6 @@ static void create_new_root_node2(Table *table, uint32_t left_child_page_num, ui
     ReleaseBuffer(table, table->root_page_num);
 }
 
-
-/* When internal node is full, there is a need to generate a new internal node. 
- * And half hight cells in the old internal node will be moved into the new one. */
-static void insert_and_split_internal_node(Table *table, uint32_t old_internal_page_num, 
-                                           uint32_t new_child_page_num) {
-
-    /* Get old internal node. */
-    void *old_internal_node = ReadBuffer(table, old_internal_page_num);
-
-    uint32_t keys_num, key_len, value_len, cell_len, orgin_new_child_page_num;
-    value_len = calc_table_row_length(table);
-    key_len = calc_primary_key_length(table);
-    keys_num = get_internal_node_keys_num(old_internal_node, value_len);
-    cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
-    orgin_new_child_page_num = new_child_page_num;
-
-    MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
-    /* Get internal node absolute max key.*/
-    void *old_max_key = get_max_key(table, old_internal_node, key_len, value_len);
-    
-    /* Get new internal node. */
-    uint32_t next_unused_page_num1 = next_avaliable_page_num(table->pager);
-    void *new_internal_node1 = ReadBuffer(table, next_unused_page_num1);
-    uint32_t next_unused_page_num2 = next_avaliable_page_num(table->pager);
-    void *new_internal_node2 = ReadBuffer(table, next_unused_page_num2);
-
-    /* Initialize new internal node1. */
-    initial_internal_node(new_internal_node1, false);
-    set_parent_pointer(new_internal_node1, get_parent_pointer(old_internal_node));
-    set_internal_node_keys_num(new_internal_node1, value_len, 0);
-    set_internal_node_right_child_page_num(new_internal_node1, value_len, next_unused_page_num2);
-
-    /* Initialize new internal node2. */
-    initial_internal_node(new_internal_node2, false);
-    set_parent_pointer(new_internal_node2, get_parent_pointer(old_internal_node));
-    set_internal_node_keys_num(new_internal_node2, value_len, 0);
-    set_internal_node_right_child_page_num(
-        new_internal_node2, value_len, 
-        get_internal_node_right_child_page_num(old_internal_node, value_len)
-    );
-    
-    /* Get the new child node. */
-    void *new_child_node = ReadBuffer(table, new_child_page_num);
-
-    /* Get the new child node max key and position in parent node. */
-    void *new_child_max_key = get_max_key(table, new_child_node, key_len, value_len);
-    uint32_t new_child_max_key_index = get_internal_node_key_index(
-        old_internal_node, 
-        new_child_max_key, 
-        keys_num, 
-        key_len, 
-        value_len, 
-        primary_key_meta_column->column_type
-    );
-
-    uint32_t old_right_page_num = get_internal_node_right_child_page_num(old_internal_node, value_len);
-    void *right_node = ReadBuffer(table, old_right_page_num);
-    void *right_node_max_key = get_max_key(table, right_node, key_len, value_len);
-
-    /* Maybe the new child is greater than max key, need to compare. */
-    if (greater(new_child_max_key, right_node_max_key, primary_key_meta_column->column_type)) {
-        uint32_t temp = new_child_page_num;
-        new_child_max_key = right_node_max_key;
-        new_child_max_key_index = keys_num; 
-        new_child_page_num = old_right_page_num;
-        old_right_page_num = temp;
-    }
-
-    uint32_t RIGHT_SPLIT_COUNT = (keys_num + 1) / 2;
-    uint32_t LEFT_SPLIT_COUNT = (keys_num + 1) - RIGHT_SPLIT_COUNT;
-
-    int i;
-    for (i = keys_num; i >= 0; i--) {
-        /* Define which node. */ 
-        void *destination_node = (i >= LEFT_SPLIT_COUNT)
-                    ? new_internal_node2 
-                    : new_internal_node1;
-        
-        /* New position. */
-        uint32_t index = i % LEFT_SPLIT_COUNT;
-
-        if (i == new_child_max_key_index) {
-            set_internal_node_key(destination_node, index, new_child_max_key, key_len, value_len); 
-            set_internal_node_child_page_num(destination_node, index, new_child_page_num, key_len, value_len);
-        } else if (i > new_child_max_key_index) {
-            /* Right cells make cell space. */
-            memcpy(get_internal_node_cell(destination_node, index, key_len, value_len), 
-                   get_internal_node_cell(old_internal_node, i - 1, key_len, value_len), 
-                   cell_len);
-        } else {
-            memcpy(get_internal_node_cell(destination_node, index, key_len, value_len), 
-                   get_internal_node_cell(old_internal_node, i, key_len, value_len), 
-                   cell_len);
-        }
-    }
-
-    /* For new internal node, it uses old internall node right node as right node. */
-    set_internal_node_keys_num(new_internal_node2, value_len, RIGHT_SPLIT_COUNT);
-    set_internal_node_right_child_page_num( new_internal_node2, value_len, old_right_page_num);
-    /* Rest parent for new internal node.*/
-    redefine_parent(table, next_unused_page_num2);
-
-    /* For new internal node1, it uses old internal half node as right node. */
-    set_internal_node_right_child_page_num(
-        new_internal_node1, 
-        value_len, 
-        get_internal_node_child_page_num(old_internal_node, LEFT_SPLIT_COUNT - 1, key_len, value_len)
-    );
-    set_internal_node_keys_num(new_internal_node1, value_len, LEFT_SPLIT_COUNT - 1);
-    /* Rest parent for new internal node.*/
-    redefine_parent(table, next_unused_page_num1);
-
-    /* If old internal is root, need to create new root. */
-    if (is_root_node(old_internal_node)) {
-        create_new_root_node2(table, next_unused_page_num1, next_unused_page_num2, key_len, value_len);
-        flush_page(table->meta_table->table_name, table->pager, old_internal_page_num);
-    } else {
-        uint32_t parent_page_num = get_parent_pointer(old_internal_node);
-        void *parent_node = ReadBuffer(table,  parent_page_num);
-
-        /* Check if old_internal_node is parent`s right child or child in cells. */
-        if (is_internal_node_right_child(parent_node, value_len, old_internal_page_num)) {
-            /* If right child, make it expired. */
-            set_internal_node_right_child_expired_xid(
-                parent_node, value_len, 
-                GetCurrentXid()
-            );
-        } else {
-            /* If child in cells, find it`s index and make it expired. */
-            uint32_t parent_keys_num = get_internal_node_keys_num(parent_node, value_len);
-            uint32_t old_key_index = get_internal_node_key_index(
-                parent_node, old_max_key, 
-                parent_keys_num, key_len, value_len, 
-                primary_key_meta_column->column_type
-            );
-
-            /* Delete old internal node. */
-            set_internal_node_child_expired_xid(
-                parent_node, old_key_index, 
-                GetCurrentXid(), 
-                key_len, value_len
-            );
-        }
-
-        /* And insert a new cell about the new leaf node to the parent internal node. */
-        List *page_num_list = create_list(NODE_INT);
-        append_list_int(page_num_list, next_unused_page_num1);
-        append_list_int(page_num_list, next_unused_page_num2);
-        insert_internal_node_batch_cell(table, parent_page_num, page_num_list, key_len, value_len);
-
-        flush_page(table->meta_table->table_name, table->pager, next_unused_page_num1);
-        flush_page(table->meta_table->table_name, table->pager, next_unused_page_num2);
-        flush_page(table->meta_table->table_name, table->pager, parent_page_num);
-
-        free_list(page_num_list);
-
-        ReadBuffer(table, parent_page_num);
-    }
-    
-    /* Release the old right page buffer.*/
-    ReleaseBuffer(table, old_right_page_num);
-
-    /* Release new child buffer. 
-     * Notice: use orgin_new_child_page_num instead of new_child_page_num, 
-     * becuase new_child_page_num maybe has changed.*/
-    ReleaseBuffer(table, orgin_new_child_page_num);
-
-    /* Release new buffer. */
-    ReleaseBuffer(table, next_unused_page_num1);
-    ReleaseBuffer(table, next_unused_page_num2);
-
-    /* Release the old internal node buffer. */
-    ReleaseBuffer(table, old_internal_page_num);
-}
-
 /* When internal node is full, there is a need to generate a new internal node. 
  * And half hight cells in the old internal node will be moved into the new one. */
 static void insert_and_split_internal_node_batch(Table *table, uint32_t old_internal_page_num, 
@@ -1254,19 +1102,13 @@ static void insert_and_split_internal_node_batch(Table *table, uint32_t old_inte
     /* Initialize new internal node1. */
     initial_internal_node(new_internal_node1, false);
     set_parent_pointer(new_internal_node1, get_parent_pointer(old_internal_node));
-    set_internal_node_keys_num(new_internal_node1, value_len, 0);
-    set_internal_node_right_child_page_num(new_internal_node1, value_len, next_unused_page_num2);
 
     /* Initialize new internal node2. */
     initial_internal_node(new_internal_node2, false);
     set_parent_pointer(new_internal_node2, get_parent_pointer(old_internal_node));
-    set_internal_node_keys_num(new_internal_node2, value_len, 0);
-    set_internal_node_right_child_page_num(
-        new_internal_node2, value_len, 
-        get_internal_node_right_child_page_num(old_internal_node, value_len)
-    );
 
-    /* Create the list of InternalNodeCellDesc. */
+    /* Create the list of InternalNodeCellDesc. 
+     * And Put all children cells, right child and new children into it. */
     List *internal_node_cell_desc_list = create_list(NODE_INTERNAL_NODE_CELL_DESC);
 
     /* Append the children cells of internal_node. */
@@ -1294,9 +1136,10 @@ static void insert_and_split_internal_node_batch(Table *table, uint32_t old_inte
             get_internal_node_right_child_created_xid(old_internal_node, value_len), 
             get_internal_node_right_child_expired_xid(old_internal_node, value_len)
         );
-        Assert(IsVisible(right_child_desc->created_xid, right_child_desc->expired_xid));
-        Assert(!already_exists_internal_node_cell_desc(internal_node_cell_desc_list, right_child_desc));
-        append_list(internal_node_cell_desc_list, right_child_desc);
+        if (IsVisible(right_child_desc->created_xid, right_child_desc->expired_xid)) {
+            Assert(!already_exists_internal_node_cell_desc(internal_node_cell_desc_list, right_child_desc));
+            append_list(internal_node_cell_desc_list, right_child_desc);
+        }
         ReleaseBuffer(table, old_right_page_num);
     }
 
@@ -1383,7 +1226,7 @@ static void insert_and_split_internal_node_batch(Table *table, uint32_t old_inte
 
     /* If old internal is root, need to create new root. */
     if (is_root_node(old_internal_node)) {
-        create_new_root_node2(table, next_unused_page_num1, next_unused_page_num2, key_len, value_len);
+        reuse_old_root_node(table, next_unused_page_num1, next_unused_page_num2, key_len, value_len);
     } else {
         /* Get parent node. */
         uint32_t parent_page_num = get_parent_pointer(old_internal_node);
@@ -1392,10 +1235,7 @@ static void insert_and_split_internal_node_batch(Table *table, uint32_t old_inte
         /* Check if right child. */
         if (is_internal_node_right_child(parent_node, value_len, old_internal_page_num))  {
             /* If right child, make it expired. */
-            set_internal_node_right_child_expired_xid(
-                parent_node, value_len, 
-                GetCurrentXid()
-            );
+            set_internal_node_right_child_expired_xid( parent_node, value_len, GetCurrentXid());
         } else {
             /* If child in cells, find it`s index and make it expired. */
             uint32_t parent_keys_num = get_internal_node_keys_num(parent_node, value_len);
@@ -1446,10 +1286,12 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
     /* Get primary key column meta info. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
-    if (overflow_internal_node(internal_node, keys_num, key_len, value_len)) 
-        insert_and_split_internal_node(table, page_num, new_child_page_num);
-    else 
-    {
+    if (overflow_internal_node(internal_node, keys_num, key_len, value_len)) {
+        List *new_child_page_num_list = create_list(new_child_page_num);
+        append_list_int(new_child_page_num_list, new_child_page_num);
+        insert_and_split_internal_node_batch(table, page_num, new_child_page_num_list);
+        free_list(new_child_page_num_list);
+    } else {
         /* Get new child node max key and position in parent node. */
         void *new_child_max_key = get_max_key(table, new_child_node, key_len, value_len);
         uint32_t right_child_page_num = get_internal_node_right_child_page_num(internal_node, value_len);
@@ -1460,17 +1302,6 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
 
         /* Right child always is the node which has the maximum key. */
         if (greater_equal(new_child_max_key, right_child_max_key, primary_key_meta_column->column_type)) {
-
-            /* The right child is not the one who has the biggest key, so put it into the cells.  */
-            set_internal_node_child_page_num(internal_node, keys_num, right_child_page_num, key_len, value_len);
-            set_internal_node_child_created_xid(internal_node, keys_num, right_child_created_xid, key_len, value_len);
-            set_internal_node_child_expired_xid(internal_node, keys_num, right_child_expired_xid, key_len, value_len);
-            set_internal_node_key(internal_node, keys_num, right_child_max_key, key_len, value_len);
-
-            /* Use the new child as the right child. */
-            set_internal_node_right_child_page_num(internal_node, value_len, new_child_page_num);
-            set_internal_node_right_child_created_xid(internal_node, value_len, GetCurrentXid());
-            set_internal_node_right_child_expired_xid(internal_node, value_len, XID_NIL);
 
             /* Update the parent internal node the biggest key. */
             if (!is_root_node(internal_node)) {
@@ -1488,6 +1319,17 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
                 /* Release parent buffer. */
                 ReleaseBuffer(table, parent_page_num);
             }
+
+            /* The right child is not the one who has the biggest key, so put it into the cells.  */
+            set_internal_node_child_page_num(internal_node, keys_num, right_child_page_num, key_len, value_len);
+            set_internal_node_child_created_xid(internal_node, keys_num, right_child_created_xid, key_len, value_len);
+            set_internal_node_child_expired_xid(internal_node, keys_num, right_child_expired_xid, key_len, value_len);
+            set_internal_node_key(internal_node, keys_num, right_child_max_key, key_len, value_len);
+
+            /* Use the new child as the right child. */
+            set_internal_node_right_child_page_num(internal_node, value_len, new_child_page_num);
+            set_internal_node_right_child_created_xid(internal_node, value_len, GetCurrentXid());
+            set_internal_node_right_child_expired_xid(internal_node, value_len, XID_NIL);
         } else {
             /* If not exist in the right child node, then exist in the cells. */ 
             uint32_t new_child_max_key_index = get_internal_node_key_index(
@@ -1496,23 +1338,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
                 keys_num, key_len, value_len, 
                 primary_key_meta_column->column_type
             );
-
-            /* Check the default key if equals the inserting one. */
-            void *default_key = get_internal_node_key(internal_node, new_child_max_key_index, key_len, value_len);
-            if (equal(default_key, new_child_max_key, primary_key_meta_column->column_type)) {
-                /* Move the right cells and make space for the new one. */
-                int i;
-                for (i = keys_num; i > new_child_max_key_index + 1; i--) {
-                    uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
-                    memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), 
-                           get_internal_node_cell(internal_node, i - 1, key_len, value_len), 
-                           cell_len); 
-                } 
-                set_internal_node_key(internal_node, new_child_max_key_index + 1, new_child_max_key, key_len, value_len);
-                set_internal_node_child_page_num(internal_node, new_child_max_key_index + 1, new_child_page_num, key_len, value_len);
-                set_internal_node_child_created_xid(internal_node, new_child_max_key_index + 1, GetCurrentXid(), key_len, value_len);
-                set_internal_node_child_expired_xid(internal_node, new_child_max_key_index + 1, XID_NIL, key_len, value_len);
-            } else {
+            {
                 /* Move the right cells and make space for the new one. */
                 int i;
                 for (i = keys_num; i > new_child_max_key_index; i--) {
@@ -1577,20 +1403,6 @@ void insert_internal_node_batch_cell(Table *table, uint32_t page_num, List* new_
             /* Right child always is the node which has the maximum key. */
             if (greater_equal(new_child_max_key, right_child_max_key, primary_key_meta_column->column_type)) {
 
-                /* Put the old right child into cells. */
-                set_internal_node_child_page_num(internal_node, keys_num, right_child_page_num, key_len, value_len);
-                set_internal_node_child_created_xid(internal_node, keys_num, right_child_created_xid, key_len, value_len);
-                set_internal_node_child_expired_xid(internal_node, keys_num, right_child_expired_xid, key_len, value_len);
-                set_internal_node_key(internal_node, keys_num, right_child_max_key, key_len, value_len);
-
-                /* Use the new child as the right child. */
-                set_internal_node_right_child_page_num(internal_node, value_len, new_child_page_num);
-                set_internal_node_right_child_created_xid(internal_node, value_len, GetCurrentXid());
-                set_internal_node_right_child_expired_xid(internal_node, value_len, XID_NIL);
-
-                /* Increase keys number. */
-                set_internal_node_keys_num(internal_node, value_len, ++keys_num);
-
                 /* If internal_node not root, the max key has changed,  update the parent key. */
                 if (!is_root_node(internal_node)) {
                     uint32_t parent_page_num = get_parent_pointer(internal_node);
@@ -1607,6 +1419,21 @@ void insert_internal_node_batch_cell(Table *table, uint32_t page_num, List* new_
                     /* Release parent buffer. */
                     ReleaseBuffer(table, parent_page_num);
                 }
+
+                /* Put the old right child into cells. */
+                set_internal_node_child_page_num(internal_node, keys_num, right_child_page_num, key_len, value_len);
+                set_internal_node_child_created_xid(internal_node, keys_num, right_child_created_xid, key_len, value_len);
+                set_internal_node_child_expired_xid(internal_node, keys_num, right_child_expired_xid, key_len, value_len);
+                set_internal_node_key(internal_node, keys_num, right_child_max_key, key_len, value_len);
+
+                /* Use the new child as the right child. */
+                set_internal_node_right_child_page_num(internal_node, value_len, new_child_page_num);
+                set_internal_node_right_child_created_xid(internal_node, value_len, GetCurrentXid());
+                set_internal_node_right_child_expired_xid(internal_node, value_len, XID_NIL);
+
+                /* Increase keys number. */
+                set_internal_node_keys_num(internal_node, value_len, ++keys_num);
+
             } else {
                 /* If the new child node not replace as the right child node, then it falls in the cells. */ 
                 uint32_t new_child_max_key_index = get_internal_node_key_index(
@@ -1615,23 +1442,7 @@ void insert_internal_node_batch_cell(Table *table, uint32_t page_num, List* new_
                     keys_num, key_len, value_len, 
                     primary_key_meta_column->column_type
                 );
-
-                /* Check the default key if equals the inserting one. */
-                void *default_key = get_internal_node_key(internal_node, new_child_max_key_index, key_len, value_len);
-                if (equal(default_key, new_child_max_key, primary_key_meta_column->column_type)) {
-                    /* Move the right cells and make space for the new one. */
-                    int i;
-                    for (i = keys_num; i > new_child_max_key_index + 1; i--) {
-                        uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
-                        memcpy(get_internal_node_cell(internal_node, i, key_len, value_len), 
-                               get_internal_node_cell(internal_node, i - 1, key_len, value_len), 
-                               cell_len); 
-                    } 
-                    set_internal_node_key(internal_node, new_child_max_key_index + 1, new_child_max_key, key_len, value_len);
-                    set_internal_node_child_page_num(internal_node, new_child_max_key_index + 1, new_child_page_num, key_len, value_len);
-                    set_internal_node_child_created_xid(internal_node, new_child_max_key_index + 1, GetCurrentXid(), key_len, value_len);
-                    set_internal_node_child_expired_xid(internal_node, new_child_max_key_index + 1, XID_NIL, key_len, value_len);
-                } else {
+                {
                     /* Move the right cells and make space for the new one. */
                     int i;
                     for (i = keys_num; i > new_child_max_key_index; i--) {
@@ -1756,7 +1567,7 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
 
     /* If the old node is root, need to creat new root node. */
     if (is_root_node(old_node)) {
-        create_new_root_node2(
+        reuse_old_root_node(
             cursor->table, 
             next_unused_page_num1, next_unused_page_num2, 
             key_len, value_len

@@ -334,7 +334,7 @@ static Refer *insert_one_row(Table *table, Row *row) {
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     Assert(primary_key_meta_column);
 
-    Cursor *cursor = define_cursor(table, row->key);
+    Cursor *cursor = define_cursor(table, row->key, false);
     if (has_user_primary_key(table->meta_table) && 
             check_duplicate_key(cursor, row->key) && 
                 !cursor_is_deleted(cursor)) {
