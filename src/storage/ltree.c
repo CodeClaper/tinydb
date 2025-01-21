@@ -754,7 +754,7 @@ static void update_internal_node_key(Table *table, void *internal_node, void *ol
         void *parent_node = ReadBuffer(table, parent_page_num);
 
         update_internal_node_key(table, parent_node, old_key, new_key, key_len, value_len, key_data_type);
-        flush_page(table->meta_table->table_name, table->pager, parent_page_num);
+        make_page_dirty(table->meta_table->table_name, table->pager, parent_page_num);
 
         ReleaseBuffer(table, parent_page_num);
     }
@@ -849,7 +849,7 @@ static void redefine_parent(Table *table, uint32_t page_num) {
         uint32_t child_page_num = get_internal_node_child_page_num(internal_node, i, key_len, value_len);
         void *child_node = ReadBuffer(table, child_page_num);
         set_parent_pointer(child_node, page_num); 
-        flush_page(table->meta_table->table_name, table->pager, child_page_num);
+        make_page_dirty(table->meta_table->table_name, table->pager, child_page_num);
         ReleaseBuffer(table, child_page_num);
     }
 
@@ -859,7 +859,7 @@ static void redefine_parent(Table *table, uint32_t page_num) {
     /* Reader right buffer. */
     void *right_node = ReadBuffer(table, right_child_page_num);
     set_parent_pointer(right_node, page_num);
-    flush_page(table->meta_table->table_name, table->pager, right_child_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, right_child_page_num);
 
     /* Release buffer. */
     ReleaseBuffer(table, right_child_page_num);
@@ -1009,9 +1009,9 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num,
     set_internal_node_right_child_created_xid(root, value_len, GetCurrentXid());
     set_internal_node_right_child_expired_xid(root, value_len, XID_NIL);
 
-    flush_page(table->meta_table->table_name, table->pager, next_unused_page_num);
-    flush_page(table->meta_table->table_name, table->pager, right_child_page_num);
-    flush_page(table->meta_table->table_name, table->pager, table->root_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, next_unused_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, right_child_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, table->root_page_num);
 
     /* Release buffer. */
     ReleaseBuffer(table, next_unused_page_num);
@@ -1048,9 +1048,9 @@ static void reuse_old_root_node(Table *table, uint32_t left_child_page_num, uint
     set_internal_node_right_child_created_xid(root, value_len, GetCurrentXid());
     set_internal_node_right_child_expired_xid(root, value_len, XID_NIL);
 
-    flush_page(table->meta_table->table_name, table->pager, left_child_page_num);
-    flush_page(table->meta_table->table_name, table->pager, right_child_page_num);
-    flush_page(table->meta_table->table_name, table->pager, table->root_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, left_child_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, right_child_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, table->root_page_num);
 
     /* Release buffer. */
     ReleaseBuffer(table, left_child_page_num);
@@ -1247,15 +1247,15 @@ static void insert_and_split_internal_node_batch(Table *table, uint32_t old_inte
         append_list_int(page_num_list, next_unused_page_num2);
         insert_internal_node_batch_cell(table, parent_page_num, page_num_list, key_len, value_len);
 
-        flush_page(table->meta_table->table_name, table->pager, next_unused_page_num1);
-        flush_page(table->meta_table->table_name, table->pager, next_unused_page_num2);
-        flush_page(table->meta_table->table_name, table->pager, parent_page_num);
+        make_page_dirty(table->meta_table->table_name, table->pager, next_unused_page_num1);
+        make_page_dirty(table->meta_table->table_name, table->pager, next_unused_page_num2);
+        make_page_dirty(table->meta_table->table_name, table->pager, parent_page_num);
 
         free_list(page_num_list);
         ReadBuffer(table, parent_page_num);
     }
     
-    flush_page(table->meta_table->table_name, table->pager, old_internal_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, old_internal_page_num);
 
     /* Release new buffer. */
     ReleaseBuffer(table, next_unused_page_num1);
@@ -1304,7 +1304,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
                     key_len, value_len, 
                     primary_key_meta_column->column_type
                 );
-                flush_page(table->meta_table->table_name, table->pager, parent_page_num);
+                make_page_dirty(table->meta_table->table_name, table->pager, parent_page_num);
                 /* Release parent buffer. */
                 ReleaseBuffer(table, parent_page_num);
             }
@@ -1346,7 +1346,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
         /* Increase keys number. */
         set_internal_node_keys_num(internal_node, value_len, keys_num + 1);
         /* Flush disk. */
-        flush_page(table->meta_table->table_name, table->pager, page_num);
+        make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
         /* Release right child buffer. */
         ReleaseBuffer(table, right_child_page_num);
@@ -1402,7 +1402,7 @@ void insert_internal_node_batch_cell(Table *table, uint32_t page_num, List* new_
                         key_len, value_len, 
                         primary_key_meta_column->column_type
                     );
-                    flush_page(table->meta_table->table_name, table->pager, parent_page_num);
+                    make_page_dirty(table->meta_table->table_name, table->pager, parent_page_num);
                     /* Release parent buffer. */
                     ReleaseBuffer(table, parent_page_num);
                 }
@@ -1448,7 +1448,7 @@ void insert_internal_node_batch_cell(Table *table, uint32_t page_num, List* new_
             }
 
             /* Flush disk. */
-            flush_page(table->meta_table->table_name, table->pager, page_num);
+            make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
             /* Release buffer. */
             ReleaseBuffer(table, right_child_page_num);
@@ -1599,9 +1599,9 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         append_list_int(page_num_list, next_unused_page_num2);
         insert_internal_node_batch_cell(cursor->table, parent_page_num, page_num_list, key_len, value_len);
 
-        flush_page(table_name, cursor->table->pager, next_unused_page_num1);
-        flush_page(table_name, cursor->table->pager, next_unused_page_num2);
-        flush_page(table_name, cursor->table->pager, parent_page_num);
+        make_page_dirty(table_name, cursor->table->pager, next_unused_page_num1);
+        make_page_dirty(table_name, cursor->table->pager, next_unused_page_num2);
+        make_page_dirty(table_name, cursor->table->pager, parent_page_num);
 
         free_list(page_num_list);
         ReadBuffer(cursor->table, parent_page_num);
@@ -1682,7 +1682,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
             );
 
             /* Flush parent page. */
-            flush_page(table_name, cursor->table->pager, parent_page_num);
+            make_page_dirty(table_name, cursor->table->pager, parent_page_num);
 
             ReleaseBuffer(cursor->table, parent_page_num);
         }
@@ -1691,7 +1691,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
         increase_leaf_node_cell_num(node, value_len);
         
         /* Flush into disk. */
-        flush_page(table_name, cursor->table->pager, cursor->page_num);
+        make_page_dirty(table_name, cursor->table->pager, cursor->page_num);
 
         dfree(destination);
     }
@@ -1917,9 +1917,9 @@ static void split_leaf_node_append_column(uint32_t page_num, Table *table, MetaC
         );
 
         /* Make page dirty. */
-        flush_page(table_name, table->pager, page_num);
-        flush_page(table_name, table->pager, next_unused_page_num);
-        flush_page(table_name, table->pager, parent_page_num);
+        make_page_dirty(table_name, table->pager, page_num);
+        make_page_dirty(table_name, table->pager, next_unused_page_num);
+        make_page_dirty(table_name, table->pager, parent_page_num);
         
         /* Release parent buffer. */
         ReleaseBuffer(table, parent_page_num);
@@ -2019,8 +2019,8 @@ static void split_root_internal_node_append_column(uint32_t page_num, Table *tab
     redefine_parent(table, page_num);
 
     /* Flush page.*/
-    flush_page(table->meta_table->table_name, table->pager, page_num);
-    flush_page(table->meta_table->table_name, table->pager, next_unused_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, next_unused_page_num);
 
     /* Create new root. */
     create_new_root_node(table, next_unused_page_num, key_len, value_len);
@@ -2103,7 +2103,7 @@ static void append_root_leaf_node_column(uint32_t page_num, Table *table, MetaCo
     set_column_size(leaf_node, column_size + 1);
 
     /* flush page. */
-    flush_page(table->meta_table->table_name, table->pager, page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
     /* Release buffer. */
     ReleaseBuffer(table, page_num);
@@ -2153,7 +2153,7 @@ static void append_normal_leaf_node_column(uint32_t page_num, Table *table, Meta
     );
 
     /* flush page. */
-    flush_page(table->meta_table->table_name, table->pager, page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
     /* Release the buffer. */
     ReleaseBuffer(table, page_num);
@@ -2236,7 +2236,7 @@ static void append_root_internal_node_column(uint32_t page_num, Table *table,
         set_column_size(root_node, column_size + 1);
     
         /* Flush page. */
-        flush_page(table->meta_table->table_name, table->pager, page_num);
+        make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
         /* Append new column for children. */
         value_len += new_column->column_length;
@@ -2462,7 +2462,7 @@ static void drop_root_leaf_node_column(uint32_t page_num, Table *table, int pos)
     set_column_size(root_node, column_size - 1);
 
     /* flush page. */
-    flush_page(table->meta_table->table_name, table->pager, page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
     /* Release pager buffer. */
     ReleaseBuffer(table, page_num);
@@ -2502,7 +2502,7 @@ static void drop_normal_leaf_node_column(uint32_t page_num, Table *table, int po
     }
 
     /* Flush page. */
-    flush_page(table->meta_table->table_name, table->pager, page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
     /* Release buffer. */
     ReleaseBuffer(table, page_num);
@@ -2581,7 +2581,7 @@ static void drop_root_internal_node_column(uint32_t page_num, Table *table, int 
     set_column_size(root_node, column_size - 1);
 
     /* Flush page. */
-    flush_page(table->meta_table->table_name, table->pager, page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
     /* Loop for children. */
     value_len -= meta_column->column_length;
@@ -2710,7 +2710,7 @@ void update_row_data(Row *row, Cursor *cursor) {
     /* Overcover leaf node. */
     memcpy(get_leaf_node_cell_value(leaf_node, key_len, value_len, cursor->cell_num), destination, value_len);
     /* Flush page. */
-    flush_page(table->meta_table->table_name, table->pager, cursor->page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, cursor->page_num);
 
     dfree(destination);
     /* Release page buffer. */
@@ -2793,7 +2793,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
                 if (key_num != 1) {
                     /*void *previous_key = get_internal_node_key(internal_node, key_index - 1, key_len);*/
                     /*update_internal_node_key(table, parent_internal_node, key, previous_key, key_len, value_len, key_data_type);*/
-                    /*flush_page(table->pager, parent_page);*/
+                    /*make_page_dirty(table->pager, parent_page);*/
                 } else {
                     /* It means there is no right child node. We need to delete the cell in parent internal node. */
                     uint32_t right_child_page_num = get_internal_node_right_child_page_num(internal_node, value_len);
@@ -2843,7 +2843,7 @@ void delete_internal_node_cell(Table *table, uint32_t page_num, void *key, DataT
         make_obsolute_node(internal_node);
 
     /* Flush to page. */
-    flush_page(table->meta_table->table_name, table->pager, page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, page_num);
 
     /* Release the buffer. */
     ReleaseBuffer(table, page_num);
@@ -2888,7 +2888,7 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
                                          parent_node, obs_key, obs_previous_key, 
                                          key_len, value_len, 
                                          primary_key_meta_column->column_type);
-                flush_page(table_name, cursor->table->pager, parent_page);
+                make_page_dirty(table_name, cursor->table->pager, parent_page);
             }
 
             /* Release parent buffer. */
@@ -2925,7 +2925,7 @@ void delete_leaf_node_cell(Cursor *cursor, void *key) {
     if (!is_root_node(leaf_node) && cell_num == 0)
         make_obsolute_node(leaf_node);
 
-    flush_page(table_name, cursor->table->pager, cursor->page_num);
+    make_page_dirty(table_name, cursor->table->pager, cursor->page_num);
 
     /* Release the buffer. */
     ReleaseBuffer(cursor->table, cursor->page_num);

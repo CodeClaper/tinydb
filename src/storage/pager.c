@@ -113,14 +113,14 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 }
 
 
-/* Flush page. 
+/* Make page dirty. 
  * This function will not flush page to disk, 
- * just make page FLUSH_STATE flag. */
-void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
+ * just make page dirty. */
+void make_page_dirty(char *table_name, Pager *pager, uint32_t page_num) {
     void *node = get_page(table_name, pager, page_num);
     Assert(node != NULL);
     /* Mark FLUSH_STATE flag. */
-    set_node_state(node, FLUSH_STATE);
+    set_node_state(node, DIRTY_STATE);
 }
 
 
@@ -134,7 +134,7 @@ static void flush_disk(Table *table) {
         Assert(node != NULL);
 
         /* Only flush FLUSH_STATE page to disk. */
-        if (get_node_state(node) == FLUSH_STATE) {
+        if (get_node_state(node) == DIRTY_STATE) {
             /* Reset to INUSE_STATE. */
             set_node_state(node, INUSE_STATE);
 
