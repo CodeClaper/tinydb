@@ -1932,10 +1932,9 @@ static void split_leaf_node_append_column(uint32_t page_num, Table *table, MetaC
 }
 
 /* Split root internla node when appending column. */
-static void split_root_internal_node_append_column(uint32_t page_num, Table *table, 
-                                                   uint32_t key_len, uint32_t value_len) {
+static void split_root_internal_node_append_column(uint32_t page_num, Table *table ) {
     /* Get local variables. */
-    uint32_t keys_num, next_unused_page_num, cell_len;
+    uint32_t key_len, value_len, keys_num ;
     
     /* Get old internal node. */
     void *old_internal_node = ReadBuffer(table, page_num);
@@ -1944,89 +1943,136 @@ static void split_root_internal_node_append_column(uint32_t page_num, Table *tab
     value_len = calc_table_row_length(table);
     key_len = calc_primary_key_length(table);
     keys_num = get_internal_node_keys_num(old_internal_node, value_len);
-    cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
+
+    /* Get primary-key column meta info. */
+    MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
 
     /* Create new internal node and initialize. */
-    next_unused_page_num = next_avaliable_page_num(table->pager);
-    void *new_internal_node = ReadBuffer(table, next_unused_page_num);
+    uint32_t next_unused_page_num1 = next_avaliable_page_num(table->pager);
+    void *new_internal_node1 = ReadBuffer(table, next_unused_page_num1);
+    uint32_t next_unused_page_num2 = next_avaliable_page_num(table->pager);
+    void *new_internal_node2 = ReadBuffer(table, next_unused_page_num2);
 
-    initial_internal_node(new_internal_node, false);
-    set_parent_pointer(new_internal_node, get_parent_pointer(old_internal_node));
-    set_internal_node_keys_num(new_internal_node, value_len, 0);
-    set_internal_node_right_child_page_num(new_internal_node, value_len, 0);
+    /* Initialize new internal node1. */
+    initial_internal_node(new_internal_node1, false);
+    set_parent_pointer(new_internal_node1, get_parent_pointer(old_internal_node));
+
+    /* Initialize new internal node2. */
+    initial_internal_node(new_internal_node2, false);
+    set_parent_pointer(new_internal_node2, get_parent_pointer(old_internal_node));
+
+    /* Create the list of InternalNodeCellDesc. 
+     * And Put all children cells, right child and new children into it. */
+    List *internal_node_cell_desc_list = create_list(NODE_INTERNAL_NODE_CELL_DESC);
+
+
+    /* Append the children cells of internal_node. */
+    for (int i = 0; i < keys_num; i++) {
+        InternalNodeCellDesc *child_desc = get_internal_node_cell_desc(
+            old_internal_node, key_len, value_len, 
+            primary_key_meta_column->column_type, i
+        );
+        /* Only append Valid cell. */
+        if (IsVisible(child_desc->created_xid, child_desc->expired_xid)) {
+            Assert(!already_exists_internal_node_cell_desc(internal_node_cell_desc_list, child_desc));
+            append_list(internal_node_cell_desc_list, child_desc);
+        }
+    } 
+
+    /* Append the right child of internal_node. */
+    {
+        uint32_t old_right_page_num = get_internal_node_right_child_page_num(old_internal_node, value_len);
+        void *right_node = ReadBuffer(table, old_right_page_num);
+        void *right_node_max_key = get_max_key(table, right_node, key_len, value_len);
+        InternalNodeCellDesc *right_child_desc = gen_internal_node_cell_desc(
+            right_node_max_key, 
+            primary_key_meta_column->column_type, 
+            old_right_page_num, 
+            get_internal_node_right_child_created_xid(old_internal_node, value_len), 
+            get_internal_node_right_child_expired_xid(old_internal_node, value_len)
+        );
+        if (IsVisible(right_child_desc->created_xid, right_child_desc->expired_xid)) {
+            Assert(!already_exists_internal_node_cell_desc(internal_node_cell_desc_list, right_child_desc));
+            append_list(internal_node_cell_desc_list, right_child_desc);
+        }
+        ReleaseBuffer(table, old_right_page_num);
+    }
+
+    /* Qsort the internal node cell desc list. */
+    list_qsort(
+        internal_node_cell_desc_list, 
+        get_internal_node_cell_desc_list_comparator
+    );
     
-    uint32_t RIGHT_SPLIT_COUNT = keys_num / 2;
-    uint32_t LEFT_SPLIT_COUNT = keys_num - RIGHT_SPLIT_COUNT;
+    /* Redistribute the child to the two new internal nodes. */
+    uint32_t desc_list_len = len_list(internal_node_cell_desc_list);
+    uint32_t RIGHT_SPLIT_COUNT = desc_list_len / 2;
+    uint32_t LEFT_SPLIT_COUNT = desc_list_len - RIGHT_SPLIT_COUNT;
 
     int i;
     for (i = keys_num - 1; i >= 0; i--) {
         /* Define which node. */ 
         void *destination_node = (i >= LEFT_SPLIT_COUNT) 
-                        ? new_internal_node 
-                        : old_internal_node;
+                        ? new_internal_node2 
+                        : new_internal_node1;
         /* New position. */
         uint32_t index = i % LEFT_SPLIT_COUNT;
-        /* Copy memory. */
-        memcpy(
-            get_internal_node_cell(destination_node, index, key_len, value_len), 
-            get_internal_node_cell(old_internal_node, i, key_len, value_len), 
-            cell_len
-        );
+
+        /* Get current InternalNodeCellDesc. */
+        InternalNodeCellDesc *desc = (InternalNodeCellDesc *) lfirst(list_nth_cell(internal_node_cell_desc_list, i));
+       
+        /* Put into new internal node. */
+        set_internal_node_key(destination_node, index, desc->key, key_len, value_len); 
+        set_internal_node_child_page_num(destination_node, index, desc->page_num, key_len, value_len);
+        set_internal_node_child_created_xid(destination_node, index, desc->created_xid, key_len, value_len);
+        set_internal_node_child_expired_xid(destination_node, index, desc->expired_xid, key_len, value_len);
     }
 
-    /* For new internal node, it uses old internall node right node as right node. */
-    set_internal_node_keys_num(new_internal_node, value_len, RIGHT_SPLIT_COUNT);
+    /* For new internal node, it uses the last children cell as the right node. */
     set_internal_node_right_child_page_num(
-        new_internal_node, value_len, 
-        get_internal_node_right_child_page_num(old_internal_node, value_len)
+        new_internal_node2, value_len, 
+        get_internal_node_child_page_num(new_internal_node2, RIGHT_SPLIT_COUNT - 1, key_len, value_len)
     );
     set_internal_node_right_child_created_xid(
-        new_internal_node, value_len, 
-        get_internal_node_right_child_created_xid(old_internal_node, value_len)
+        new_internal_node2, value_len,
+        get_internal_node_child_created_xid(new_internal_node2, RIGHT_SPLIT_COUNT - 1, key_len, value_len)
     );
     set_internal_node_right_child_expired_xid(
-        new_internal_node, value_len, 
-        get_internal_node_right_child_expired_xid(old_internal_node, value_len)
+        new_internal_node2, value_len,
+        get_internal_node_child_expired_xid(new_internal_node2, RIGHT_SPLIT_COUNT - 1, key_len, value_len)
     );
-    Assert(IsVisible(
-        get_internal_node_right_child_created_xid(new_internal_node, value_len),
-        get_internal_node_right_child_expired_xid(new_internal_node, value_len)
-    ));
-
+    set_internal_node_keys_num(new_internal_node2, value_len, RIGHT_SPLIT_COUNT - 1);
     /* Rest parent for new internal node.*/
-    redefine_parent(table, next_unused_page_num);
+    redefine_parent(table, next_unused_page_num2);
 
-    /* For old internal node, it uses its last cell as it right child. */
-    set_internal_node_keys_num(old_internal_node, value_len, LEFT_SPLIT_COUNT);
+    /* For new internal node, it uses the last children cell as the right node. */
     set_internal_node_right_child_page_num(
-        old_internal_node, value_len, 
-        get_internal_node_child_page_num(old_internal_node, LEFT_SPLIT_COUNT - 1, key_len, value_len)
+        new_internal_node1, value_len, 
+        get_internal_node_child_page_num(new_internal_node1, LEFT_SPLIT_COUNT - 1, key_len, value_len)
     );
     set_internal_node_right_child_created_xid(
-        old_internal_node, value_len,
-        get_internal_node_child_created_xid(old_internal_node, LEFT_SPLIT_COUNT - 1, key_len, value_len)
+        new_internal_node1, value_len,
+        get_internal_node_child_created_xid(new_internal_node1, LEFT_SPLIT_COUNT - 1, key_len, value_len)
     );
     set_internal_node_right_child_expired_xid(
-        old_internal_node, value_len,
-        get_internal_node_child_expired_xid(old_internal_node, LEFT_SPLIT_COUNT - 1, key_len, value_len)
+        new_internal_node1, value_len,
+        get_internal_node_child_expired_xid(new_internal_node1, LEFT_SPLIT_COUNT - 1, key_len, value_len)
     );
-    set_internal_node_keys_num(old_internal_node, value_len, LEFT_SPLIT_COUNT - 1);
-    Assert(IsVisible(
-        get_internal_node_right_child_created_xid(old_internal_node, value_len),
-        get_internal_node_right_child_expired_xid(old_internal_node, value_len)
-    ));
-
-    redefine_parent(table, page_num);
+    set_internal_node_keys_num(new_internal_node1, value_len, LEFT_SPLIT_COUNT - 1);
+    /* Rest parent for new internal node.*/
+    redefine_parent(table, next_unused_page_num1);
 
     /* Flush page.*/
     make_page_dirty(table->meta_table->table_name, table->pager, page_num);
-    make_page_dirty(table->meta_table->table_name, table->pager, next_unused_page_num);
+    make_page_dirty(table->meta_table->table_name, table->pager, next_unused_page_num1);
+    make_page_dirty(table->meta_table->table_name, table->pager, next_unused_page_num2);
 
     /* Create new root. */
-    create_new_root_node(table, next_unused_page_num, key_len, value_len);
+    reuse_old_root_node(table, next_unused_page_num1, next_unused_page_num2, key_len, value_len);
 
     /* Release buffer. */
-    ReleaseBuffer(table, next_unused_page_num);
+    ReleaseBuffer(table, next_unused_page_num1);
+    ReleaseBuffer(table, next_unused_page_num2);
     ReleaseBuffer(table, page_num);
 }
 
@@ -2191,7 +2237,7 @@ static void append_root_internal_node_column(uint32_t page_num, Table *table,
     uint32_t value_len = calc_table_row_length(table);
     
     if (overflow_root_internal_node_new_column(root_node, new_column, key_len, value_len)) {
-        split_root_internal_node_append_column(page_num, table, key_len, value_len);
+        split_root_internal_node_append_column(page_num, table);
         append_new_column(table->root_page_num, table, new_column, pos);
     } else {
         /* Move body */
