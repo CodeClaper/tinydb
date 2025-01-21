@@ -65,7 +65,7 @@ void RecordXlog(Refer *refer, XLogHeapType type) {
     Assert(trans != NULL);
 
     /* Auto-commit transaction not need to record. */
-    if (trans->auto_commit)
+    if (!conf->auto_rollback && trans->auto_commit)
         return;
 
     /* Switch to CACHE_MEMORY_CONTEXT. */
