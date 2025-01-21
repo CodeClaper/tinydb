@@ -787,15 +787,15 @@ static bool overflow_internal_node(void *internal_node, uint32_t keys_num,
 }
 
 /* Check if internal node page overflow after inserting N cells.*/
-static bool overflow_internal_node_N(void *internal_node, uint32_t keys_num, uint32_t N, 
+static bool overflow_internal_batch_node(void *internal_node, uint32_t keys_num, uint32_t size, 
                                    uint32_t key_len, uint32_t value_len) {
     uint32_t cell_len = key_len + INTERNAL_NODE_CELL_CHILD_SIZE;
     if (is_root_node(internal_node)) {
         uint32_t column_size = get_column_size(internal_node);
         return COMMON_NODE_HEADER_SIZE + ROOT_NODE_META_COLUMN_SIZE_SIZE + ROOT_NODE_META_COLUMN_SIZE * column_size + 
-               value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + cell_len * (keys_num + N) > PAGE_SIZE;
+               value_len + KEYS_NUM_SIZE + RIGHT_CHILD_SIZE + cell_len * (keys_num + size) > PAGE_SIZE;
     } else {
-        return INTERNAL_NODE_HEAD_SIZE + cell_len * (keys_num + N) > PAGE_SIZE;
+        return INTERNAL_NODE_HEAD_SIZE + cell_len * (keys_num + size) > PAGE_SIZE;
     }
 }
 
@@ -1060,7 +1060,7 @@ static void reuse_old_root_node(Table *table, uint32_t left_child_page_num, uint
 
 /* When internal node is full, there is a need to generate a new internal node. 
  * And half hight cells in the old internal node will be moved into the new one. */
-static void insert_and_split_internal_node_batch(Table *table, uint32_t old_internal_page_num, 
+static void insert_and_split_internal_batch_node(Table *table, uint32_t old_internal_page_num, 
                                                  List *new_child_page_num_list) {
     /* Check not empty list. */
     AssertFalse(list_empty(new_child_page_num_list));
@@ -1278,7 +1278,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num,
     if (overflow_internal_node(internal_node, keys_num, key_len, value_len)) {
         List *new_child_page_num_list = create_list(new_child_page_num);
         append_list_int(new_child_page_num_list, new_child_page_num);
-        insert_and_split_internal_node_batch(table, page_num, new_child_page_num_list);
+        insert_and_split_internal_batch_node(table, page_num, new_child_page_num_list);
         free_list(new_child_page_num_list);
     } else {
         /* Get new child node max key and position in parent node. */
@@ -1369,8 +1369,8 @@ void insert_internal_node_batch_cell(Table *table, uint32_t page_num, List* new_
     /* Get primary key column meta info. */
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);
-    if (overflow_internal_node_N(internal_node, keys_num, list_len, key_len, value_len)) 
-        insert_and_split_internal_node_batch(table, page_num, new_child_page_num_list);
+    if (overflow_internal_batch_node(internal_node, keys_num, list_len, key_len, value_len)) 
+        insert_and_split_internal_batch_node(table, page_num, new_child_page_num_list);
     else 
     {
         ListCell *lc;
