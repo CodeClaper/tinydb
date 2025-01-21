@@ -75,6 +75,14 @@ def test_select_after_drop_column():
     assert ret["message"] == "Unknown column name 'age'. "
 
 
+# select after drop column:
+def test_select_count_after_drop_column():
+    sql = "select count(1) from Student;"
+    ret = client.execute(sql)
+    assert ret["success"] == True
+    assert ret["data"] == [{ "count": 999 }]
+    
+
 ## try drop primary-key column
 def test_drop_primary_key_column():
     sql = "alter table Student drop column `id`;"
