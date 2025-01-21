@@ -117,11 +117,8 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
  * This function will not flush page to disk, 
  * just make page FLUSH_STATE flag. */
 void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
-
-    ListCell *lc = list_nth_cell(pager->pages, page_num);
-    void *node = lfirst(lc);
-    Assert(node);
-
+    void *node = get_page(table_name, pager, page_num);
+    Assert(node != NULL);
     /* Mark FLUSH_STATE flag. */
     set_node_state(node, FLUSH_STATE);
 }
@@ -129,14 +126,12 @@ void flush_page(char *table_name, Pager *pager, uint32_t page_num) {
 
 /* Flush Table. */
 static void flush_disk(Table *table) {
-
     Pager *pager = table->pager;
 
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
-
-        void *node = lfirst(list_nth_cell(pager->pages, i));
-        Assert(node);
+        void *node = get_page(table->meta_table->table_name, pager, i);
+        Assert(node != NULL);
 
         /* Only flush FLUSH_STATE page to disk. */
         if (get_node_state(node) == FLUSH_STATE) {
@@ -156,7 +151,6 @@ static void flush_disk(Table *table) {
                 db_log(PANIC, "Try to write page error: %s.", strerror(errno));        
         }
     }
-
 }
 
 /* Flush all to disk. */

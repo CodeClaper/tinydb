@@ -1580,15 +1580,10 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
                 primary_key_meta_column->column_type
             );
 
-            if (!IsVisible(
+            Assert(IsVisible(
                 get_internal_node_child_created_xid(parent_node, old_key_index,  key_len, value_len),
                 get_internal_node_child_expired_xid(parent_node, old_key_index,  key_len, value_len)
-            )) {
-                Assert(IsVisible(
-                    get_internal_node_child_created_xid(parent_node, old_key_index,  key_len, value_len),
-                    get_internal_node_child_expired_xid(parent_node, old_key_index,  key_len, value_len)
-                ));
-            } 
+            ));
 
             /* Make old cell expired fristly. */
             set_internal_node_child_expired_xid(
