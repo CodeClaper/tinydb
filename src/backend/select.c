@@ -600,13 +600,7 @@ Row *define_row(Refer *refer) {
 
     /* Get the leaf node buffer. */
     void *leaf_node = ReadBuffer(table, refer->page_num);
-    void *destinct = get_leaf_node_cell_value(
-        leaf_node, 
-        key_len, 
-        value_len, 
-        refer->cell_num
-    );
-
+    void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
     Row *row = generate_row(destinct, table->meta_table);
     
     /* Release the buffer. */

@@ -28,11 +28,10 @@
 #include "pager.h"
 
 /* Delete row */
-static void delete_row(Row *row, SelectResult *select_result, Table *table, 
-                       ROW_HANDLER_ARG_TYPE type, void *arg) {
-
+static void delete_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only deal with row that is visible for current transaction. */
     if (RowIsVisible(row)) {
+        /* Define the cursor of the row. */
         Cursor *cursor = define_cursor(table, row->key, true);
 
         /* Update transaction state. */

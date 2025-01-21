@@ -64,6 +64,10 @@ void RecordXlog(Refer *refer, XLogHeapType type) {
     TransEntry *trans = FindTransaction();
     Assert(trans != NULL);
 
+    /* Auto-commit transaction not need to record. */
+    if (trans->auto_commit)
+        return;
+
     /* Switch to CACHE_MEMORY_CONTEXT. */
     MemoryContext oldcontext = CURRENT_MEMORY_CONTEXT;
     MemoryContextSwitchTo(CACHE_MEMORY_CONTEXT);
@@ -117,7 +121,8 @@ void ExecuteRollback() {
     Assert(trans != NULL);
 
     /* XLHeader might be NULL, when there is no XLogs. */
-    if (XLHeader == NULL) return;
+    if (XLHeader == NULL) 
+        return;
     
     /* Loop to rollback. */
     for (XLogEntry *current = XLHeader; current != NULL; current = current->next) {
@@ -151,10 +156,7 @@ static void HeapInsertXLog(Refer *refer, TransEntry *transaction) {
 
     /* Delete the insered row. */
     *(Xid *)expired_xid_col->value = transaction->xid;
-    update_row_data(
-        row, 
-        convert_cursor(refer)
-    );
+    update_row_data(row, convert_cursor(refer));
 
     flush(refer->table_name);
 }

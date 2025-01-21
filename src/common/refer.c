@@ -139,8 +139,8 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
 
     MetaColumn *primary_meta_column = get_primary_key_meta_column(table->meta_table);
     uint32_t child_page_num = if_exsits
-        ? find_internal_node_cell_child_page_num( internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type)
-        : get_internal_node_cell_child_page_num( internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type);
+            ? get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type)
+            : get_internal_node_cell_child_page_num(internal_node, key, keys_num, key_len, value_len, primary_meta_column->column_type);
     Assert(child_page_num != -1);
 
     /* Get the child node buffer. */
@@ -170,7 +170,6 @@ Cursor *define_cursor(Table *table, void *key, bool if_exsits) {
     Assert(key != NULL);
 
     Cursor *cursor;
-
     /* Get root node buffer. */
     void *root_node = ReadBuffer(table, table->root_page_num);
     NodeType node_type = get_node_type(root_node);
