@@ -83,7 +83,7 @@ static inline bool FairCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode
  * */
 static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
     return list_all_int(lock_entry->owner, curpid) || 
-            (lock_entry->mode == RW_READERS && mode == RW_READERS);
+            (lock_entry->mode == RW_READERS && mode == RW_READERS && lock_entry->waiting_writer == 0);
 }
 
 /* Increase Waiting. */
@@ -105,11 +105,11 @@ static inline void DecreaseWaiting(RWLockEntry *lock_entry, RWLockMode mode) {
     switch (mode) {
         case RW_READERS:
             if (lock_entry->waiting_reader > 0)
-                lock_entry->waiting_reader++;
+                lock_entry->waiting_reader--;
             break;
         case RW_WRITER:
             if (lock_entry->waiting_writer > 0)
-                lock_entry->waiting_writer++;
+                lock_entry->waiting_writer--;
             break;
         default:
             ;
@@ -124,8 +124,8 @@ static inline void DecreaseWaiting(RWLockEntry *lock_entry, RWLockMode mode) {
 static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     bool reent = false;
     Pid cur_pid = GetCurrentPid();
+    IncreaseWaiting(lock_entry, mode);
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
-        IncreaseWaiting(lock_entry, mode);
         while (lock_entry->content_lock || FairCondition(lock_entry, cur_pid, mode) ) {
             if (ReenterCondition(lock_entry, cur_pid, mode)) {
                 reent = true;
@@ -137,8 +137,8 @@ static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     }
 acquire_lock:
     acquire_spin_lock(&lock_entry->sync_lock);
-    lock_entry->mode = mode;
     DecreaseWaiting(lock_entry, mode);
+    lock_entry->mode = mode;
     if (reent)
         lock_entry->content_lock = 1;
     AtomicAppendPid(lock_entry);
