@@ -739,16 +739,8 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
                 continue;
         }
 
-        /* Check if the internla node is visible. */
-        {
-            Xid created_xid = get_internal_node_child_created_xid(internal_node, i, key_len, value_len);
-            Xid expired_xid = get_internal_node_child_expired_xid(internal_node, i, key_len, value_len);
-            if (!IsVisible(created_xid, expired_xid))
-                continue;
-        }
-
         /* Check other non-key column */
-        uint32_t child_page_num = get_internal_node_child_page_num(internal_node, i, key_len, value_len);
+        uint32_t child_page_num = get_internal_node_child(internal_node, i, key_len, value_len);
         void *node = ReadBuffer(table, child_page_num);
         switch (get_node_type(node)) {
             case LEAF_NODE:
@@ -773,13 +765,7 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     }
 
     /* Don`t forget the right child. */
-    uint32_t right_child_page_num = get_internal_node_right_child_page_num(internal_node, value_len);
-
-    /* Check if the right node is visible. */
-    Xid created_xid = get_internal_node_right_child_created_xid(internal_node, value_len);
-    Xid expired_xid = get_internal_node_right_child_expired_xid(internal_node, value_len);
-    if (!IsVisible(created_xid, expired_xid))
-        return;
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
 
     /* Zero means there is no page. */
     if (right_child_page_num == 0) {
