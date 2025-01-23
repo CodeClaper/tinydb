@@ -1027,6 +1027,8 @@ static void reuse_old_root_node(Table *table, uint32_t left_child_page_num, uint
                                  uint32_t key_len, uint32_t value_len) {
     /* Get buffer. */
     void *root = ReadBuffer(table, table->root_page_num);
+    LockBuffer(table, table->root_page_num);
+
     void *left_child = ReadBuffer(table, left_child_page_num);
     void *right_child = ReadBuffer(table, right_child_page_num);
 
@@ -1051,6 +1053,9 @@ static void reuse_old_root_node(Table *table, uint32_t left_child_page_num, uint
     make_page_dirty(table->meta_table->table_name, table->pager, left_child_page_num);
     make_page_dirty(table->meta_table->table_name, table->pager, right_child_page_num);
     make_page_dirty(table->meta_table->table_name, table->pager, table->root_page_num);
+
+    /* Unlock root buffer. */
+    UnlockBuffer(table, table->root_page_num);
 
     /* Release buffer. */
     ReleaseBuffer(table, left_child_page_num);
@@ -1581,8 +1586,8 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
             );
 
             Assert(IsVisible(
-                get_internal_node_child_created_xid(parent_node, old_key_index,  key_len, value_len),
-                get_internal_node_child_expired_xid(parent_node, old_key_index,  key_len, value_len)
+                get_internal_node_child_created_xid(parent_node, old_key_index, key_len, value_len),
+                get_internal_node_child_expired_xid(parent_node, old_key_index, key_len, value_len)
             ));
 
             /* Make old cell expired fristly. */
@@ -1632,8 +1637,7 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
      * If overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
-    else 
-    {
+    else {
         if (cursor->cell_num < cell_num) {
             /* Lock buffer to move cells. */
             LockBuffer(cursor->table, cursor->page_num);

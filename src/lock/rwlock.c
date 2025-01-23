@@ -34,6 +34,8 @@ static inline int GetCurrentPid() {
 void InitRWlock(RWLockEntry *lock_entry) {
     lock_entry->mode = RW_INIT;
     lock_entry->owner = create_list(NODE_INT);
+    lock_entry->waiting_reader = 0;
+    lock_entry->waiting_writer = 0;
     init_spin_lock(&lock_entry->content_lock);
     init_spin_lock(&lock_entry->sync_lock);
 }
@@ -57,6 +59,23 @@ static inline bool ReleaseRWlockCondition(RWLockEntry *lock_entry) {
     return list_empty(lock_entry->owner);
 }
 
+/* The condition to keep fair. */
+static inline bool FairCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
+    switch (lock_entry->mode) {
+        case RW_READERS:
+            if (lock_entry->waiting_writer > 0 && mode == RW_READERS)
+                return true;
+            break;
+        case RW_WRITER:
+            if (lock_entry->waiting_reader > 0 && mode == RW_WRITER)
+                return true;
+            break;
+        default:
+            ;
+    }
+    return false;
+}
+
 /* The reenter condition.
  * Reenter condition includes:
  * (1) All process in owner is the same process. 
@@ -67,6 +86,36 @@ static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockM
             (lock_entry->mode == RW_READERS && mode == RW_READERS);
 }
 
+/* Increase Waiting. */
+static inline void IncreaseWaiting(RWLockEntry *lock_entry, RWLockMode mode) {
+    switch (mode) {
+        case RW_READERS:
+            lock_entry->waiting_reader++;
+            break;
+        case RW_WRITER:
+            lock_entry->waiting_writer++;
+            break;
+        default:
+            ;
+    }
+}
+
+/* Decrease Waiting. */
+static inline void DecreaseWaiting(RWLockEntry *lock_entry, RWLockMode mode) {
+    switch (mode) {
+        case RW_READERS:
+            if (lock_entry->waiting_reader > 0)
+                lock_entry->waiting_reader++;
+            break;
+        case RW_WRITER:
+            if (lock_entry->waiting_writer > 0)
+                lock_entry->waiting_writer++;
+            break;
+        default:
+            ;
+    }
+}
+ 
 /* Try acquire the rwlock. 
  * Two ways to acquire the rwlock:
  * (1) Directly acquire the rwlock.
@@ -76,7 +125,8 @@ static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     bool reent = false;
     Pid cur_pid = GetCurrentPid();
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
-        while (lock_entry->content_lock) {
+        IncreaseWaiting(lock_entry, mode);
+        while (lock_entry->content_lock || FairCondition(lock_entry, cur_pid, mode) ) {
             if (ReenterCondition(lock_entry, cur_pid, mode)) {
                 reent = true;
                 goto acquire_lock;
@@ -88,6 +138,7 @@ static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
 acquire_lock:
     acquire_spin_lock(&lock_entry->sync_lock);
     lock_entry->mode = mode;
+    DecreaseWaiting(lock_entry, mode);
     if (reent)
         lock_entry->content_lock = 1;
     AtomicAppendPid(lock_entry);
