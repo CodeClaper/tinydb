@@ -131,7 +131,7 @@ static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     Pid cur_pid = GetCurrentPid();
     IncreaseWaiting(lock_entry, mode);
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
-        while (lock_entry->content_lock || !FairCondition(lock_entry, cur_pid, mode) ) {
+        while (lock_entry->content_lock || !FairCondition(lock_entry, cur_pid, mode)) {
             if (ReenterCondition(lock_entry, cur_pid, mode)) {
                 reent = true;
                 goto acquire_lock;

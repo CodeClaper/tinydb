@@ -50,18 +50,18 @@ void save_table_cache(Table *table) {
 
 /* Find cache table by name, return null if not exist. */
 Table *find_table_cache(char *table_name) {
-
-    void *ptr = NULL;
+    Table *cur_table = NULL;
+    acquire_spin_lock(tlock);
 
     ListCell *lc;
     foreach (lc, TableCache) {
-        Table *current = lfirst(lc);
-        if (streq(current->meta_table->table_name, table_name)) {
-            ptr = current;
+        cur_table = (Table *) lfirst(lc);
+        if (streq(cur_table->meta_table->table_name, table_name)) 
             break;
-        }
     }
-    return ptr;
+
+    release_spin_lock(tlock);
+    return cur_table;
 }
 
 

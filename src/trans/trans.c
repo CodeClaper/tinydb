@@ -141,16 +141,19 @@ static void *GetTransTail() {
 /* Find transaction handle by thread id. 
  * If not found, return NULL. */
 TransEntry *FindTransaction() {
+    /* Lock here to avoid the trans change when reading. */
+    acquire_spin_lock(xlock);
     /* Current thread id. */
     Pid pid = getpid();
 
     TransEntry *current = xheader;
     while ((current = current->next)) {
         if (current->pid == pid) 
-            return current;
+            break;
     }
 
-    return NULL;
+    release_spin_lock(xlock);
+    return current;
 }
 
 
@@ -251,7 +254,6 @@ void BeginTransaction() {
 /* Commit transaction manually. */
 void CommitTransaction() {
     TransEntry *entry = FindTransaction();
-
     if (is_null(entry) || entry->auto_commit)
         db_log(ERROR, "Not in any transaction, please begin a transaction");
 
