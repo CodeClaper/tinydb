@@ -82,7 +82,7 @@ static inline bool FairCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode
  * (2) RWLock in RWLockMode mode, and the request also RWLockMode lock. 
  * */
 static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
-    return list_all_int(lock_entry->owner, curpid) || 
+    return list_member_int(lock_entry->owner, curpid) || 
             (lock_entry->mode == RW_READERS && mode == RW_READERS && lock_entry->waiting_writer == 0);
 }
 
