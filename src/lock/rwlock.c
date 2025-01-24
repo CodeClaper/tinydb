@@ -59,27 +59,32 @@ static inline bool ReleaseRWlockCondition(RWLockEntry *lock_entry) {
     return list_empty(lock_entry->owner);
 }
 
-/* The condition to keep fair. */
+/* The condition to keep fair. 
+ * The rwlock provides simple fairness mechanism to avoid starve.
+ * (1) Must writer (if these is writer) acquire the lock after reader release the lock.
+ * (2) Must reader (if these is reader) acquire the lock after writer release the lock.
+ * */
 static inline bool FairCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
     switch (lock_entry->mode) {
         case RW_READERS:
             if (lock_entry->waiting_writer > 0 && mode == RW_READERS)
-                return true;
+                return false;
             break;
         case RW_WRITER:
             if (lock_entry->waiting_reader > 0 && mode == RW_WRITER)
-                return true;
+                return false;
             break;
         default:
             ;
     }
-    return false;
+    return true;
 }
 
 /* The reenter condition.
  * Reenter condition includes:
- * (1) All process in owner is the same process. 
- * (2) RWLock in RWLockMode mode, and the request also RWLockMode lock. 
+ * (1) The current process has owned the rwlock.
+ * (2) RWLock in RW_READERS mode, and the request mode also is RW_READERS. 
+ *     Besides to keep the fairness, these must be no the waiting writer.
  * */
 static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
     return list_member_int(lock_entry->owner, curpid) || 
@@ -126,7 +131,7 @@ static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     Pid cur_pid = GetCurrentPid();
     IncreaseWaiting(lock_entry, mode);
     while (__sync_lock_test_and_set(&lock_entry->content_lock, 1)) {
-        while (lock_entry->content_lock || FairCondition(lock_entry, cur_pid, mode) ) {
+        while (lock_entry->content_lock || !FairCondition(lock_entry, cur_pid, mode) ) {
             if (ReenterCondition(lock_entry, cur_pid, mode)) {
                 reent = true;
                 goto acquire_lock;
