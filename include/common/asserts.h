@@ -4,8 +4,8 @@
 
 #ifdef DEBUG
 #include "assert.h"
-#define Assert(condition) assert(condition)
-#define AssertFalse(condition) assert(!(condition))
+#define Assert(condition) assert_true(condition, "%s:%d", __FILE__, __LINE__)
+#define AssertFalse(condition) assert_false((condition), "%s:%d", __FILE__, __LINE__)
 #else
 #define Assert(condition) ((void)true)
 #define AssertFalse(condition) ((void)true)

@@ -330,7 +330,6 @@ static Row *convert2_insert_row(Row *row, Table *table) {
  * Return the row refer.
  * */
 static Refer *insert_one_row(Table *table, Row *row) {
-
     MetaColumn *primary_key_meta_column = get_primary_key_meta_column(table->meta_table);
     Assert(primary_key_meta_column);
 
@@ -369,18 +368,14 @@ static Refer *insert_one_row(Table *table, Row *row) {
  * Return list of Refer.
  * */
 List *insert_for_values(InsertNode *insert_node) {
-
     Table *table = open_table(insert_node->table_name);
-
-    /* Check if table exists. */
     Assert(table);
     
     /* Generate insert row. */
     List *list_row = generate_insert_row(insert_node);
-
-    /* Make sure, not empty. */
     AssertFalse(list_empty(list_row));
 
+    /* Create refer list. */
     List *refer_list = create_list(NODE_REFER);
 
     /* Insert to page. */
@@ -391,6 +386,7 @@ List *insert_for_values(InsertNode *insert_node) {
         append_list(refer_list, refer);
     }
 
+    /* Free refer list. */
     free_list_deep(list_row);
 
     return refer_list;
