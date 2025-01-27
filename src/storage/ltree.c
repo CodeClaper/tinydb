@@ -66,6 +66,7 @@
 static volatile s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
 
 static void assign_row_value(void *destination, void *value, MetaColumn *meta_column);
+static void insert_leaf_node_new_cell(Cursor *cursor, Row *row);
 static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos);
 
 /* If obsolute node. */
@@ -1034,12 +1035,19 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     /* Get the old leaf node and lock. */
     void *old_node = ReadBuffer(cursor->table, cursor->page_num);
     uint32_t parent_page_num = get_parent_pointer(old_node);
+    /* Get the old leaf node cell count.*/
+    uint32_t cell_num = get_leaf_node_cell_num(old_node, value_len);
 
     /* Lock the current page buffer. */
     LockBuffer(cursor->table, cursor->page_num);
 
-    /* Get the old leaf node cell count.*/
-    uint32_t cell_num = get_leaf_node_cell_num(old_node, value_len);
+    /* Double check for concurrency. */
+    if (!overflow_leaf_node(old_node, key_len, value_len, cell_num)) {
+        ReleaseBuffer(cursor->table, cursor->page_num);
+        insert_leaf_node_new_cell(cursor, row);
+        return;
+    }
+
 
     /* Get the old leaf node max key. */
     void *old_max_key = get_max_key(cursor->table, old_node, key_len, value_len);
@@ -1141,6 +1149,83 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     ReleaseBuffer(cursor->table, cursor->page_num);
 }
 
+
+/* Insert leaf node a new cell. */
+static void insert_leaf_node_new_cell(Cursor *cursor, Row *row) {
+    /* Get the node buffer. */
+    void *node = ReadBuffer(cursor->table, cursor->page_num); 
+    
+    /* Get data. */ 
+    uint32_t cell_num, value_len, key_len, cell_length;
+    value_len = calc_table_row_length(cursor->table);
+    key_len = calc_primary_key_length(cursor->table);
+    cell_num = get_leaf_node_cell_num(node, value_len);
+    cell_length = value_len + key_len;
+
+    char *table_name = cursor->table->meta_table->table_name;
+
+    if (cursor->cell_num < cell_num) {
+        /* Lock buffer to move cells. */
+        LockBuffer(cursor->table, cursor->page_num);
+
+        /* Make room for new cell. */
+        int i;
+        for (i = cell_num; i > cursor->cell_num; i--) {
+            /* Movement. */
+            memcpy(
+                get_leaf_node_cell(node, key_len, value_len, i), 
+                get_leaf_node_cell(node, key_len, value_len, i - 1), 
+                cell_length
+            );
+            /* Update refer. */
+            update_refer(table_name, cursor->page_num, i - 1, cursor->page_num, i);
+        }
+        
+        /* Unlock buffer. */
+        UnlockBuffer(cursor->table, cursor->page_num);
+    }
+    
+    /* Insert the new row. */
+    set_leaf_node_cell_key(node, cursor->cell_num, key_len, value_len, row->key);
+    void *destination = serialize_row_data(row, cursor->table);
+    memcpy(get_leaf_node_cell_value(node, key_len, value_len, cursor->cell_num), destination, value_len);
+    
+    /* Check if the max key in leaf node has changed, that may impact the parent internal node. */
+    if (!is_root_node(node) && cursor->cell_num == cell_num) {
+        uint32_t parent_page_num = get_parent_pointer(node);
+
+        /* Reader parent page buffer and lock it. */
+        void *parent_node = ReadBuffer(cursor->table, parent_page_num);
+
+        void *old_max_key = get_leaf_node_cell_key(node, cell_num - 1, key_len, value_len);
+        MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
+        /* Logic check.*/
+        Assert(greater_equal(row->key, old_max_key, primary_key_meta_column->column_type));
+
+        /* Update internal node key. */
+        update_internal_node_key(
+            cursor->table, parent_node, 
+            old_max_key, row->key, 
+            key_len, value_len, primary_key_meta_column->column_type
+        );
+
+        /* Flush parent page. */
+        make_page_dirty(table_name, cursor->table->pager, parent_page_num);
+        ReleaseBuffer(cursor->table, parent_page_num);
+    }
+    
+    /* Cell number increases. */
+    increase_leaf_node_cell_num(node, value_len);
+    
+    /* Flush into disk. */
+    make_page_dirty(table_name, cursor->table->pager, cursor->page_num);
+
+    dfree(destination);
+
+    /* Release the buffer. */
+    ReleaseBuffer(cursor->table, cursor->page_num);
+}
+
 /* Insert a new cell in leaf node */
 void insert_leaf_node_cell(Cursor *cursor, Row *row) {
 
@@ -1160,65 +1245,8 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
      * If overflow, split the leaf node fist.*/
     if (overflow_leaf_node(node, key_len, value_len, cell_num)) 
         insert_and_split_leaf_node(cursor, row);
-    else {
-        if (cursor->cell_num < cell_num) {
-            /* Lock buffer to move cells. */
-            LockBuffer(cursor->table, cursor->page_num);
-
-            /* Make room for new cell. */
-            int i;
-            for (i = cell_num; i > cursor->cell_num; i--) {
-                /* Movement. */
-                memcpy(
-                    get_leaf_node_cell(node, key_len, value_len, i), 
-                    get_leaf_node_cell(node, key_len, value_len, i - 1), 
-                    cell_length
-                );
-                /* Update refer. */
-                update_refer(table_name, cursor->page_num, i - 1, cursor->page_num, i);
-            }
-            
-            /* Unlock buffer. */
-            UnlockBuffer(cursor->table, cursor->page_num);
-        }
-        
-        /* Insert the new row. */
-        set_leaf_node_cell_key(node, cursor->cell_num, key_len, value_len, row->key);
-        void *destination = serialize_row_data(row, cursor->table);
-        memcpy(get_leaf_node_cell_value(node, key_len, value_len, cursor->cell_num), destination, value_len);
-        
-        /* Check if the max key in leaf node has changed, that may impact the parent internal node. */
-        if (!is_root_node(node) && cursor->cell_num == cell_num) {
-            uint32_t parent_page_num = get_parent_pointer(node);
-
-            /* Reader parent page buffer and lock it. */
-            void *parent_node = ReadBuffer(cursor->table, parent_page_num);
-
-            void *old_max_key = get_leaf_node_cell_key(node, cell_num - 1, key_len, value_len);
-            MetaColumn *primary_key_meta_column = get_primary_key_meta_column(cursor->table->meta_table);
-            /* Logic check.*/
-            Assert(greater_equal(row->key, old_max_key, primary_key_meta_column->column_type));
-
-            /* Update internal node key. */
-            update_internal_node_key(
-                cursor->table, parent_node, 
-                old_max_key, row->key, 
-                key_len, value_len, primary_key_meta_column->column_type
-            );
-
-            /* Flush parent page. */
-            make_page_dirty(table_name, cursor->table->pager, parent_page_num);
-            ReleaseBuffer(cursor->table, parent_page_num);
-        }
-        
-        /* Cell number increases. */
-        increase_leaf_node_cell_num(node, value_len);
-        
-        /* Flush into disk. */
-        make_page_dirty(table_name, cursor->table->pager, cursor->page_num);
-
-        dfree(destination);
-    }
+    else 
+        insert_leaf_node_new_cell(cursor, row);
 
     /* Release the buffer. */
     ReleaseBuffer(cursor->table, cursor->page_num);
