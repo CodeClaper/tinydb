@@ -19,8 +19,8 @@ typedef struct RWLockEntry {
     volatile s_lock content_lock;       /* Content spinlock. */
     volatile s_lock sync_lock;          /* Sync spinlock. */
     List *owner;                        /* Content lock owner rocesses. */
-    uint64_t waiting_reader;
-    uint64_t waiting_writer;
+    volatile uint64_t waiting_reader;   /* Waiting readers number. */
+    volatile uint64_t waiting_writer;   /* Waiting writers number. */
 } RWLockEntry;
 
 #define NOT_INIT_LOCK(entry) \

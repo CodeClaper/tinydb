@@ -1233,13 +1233,10 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
     void *node = ReadBuffer(cursor->table, cursor->page_num); 
     
     /* Get data. */ 
-    uint32_t cell_num, value_len, key_len, cell_length;
+    uint32_t cell_num, value_len, key_len;
     value_len = calc_table_row_length(cursor->table);
     key_len = calc_primary_key_length(cursor->table);
     cell_num = get_leaf_node_cell_num(node, value_len);
-    cell_length = value_len + key_len;
-
-    char *table_name = cursor->table->meta_table->table_name;
 
     /* Check if the leaf node overflow after inserting, 
      * If overflow, split the leaf node fist.*/

@@ -41,7 +41,7 @@ def thread_select(cli):
             assert ret["success"] == True
             count = ret["data"][0]["count"]
             assert (count >= 0 and count <= 20000)
-            time.sleep(0.5)
+            time.sleep(0.1)
             if stop:
                 break
     except Exception as e:

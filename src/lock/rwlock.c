@@ -61,8 +61,8 @@ static inline bool ReleaseRWlockCondition(RWLockEntry *lock_entry) {
 
 /* The condition to keep fair. 
  * The rwlock provides simple fairness mechanism to avoid starve.
- * (1) Must writer (if these is writer) acquire the lock after reader release the lock.
- * (2) Must reader (if these is reader) acquire the lock after writer release the lock.
+ * (1) Must writer (if these is any writer) acquire the lock after reader release the lock.
+ * (2) Must reader (if these is any reader) acquire the lock after writer release the lock.
  * */
 static inline bool FairCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
     switch (lock_entry->mode) {
@@ -123,8 +123,8 @@ static inline void DecreaseWaiting(RWLockEntry *lock_entry, RWLockMode mode) {
  
 /* Try acquire the rwlock. 
  * Two ways to acquire the rwlock:
- * (1) Directly acquire the rwlock.
- * (2) Not acquired directly the rwlock but satisfy the ReenterCondition.
+ * (1) Directly acquire the rwlock and satisfy the fair condition.
+ * (2) Not acquired directly the rwlock but satisfy the reenter condition and the fair condition.
  * */
 static void AcquireRWLockInner(RWLockEntry *lock_entry, RWLockMode mode) {
     bool reent = false;
