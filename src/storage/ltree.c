@@ -931,7 +931,11 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
     /* Check if overflow after inserting.*/
     if (overflow_internal_node(internal_node, keys_num, key_len, value_len)) 
         insert_and_split_internal_node(table, page_num, new_child_page_num);
-    else {
+    else 
+    {
+        /* Lock page. */
+        LockBuffer(table, page_num);
+
         /* Get new child node max key and position in parent node. */
         void *new_child_max_key = get_max_key(table, new_child_node, key_len, value_len);
 
@@ -995,6 +999,8 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
 
         /* Release right child buffer. */
         ReleaseBuffer(table, right_child_page_num);
+
+        UnlockBuffer(table, page_num);
     }
 
     /* Release buffer. */
