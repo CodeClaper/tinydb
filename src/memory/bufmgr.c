@@ -50,11 +50,17 @@
 
 static s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
 
+/* Pager size valid.
+ * The pager pages size may equals to the buffer size or less one when not synchronized.
+ * */
+#define PAGER_SIZE_VALID(pager)\
+    ((pager->size == pager->buffers->size) || (pager->size == pager->buffers->size - 1))
+
 /* Check Pager Buffers valid. */
 static void CheckPagerBuffersValid(Pager *pager) {
     Assert(pager->buffers != NULL);
     /* Double check to avoid cache issue. */
-    assert_true((pager->size == pager->buffers->size) || (pager->size == pager->buffers->size), 
+    assert_true(PAGER_SIZE_VALID(pager) || PAGER_SIZE_VALID(pager), 
                 "Pager size %d != buffer size %d", 
                 pager->size, 
                 pager->buffers->size);
