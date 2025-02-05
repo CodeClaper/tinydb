@@ -53,7 +53,8 @@ static s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
 /* Check Pager Buffers valid. */
 static void CheckPagerBuffersValid(Pager *pager) {
     Assert(pager->buffers != NULL);
-    assert_true((pager->size == pager->buffers->size) || (pager->size == pager->buffers->size - 1), 
+    /* Double check to avoid cache issue. */
+    assert_true((pager->size == pager->buffers->size) || (pager->size == pager->buffers->size), 
                 "Pager size %d != buffer size %d", 
                 pager->size, 
                 pager->buffers->size);
