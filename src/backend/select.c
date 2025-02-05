@@ -719,15 +719,17 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     /* Get the internal node buffer. */
     void *internal_node = ReadBuffer(table, page_num);
 
-    /* Get keys number, key length. */
-    uint32_t keys_num, key_len, value_len;
+    /* Get variables. */
+    uint32_t key_len, value_len;
     key_len = calc_primary_key_length(table);
     value_len = calc_table_row_length(table);
-    keys_num = get_internal_node_keys_num(internal_node, value_len);
 
-    /* Loop each interanl node cell to check if satisfy condition. */
+    /* Loop each interanl node cell to check if satisfy condition. 
+     * Note that: get the internal node keys number in each loop.
+     * It`s important for reading when inserting in the concurrency scenario.
+     * */
     uint32_t i;
-    for (i = 0; i < keys_num; i++) {
+    for (i = 0; i < get_internal_node_keys_num(internal_node, value_len); i++) {
         /* Check if index column, use index to avoid full text scanning. */
         {
             /* Current internal node cell key as max key, previous cell key as min key. */
@@ -768,10 +770,8 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
 
     /* Zero means there is no page. */
-    if (right_child_page_num == 0) {
-        free_block(internal_node);
+    if (right_child_page_num == 0) 
         return;
-    } 
 
     /* Fetch right child. */
     void *right_child = ReadBuffer(table, right_child_page_num);
@@ -796,9 +796,8 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
             break;
     }
 
-    /* Release the right child buffer. */
+    /* Release buffers. */
     ReleaseBuffer(table, right_child_page_num);
-    /* Release the buffer. */
     ReleaseBuffer(table, page_num);
 }
 
