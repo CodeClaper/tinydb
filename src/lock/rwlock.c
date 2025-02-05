@@ -95,10 +95,12 @@ static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockM
 static inline void IncreaseWaiting(RWLockEntry *lock_entry, RWLockMode mode) {
     switch (mode) {
         case RW_READERS:
-            lock_entry->waiting_reader++;
+            __sync_fetch_and_add(&lock_entry->waiting_reader, 1);
+            // lock_entry->waiting_reader++;
             break;
         case RW_WRITER:
-            lock_entry->waiting_writer++;
+            __sync_fetch_and_add(&lock_entry->waiting_writer, 1);
+            // lock_entry->waiting_writer++;
             break;
         default:
             ;
@@ -110,11 +112,13 @@ static inline void DecreaseWaiting(RWLockEntry *lock_entry, RWLockMode mode) {
     switch (mode) {
         case RW_READERS:
             if (lock_entry->waiting_reader > 0)
-                lock_entry->waiting_reader--;
+                __sync_fetch_and_sub(&lock_entry->waiting_reader, 1);
+                // lock_entry->waiting_reader--;
             break;
         case RW_WRITER:
             if (lock_entry->waiting_writer > 0)
-                lock_entry->waiting_writer--;
+                __sync_fetch_and_sub(&lock_entry->waiting_writer, 1);
+                //lock_entry->waiting_writer--;
             break;
         default:
             ;
