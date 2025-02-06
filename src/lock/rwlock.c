@@ -178,7 +178,7 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
     /* Not alloed same process acquire the writer lock again. */
     AssertFalse(lock_entry->mode == RW_WRITER && 
                     mode == RW_WRITER && 
-                        list_member_int(lock_entry->owner, GetCurrentPid()));
+                         list_member_int(lock_entry->owner, GetCurrentPid()));
     AcquireRWLockInner(lock_entry, mode); 
 }
 

@@ -25,6 +25,7 @@
 #include "banner.h"
 #include "mctx.h"
 #include "asctx.h"
+#include "stacktrace.h"
 
 /* Start up the server. */
 int startup(u_short port) {
@@ -82,11 +83,9 @@ static bool auth_request(intptr_t client) {
             sprintf(sbuf, LOG);
         else
             sprintf(sbuf, "No access.");
-
         size_t s = send(client, sbuf, SPOOL_SIZE, 0);
         if (s == -1) 
             db_log(ERROR, "Try to send %s fail, %s.", sbuf, strerror(errno));
-
         return pass;
     }
 
@@ -126,13 +125,16 @@ static void memory_context_end() {
     MemoryContextDelete(MASTER_MEMORY_CONTEXT);
 }
 
+
 /* Accept request.*/
 void accept_request(intptr_t client) {
+    /* Set signal handler. */
+    set_signal_handler();
+
     memory_context_start();
     /* Auth login message. */
-    if (auth_request(client)) {
+    if (auth_request(client)) 
         loop_request(client);
-    }
     close(client);
     memory_context_end();
     /* Quite */

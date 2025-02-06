@@ -38,6 +38,21 @@ inline char *get_stack_message() {
     return CurrentMessage;
 }
 
+/* Get current log file desc. */
+int get_current_log_fdesc() {
+    char file_path[BUFF_SIZE];
+    char *sys_date = get_sys_time("%Y-%m-%d");
+    sprintf(file_path, "%s%s.%s", conf->log_dir, sys_date, "log");
+    int desc= open(file_path, O_APPEND, S_IRUSR | S_IWUSR);
+    if (desc == -1) 
+        db_log(
+            PANIC,
+            "Open table file %d fail: %s.", 
+            file_path, 
+            strerror(errno)
+        );
+    return desc;
+}
 
 /* Flush log message to disk. */
 static void flush_log(char* msg) {
@@ -102,7 +117,7 @@ void db_log(LogLevel level, char *format, ...) {
             /* Save message to stack. */
             save_stack_message(message);
             /* Stop the process, goto stmt. */
-            longjmp(errEnv, 1);
+            // longjmp(errEnv, 1);
             break;
         }
         case FATAL:

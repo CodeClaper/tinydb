@@ -109,6 +109,7 @@ static inline ListCell *third_last_cell(List *list) {
  * */
 static inline ListCell *list_nth_cell(List *list, int nth) {
     Assert(list != NIL);
+    assert_true(nth >= 0 && nth < list->size, "nth: %d, size: %d.", nth, list->size);
     Assert(nth >= 0 && nth < list->size);
 
     return &list->elements[nth];
