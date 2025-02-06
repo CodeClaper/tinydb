@@ -221,8 +221,7 @@ static bool include_exec_internal_node(SelectResult *select_result, void *min_ke
     /* Skipped the internal node must satisfy flowing factors: 
      * (1) Current condition is current table columns.
      * (2) It is primary key
-     * (3) not satisfied internal node condition. 
-     */
+     * (3) not satisfied internal node condition. */
     return !cond_meta_column || 
                 !cond_meta_column->is_primary || 
                     include_internal_predicate(select_result, min_key, max_key, condition_node->predicate, meta_table);
@@ -240,17 +239,13 @@ static bool include_internal_node(SelectResult *select_result, void *min_key, vo
         case C_OR:
         case C_AND:
             return include_logic_internal_node(
-                select_result, 
-                min_key, max_key, 
-                condition_node, 
-                meta_table
+                select_result, min_key, max_key, 
+                condition_node, meta_table
             );
         case C_NONE:
             return include_exec_internal_node(
-                select_result, 
-                min_key, max_key, 
-                condition_node, 
-                meta_table
+                select_result, min_key, max_key, 
+                condition_node, meta_table
             );
         default:
             UNEXPECTED_VALUE(condition_node->conn_type);
@@ -814,15 +809,13 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
     switch (get_node_type(root)) {
         case LEAF_NODE:
             select_from_leaf_node(
-                select_result, 
-                condition, table->root_page_num, 
+                select_result, condition, table->root_page_num, 
                 table, row_handler, type, arg
             );
             break;
         case INTERNAL_NODE:
             select_from_internal_node(
-                select_result, 
-                condition, table->root_page_num,
+                select_result, condition, table->root_page_num,
                 table, row_handler, type, arg
             );
             break;
@@ -874,9 +867,9 @@ void select_row(Row *row, SelectResult *select_result, Table *table,
 
         /* If has limit clause, only append row whose pindex > offset and pindex < offset + rows. */
         if (limit_clause->poffset >= limit_clause->offset && 
-                limit_clause->poffset < (limit_clause->offset + limit_clause->rows)) {
+                limit_clause->poffset < (limit_clause->offset + limit_clause->rows))
             append_list(select_result->rows, purge_row(row));
-        }
+
         limit_clause->poffset++;
     } 
     else 
@@ -921,9 +914,7 @@ static KeyValue *calc_column_sum_value(ColumnNode *column, SelectResult *select_
 
         free_key_value(key_value);
     }
-    return new_key_value(dstrdup(SUM_NAME), 
-                         copy_value(&sum, T_DOUBLE), 
-                         T_DOUBLE);
+    return new_key_value(dstrdup(SUM_NAME), copy_value(&sum, T_DOUBLE), T_DOUBLE);
 }
 
 
@@ -965,9 +956,7 @@ static KeyValue *calc_column_avg_value(ColumnNode *column, SelectResult *select_
         free_key_value(key_value);
     }
     avg = sum / len_list(select_result->rows);
-    return new_key_value(dstrdup(AVG_NAME), 
-                         copy_value(&avg, T_DOUBLE), 
-                         T_DOUBLE);
+    return new_key_value(dstrdup(AVG_NAME), copy_value(&avg, T_DOUBLE), T_DOUBLE);
 }
 
 
@@ -988,9 +977,7 @@ static KeyValue *calc_column_max_value(ColumnNode *column, SelectResult *select_
         }
         free_key_value(current);
     }
-    return new_key_value(dstrdup(MAX_NAME), 
-                         max_value, 
-                         data_type);
+    return new_key_value(dstrdup(MAX_NAME), max_value, data_type);
 }
 
 /* Calulate column max value.*/
@@ -1010,18 +997,14 @@ static KeyValue *calc_column_min_value(ColumnNode *column, SelectResult *select_
         }
         free_key_value(current);
     }
-    return new_key_value(dstrdup(MIN_NAME), 
-                         min_value, 
-                         data_type);
+    return new_key_value(dstrdup(MIN_NAME), min_value, data_type);
 }
 
 
 /* Query count function. */
 static KeyValue *query_count_function(FunctionValueNode *value, SelectResult *select_result) {
     uint32_t row_size = len_list(select_result->rows);
-    return new_key_value(dstrdup("count"), 
-                         copy_value(&row_size, T_INT), 
-                         T_INT);
+    return new_key_value(dstrdup("count"), copy_value(&row_size, T_INT), T_INT);
 }
 
 /* Query sum function. */
@@ -1031,9 +1014,7 @@ static KeyValue *query_sum_function(FunctionValueNode *value, SelectResult *sele
             return calc_column_sum_value(value->column, select_result);
         case V_INT: {
             double sum = value->i_value * len_list(select_result->rows);
-            return new_key_value(dstrdup(SUM_NAME), 
-                                 copy_value(&sum, T_DOUBLE), 
-                                 T_DOUBLE);
+            return new_key_value(dstrdup(SUM_NAME), copy_value(&sum, T_DOUBLE), T_DOUBLE);
         }
         case V_ALL: {
             db_log(ERROR, "Sum function not support '*'");
@@ -1053,9 +1034,7 @@ KeyValue *query_avg_function(FunctionValueNode *value, SelectResult *select_resu
         case V_COLUMN:
             return calc_column_avg_value(value->column, select_result);
         case V_INT: 
-            return new_key_value(dstrdup(AVG_NAME), 
-                                 copy_value(&value->i_value, T_DOUBLE), 
-                                 T_DOUBLE);
+            return new_key_value(dstrdup(AVG_NAME), copy_value(&value->i_value, T_DOUBLE), T_DOUBLE);
         case V_ALL: 
             db_log(ERROR, "Avg function not support '*'");
             return NULL;
@@ -1072,9 +1051,11 @@ KeyValue *query_max_function(FunctionValueNode *value, SelectResult *select_resu
         case V_COLUMN: 
             return calc_column_max_value(value->column, select_result);
         case V_INT: 
-            return new_key_value(dstrdup(MAX_NAME), 
-                                 copy_value(&value->i_value, T_INT), 
-                                 T_INT);
+            return new_key_value(
+                dstrdup(MAX_NAME), 
+                copy_value(&value->i_value, T_INT), 
+                T_INT
+            );
         case V_ALL: 
             db_log(ERROR, "Max function not support '*'.");
             return NULL;
@@ -1092,9 +1073,11 @@ KeyValue *query_min_function(FunctionValueNode *value, SelectResult *select_resu
         case V_COLUMN:
             return calc_column_min_value(value->column, select_result);
         case V_INT: 
-            return new_key_value(dstrdup(MIN_NAME), 
-                                 copy_value(&value->i_value, T_INT), 
-                                 T_INT);
+            return new_key_value(
+                dstrdup(MIN_NAME), 
+                copy_value(&value->i_value, T_INT), 
+                T_INT
+            );
         case V_ALL: 
             db_log(PANIC, "Min function not support '*'");
             return NULL;
