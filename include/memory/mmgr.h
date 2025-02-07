@@ -38,6 +38,10 @@ void switch_shared();
 /* Switch Local Memory. */
 void switch_local();
 
+bool in_shared_memory();
+
+bool in_local_memory();
+
 /* Allocate memory. */
 void *dalloc(size_t size);
 

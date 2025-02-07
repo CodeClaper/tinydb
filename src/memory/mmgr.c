@@ -45,6 +45,15 @@ inline void switch_local() {
     type = MEM_LOCAL;
 }
 
+
+bool in_shared_memory() {
+    return type == MEM_SHARED;
+}
+
+bool in_local_memory() {
+    return type == MEM_LOCAL;
+}
+
 /* Allocate memory. */
 inline void *dalloc(size_t size) {
     return mem_methods[type].dalloc(size);
