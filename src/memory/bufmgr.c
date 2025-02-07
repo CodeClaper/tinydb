@@ -68,12 +68,13 @@ static void CheckPagerBuffersValid(Pager *pager) {
 
 /* Create BufferDesc. */
 static BufferDesc *CreateBufferDesc(Buffer buffer) {
+    Assert(in_shared_memory());
     /* Generate new Buffer. */
     BufferDesc *buff_desc = instance(BufferDesc);
     buff_desc->refcount = 0;
     buff_desc->buffer = buffer; 
     buff_desc->lock = instance(RWLockEntry);
-    InitRWlock(buff_desc->lock);
+    InitRWlock(buff_desc->lock, buffer);
     return buff_desc;
 }
 
@@ -97,7 +98,6 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
     /* If buffers missing the buffer, we will create the 
      * BufferDesc, and store it in shared memory. */
     if (buffer >= pager->buffers->size) {
-
         acquire_spin_lock(&sync_lock);
 
         /* Double check. */
@@ -115,12 +115,19 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
 
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     if (lfirst(lc) == NULL) {
-        switch_shared();
+        acquire_spin_lock(&sync_lock);
+        
+        /* Double check. */
+        lc = list_nth_cell(pager->buffers, buffer);
+        if (lfirst(lc) == NULL) {
+            switch_shared();
 
-        BufferDesc *buff_desc = CreateBufferDesc(buffer);
-        lfirst(lc) = buff_desc;
+            BufferDesc *buff_desc = CreateBufferDesc(buffer);
+            lfirst(lc) = buff_desc;
 
-        switch_local();
+            switch_local();
+        }
+        release_spin_lock(&sync_lock);
     }
 
     BufferDesc *buff_desc = lfirst(lc);
@@ -179,7 +186,6 @@ void LockBuffer(Table *table, Buffer buffer) {
 
         /* Double check. */
         if (buffer >= pager->buffers->size) {
-
             switch_shared();
 
             BufferDesc *buff_desc = CreateBufferDesc(buffer);
@@ -193,10 +199,19 @@ void LockBuffer(Table *table, Buffer buffer) {
 
     ListCell *lc = list_nth_cell(pager->buffers, buffer);
     if (lfirst(lc) == NULL) {
-        switch_shared();
-        BufferDesc *buff_desc = CreateBufferDesc(buffer);
-        lfirst(lc) = buff_desc;
-        switch_local();
+        acquire_spin_lock(&sync_lock);
+        
+        /* Double check. */
+        lc = list_nth_cell(pager->buffers, buffer);
+        if (lfirst(lc) == NULL) {
+            switch_shared();
+
+            BufferDesc *buff_desc = CreateBufferDesc(buffer);
+            lfirst(lc) = buff_desc;
+
+            switch_local();
+        }
+        release_spin_lock(&sync_lock);
     }
 
     BufferDesc *buff_desc = lfirst(lc);
