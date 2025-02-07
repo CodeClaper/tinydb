@@ -3,6 +3,9 @@
 #include <sys/types.h>
 #include <stdio.h>
 
+#ifndef UTILS_H
+#define UTILS_H
+
 typedef enum ST_FLAG {
     ST_SUCCESS = 0,
     ST_INVALID,
@@ -25,7 +28,7 @@ char *trim(char *s);
 bool contains(char* str, char *substr);
 
 /* Check if a file has prefix. */
-bool startwith(char *str, char *prefix);
+bool startwith(char *str, const char *prefix);
 
 /* Check if a file has suffix. */
 bool endwith(char *str, char *suffix);
@@ -34,7 +37,7 @@ bool endwith(char *str, char *suffix);
 char *substr(char *str, uint32_t start, uint32_t end);
 
 /* replace once */
-char *replace_once(char *str, char *old_str, char *new_str);
+char *replace_once(char *str, const char *old_str, const char *new_str);
 
 /* Replace all. */
 char *replace_all(char *str, char *old_str, char *new_str);
@@ -113,3 +116,5 @@ inline static size_t min_size(size_t size1, size_t size2) {
 
 /* Show bytes. */
 void show_bytes(byte_pointer start, size_t len);
+
+#endif

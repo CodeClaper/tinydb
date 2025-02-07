@@ -1,51 +1,105 @@
 #include <execinfo.h>
+#include <regex.h>
 #include <signal.h>
+#include <stdio.h>
+#include <string.h>
 #include "defs.h"
 #include "log.h"
+#include "utils.h"
+#include "mmgr.h"
 
 #ifndef STACKTRACE_H
 #define STACKTRACE_H
 
+static char *extract_addr(char *addr) {
+    const char *pattern = "(0x[A-Fa-z0-9]+)";
+    regex_t regex;
+    int ret;
+
+    ret = regcomp(&regex, pattern, REG_EXTENDED);
+    if (ret != 0) {
+        perror("Regex compile error.");
+        exit(EXIT_FAILURE);
+    }
+
+    regmatch_t matchs[3];
+
+    const char *ptr = addr;
+    while (1) {
+        ret = regexec(&regex, ptr, 3, matchs, 0);
+        if (ret == REG_NOMATCH)
+            break;
+
+        if (ret != 0) {
+            perror("Regext exec error.");
+            exit(EXIT_FAILURE);
+        }
+
+        /* The first sub expr. */
+        int start = matchs[1].rm_so;
+        int end = matchs[1].rm_eo;
+        int len = end - start;
+        char *found = (char *) dalloc(len + 1);
+        memcpy(found, ptr + end - len, len);
+        found[len] = '\0';
+
+        return found;
+    }
+
+    return NULL;
+}
+
 /* Print stacktrace with addr2line. 
  * Return 1 if success, otherwise return 0.
  * */
-static int print_stacktrace_addr2line(const void *addr) {
+static int print_stacktrace_addr2line(char *addr) {
 	char addr2line_cmd[512] = {0};
-    sprintf(addr2line_cmd,"addr2line -f -e %.256s %p", program_name, addr); 
+
+    if (!startwith(addr, program_name))
+        return 0;
+
+    char *realAddr = extract_addr(addr);
+    if (realAddr == NULL)
+        return 0;
+
+    sprintf(addr2line_cmd,"addr2line -f -e %.256s %s", program_name, realAddr); 
 
 	FILE *fp;
-	char outLine1[1035];
-	char outLine2[1035];
+	char funcName[1035];
+	char lineName[1035];
 
 	/* Open the command for reading. */
 	fp = popen(addr2line_cmd, "r");
 	if (fp == NULL)
 		return 0;
     
-	while (fgets(outLine1, sizeof(outLine1)-1, fp) != NULL) {
-		//if we have a pair of lines
-		if(fgets(outLine2, sizeof(outLine2)-1, fp) != NULL) {
-			//if symbols are readable
-			if(outLine2[0] != '?') {
-				//only let func name in outLine1
+	while (fgets(funcName, sizeof(funcName)-1, fp) != NULL) {
+		/* If we have a pair of lines */
+		if(fgets(lineName, sizeof(lineName)-1, fp) != NULL) {
+			if(lineName[0] != '?') {
+				/* only let func name in funcName */
 				int i;
 				for(i = 0; i < 1035; ++i) {
-					if(outLine1[i] == '\r' || outLine1[i] == '\n') {
-						outLine1[i] = '\0';
+					if(funcName[i] == '\r' || funcName[i] == '\n') {
+						funcName[i] = '\0';
 						break;
 					}
 				}
 
-				//don't display the whole path
 				int lastSlashPos=0;
-				
-				for(i = 0; i < 1035; ++i) {
-					if(outLine2[i] == '\0')
+				for (i = 0; i < 1035; ++i) {
+					if(lineName[i] == '\0')
 						break;
-					if(outLine2[i] == '/')
-						lastSlashPos = i+1;
+					if(lineName[i] == '/')
+						lastSlashPos = i + 1;
+                    if (lineName[i] == '\n') {
+                        lineName[i] = '\0';
+                        break;
+                    }
 				}
-				db_log(SYS_ERROR, "%p in %s at %s", addr, outLine1, outLine2+lastSlashPos);
+
+                /* Record in log. */
+				db_log(SYS_ERROR, "\t%s in %s at %s.", addr, funcName, lineName + lastSlashPos);
 			} else {
 				pclose(fp);
 				return 0;
@@ -63,20 +117,21 @@ static int print_stacktrace_addr2line(const void *addr) {
 
 /* Log the stacktrace. */
 static void print_stacktrace() {
-    void *array[10];
-    size_t size = backtrace(array, 10);
-    char **ret = backtrace_symbols(array, size);
-	if(ret == NULL) {
+    void *array[20];
+    size_t size = backtrace(array, 20);
+    char **strings = backtrace_symbols(array, size);
+	if(strings == NULL) {
 		perror("backtrace_symbols");
 		exit(EXIT_FAILURE);
 	}
+
     for (int i = 0; i < size; i++) {
         /* Firstly use addr2line print stacktrace. 
          * If fail, print raw stacktrace. */
-        if (print_stacktrace_addr2line(array[i]) == 0)
-            db_log(SYS_ERROR, "\t%s", ret[i]);
+        if (print_stacktrace_addr2line(strings[i]) == 0)
+            db_log(SYS_ERROR, "\t%s", strings[i]);
     }
-    free(ret); 
+    free(strings); 
 }
 
 static void handler(int sig) {

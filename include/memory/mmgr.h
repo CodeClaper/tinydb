@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include "spinlock.h"
 
+#ifndef MMGR_H
+#define MMGR_H
+
 typedef enum MemType {
     MEM_LOCAL = 0,
     MEM_SHARED
@@ -47,3 +50,4 @@ void *drealloc(void *ptr, size_t size);
 /* Strdup. */
 char *dstrdup(char *str);
 
+#endif

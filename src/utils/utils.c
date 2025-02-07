@@ -46,7 +46,7 @@ bool contains(char* str, char *substr) {
 }
 
 /* Check if a file has prefix. */
-bool startwith(char *str, char *prefix) {
+bool startwith(char *str, const char *prefix) {
     if (!str || !prefix)
         return false;
     ssize_t str_len = strlen(str);
@@ -87,7 +87,7 @@ char *substr(char *str, uint32_t start, uint32_t end) {
 }
 
 /* replace onece */
-char *replace_once(char *str, char *old_str, char *new_str) {
+char *replace_once(char *str, const char *old_str, const char *new_str) {
     if (!str || !old_str)
         return NULL;
     ssize_t str_size = strlen(str);
