@@ -39,7 +39,7 @@ void *shdalloc(size_t size) {
 
     size = MAXALIGN(size);
 
-    /* Firstly allocate from free list, if missing, shmem alloc. */
+    /* Firstly allocate from free list, if missing, allocate from share memory. */
     void *ptr = dalloc_shared_in_free_list(size);
     if (ptr == NULL) {
         void *nptr = shmem_alloc(size + SHM_OFFSET);

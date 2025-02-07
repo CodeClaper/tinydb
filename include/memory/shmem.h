@@ -3,7 +3,7 @@
 
 typedef struct ShmemHeader {
     size_t total_size;
-    size_t offset;
+    volatile size_t offset;
 }ShmemHeader;
 
 /* Init the shared memory. */

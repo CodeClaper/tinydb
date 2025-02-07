@@ -4,8 +4,9 @@
 
 #ifndef DEFS_H
 #define DEFS_H
-extern Conf *conf;  /* Configuration */
-extern jmp_buf errEnv; /* jmp_buf for error. */
+extern Conf *conf;                  /* Gloabal Configuration */
+extern jmp_buf errEnv;              /* Jmp_buf for error. */
+extern const char *program_name;    /* The program name. */
 
 /* Gloabal MemoryContext. */
 extern MemoryContext CURRENT_MEMORY_CONTEXT;

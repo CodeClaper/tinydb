@@ -41,6 +41,11 @@ Conf *conf;
  */
 jmp_buf errEnv; 
 
+/* 
+ * program name
+ */
+const char *program_name;  
+
 /* Child process signal.*/
 static inline void sigchild() {
     while (waitpid(-1, NULL, WNOHANG) > 0);
@@ -120,7 +125,8 @@ static void db_end() {
 
 
 /* The main entry. */
-int main(void) {
+int main(int argc, char* argv[]) {
+    program_name = argv[0];
     db_start();
     db_run();
     db_end();
