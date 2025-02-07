@@ -54,6 +54,15 @@ static void AtomicRemovePid(RWLockEntry *lock_entry) {
     switch_local();
 }
 
+/* Has exists the current pid in onwer. */
+static bool HasExistIn(RWLockEntry *lock_entry, Pid curpid) {
+    bool ret = false;
+    acquire_spin_lock(&lock_entry->sync_lock);
+    ret = list_member_int(lock_entry->owner, curpid);
+    release_spin_lock(&lock_entry->sync_lock);
+    return ret;
+}
+
 /* The condition to release rwlock. .*/
 static inline bool ReleaseRWlockCondition(RWLockEntry *lock_entry) {
     return list_empty(lock_entry->owner);
@@ -87,7 +96,7 @@ static inline bool FairCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode
  *     Besides to keep the fairness, these must be no the waiting writer.
  * */
 static inline bool ReenterCondition(RWLockEntry *lock_entry, Pid curpid, RWLockMode mode) {
-    return list_member_int(lock_entry->owner, curpid) || 
+    return HasExistIn(lock_entry, curpid) || 
             (lock_entry->mode == RW_READERS && mode == RW_READERS && lock_entry->waiting_writer == 0);
 }
 
@@ -178,7 +187,7 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
     /* Not alloed same process acquire the writer lock again. */
     AssertFalse(lock_entry->mode == RW_WRITER && 
                     mode == RW_WRITER && 
-                         list_member_int(lock_entry->owner, GetCurrentPid()));
+                         HasExistIn(lock_entry, GetCurrentPid()));
     AcquireRWLockInner(lock_entry, mode); 
 }
 
