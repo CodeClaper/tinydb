@@ -99,7 +99,7 @@ static int print_stacktrace_addr2line(char *addr) {
 				}
 
                 /* Record in log. */
-				db_log(SYS_ERROR, "\t%s in %s at %s.", addr, funcName, lineName + lastSlashPos);
+				db_log(SYS_ERROR, "%s in <%s> at %s.", addr, funcName, lineName + lastSlashPos);
 			} else {
 				pclose(fp);
 				return 0;
@@ -129,7 +129,7 @@ static void print_stacktrace() {
         /* Firstly use addr2line print stacktrace. 
          * If fail, print raw stacktrace. */
         if (print_stacktrace_addr2line(strings[i]) == 0)
-            db_log(SYS_ERROR, "\t%s", strings[i]);
+            db_log(SYS_ERROR, "%s", strings[i]);
     }
     free(strings); 
 }
@@ -168,11 +168,6 @@ static void set_signal_handler() {
 	signal(SIGINT,  handler);
 	signal(SIGSEGV, handler);
 	signal(SIGTERM, handler);
-}
-
-static void mock_crash() {
-    char *ptr = NULL;
-    *ptr = 'a';
 }
 
 #endif
