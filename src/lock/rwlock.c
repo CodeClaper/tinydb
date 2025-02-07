@@ -25,13 +25,15 @@
 #include "rwlock.h"
 #include "mmgr.h"
 #include "list.h"
+#include "log.h"
 
 static inline int GetCurrentPid() {
     return getpid();
 }
 
 /* Init the rwlock. */
-void InitRWlock(RWLockEntry *lock_entry) {
+void InitRWlock(RWLockEntry *lock_entry, int buffer) {
+    lock_entry->buffer = buffer;
     lock_entry->mode = RW_INIT;
     lock_entry->owner = create_list(NODE_INT);
     lock_entry->waiting_reader = 0;
@@ -194,7 +196,11 @@ void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode) {
 /* Release the rwlock. */
 void ReleaseRWlock(RWLockEntry *lock_entry) {
     /* There is occasional bug here. */
-    Assert(NOT_INIT_LOCK(lock_entry));
+    if (lock_entry->mode == RW_INIT) {
+        db_log(TRACE, "RWLockEntry buffer: %d, mode: %d, content lock: %d, waiting readers: %d, waiting writers: %d.", 
+               lock_entry->buffer, lock_entry->mode, lock_entry->content_lock, lock_entry->waiting_reader, lock_entry->waiting_writer);
+        Assert(NOT_INIT_LOCK(lock_entry));
+    }
     Assert(LOCKED(lock_entry->content_lock));
     acquire_spin_lock(&lock_entry->sync_lock);
     AtomicRemovePid(lock_entry);
