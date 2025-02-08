@@ -10,9 +10,8 @@ typedef struct BufferDesc {
     Buffer buffer;          /* Buffer value, corresponding to page number. */
     volatile int refcount;  /* Reference count. */
     RWLockEntry *lock;      /* RW lock. */
-    s_lock      *io_lock;   /* IO lock.*/
+    s_lock      io_lock;   /* IO lock.*/
 } BufferDesc;
-
 
 /* Init BufMgr. */
 void InitBufMgr();

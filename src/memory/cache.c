@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "cache.h"
 #include "spinlock.h"
 #include "utils.h"
@@ -30,19 +31,15 @@ void init_table_cache() {
 
 /* Save table cache. */
 void save_table_cache(Table *table) {
+    /* Not allowed repeated. */
+    Assert(find_table_cache(table->meta_table->table_name) == NULL);
+
     acquire_spin_lock(tlock);
     switch_shared();
-    ListCell *lc;
-    foreach (lc, TableCache) {
-        Table *current = lfirst(lc);
-        if (streq(current->meta_table->table_name, table->meta_table->table_name)) {
-            /* Delete old one, and add new. */
-            list_delete(TableCache, current);
-            free_table(current);
-        }
-    }
+
     /* Insert new table cache. */
     append_list(TableCache, copy_table(table));
+
     switch_local();
     release_spin_lock(tlock);
 }

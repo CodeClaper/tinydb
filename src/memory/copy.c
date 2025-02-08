@@ -258,6 +258,7 @@ BufferDesc *copy_buffer_desc(BufferDesc *buff_desc) {
     duplica->lock = buff_desc->lock;
     duplica->refcount = buff_desc->refcount;
     duplica->lock = copy_rwlock_entry(buff_desc->lock);
+    duplica->io_lock = buff_desc->io_lock;
     return duplica;
 }
 

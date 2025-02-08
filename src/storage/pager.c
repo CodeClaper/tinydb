@@ -80,7 +80,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
     /* Exceeds the pager. */
     if (page_num >= pager->size) {
-        acquire_spin_lock(buffDesc->io_lock);
+         acquire_spin_lock(&buffDesc->io_lock);
 
         /* Double check. */
         if (page_num >= pager->size) {
@@ -99,19 +99,19 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
             Assert(len_list(pager->pages) == pager->size);
 
             switch_local();
-            release_spin_lock(buffDesc->io_lock);
+            release_spin_lock(&buffDesc->io_lock);
 
             return page;
         }
 
-        release_spin_lock(buffDesc->io_lock);
+        release_spin_lock(&buffDesc->io_lock);
     }
 
     ListCell *lc = list_nth_cell(pager->pages, page_num);
 
     /* Cache dismiss, allocate memory and load file. */
     if (is_null(lfirst(lc))) {
-        acquire_spin_lock(buffDesc->io_lock);
+        acquire_spin_lock(&buffDesc->io_lock);
 
         lc = list_nth_cell(pager->pages, page_num);
         if (is_null(lfirst(lc))) {
@@ -129,7 +129,7 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
             switch_local();
         }
 
-        release_spin_lock(buffDesc->io_lock);
+        release_spin_lock(&buffDesc->io_lock);
     }
 
     return lfirst(lc);

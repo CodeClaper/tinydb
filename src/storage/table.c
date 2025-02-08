@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -186,12 +187,9 @@ bool drop_meta_column(char *table_name, char *column_name) {
     return true;
 }
 
-
 /* Open a table file. 
  * Return Table or NULL if not exists. */
 Table *open_table(char *table_name) {
-
-    /* Check valid. */
     Assert(table_name);
 
     /* Check table if locked. Block here until acquire the table if locked. */
@@ -202,10 +200,22 @@ Table *open_table(char *table_name) {
     if (mtable != NULL)
         return mtable;
 
+    try_acquire_table(table_name);
+    
+    /* Double check. */
+    mtable = find_table_cache(table_name);
+    if (mtable != NULL) {
+        try_release_table(table_name);
+        return mtable;
+    }
+
+    db_log(DEBUG, "Will load table %s from disk.", table_name);
+
     /* Memory missing, get from disk. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
         dfree(file_path);
+        try_release_table(table_name);
         return NULL;
     }
     
@@ -233,6 +243,10 @@ Table *open_table(char *table_name) {
     
     /* Free memory. */
     dfree(file_path);
+
+    try_release_table(table_name);
+
+    db_log(DEBUG, "Has loaded table %s from disk.", table_name);
 
     /* Only return buffer table to keep same table pointer in the same transaction. */
     return find_table_cache(table_name);

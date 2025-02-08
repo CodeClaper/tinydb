@@ -77,8 +77,7 @@ static BufferDesc *CreateBufferDesc(Buffer buffer) {
     BufferDesc *buff_desc = instance(BufferDesc);
     buff_desc->refcount = 0;
     buff_desc->buffer = buffer; 
-    buff_desc->io_lock = instance(s_lock);
-    init_spin_lock(buff_desc->io_lock);
+    init_spin_lock(&buff_desc->io_lock);
     buff_desc->lock = instance(RWLockEntry);
     InitRWlock(buff_desc->lock, buffer);
     return buff_desc;
