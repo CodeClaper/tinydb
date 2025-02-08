@@ -72,6 +72,9 @@ static void db_start() {
     /* Initialise transaction. */
     InitTrans();
 
+    /* Initialise bufmgr. */
+    InitBufMgr();
+
     /* Initialise table cache. */
     init_table_cache();
 
