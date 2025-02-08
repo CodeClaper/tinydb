@@ -16,10 +16,10 @@ typedef enum RWLockMode {
 /* Rwlock Entry. */
 typedef struct RWLockEntry {
     int buffer;                         /* Buffer. */
+    List *owner;                        /* Content lock owner rocesses. */
     volatile RWLockMode mode;           /* Rwlock mode. */
     volatile s_lock content_lock;       /* Content spinlock. */
     volatile s_lock sync_lock;          /* Sync spinlock. */
-    List *owner;                        /* Content lock owner rocesses. */
     volatile int waiting_reader;        /* Waiting readers number. */
     volatile int waiting_writer;        /* Waiting writers number. */
 } RWLockEntry;

@@ -58,6 +58,12 @@ Pager *open_pager(char *table_name) {
     return pager;
 }
 
+static BufferDesc *get_buffer_desc(Pager *pager, Buffer buffer) {
+    ListCell *lc = list_nth_cell(pager->buffers, buffer);
+    Assert(lc != NULL);
+    return (BufferDesc *) lfirst(lc);
+}
+
 /* Get page of a pager by page number. */
 void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
 
@@ -66,47 +72,64 @@ void *get_page(char *table_name, Pager *pager, uint32_t page_num) {
         db_log(PANIC, "Try to fetch page number out of bounds: %d >= %d", 
                page_num, MAX_TABLE_PAGE);
     }
+    
+    BufferDesc *buffDesc = get_buffer_desc(pager, page_num);
 
     /* Get the file descriptor. */
     FDesc fdesc = get_file_desc(table_name);
 
     /* Exceeds the pager. */
     if (page_num >= pager->size) {
-        Assert(page_num == pager->size);
+        acquire_spin_lock(buffDesc->io_lock);
 
-        switch_shared();
+        /* Double check. */
+        if (page_num >= pager->size) {
+            Assert(page_num == pager->size);
+            switch_shared();
 
-        /* Generate new Page.*/
-        void *page = dalloc(PAGE_SIZE);
-        lseek(fdesc, page_num * PAGE_SIZE, SEEK_SET);
-        ssize_t read_bytes = read(fdesc, page, PAGE_SIZE);
-        if (read_bytes == -1) 
-            db_log(PANIC, "Table file read error: %s", strerror(errno));
+            /* Generate new Page.*/
+            void *page = dalloc(PAGE_SIZE);
+            lseek(fdesc, page_num * PAGE_SIZE, SEEK_SET);
+            ssize_t read_bytes = read(fdesc, page, PAGE_SIZE);
+            if (read_bytes == -1) 
+                db_log(PANIC, "Table file read error: %s", strerror(errno));
 
-        append_list(pager->pages, page);
-        pager->size++;
-        Assert(len_list(pager->pages) == pager->size);
+            append_list(pager->pages, page);
+            pager->size++;
+            Assert(len_list(pager->pages) == pager->size);
 
-        switch_local();
-        return page;
+            switch_local();
+            release_spin_lock(buffDesc->io_lock);
+
+            return page;
+        }
+
+        release_spin_lock(buffDesc->io_lock);
     }
 
     ListCell *lc = list_nth_cell(pager->pages, page_num);
 
     /* Cache dismiss, allocate memory and load file. */
     if (is_null(lfirst(lc))) {
-        switch_shared();
+        acquire_spin_lock(buffDesc->io_lock);
 
-        void *page = dalloc(PAGE_SIZE);
+        lc = list_nth_cell(pager->pages, page_num);
+        if (is_null(lfirst(lc))) {
+            switch_shared();
 
-        lseek(fdesc, page_num * PAGE_SIZE, SEEK_SET);
-        ssize_t read_bytes = read(fdesc, page, PAGE_SIZE);
-        if (read_bytes == -1) 
-            db_log(PANIC, "Table file read error: %s", strerror(errno));
+            void *page = dalloc(PAGE_SIZE);
 
-        lfirst(lc) = page;
+            lseek(fdesc, page_num * PAGE_SIZE, SEEK_SET);
+            ssize_t read_bytes = read(fdesc, page, PAGE_SIZE);
+            if (read_bytes == -1) 
+                db_log(PANIC, "Table file read error: %s", strerror(errno));
 
-        switch_local();
+            lfirst(lc) = page;
+
+            switch_local();
+        }
+
+        release_spin_lock(buffDesc->io_lock);
     }
 
     return lfirst(lc);
