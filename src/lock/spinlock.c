@@ -22,7 +22,7 @@ int lock_spin(uint32_t cnt) {
     /* Acutally, this should be cnt < 1024, then pause. 
      * But, pause might cause processor `starve`. 
      * We will intro phase-fair lock in the future, but now use sleep temporarily. */
-	if (cnt > 1024 )
+	if (cnt < 1024 )
 	  for (idx = 0; idx < cnt; idx++)
 	    PAUSE();
 	else
