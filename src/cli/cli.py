@@ -103,6 +103,8 @@ def handle(cmd: str):
     match hanler:
         case 'JQ':
             handleJsonpp(ret)
+        case 'JSON_PP':
+            handleJsonpp(ret)
         case _:
             print(f"Not support handler:{hanler}")
     
