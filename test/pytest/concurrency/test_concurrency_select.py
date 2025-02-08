@@ -7,7 +7,7 @@ clients = []
 threads = []
 share_resource = {}
 
-for _ in range(0, 30):
+for _ in range(0, 10):
     cli = TinyDbClient("127.0.0.1", 4083)    
     cli.login("root", "Zc120130211")
     clients.append(cli)
@@ -28,7 +28,7 @@ def thread_select(cli):
     except Exception as e:
         share_resource["select_exception"] = e
 
-for i in range(0, 30):
+for i in range(0, 10):
     threads.append(threading.Thread(target=thread_select, args= { clients[i] }))
 
 
