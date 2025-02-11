@@ -61,6 +61,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include "data.h"
 #include "defs.h"
@@ -145,10 +146,11 @@ TransEntry *FindTransaction() {
     acquire_spin_lock(xlock);
     /* Current thread id. */
     Pid pid = getpid();
+    Pid ppid = getppid();
 
     TransEntry *current = xheader;
     while ((current = current->next)) {
-        if (current->pid == pid) 
+        if (current->pid == pid || current->pid == ppid) 
             break;
     }
 

@@ -26,9 +26,10 @@ void init_exlock(ExLockEntry *lock_entry) {
 void acquire_exlock(ExLockEntry *lock_entry) {
     Assert(lock_entry);
     pid_t pid = getpid();
+    pid_t ppid = getppid();
     /* If current processor is the one that aleary 
      * acuqiring the lock, return.*/
-    if (pid == lock_entry->pid)
+    if (pid == lock_entry->pid || ppid == lock_entry->pid)
         return;
     acquire_spin_lock(&lock_entry->lock);
     lock_entry->pid = pid;
