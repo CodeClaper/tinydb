@@ -204,8 +204,8 @@ static void ExecuteStatement(Statement *statement, DBResult *result) {
     } 
 
     /* Calulate duration. */
-    result->end_time = clock();
-    result->duration = (double)(result->end_time - result->start_time) / CLOCKS_PER_SEC;
+    gettimeofday(&result->end_time, NULL);
+    result->duration = time_span(result->end_time, result->start_time);
     db_log(INFO, "Duration: %lfs", result->duration);
 }
 
@@ -260,8 +260,8 @@ void Execute(char *sql) {
             DBResult *last_result = lfirst(last_cell(result_list));
             if (last_result->success == false) {
                 /* Calulate duration. */
-                last_result->end_time = clock();
-                last_result->duration = (double)(last_result->end_time - last_result->start_time) / CLOCKS_PER_SEC;
+                gettimeofday(&last_result->end_time, NULL);
+                last_result->duration = time_span(last_result->end_time, last_result->start_time);
                 db_log(INFO, "Duration: %lfs", last_result->duration);
             }
         }

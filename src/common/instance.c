@@ -1,5 +1,5 @@
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 #include "instance.h"
 #include "data.h"
 #include "mmgr.h"
@@ -51,9 +51,9 @@ DBResult *new_db_result() {
     result->message = NULL;
     result->data = NULL;
     result->rows = 0;
-    result->start_time = clock();
     result->duration = 0;
     result->table = NULL;
+    gettimeofday(&result->start_time, NULL);
     return result;
 }
 
