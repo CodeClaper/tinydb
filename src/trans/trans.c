@@ -234,7 +234,6 @@ void AutoBeginTransaction() {
 
     /* Register the transaction. */
     RegisterTransaction(entry);
-
 }
 
 /* Begin a new transaction which need be committed manually. */

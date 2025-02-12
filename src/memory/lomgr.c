@@ -5,38 +5,43 @@
  * Locataion:       src/memory/lodmem.c
  * Description:     This is the implement of mem for local memory.
  *********************************************************************************************/
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "lomgr.h"
 #include "utils.h"
 #include "mctx.h"
+#include "spinlock.h"
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+/*
+ * Sync lock.
+ */
+static s_lock slock = SPIN_UN_LOCKED_STATUS;
 
 /* Alloc for local. */
 void *lodalloc(size_t size) {
     void *ptr;
-    pthread_mutex_lock(&mutex);
+    acquire_spin_lock(&slock);
     ptr = MemoryContextAlloc(size);
     Assert(ptr != NULL);
     memset(ptr, 0, size);
-    pthread_mutex_unlock(&mutex);
+    release_spin_lock(&slock);
     return ptr;
 }
 
 /* Free for local. */
 void lofree(void *ptr) {
-     MemoryContextFree(ptr);
+    acquire_spin_lock(&slock);
+    MemoryContextFree(ptr);
+    release_spin_lock(&slock);
 }
 
 /* Realloc for local. */
 void *lodrealloc(void *ptr, size_t size) {
     void *newptr = NULL;
-    pthread_mutex_lock(&mutex);
+    acquire_spin_lock(&slock);
     newptr = MemoryContextRealloc(ptr, size);
-    pthread_mutex_unlock(&mutex);
+    release_spin_lock(&slock);
     return newptr;
 }
 
@@ -45,8 +50,8 @@ char *lodstrdup(char *str) {
     char *newStr = NULL;
     if (is_null(str))
         return newStr;
-    pthread_mutex_lock(&mutex);
+    acquire_spin_lock(&slock);
     newStr = MemoryContextStrdup(str);
-    pthread_mutex_unlock(&mutex);
+    release_spin_lock(&slock);
     return newStr;
 }

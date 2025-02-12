@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stdlib.h>
-#include "spinlock.h"
 
 #ifndef MMGR_H
 #define MMGR_H
@@ -9,6 +8,16 @@ typedef enum MemType {
     MEM_LOCAL = 0,
     MEM_SHARED
 } MemType;
+
+typedef enum MemMode {
+    MM_NORMAL,
+    MM_PARALLEL_COMPUTE
+} MemMode;
+
+typedef struct MemTypeRecord {
+    MemType type;
+    pthread_t *worker;
+} MemTypeRecord;
 
 typedef struct MemMethods {
     void *(*dalloc)(size_t size);
@@ -31,6 +40,10 @@ typedef struct MemMethods {
 
 #define MAXALIGN(LEN)			TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 
+void StartParallelComputeMode(pthread_t workers[], int workerNum);
+
+void EndParallelComputeMode();
+
 
 /* Swith Shared Memory. */
 void switch_shared();
@@ -38,8 +51,10 @@ void switch_shared();
 /* Switch Local Memory. */
 void switch_local();
 
+/* In Shared memory. */
 bool in_shared_memory();
 
+/* In Local memory. */
 bool in_local_memory();
 
 /* Allocate memory. */

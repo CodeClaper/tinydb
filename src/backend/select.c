@@ -38,6 +38,20 @@
 #include "compare.h"
 #include "instance.h"
 #include "jsonwriter.h"
+#include "parall.h"
+
+typedef struct SelectFromInternalChildTaskArgs {
+    void *internal_node;
+    uint32_t i;
+    uint32_t key_len;
+    uint32_t value_len;
+    SelectResult *select_result;
+    ConditionNode *condition;
+    Table *table;
+    ROW_HANDLER row_handler;
+    ROW_HANDLER_ARG_TYPE type;
+    void *arg;
+} SelectFromInternalChildTaskArgs;
 
 /* Maximum number of rows fetched at once.*/
 #define MAX_FETCH_ROWS 100 
@@ -627,6 +641,13 @@ static void merge_row(Row *row1, Row *row2) {
     }
 }
 
+static void merge_select_result(SelectResult *result1, SelectResult *result2) {
+    ListCell *lc;
+    foreach (lc, result2->rows) {
+        append_list(result1->rows, lfirst(lc));
+    }
+}
+
 /* Search table via alias name in SelectResult. 
  * Note: range variable may be table name or table alias name.
  * */
@@ -797,6 +818,138 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 }
 
 
+static void select_from_internal_node_child_task(SelectFromInternalChildTaskArgs *args) {
+    Assert(args != NULL);
+    void *internal_node = args->internal_node;
+    uint32_t i = args->i;
+    uint32_t key_len = args->key_len;
+    uint32_t value_len = args->value_len;
+    SelectResult *select_result = args->select_result;
+    ConditionNode *condition = args->condition;
+    Table *table = args->table;
+    ROW_HANDLER row_handler = args->row_handler;
+    ROW_HANDLER_ARG_TYPE type = args->type;
+    void *arg = args->arg;
+
+    /* Check if index column, use index to avoid full text scanning. */
+    {
+        /* Current internal node cell key as max key, previous cell key as min key. */
+        void *max_key = get_internal_node_key(internal_node, i, key_len, value_len); 
+        void *min_key = (i == 0) 
+                    ? NULL 
+                    : get_internal_node_key(internal_node, i - 1, key_len, value_len);
+        if (!include_internal_node(select_result, min_key, max_key, condition, table->meta_table))
+            return;
+    }
+
+    /* Check other non-key column */
+    uint32_t child_page_num = get_internal_node_child(internal_node, i, key_len, value_len);
+    void *node = ReadBuffer(table, child_page_num);
+    switch (get_node_type(node)) {
+        case LEAF_NODE:
+            select_from_leaf_node(
+                select_result, condition, child_page_num, 
+                table, row_handler, type, arg
+            );
+            break;
+        case INTERNAL_NODE:
+            select_from_internal_node(
+                select_result, condition, child_page_num, 
+                table, row_handler, type, arg
+            );
+            break;
+        default:
+            db_log(PANIC, "Unknown node type.");
+            break;
+    }
+
+    /* Release the child buffer. */
+    ReleaseBuffer(table, child_page_num);
+}
+
+/* Select through internal node. */
+static void select_from_internal_node_async(SelectResult *select_result, ConditionNode *condition, 
+                                            uint32_t page_num, Table *table, 
+                                            ROW_HANDLER row_handler, ROW_HANDLER_ARG_TYPE type, void *arg) {
+
+    /* If LimitClauseNode full, not continue. */
+    if (non_null(arg) && limit_clause_full(arg))
+        return;
+
+    /* Get the internal node buffer. */
+    void *internal_node = ReadBuffer(table, page_num);
+
+    /* Get variables. */
+    uint32_t key_len, value_len, keys_num;
+    key_len = calc_primary_key_length(table);
+    value_len = calc_table_row_length(table);
+    keys_num = get_internal_node_keys_num(internal_node, value_len);
+
+    /* Prepare the parallel computing task args. */
+    SelectFromInternalChildTaskArgs *taskArgs[keys_num];
+    SelectResult *selectResults[keys_num];
+
+    uint32_t i;
+    for (i = 0; i < keys_num; i++) {
+        selectResults[i] = new_select_result(table->meta_table->table_name);
+        taskArgs[i] = instance(SelectFromInternalChildTaskArgs);
+        taskArgs[i]->internal_node = internal_node;
+        taskArgs[i]->i = i;
+        taskArgs[i]->key_len = key_len;
+        taskArgs[i]->value_len = value_len;
+        taskArgs[i]->select_result = selectResults[i];
+        taskArgs[i]->condition = condition;
+        taskArgs[i]->table = table;
+        taskArgs[i]->row_handler = row_handler;
+        taskArgs[i]->type = type;
+        taskArgs[i]->arg = arg;
+    }
+   
+    /* Parallel compute. */
+    ParallelCompute(keys_num, select_from_internal_node_child_task, taskArgs);
+
+    /* Merge select result. */
+    for (i = 0; i < keys_num; i++) {
+        merge_select_result(select_result, selectResults[i]);
+    }
+
+    /* Don`t forget the right child. */
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
+
+    /* Zero means there is no page. */
+    if (right_child_page_num == 0) 
+        return;
+
+    /* Fetch right child. */
+    void *right_child = ReadBuffer(table, right_child_page_num);
+    NodeType node_type = get_node_type(right_child);
+    switch (node_type) {
+        case LEAF_NODE:
+            select_from_leaf_node(
+                select_result, 
+                condition, right_child_page_num, 
+                table, row_handler, type, arg
+            );
+            break;
+        case INTERNAL_NODE:
+            select_from_internal_node(
+                select_result, 
+                condition, right_child_page_num, 
+                table, row_handler, type, arg
+            );
+            break;
+        default:
+            UNEXPECTED_VALUE(node_type);
+            break;
+    }
+
+    /* Release buffers. */
+    ReleaseBuffer(table, right_child_page_num);
+    ReleaseBuffer(table, page_num);
+}
+
+
+
 /* Query with condition. */
 void query_with_condition(ConditionNode *condition, SelectResult *select_result, 
                           ROW_HANDLER row_handler, ROW_HANDLER_ARG_TYPE type, void *arg) {
@@ -814,7 +967,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
             );
             break;
         case INTERNAL_NODE:
-            select_from_internal_node(
+            select_from_internal_node_async(
                 select_result, condition, table->root_page_num,
                 table, row_handler, type, arg
             );

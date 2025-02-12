@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <time.h>
 #include <float.h>
+#include "data.h"
 #include "utils.h"
 #include "mmgr.h"
 
