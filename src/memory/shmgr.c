@@ -63,7 +63,7 @@ void shdfree(void *ptr) {
     Assert(ptr);
     Assert(shmem_addr_valid(ptr));
 
-    ShMemFreeEntry *free_entry = ptr - SHM_OFFSET;
+    ShMemFreeEntry *free_entry = GET_FREE_ENTRY(ptr);
 
     Assert(free_entry);
     Assert(!free_entry->isFree);

@@ -4,7 +4,7 @@
 typedef struct ShmemHeader {
     size_t total_size;
     volatile size_t offset;
-}ShmemHeader;
+} ShmemHeader;
 
 /* Init the shared memory. */
 void init_shmem();

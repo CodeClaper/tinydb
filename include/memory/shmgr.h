@@ -11,6 +11,10 @@ typedef struct ShMemFreeEntry {
 
 #define SHM_OFFSET MAXALIGN(sizeof(ShMemFreeEntry))
 
+#define GET_FREE_ENTRY(ptr)\
+    (ptr - SHM_OFFSET)
+    
+
 /* Init mem. */
 void init_mem();
 
