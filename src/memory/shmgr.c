@@ -12,47 +12,60 @@
 #include "shmem.h"
 #include "mmgr.h"
 #include "utils.h"
+#include "bit.h"
 
-static ShMemFreeEntry *header = NULL;
-static void *BASE_LINE;
-
-static void *dalloc_shared_in_free_list(size_t size);
 static void try_shdfree(void *ptr);
+
+static ShMemFreeEntry *sh_free_list[SHM_FREELISTS_NUM];
+static s_lock *shlock;
+
+static inline int ShFreeIndex(Size size) {
+    int idx = size > (1 << SHM_MINBITS) 
+            ? leftmost_32_pos(size -1) - SHM_MINBITS + 1
+            : 0;
+    if (idx >= SHM_FREELISTS_NUM)
+        Assert(idx < SHM_FREELISTS_NUM);
+    return idx;
+}
+
 
 /* Init mem. */
 void init_mem() {
-    ShMemFreeEntry entry = { 
-        .size = 0, 
-        .num = 0, 
-        .isFree = false, 
-        .lock = SPIN_UN_LOCKED_STATUS 
-    };
-    void *ptr = shmem_alloc(SHM_OFFSET);
-    memcpy(ptr, &entry, SHM_OFFSET);
-    header = ptr;
-    BASE_LINE = header;
+    shlock = shmem_alloc(sizeof(s_lock));
+    init_spin_lock(shlock);
+    for (int i = 0; i < SHM_FREELISTS_NUM; i++) {
+        sh_free_list[i] = NULL;
+    }
 }
 
 /* Alloc for share. */
 void *shdalloc(size_t size) {
+    int fdx;
+    void *ptr;
+    ShMemFreeEntry *entry;
+
     Assert(size > 0);
-
     size = MAXALIGN(size);
+    Assert(size < SHM_ALLOC_LIMIT);
 
-    /* Firstly allocate from free list, if missing, allocate from share memory. */
-    void *ptr = dalloc_shared_in_free_list(size);
-    if (ptr == NULL) {
+    /* First reuse in free list, 
+     * if missing, allocate new one.*/
+    acquire_spin_lock(shlock);
+    fdx = ShFreeIndex(size);
+    entry = sh_free_list[fdx];
+    if (entry != NULL) {
+        sh_free_list[fdx] = entry->next;
+        ptr = GET_POINTER(entry);
+    } else {
         void *nptr = shmem_alloc(size + SHM_OFFSET);
         ShMemFreeEntry entry = { 
-            .size = size, 
-            .isFree = false,
-            .num = 0,
-            .lock = SPIN_UN_LOCKED_STATUS
+            .size = size,
+            .next = NULL
         };
         memcpy(nptr, &entry, SHM_OFFSET);
         ptr = nptr + SHM_OFFSET;
-        header->num++;
     }
+    release_spin_lock(shlock);
 
     /* Initialise data. */
     memset(ptr, 0, size);
@@ -62,15 +75,18 @@ void *shdalloc(size_t size) {
 
 /* Free for share. */
 void shdfree(void *ptr) {
+    int fdx;
     Assert(ptr);
     Assert(shmem_addr_valid(ptr));
 
-    ShMemFreeEntry *free_entry = GET_FREE_ENTRY(ptr);
+    acquire_spin_lock(shlock);
+    ShMemFreeEntry *entry = GET_FREE_ENTRY(ptr);
+    Assert(entry != NULL);
 
-    Assert(free_entry);
-    Assert(!free_entry->isFree);
-
-    free_entry->isFree = true;
+    fdx = ShFreeIndex(entry->size);
+    entry->next = sh_free_list[fdx];
+    sh_free_list[fdx] = entry;
+    release_spin_lock(shlock);
 }
 
 /* Realloc for share. */
@@ -99,31 +115,5 @@ char *shdstrdup(char *str) {
 static void try_shdfree(void *ptr) {
     if (shmem_addr_valid(ptr))
         shdfree(ptr);
-}
-
-
-/* Allocate shared memory in FreeList.*/
-static void *dalloc_shared_in_free_list(size_t size) {
-    void *ptr = NULL;
-    
-    /* Acquire lock. */
-    acquire_spin_lock(&header->lock);
-    
-    size_t offset = SHM_OFFSET;
-    uint32_t i;
-    for (i = 0; i < header->num; i++) {
-        ShMemFreeEntry *entry = (ShMemFreeEntry *) (((char *) BASE_LINE) + offset);
-        if (entry->isFree && entry->size >= size) {
-            ptr = GET_POINTER(entry);
-            entry->isFree = false;
-            break;
-        }
-        offset += (entry->size + SHM_OFFSET);
-    }
-
-    /* Release lock. */
-    release_spin_lock(&header->lock);
-
-    return ptr;
 }
 
