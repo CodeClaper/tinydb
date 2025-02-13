@@ -44,6 +44,22 @@ void save_table_cache(Table *table) {
     release_spin_lock(tlock);
 }
 
+/* find out if exists table in caceh. */
+bool exist_table_in_cache(char *table_name) {
+    bool found = false;
+    acquire_spin_lock(tlock);
+    ListCell *lc;
+    foreach (lc, TableCache) {
+        Table *cur_table = (Table *) lfirst(lc);
+        if (streq(cur_table->meta_table->table_name, table_name)) {
+            found = true;
+            break;
+        }
+    }
+    release_spin_lock(tlock);
+    return found;
+}
+ 
 
 /* Find cache table by name, return null if not exist. */
 Table *find_table_cache(char *table_name) {

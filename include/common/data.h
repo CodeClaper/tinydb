@@ -1,10 +1,10 @@
+#include <bits/types/struct_timeval.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <time.h>
 #include "c.h"
 #include "list.h"
 
@@ -638,6 +638,7 @@ typedef struct Row {
 
 /* SelectResult */
 typedef struct SelectResult {
+    StatementType stype;            /* Statement type. */
     char *table_name;               /* Table name. */
     char *range_variable;           /* Range variable. */
     uint32_t row_size;              /* Row size. Although in rows list indicates the row size, these row_size works for count agg. */
@@ -695,8 +696,8 @@ typedef struct {
     void *data;
     uint32_t rows;
     char *message;
-    clock_t start_time;
-    clock_t end_time;
+    struct timeval start_time;
+    struct timeval end_time;
     double duration;
 } DBResult;
 

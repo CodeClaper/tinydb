@@ -83,8 +83,8 @@ void db_log(LogLevel level, char *format, ...) {
     if (level >= conf->log_level) {
         char *sys_time = get_current_sys_time2(MICROSECOND);
         char buff[BUFF_SIZE * 2];
-        sprintf(buff, "[%s][%d][%s]:\t%s\n", 
-                sys_time, getpid(), 
+        sprintf(buff, "[%s][%d][%ld][%s]:\t%s\n", 
+                sys_time, getpid(), pthread_self(), 
                 LOG_LEVEL_NAME_LIST[level], message);
         fprintf(stdout, "%s", buff);
         flush_log(buff);

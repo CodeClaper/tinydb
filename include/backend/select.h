@@ -11,10 +11,6 @@ typedef enum ROW_HANDLER_ARG_TYPE {
 typedef void (*ROW_HANDLER)(Row *, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type,void *arg);
 
 
-/* Generate new select result structure. */
-SelectResult *new_select_result(char *table_name);
-
-
 /* Count number of row, used in the sql function count() */
 void count_row(Row *row, SelectResult *select_result, Table *table, ROW_HANDLER_ARG_TYPE type, void *arg);
 

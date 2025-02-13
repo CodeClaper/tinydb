@@ -5,7 +5,6 @@
  * Locataion:   src/memory/mectx.c
  *
  *********************************************************************************************/
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,17 +13,35 @@
 #include "mctx.h"
 #include "asctx.h"
 #include "utils.h"
+#include "parall.h"
 
-/* Current MemoryContext. */
+/* 
+ * Current MemoryContext. 
+ */
 MemoryContext CURRENT_MEMORY_CONTEXT = NULL;
 
-/* Store start-up and initialization info, */
+/* 
+ * Store start-up and initialization Info
+ */
 MemoryContext TOP_MEMORY_CONTEXT = NULL;
-/* Store Poster master info. */
+
+/* 
+ * Store Poster master info.
+ */
 MemoryContext MASTER_MEMORY_CONTEXT = NULL;
-/* Store table buffer, pager of table buffer, xlog info. */
+
+/* 
+ * Store table buffer, pager of table buffer, xlog info. 
+ */
 MemoryContext CACHE_MEMORY_CONTEXT = NULL;
+
+/*
+ * Message.
+ */
 MemoryContext MESSAGE_MEMORY_CONTEXT = NULL;
+
+static MemContextRecorder contextRecorders[100];
+static int recorderSize;
 
 
 static MemoryContextMethods mctx_methods[] = {
@@ -43,14 +60,41 @@ void MemoryContextInit(void) {
     MemoryContextSwitchTo(TOP_MEMORY_CONTEXT);
 }
 
+void RegisterContextRecorders(int workerNum, pthread_t workers[]) {    
+    Assert(CURRENT_MEMORY_CONTEXT == MASTER_MEMORY_CONTEXT);
+    for (int i = 0; i < workerNum; i++) {
+        MemoryContext context = AllocSetMemoryContextCreate(MASTER_MEMORY_CONTEXT, "ParallelComputeMemoryContext", DEFAULT_MAX_BLOCK_SIZE);
+        contextRecorders[i].context = context;
+        contextRecorders[i].worker = &workers[i];
+    }
+    recorderSize = workerNum;
+}
+
+void DestroyContextRecorders() {
+    for (int i = 0; i < recorderSize; i++) {
+        MemoryContextDelete(contextRecorders[i].context);
+    }
+    recorderSize = 0;
+}
+
+MemContextRecorder *FindMemContextReorder() {
+    Assert(GetComputeMode() == PARALLEL_COMPUTE);
+    for (int i = 0; i < recorderSize; i++) {
+        MemContextRecorder *recorder = &contextRecorders[i];
+        if (*recorder->worker == pthread_self())
+            return recorder;
+    }
+    return NULL;
+}
+
 
 /* Create MemoryContext.
  * Thist abstract function not really to create MemoryContext and it just
  * make up base info and link to others MemoryContext.
  * */
 void MemoryContextCreate(MemoryContext node, MemoryContext parent, 
-                                  const char *name, ContextType type, 
-                                  MemoryContextMethodID id) {
+                         const char *name, ContextType type, 
+                         MemoryContextMethodID id) {
     /* Make up base Info. */
     node->name = name;
     node->type = type;
@@ -115,6 +159,7 @@ void MemoryContextSetParent(MemoryContext context, MemoryContext new_parent) {
 
 /* Delete the MemoryContext only. */
 static void MemoryContextDeleteOnly(MemoryContext context) {
+    /* Delink the parent. */
     MemoryContextSetParent(context, NULL);
     context->context_methods->delete_context(context);
 }
@@ -143,28 +188,46 @@ void MemoryContextDelete(MemoryContext context) {
 
 /* Switch to MemoryContext. */
 void *MemoryContextSwitchTo(MemoryContext currentConext) {
+    /* Not allowed parallel compute there. */
+    Assert(GetComputeMode() != PARALLEL_COMPUTE);
     MemoryContext old = currentConext;
     CURRENT_MEMORY_CONTEXT = currentConext;
     return old;
 }
 
+static MemoryContext GetCurrentMemoryContext() {
+    switch (GetComputeMode()) {
+        case NORMAL_COMPUTE:
+            return CURRENT_MEMORY_CONTEXT;
+        case PARALLEL_COMPUTE: {
+            MemContextRecorder *recorder = FindMemContextReorder();
+            Assert(recorder);
+            return recorder->context;
+        }
+        default: {
+            perror("Unknown MemMode");
+            exit(1);
+        }
+    }
+    return CURRENT_MEMORY_CONTEXT;
+}
 
 /* Alloc from MemoryContext. */
 void *MemoryContextAlloc(size_t size) {
-    MemoryContext context = CURRENT_MEMORY_CONTEXT;
+    MemoryContext context = GetCurrentMemoryContext();
     return context->context_methods->alloc(context, size);
 }
 
 
 /* Free from MemoryContext. */
 void MemoryContextFree(void *ptr) {
-    MemoryContext context = CURRENT_MEMORY_CONTEXT;
+    MemoryContext context = GetCurrentMemoryContext();
     context->context_methods->free(ptr);
 }
 
 /* Realloc from MemoryContext. */
 void *MemoryContextRealloc(void *pointer, size_t size) {
-    MemoryContext context = CURRENT_MEMORY_CONTEXT;
+    MemoryContext context = GetCurrentMemoryContext();
     return context->context_methods->realloc(pointer, size);
 }
 

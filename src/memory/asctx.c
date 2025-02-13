@@ -68,11 +68,13 @@ MemoryContext AllocSetMemoryContextCreate(MemoryContext parent, char *name, uint
     /* Init the free list*/
     memset(set->free_list, 0, sizeof(set->free_list));
 
-    MemoryContextCreate((MemoryContext) set, 
-                               parent, 
-                               name,
-                               ALLOC_SET_CTX, 
-                               ALLOC_SET_ID);
+    MemoryContextCreate(
+        (MemoryContext) set, 
+        parent, 
+        name,
+        ALLOC_SET_CTX, 
+        ALLOC_SET_ID
+    );
 
     set->header.allocated_size =  size;
 
@@ -190,8 +192,8 @@ void *AllocSetAllocChunkFromBlock(MemoryContext context, AllocBlock block, Size 
 /* Allocate from New Block. */
 void *AllocSetAllocNewBlock(MemoryContext context, Size chksize) {
     Size blk_size;
-    AllocSet set = (AllocSet) context;
 
+    AllocSet set = (AllocSet) context;
     Assert(set->blocks != NULL); 
 
     blk_size = set->next_block_size;

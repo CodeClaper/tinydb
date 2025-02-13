@@ -149,7 +149,8 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
     /* Acquire the Rwlock in RW_READERS mode. */
     AcquireRWlock(buff_desc->lock, RW_READERS);
 
-    db_log(TRACE, "Acquire RWLock: %p and buffer: %d and owner: %d.", buff_desc, buff_desc->buffer, buff_desc->lock->owner->size);
+    db_log(TRACE, "Acquire RWLock: %p and buffer: %d and owner: %d and writer: %d and reader: %d.", 
+           buff_desc, buff_desc->buffer, buff_desc->lock->owner->size, buff_desc->lock->waiting_writer, buff_desc->lock->waiting_reader);
     
     /* Increase the refcount. */
     buff_desc->refcount++;
@@ -178,7 +179,8 @@ void ReleaseBufferInner(Pager *pager, Buffer buffer) {
     BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
     Assert(buff_desc != NULL);
 
-    db_log(TRACE, "Will release RWLock: %p and buffer: %d and owner: %d.", buff_desc, buff_desc->buffer, buff_desc->lock->owner->size);
+    db_log(TRACE, "Will release RWLock: %p and buffer: %d and owner: %d and writer: %d and reader: %d.", 
+           buff_desc, buff_desc->buffer, buff_desc->lock->owner->size, buff_desc->lock->waiting_writer, buff_desc->lock->waiting_reader);
 
     /* Release the Rwlock. */
     ReleaseRWlock(buff_desc->lock);

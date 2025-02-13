@@ -35,6 +35,7 @@
 #include "xlog.h"
 #include "jsonwriter.h"
 #include "log.h"
+#include "instance.h"
 
 /* Update cell */
 static void update_cell(Row *row, AssignmentNode *assign_node, MetaColumn *meta_column) {
@@ -170,7 +171,7 @@ void exec_update_statment(UpdateNode *update_node, DBResult *result) {
         return;
 
     /* Query with conditon, and update satisfied condition row. */
-    SelectResult *select_result = new_select_result(update_node->table_name);
+    SelectResult *select_result = new_select_result(UPDATE_STMT, update_node->table_name);
     ConditionNode *condition_node = get_condition_from_where(update_node->where_clause);
 
     /* Query with update row operation. */

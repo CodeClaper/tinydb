@@ -9,11 +9,6 @@ typedef enum MemType {
     MEM_SHARED
 } MemType;
 
-typedef enum MemMode {
-    MM_NORMAL,
-    MM_PARALLEL_COMPUTE
-} MemMode;
-
 typedef struct MemTypeRecord {
     MemType type;
     pthread_t *worker;
@@ -40,10 +35,8 @@ typedef struct MemMethods {
 
 #define MAXALIGN(LEN)			TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 
-void StartParallelComputeMode(pthread_t workers[], int workerNum);
 
-void EndParallelComputeMode();
-
+void RegisterWorkers(pthread_t workers[], int workerNum);
 
 /* Swith Shared Memory. */
 void switch_shared();

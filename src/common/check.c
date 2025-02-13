@@ -33,6 +33,7 @@
 #include "refer.h"
 #include "list.h"
 #include "cache.h"
+#include "instance.h"
 
 static bool check_value_item_set_node(MetaTable *meta_table, char *column_name, List *value_list);
 static bool check_scalar_exp(ScalarExpNode *scalar_exp, AliasMap alias_map);
@@ -708,7 +709,8 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
 
     Table *table = open_table(update_node->table_name);
     List *assignment_list = update_node->assignment_list;
-    SelectResult *select_result = new_select_result(update_node->table_name);
+    /* Although this cehck update node, but new select result is SELECT_STMT. */
+    SelectResult *select_result = new_select_result(SELECT_STMT, update_node->table_name);
     ConditionNode *condition_node = get_condition_from_where_clause(update_node->where_clause);
     query_with_condition(condition_node, select_result, count_row, ARG_NULL, NULL);
 

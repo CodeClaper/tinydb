@@ -1,5 +1,4 @@
 #include "data.h"
-#include <stdlib.h>
 
 #ifndef MCTX_H
 #define MCTX_H
@@ -34,9 +33,18 @@ typedef struct MemoryContextData {
     MemoryContext nextChild;                    /* The next MemoryContext of peers. */
 } MemoryContextData;
 
+typedef struct MemContextRecorder {
+    MemoryContext context;
+    pthread_t *worker;
+} MemContextRecorder;
+
 
 /* MemoryContextInit. */
 void MemoryContextInit(void);
+
+
+void RegisterContextRecorders(int workerNum, pthread_t workers[]);
+void DestroyContextRecorders();
 
 /* Create MemoryContext.
  * Thist abstract function not really to create MemoryContext and it just

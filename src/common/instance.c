@@ -32,8 +32,9 @@ ArrayValue *new_array_value(DataType data_type, uint32_t size) {
 }
 
 /* Generate new select result structure. */
-SelectResult *new_select_result(char *table_name) {
+SelectResult *new_select_result(StatementType stype, char *table_name) {
     SelectResult *select_result = instance(SelectResult);
+    select_result->stype = stype;
     select_result->row_size = 0;
     select_result->table_name = table_name ? dstrdup(table_name) : NULL;
     select_result->range_variable = NULL;

@@ -9,16 +9,12 @@
 #include "mmgr.h"
 #include "shmgr.h"
 #include "lomgr.h"
+#include "parall.h"
 
 /*
  * Current Memory Type.
  */
 static MemType type = MEM_LOCAL;
-
-/*
- * Current MemMode. 
- */
-static MemMode mode = MM_NORMAL;
 
 /*
  * Recorder which use in parallel compute mode.
@@ -45,8 +41,7 @@ static MemMethods mem_methods[] = {
 };
 
 
-void StartParallelComputeMode(pthread_t workers[], int workerNum) {
-    mode = MM_PARALLEL_COMPUTE;
+void RegisterWorkers(pthread_t workers[], int workerNum) {
     for (int i = 0; i < workerNum; i++) {
         recorders[i].type = MEM_LOCAL;
         recorders[i].worker = &workers[i];
@@ -54,12 +49,8 @@ void StartParallelComputeMode(pthread_t workers[], int workerNum) {
     workerSize = workerNum;
 }
 
-void EndParallelComputeMode() {
-    mode = MM_NORMAL;
-}
-
 static MemTypeRecord *FindRecord() {
-    Assert(mode == MM_PARALLEL_COMPUTE);
+    Assert(GetComputeMode() == PARALLEL_COMPUTE);
     for (int i = 0; i < workerSize; i++) {
         MemTypeRecord *recorder = &recorders[i];
         if (*recorder->worker == pthread_self())
@@ -69,10 +60,10 @@ static MemTypeRecord *FindRecord() {
 }
 
 static MemType FindType() {
-    switch (mode) {
-        case MM_NORMAL:
+    switch (GetComputeMode()) {
+        case NORMAL_COMPUTE:
             return type;
-        case MM_PARALLEL_COMPUTE: {
+        case PARALLEL_COMPUTE: {
             MemTypeRecord *recorder = FindRecord();
             Assert(recorder);
             return recorder->type;
@@ -86,12 +77,12 @@ static MemType FindType() {
 
 /* Swith Shared Memory. */
 inline void switch_shared() {
-    switch (mode) {
-        case MM_NORMAL: {
+    switch (GetComputeMode()) {
+        case NORMAL_COMPUTE: {
             type = MEM_SHARED;
             break;
         }
-        case MM_PARALLEL_COMPUTE: {
+        case PARALLEL_COMPUTE: {
             MemTypeRecord *recorder = FindRecord();
             Assert(recorder);
             recorder->type = MEM_SHARED;
@@ -106,12 +97,12 @@ inline void switch_shared() {
 
 /* Switch Local Memory. */
 inline void switch_local() {
-    switch (mode) {
-        case MM_NORMAL: {
+    switch (GetComputeMode()) {
+        case NORMAL_COMPUTE: {
             type = MEM_LOCAL;
             break;
         }
-        case MM_PARALLEL_COMPUTE: {
+        case PARALLEL_COMPUTE: {
             MemTypeRecord *recorder = FindRecord();
             Assert(recorder);
             recorder->type = MEM_LOCAL;

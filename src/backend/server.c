@@ -107,6 +107,7 @@ static void loop_request(intptr_t client) {
         if (!db_send_over())
             break;
         MemoryContextReset(MASTER_MEMORY_CONTEXT);
+        DestroyContextRecorders();
     }
     db_log(INFO, "Client ID '%ld' disconnect.", getpid());
 }

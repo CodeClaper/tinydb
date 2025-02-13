@@ -39,13 +39,12 @@
 #include "instance.h"
 #include "jsonwriter.h"
 #include "parall.h"
+#include "cache.h"
 
 typedef struct SelectFromInternalChildTaskArgs {
-    void *internal_node;
-    uint32_t i;
-    uint32_t key_len;
-    uint32_t value_len;
     SelectResult *select_result;
+    uint32_t page_num;
+    uint32_t keys_num;
     ConditionNode *condition;
     Table *table;
     ROW_HANDLER row_handler;
@@ -818,12 +817,10 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 }
 
 
-static void select_from_internal_node_child_task(SelectFromInternalChildTaskArgs *args) {
-    Assert(args != NULL);
-    void *internal_node = args->internal_node;
-    uint32_t i = args->i;
-    uint32_t key_len = args->key_len;
-    uint32_t value_len = args->value_len;
+static void select_from_internal_node_child_task(void *taskArg) {
+    Assert(taskArg != NULL);
+    SelectFromInternalChildTaskArgs *args = (SelectFromInternalChildTaskArgs *) taskArg;
+    uint32_t child_page_num = args->page_num;
     SelectResult *select_result = args->select_result;
     ConditionNode *condition = args->condition;
     Table *table = args->table;
@@ -831,19 +828,6 @@ static void select_from_internal_node_child_task(SelectFromInternalChildTaskArgs
     ROW_HANDLER_ARG_TYPE type = args->type;
     void *arg = args->arg;
 
-    /* Check if index column, use index to avoid full text scanning. */
-    {
-        /* Current internal node cell key as max key, previous cell key as min key. */
-        void *max_key = get_internal_node_key(internal_node, i, key_len, value_len); 
-        void *min_key = (i == 0) 
-                    ? NULL 
-                    : get_internal_node_key(internal_node, i - 1, key_len, value_len);
-        if (!include_internal_node(select_result, min_key, max_key, condition, table->meta_table))
-            return;
-    }
-
-    /* Check other non-key column */
-    uint32_t child_page_num = get_internal_node_child(internal_node, i, key_len, value_len);
     void *node = ReadBuffer(table, child_page_num);
     switch (get_node_type(node)) {
         case LEAF_NODE:
@@ -886,69 +870,71 @@ static void select_from_internal_node_async(SelectResult *select_result, Conditi
     keys_num = get_internal_node_keys_num(internal_node, value_len);
 
     /* Prepare the parallel computing task args. */
-    SelectFromInternalChildTaskArgs *taskArgs[keys_num];
-    SelectResult *selectResults[keys_num];
+    uint32_t taskNum = 0;
+    SelectFromInternalChildTaskArgs *taskArgs[keys_num + 1];
+    SelectResult *selectResults[keys_num + 1];
 
     uint32_t i;
     for (i = 0; i < keys_num; i++) {
-        selectResults[i] = new_select_result(table->meta_table->table_name);
-        taskArgs[i] = instance(SelectFromInternalChildTaskArgs);
-        taskArgs[i]->internal_node = internal_node;
-        taskArgs[i]->i = i;
-        taskArgs[i]->key_len = key_len;
-        taskArgs[i]->value_len = value_len;
-        taskArgs[i]->select_result = selectResults[i];
-        taskArgs[i]->condition = condition;
-        taskArgs[i]->table = table;
-        taskArgs[i]->row_handler = row_handler;
-        taskArgs[i]->type = type;
-        taskArgs[i]->arg = arg;
+        void *max_key = get_internal_node_key(internal_node, i, key_len, value_len); 
+        void *min_key = (i == 0) 
+                    ? NULL 
+                    : get_internal_node_key(internal_node, i - 1, key_len, value_len);
+        if (!include_internal_node(select_result, min_key, max_key, condition, table->meta_table))
+            return;
+        
+        uint32_t child_page_num = get_internal_node_child(internal_node, i, key_len, value_len);
+        selectResults[taskNum] = new_select_result(SELECT_STMT, table->meta_table->table_name);
+        taskArgs[taskNum] = instance(SelectFromInternalChildTaskArgs);
+        taskArgs[taskNum]->select_result = selectResults[taskNum];
+        taskArgs[taskNum]->page_num = child_page_num;
+        taskArgs[taskNum]->keys_num = keys_num;
+        taskArgs[taskNum]->condition = condition;
+        taskArgs[taskNum]->table = table;
+        taskArgs[taskNum]->row_handler = row_handler;
+        taskArgs[taskNum]->type = type;
+        taskArgs[taskNum]->arg = arg;
+        taskNum++;
     }
    
+    /* Don`t forget the right child. */
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
+    selectResults[taskNum] = new_select_result(SELECT_STMT, table->meta_table->table_name);
+    taskArgs[taskNum] = instance(SelectFromInternalChildTaskArgs);
+    taskArgs[taskNum]->select_result = selectResults[taskNum];
+    taskArgs[taskNum]->page_num = right_child_page_num;
+    taskArgs[taskNum]->keys_num = keys_num;
+    taskArgs[taskNum]->condition = condition;
+    taskArgs[taskNum]->table = table;
+    taskArgs[taskNum]->row_handler = row_handler;
+    taskArgs[taskNum]->type = type;
+    taskArgs[taskNum]->arg = arg;
+    taskNum++;
+
     /* Parallel compute. */
-    ParallelCompute(keys_num, select_from_internal_node_child_task, taskArgs);
+    ParallelCompute(8, taskNum, select_from_internal_node_child_task, (void **)taskArgs);
 
     /* Merge select result. */
-    for (i = 0; i < keys_num; i++) {
+    for (i = 0; i < taskNum; i++) {
         merge_select_result(select_result, selectResults[i]);
     }
 
-    /* Don`t forget the right child. */
-    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
-
-    /* Zero means there is no page. */
-    if (right_child_page_num == 0) 
-        return;
-
-    /* Fetch right child. */
-    void *right_child = ReadBuffer(table, right_child_page_num);
-    NodeType node_type = get_node_type(right_child);
-    switch (node_type) {
-        case LEAF_NODE:
-            select_from_leaf_node(
-                select_result, 
-                condition, right_child_page_num, 
-                table, row_handler, type, arg
-            );
-            break;
-        case INTERNAL_NODE:
-            select_from_internal_node(
-                select_result, 
-                condition, right_child_page_num, 
-                table, row_handler, type, arg
-            );
-            break;
-        default:
-            UNEXPECTED_VALUE(node_type);
-            break;
-    }
-
-    /* Release buffers. */
-    ReleaseBuffer(table, right_child_page_num);
     ReleaseBuffer(table, page_num);
 }
 
-
+/* The condition of executing async. 
+ * Now, two condtions: 
+ * (1) SELECT_STMT.
+ * (2) Already in cache.
+ * Note: why it must be in cache. Because, IO operation is slow, 
+ * all threads wait for loading data from disk. The concurrency does not
+ * improve the performance. On the contrary, the frequent switch of context
+ * will affects the performance.
+ * */
+static bool execte_async_condition(SelectResult *select_result) {
+    return select_result->stype == SELECT_STMT && 
+            exist_table_in_cache(select_result->table_name);
+}
 
 /* Query with condition. */
 void query_with_condition(ConditionNode *condition, SelectResult *select_result, 
@@ -966,12 +952,19 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
                 table, row_handler, type, arg
             );
             break;
-        case INTERNAL_NODE:
-            select_from_internal_node_async(
-                select_result, condition, table->root_page_num,
-                table, row_handler, type, arg
-            );
+        case INTERNAL_NODE: {
+            if (execte_async_condition(select_result)) 
+                select_from_internal_node_async(
+                    select_result, condition, table->root_page_num,
+                    table, row_handler, type, arg
+                );
+            else
+                select_from_internal_node(
+                    select_result, condition, table->root_page_num,
+                    table, row_handler, type, arg
+                );
             break;
+        }
         default:
             db_log(PANIC, "Unknown data type occurs in <query_with_condition>.");
     }
@@ -2208,7 +2201,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
 
     /* If no from clause, return an empty select result. */
     if (is_null(select_node->table_exp->from_clause)) 
-        return new_select_result(NULL);
+        return new_select_result(SELECT_STMT, NULL);
 
     List *list = select_node->table_exp->from_clause->from;
     SelectResult *result = NULL;
@@ -2219,7 +2212,7 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
     foreach (lc, list) {
 
         TableRefNode *table_ref = lfirst(lc);
-        SelectResult *current_result = new_select_result(table_ref->table);
+        SelectResult *current_result = new_select_result(SELECT_STMT, table_ref->table);
 
         /* If use not define tale alias name, use table name as range variable automatically. */
         current_result->range_variable = table_ref->range_variable 
