@@ -932,8 +932,9 @@ static void select_from_internal_node_async(SelectResult *select_result, Conditi
  * will affects the performance.
  * */
 static bool execte_async_condition(SelectResult *select_result) {
-    return select_result->stype == SELECT_STMT && 
-            exist_table_in_cache(select_result->table_name);
+    return false;
+    // return select_result->stype == SELECT_STMT && 
+    //        exist_table_in_cache(select_result->table_name);
 }
 
 /* Query with condition. */
