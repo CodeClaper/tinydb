@@ -151,6 +151,9 @@ void make_page_dirty(char *table_name, Pager *pager, uint32_t page_num) {
 static void flush_disk(Table *table) {
     Pager *pager = table->pager;
 
+    /* Flush disk. */
+    FDesc fdesc = get_file_desc(pager->table_name);
+
     uint32_t i;
     for (i = 0; i < pager->size; i++) {
         void *node = get_page(table->meta_table->table_name, pager, i);
@@ -161,8 +164,6 @@ static void flush_disk(Table *table) {
             /* Reset to INUSE_STATE. */
             set_node_state(node, INUSE_STATE);
 
-            /* Flush disk. */
-            FDesc fdesc = get_file_desc(pager->table_name);
             off_t offset = lseek(fdesc, PAGE_SIZE * i, SEEK_SET);
             if (offset == -1) 
                 db_log(PANIC, "Error seek set: %s. File descriptor: %d", 
@@ -174,6 +175,8 @@ static void flush_disk(Table *table) {
                 db_log(PANIC, "Try to write page error: %s.", strerror(errno));        
         }
     }
+
+    fsync(fdesc);
 }
 
 /* Flush all to disk. */
