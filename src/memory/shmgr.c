@@ -45,7 +45,9 @@ void *shdalloc(size_t size) {
         void *nptr = shmem_alloc(size + SHM_OFFSET);
         ShMemFreeEntry entry = { 
             .size = size, 
-            .isFree = false 
+            .isFree = false,
+            .num = 0,
+            .lock = SPIN_UN_LOCKED_STATUS
         };
         memcpy(nptr, &entry, SHM_OFFSET);
         ptr = nptr + SHM_OFFSET;
@@ -112,7 +114,7 @@ static void *dalloc_shared_in_free_list(size_t size) {
     for (i = 0; i < header->num; i++) {
         ShMemFreeEntry *entry = (ShMemFreeEntry *) (((char *) BASE_LINE) + offset);
         if (entry->isFree && entry->size >= size) {
-            ptr = (void *) ((char *) entry + SHM_OFFSET);
+            ptr = GET_POINTER(entry);
             entry->isFree = false;
             break;
         }
