@@ -45,7 +45,6 @@ void *shdalloc(size_t size) {
     ShMemFreeEntry *entry;
 
     Assert(size > 0);
-    size = MAXALIGN(size);
     Assert(size < SHM_ALLOC_LIMIT);
 
     /* First reuse in free list, 
@@ -54,9 +53,12 @@ void *shdalloc(size_t size) {
     fdx = ShFreeIndex(size);
     entry = sh_free_list[fdx];
     if (entry != NULL) {
+        if (size > entry->size)
+            Assert(entry->size >= size);
         sh_free_list[fdx] = entry->next;
         ptr = GET_POINTER(entry);
     } else {
+        size = GET_SIZE_FROM_FREE_LIST_IDX(fdx);
         void *nptr = shmem_alloc(size + SHM_OFFSET);
         ShMemFreeEntry entry = { 
             .size = size,
