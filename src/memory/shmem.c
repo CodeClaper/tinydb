@@ -53,8 +53,8 @@ static void create_shmem() {
     memcpy(shm_ptr, &init_shmrd, sizeof(ShmemHeader));
     shmrd = shm_ptr;
 
-    BaseStart = shmrd;
-    BaseEnd = shmrd + shmrd->total_size;
+    BaseStart = (void *) shmrd;
+    BaseEnd = ((char *) shmrd) + shmrd->total_size;
 }
 
 /* Create spin lock */
