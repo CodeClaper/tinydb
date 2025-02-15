@@ -35,7 +35,7 @@ def thread_insert(cli):
 # thread1 to select
 def thread_select(cli):
     try:
-        for _ in range(1, 60):
+        for _ in range(1, 200):
             sql = "select count(1) from Student;"
             ret = cli.execute(sql)
             assert ret["success"] == True

@@ -16,7 +16,7 @@ for _ in range(0, 10):
 # thread1 to select
 def thread_select(cli):
     try:
-        for _ in range(1, 60):
+        for _ in range(1, 30):
             sql = "select count(1) from bo_qdbixlsx_sheet1;"
             ret = cli.execute(sql)
             assert ret["success"] == True

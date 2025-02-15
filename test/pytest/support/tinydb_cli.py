@@ -31,6 +31,7 @@ class TinyDbClient:
             writer.write(response)
         ret = writer.getvalue()
         writer.close()
+        print(ret)
         return json.loads(ret)
                
 
