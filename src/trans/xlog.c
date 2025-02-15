@@ -156,8 +156,6 @@ static void HeapInsertXLog(Refer *refer, TransEntry *transaction) {
 
     /* Delete the insered row. */
     *(Xid *)expired_xid_col->value = transaction->xid;
-    update_row_data(row, convert_cursor(refer));
-
     flush(refer->table_name);
 }
 
@@ -167,52 +165,57 @@ static void HeapInsertXLog(Refer *refer, TransEntry *transaction) {
  * lies in the forefront of the same key cells.
  * */
 static void HeapDeleteXLog(Refer *refer, TransEntry *transaction) {
-    Row *row = define_row(refer);
-    Assert(RowIsDeleted(row));
-    
-    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    Xid row_expired_xid = *(Xid *)expired_xid_col->value;
-    Assert(row_expired_xid == transaction->xid);
+    Row *rawRow = define_row(refer);
+    Assert(RowIsDeleted(rawRow));
+
+    Row *newRow = copy_row(rawRow);
+    KeyValue *expired_xid_col = lfirst(last_cell(newRow->data));
+    Xid expired_xid = *(Xid *)expired_xid_col->value;
+    Assert(expired_xid == transaction->xid);
 
     /* Make the row visible. */
     *(Xid *)expired_xid_col->value = 0;
     
     /* Repositioning. */
-    Cursor *new_cur = define_cursor(open_table(refer->table_name), row->key, false);
+    Cursor *new_cur = define_cursor(
+        open_table(refer->table_name), 
+        newRow->key, false
+    );
 
     /* Re-insert. */
-    insert_leaf_node_cell(new_cur, row);
-
+    insert_leaf_node_cell(new_cur, newRow);
     flush(refer->table_name);
 }
 
 /* Reverse update delete transaction. */
 static void HeadUpdateDeleteXlog(Refer *refer, TransEntry *transaction) {
-    Row *row = define_row(refer);
-    Assert(RowIsDeleted(row));
+    Row *rawRow = define_row(refer);
+    Assert(RowIsDeleted(rawRow));
 
-    KeyValue *expired_xid_col = lfirst(last_cell(row->data));
-    Xid row_expired_xid = *(Xid *)expired_xid_col->value;
-    Assert(row_expired_xid == transaction->xid); 
+    Row *newRow = copy_row(rawRow);
+
+    KeyValue *expired_xid_col = lfirst(last_cell(newRow->data));
+    Xid expired_xid = *(Xid *)expired_xid_col->value;
+    Assert(expired_xid == transaction->xid); 
 
     /* Make the row visible. */
     *(Xid *)expired_xid_col->value = 0;
 
     /* Repositioning. */
-    Cursor *new_cur = define_cursor(open_table(refer->table_name), row->key, false);
+    Cursor *new_cur = define_cursor(
+        open_table(refer->table_name), 
+        newRow->key, false
+    );
     Refer *new_ref = convert_refer(new_cur);
 
     /* Lock update refer. */
     add_refer_update_lock(new_ref);
 
     /* Re-insert. */
-    insert_leaf_node_cell(new_cur, row);
+    insert_leaf_node_cell(new_cur, newRow);
 
     /* Free update refer lock. */
     free_refer_update_lock(new_ref);
-
-    free_cursor(new_cur);
-    free_refer(new_ref);
 
     flush(refer->table_name);
 }

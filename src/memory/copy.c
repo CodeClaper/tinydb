@@ -156,7 +156,7 @@ Row *copy_row(Row *row) {
 
     ListCell *lc;
     foreach (lc, row->data) {
-        append_list(row_copy->data, lfirst(lc));
+        append_list(row_copy->data, copy_key_value(lfirst(lc)));
     }
 
     return row_copy;

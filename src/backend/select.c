@@ -554,7 +554,7 @@ static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_colum
 static void *assign_row_value(void *destination, MetaColumn *meta_column) {
     return (meta_column->array_dim == 0)
             /* For non-array data. */
-            ? copy_value(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, meta_column->column_type) 
+            ? destination + LEAF_NODE_CELL_NULL_FLAG_SIZE 
             /* For array data. */
             : get_row_array_value(destination, meta_column); 
 }
@@ -572,10 +572,10 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
         uint32_t offset = calc_offset(meta_table, meta_column->column_name);
         /* Generate a key value pair. */
         KeyValue *key_value = is_null_cell(destination + offset) 
-                            ? new_key_value(dstrdup(meta_column->column_name), NULL, meta_column->column_type)
-                            : new_key_value(dstrdup(meta_column->column_name), assign_row_value(destination + offset, meta_column), meta_column->column_type);
+                            ? new_key_value(meta_column->column_name, NULL, meta_column->column_type)
+                            : new_key_value(meta_column->column_name, assign_row_value(destination + offset, meta_column), meta_column->column_type);
         key_value->is_array = meta_column->array_dim > 0;
-        key_value->table_name = dstrdup(meta_table->table_name);
+        key_value->table_name = meta_table->table_name;
 
         /* Append to row data. */
         append_list(row->data, key_value);
@@ -622,11 +622,11 @@ Row *define_row(Refer *refer) {
 Row *define_visible_row(Refer *refer) {
     Row *row = define_row(refer);
     if (RowIsDeleted(row)) {
-        free_row(row);
+        // free_row(row);
         return NULL;
     } else {
         Row *filter_row = copy_row_without_reserved(row);
-        free_row(row);
+        // free_row(row);
         return filter_row;
     }
 }
@@ -704,8 +704,6 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
                  * check if the row data satisfy the condition. */
                 if (include_leaf_node(select_result, derived_row, condition)) 
                     row_handler(derived_row, select_result, table, type, arg);
-                else
-                    free_row(row);
             }
             continue;
         }
@@ -714,8 +712,6 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
          * check if the row data satisfy the condition. */
         if (include_leaf_node(select_result, row, condition)) 
             row_handler(row, select_result, table, type, arg);
-        else
-            free_row(row);
     }
 
     /* Release the buffer. */
@@ -989,13 +985,13 @@ static void* purge_row(Row *row) {
     Assert(list->size > 3);
 
     /* Free KeyValue. */
-    int32_t i;
-    for (i = list->size - 1; i >= list->size - 3; i--) {
-        KeyValue *key_value = lfirst(list_nth_cell(list, i));
-        free_key_value(key_value);
-    }
+    //int32_t i;
+    //for (i = list->size - 1; i >= list->size - 3; i--) {
+    //    KeyValue *key_value = lfirst(list_nth_cell(list, i));
+    //    free_key_value(key_value);
+    //}
 
-    /* Delete items. */
+    /* Delete last 3 sys-reserved items. */
     list_delete_tail(list, 3);
 
     return row;
@@ -2012,14 +2008,14 @@ static void query_fuction_selecton(List *scalar_exp_list, SelectResult *select_r
         ScalarExpNode *scalar_exp = lfirst(lc);
         KeyValue *key_value = query_function_value(scalar_exp, select_result);        
         if (scalar_exp->alias) {
-            free_value(key_value->key, T_STRING);
+            // free_value(key_value->key, T_STRING);
             key_value->key = dstrdup(scalar_exp->alias);
         }
         append_list(row->data, key_value);
     }
 
     /* Free old rows memory. */
-    free_list_deep(select_result->rows);
+    // free_list_deep(select_result->rows);
 
     select_result->rows = create_list(NODE_ROW);
     append_list(select_result->rows, row);
@@ -2138,7 +2134,7 @@ static void query_columns_selection(List *scalar_exp_list, SelectResult *select_
     foreach (lc, select_result->rows) {
         Row *row = lfirst(lc);
         lfirst(lc) = query_plain_row_selection(select_result, scalar_exp_list, row);
-        free_row(row);
+        // free_row(row);
     }
 }
 

@@ -44,8 +44,6 @@ static void update_cell(Row *row, AssignmentNode *assign_node, MetaColumn *meta_
         KeyValue *key_value = lfirst(lc);
         if (streq(key_value->key, assign_node->column->column_name)) {
             ValueItemNode *value_item = assign_node->value;
-            /* Free old value. */
-            free_value(key_value->value, key_value->data_type);
             key_value->value = assign_value_from_value_item_node(value_item, meta_column);
         }
     } 
@@ -58,7 +56,7 @@ static void delete_row_for_update(Row *row, Table *table) {
         Refer *refer = convert_refer(cursor);
 
         UpdateTransactionState(row, TR_DELETE);
-        update_row_data(row, cursor);
+        // update_row_data(row, cursor);
         RecordXlog(refer, HEAP_UPDATE_DELETE);
 
         free_cursor(cursor);
@@ -85,65 +83,55 @@ static void insert_row_for_update(Row *row, Table *table) {
 /* Update row 
  * Update operation can be regarded as delete + re-insert operation. 
  * It makes transaction roll back simpler. */
-static void update_row(Row *row, SelectResult *select_result, Table *table, 
+static void update_row(Row *rawRow, SelectResult *select_result, Table *table, 
                        ROW_HANDLER_ARG_TYPE type, void *arg) {
     /* Only update row that is visible for current transaction. */
-    if (!RowIsVisible(row)) 
+    if (!RowIsVisible(rawRow)) 
         return;
 
     select_result->row_size++;
 
     /* Get old refer, and lock update refer. */
-    Refer *old_refer = define_refer(row);
+    Refer *old_refer = define_refer(rawRow);
     add_refer_update_lock(old_refer);
 
     /* Delete row for update. */
-    delete_row_for_update(row, table);
+    delete_row_for_update(rawRow, table);
+
+    Row* new_row = copy_row(rawRow);
 
     /* For update row funciton, the arg is the List of Assignment. */
     Assert(type == ARG_ASSIGNMENT_LIST);
     List *assignment_list = (List *) arg;
-
-    /* Use old primary key as default. */
-    void *old_key = row->key;
-    void *new_key = old_key;
 
     /* Handle each of assignment. */
     ListCell *lc;
     foreach (lc, assignment_list) {
         AssignmentNode *assign_node = lfirst(lc);
         MetaColumn *meta_column = get_meta_column_by_name(table->meta_table, assign_node->column->column_name);
-        update_cell(row, assign_node, meta_column);
+        update_cell(new_row, assign_node, meta_column);
         if (meta_column->is_primary) { 
             /* If primary key changed, reassign new value. */
-            free_value(old_key, meta_column->column_type);
-            new_key = get_value_from_value_item_node(assign_node->value, meta_column);
+            new_row->key = get_value_from_value_item_node(assign_node->value, meta_column);
         }
     }
    
-    row->key = new_key;
-    
     /* Insert row for update. */
-    insert_row_for_update(row, table);
+    insert_row_for_update(new_row, table);
 
     /* Recalculate Refer, because afer insert, row refer may be changed. */
-    Refer *new_refer = define_refer(row);
+    Refer *new_refer = define_refer(new_row);
 
     /* Free Update refer lock. */
     free_refer_update_lock(old_refer);
     
-    ReferUpdateEntity *refer_update_entity = new_refer_update_entity(old_refer, new_refer);
     /* If Refer changed, update refer. */
     if (!refer_equals(old_refer, new_refer)) {
-        Row *new_row = define_row(new_refer);
-        Assert(RowIsVisible(new_row));
+        ReferUpdateEntity *refer_update_entity = new_refer_update_entity(old_refer, new_refer);
         update_related_tables_refer(refer_update_entity);
-        free_row(new_row);
+        free_refer_update_entity(refer_update_entity);
     }
         
-    /* Free memory. */
-    free_refer_update_entity(refer_update_entity);
-    
     /* Flush. */
     flush(get_table_name(table));
 }

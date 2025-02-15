@@ -14,8 +14,8 @@
 #include <time.h>
 #include "asctx.h"
 #include "mctx.h"
-#include "mctx.h"
 #include "mmgr.h"
+#include "shmem.h"
 #include "bit.h"
 #include "utils.h"
 #include "asserts.h"
@@ -50,9 +50,11 @@ MemoryContext AllocSetMemoryContextCreate(MemoryContext parent, char *name, uint
     size = ALLOC_SET_CXT_SIZE + ALLOC_BLOCK_SIZE + ALLOC_CHUNK_SIZE;
     size = max_size(size, max_block_size);
     size = MAXALIGN(size);
-
+    
+    Assert(in_local_memory());
     /* Alloc from system. */
     set = (AllocSet) malloc(size);
+    Assert(!shmem_addr_valid(set));
 
     /* Assignment. */
     block = KEEPER_ALLOC_BLOCK(set);

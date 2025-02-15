@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "mctx.h"
 #include "spinlock.h"
+#include "shmem.h"
 
 /* Alloc for local. */
 void *lodalloc(size_t size) {
@@ -24,12 +25,14 @@ void *lodalloc(size_t size) {
 
 /* Free for local. */
 void lofree(void *ptr) {
+    Assert(!shmem_addr_valid(ptr));
     MemoryContextFree(ptr);
 }
 
 /* Realloc for local. */
 void *lodrealloc(void *ptr, size_t size) {
     void *newptr = NULL;
+    Assert(!shmem_addr_valid(ptr));
     newptr = MemoryContextRealloc(ptr, size);
     return newptr;
 }

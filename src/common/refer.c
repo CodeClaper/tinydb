@@ -223,7 +223,7 @@ Refer *fetch_refer(MetaColumn *meta_column, ConditionNode *condition_node) {
         Row *row = lfirst(first_cell(select_result->rows));
         refer = define_refer(row);
     }
-    free_select_result(select_result);
+    // free_select_result(select_result);
 
     return refer;
 }
@@ -306,7 +306,6 @@ bool cursor_equals(Cursor *cursor1, Cursor * cursor2) {
 /* Update single key value refer. */
 static bool update_single_key_value_refer(KeyValue *key_value, ReferUpdateEntity *refer_update_entity) {
     if (refer_equals(key_value->value, refer_update_entity->old_refer)) {
-        free_refer(key_value->value);
         key_value->value = copy_refer(refer_update_entity->new_refer);
         return true;
     }
@@ -321,7 +320,6 @@ static bool update_array_key_value_refer(KeyValue *key_value, ReferUpdateEntity 
     ListCell *lc;
     foreach (lc, array_value->list) {
         if (refer_equals(lfirst(lc), refer_update_entity->old_refer)) {
-            free_refer(lfirst(lc));
             lfirst(lc) = copy_refer(refer_update_entity->new_refer);
             flag = true;
         }
@@ -404,8 +402,6 @@ static void update_table_refer(MetaTable *meta_table, ReferUpdateEntity *refer_u
         ARG_REFER_UPDATE_ENTITY, 
         refer_update_entity
     );
-    
-    free_select_result(select_result);
 }
 
 /* Update releated tables reference. */

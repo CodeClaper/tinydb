@@ -68,6 +68,7 @@ Table *find_table_cache(char *table_name) {
     ListCell *lc;
     foreach (lc, TableCache) {
         Table *cur_table = (Table *) lfirst(lc);
+        Assert(cur_table);
         if (streq(cur_table->meta_table->table_name, table_name)) {
             found = cur_table;
             break;

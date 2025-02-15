@@ -429,8 +429,6 @@ static List *insert_for_query_spec(InsertNode *insert_node) {
     }
 
     dfree(select_node);
-    free_db_result(result);
-
     return list;
 }
 

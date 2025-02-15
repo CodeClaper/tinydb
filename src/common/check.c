@@ -752,8 +752,6 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
     if (change_priamry) {
         if (select_result->row_size > 1) {
             select_result->row_size = 0;
-            free_select_result(select_result);
-            free_value(new_key, primary_meta_column->column_type);
             db_log(ERROR, "Duplicate key not allowd. ");
             return false;
         }
@@ -768,9 +766,7 @@ static bool check_assignment_set_node(UpdateNode *update_node) {
             free_refer(new_refer);
             if (!RowIsDeleted(default_row) && 
                 equal(default_row->key, new_key, primary_meta_column->column_type)) {
-                    free_row(default_row);
                     select_result->row_size = 0;
-                    free_select_result(select_result);
                     db_log(ERROR, "Key '%s' already exists, not allowd duplicate key. ",
                            get_key_str(new_key, primary_meta_column->column_type));
                     free_value(new_key, primary_meta_column->column_type);
