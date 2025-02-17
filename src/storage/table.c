@@ -209,7 +209,7 @@ Table *open_table(char *table_name) {
         return mtable;
     }
 
-    db_log(DEBUG, "Will load table %s from disk.", table_name);
+    db_log(DEBUGER, "Will load table %s from disk.", table_name);
 
     /* Memory missing, get from disk. */
     char *file_path = table_file_path(table_name);
@@ -246,7 +246,7 @@ Table *open_table(char *table_name) {
 
     try_release_table(table_name);
 
-    db_log(DEBUG, "Has loaded table %s from disk.", table_name);
+    db_log(DEBUGER, "Has loaded table %s from disk.", table_name);
 
     /* Only return buffer table to keep same table pointer in the same transaction. */
     return find_table_cache(table_name);

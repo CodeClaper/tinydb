@@ -2,6 +2,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include "data.h"
 #include "parall.h"
 #include "c.h"
 #include "mmgr.h"
@@ -73,7 +74,7 @@ static void TaskProxy() {
 /* Parallel computing. */
 void ParallelCompute(int workerNum, int taskNum, PARALLEL_TASK task, void *taskArgs[]) {
     
-    db_log(DEBUG, "Start parall computing, %d workers with %d tasks.", 
+    db_log(DEBUGER, "Start parall computing, %d workers with %d tasks.", 
            workerNum, taskNum);
 
     pthread_t workers[workerNum];
@@ -101,6 +102,6 @@ void ParallelCompute(int workerNum, int taskNum, PARALLEL_TASK task, void *taskA
     
     SwitchToNormalCompute();
 
-    db_log(DEBUG, "End parall computing.");
+    db_log(DEBUGER, "End parall computing.");
 }
 
