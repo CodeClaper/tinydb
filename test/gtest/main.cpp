@@ -2,6 +2,7 @@
 #include <setjmp.h>
 
 extern "C" {
+#include "defs.h"
 #include "data.h"
 #include "shmem.h"
 #include "shmgr.h"
@@ -16,7 +17,7 @@ extern "C" {
 }
 Conf *conf; /* Conf */
 jmp_buf errEnv; /* jmp_buf for error. */
-
+const char *program_name;  
 
 /* DB Start. */
 static void db_start() {
