@@ -10,7 +10,7 @@ typedef struct ShMemFreeEntry {
 #define SHM_OFFSET MAXALIGN(sizeof(ShMemFreeEntry))
 
 #define SHM_MINBITS       3   /* Smallest chunk size is 8 bytes. */
-#define SHM_FREELISTS_NUM 16  /* FreeLists num. */
+#define SHM_FREELISTS_NUM 24  /* FreeLists num. */
 #define SHM_ALLOC_LIMIT   1 << (SHM_FREELISTS_NUM + SHM_MINBITS - 1)  /* Size of largest chunk. */
 #define GET_SIZE_FROM_FREE_LIST_IDX(fdx) \
             ((((Size) 1) << SHM_MINBITS) << (fdx))
@@ -24,6 +24,9 @@ typedef struct ShMemFreeEntry {
 
 /* Init mem. */
 void init_mem();
+
+
+int ShFreeIndex(Size size);
 
 /* Alloc for share. */
 void *shdalloc(size_t size);
