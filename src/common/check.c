@@ -348,7 +348,7 @@ bool check_value_valid(MetaColumn *meta_column, AtomNode *atom_node) {
             int comp_result, exe_result;
 
             /* Visit `https://www.regular-expressions.info/gnu.html` and notice there`s not "\\b". */
-            comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$", REG_EXTENDED);
+            comp_result = regcomp(&reegex, "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(\\.[0-9]{1,3})?$", REG_EXTENDED);
             if (comp_result != 0)
                 db_log(ERROR, "Regex compile fail.");
             exe_result = regexec(&reegex, (char *)value, 0, NULL, 0);
