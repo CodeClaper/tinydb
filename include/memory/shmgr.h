@@ -25,7 +25,6 @@ typedef struct ShMemFreeEntry {
 /* Init mem. */
 void init_mem();
 
-
 int ShFreeIndex(Size size);
 
 /* Alloc for share. */

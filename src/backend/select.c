@@ -77,18 +77,6 @@ static Row *generate_row(void *destinct, MetaTable *meta_table);
 static char *search_table_via_alias(SelectResult *select_result, char *range_variable);
 static KeyValue *query_plain_column_value(SelectResult *select_result, ColumnNode *column, Row *row);
 
-/* Calulate offset of every column in cell. */
-static uint32_t calc_offset(MetaTable *meta_table, char *column_name) {
-    uint32_t i, off_set = 0;
-    for (i = 0; i < meta_table->all_column_size; i++) {
-        MetaColumn *meta_column = meta_table->meta_column[i];
-        if (streq(meta_column->column_name, column_name))
-            break;
-        off_set += meta_column->column_length;
-    }
-    return off_set;
-}
-
 /* Check if LimitClauseNode is full. 
  * LimitClauseNode full means the poffset is greater or equal the offset.
  * */
@@ -565,11 +553,9 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
     Row *row = new_row(NULL, meta_table->table_name);
 
     /* Assignment row data. */
-    uint32_t i;
+    uint32_t i, offset = 0;
     for (i = 0; i < meta_table->all_column_size; i++) {
         MetaColumn *meta_column = meta_table->meta_column[i];
-        /* Get the column offset. */
-        uint32_t offset = calc_offset(meta_table, meta_column->column_name);
         /* Generate a key value pair. */
         KeyValue *key_value = is_null_cell(destination + offset) 
                             ? new_key_value(meta_column->column_name, NULL, meta_column->column_type)
@@ -583,7 +569,11 @@ static Row *generate_row(void *destination, MetaTable *meta_table) {
         /* Assign primary key. */
         if (meta_column->is_primary)
             row->key = assign_row_value(destination + offset, meta_column);
+
+        /* Get the column offset. */
+        offset += meta_column->column_length;
     }
+
     return row;
 }
 

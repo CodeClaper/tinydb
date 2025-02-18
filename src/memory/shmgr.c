@@ -19,7 +19,7 @@ static void try_shdfree(void *ptr);
 static ShMemFreeEntry *sh_free_list[SHM_FREELISTS_NUM];
 static s_lock *shlock;
 
-static inline int ShFreeIndex(Size size) {
+int ShFreeIndex(Size size) {
     int idx = size > (1 << SHM_MINBITS) 
             ? leftmost_32_pos(size -1) - SHM_MINBITS + 1
             : 0;
