@@ -45,6 +45,7 @@
 #include "bufmgr.h"
 #include "asserts.h"
 #include "mmgr.h"
+#include "buftable.h"
 #include "table.h"
 #include "pager.h"
 
@@ -82,6 +83,7 @@ static BufferDesc *CreateBufferDesc(Buffer buffer) {
     return buff_desc;
 }
 
+
 /* Init BufMgr. */
 void InitBufMgr() {
     switch_shared();
@@ -115,6 +117,7 @@ void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
         /* Double check. */
         if (buffer >= pager->buffers->size) {
             switch_shared();
+
 
             BufferDesc *buff_desc = CreateBufferDesc(buffer);
             append_list(pager->buffers, buff_desc);

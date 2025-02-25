@@ -18,7 +18,6 @@
 #include "utils.h"
 #include "log.h"
 
-#define SHMEM_SIZE 1024 * 1024 * 1024 * 2L  // shared memory 2GB. 
 
 static ShmemHeader *shmrd;
 static s_lock* lock;

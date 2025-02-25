@@ -30,6 +30,8 @@
 #include "shmgr.h"
 #include "shmem.h"
 #include "tablereg.h"
+#include "bufmgr.h"
+#include "buftable.h"
 
 /* 
  * Conf 
@@ -74,6 +76,9 @@ static void db_start() {
 
     /* Initialise bufmgr. */
     InitBufMgr();
+
+    /* Initialise Buffer Table.*/
+    InitBufferTable();
 
     /* Initialise table cache. */
     init_table_cache();
