@@ -18,3 +18,8 @@ typedef pid_t Pid;
  * The transaction Id.
  * */
 typedef int64_t Xid;
+
+/*
+ * Index
+ */
+typedef uint32_t Index;
