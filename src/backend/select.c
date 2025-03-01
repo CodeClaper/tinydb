@@ -542,7 +542,7 @@ static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_colum
 static void *assign_row_value(void *destination, MetaColumn *meta_column) {
     return (meta_column->array_dim == 0)
             /* For non-array data. */
-            ? destination + LEAF_NODE_CELL_NULL_FLAG_SIZE 
+            ? copy_value(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, meta_column->column_type) 
             /* For array data. */
             : get_row_array_value(destination, meta_column); 
 }
@@ -597,12 +597,13 @@ Row *define_row(Refer *refer) {
     key_len = calc_primary_key_length(table);
 
     /* Get the leaf node buffer. */
-    void *leaf_node = ReadBuffer(table, refer->page_num);
+    Buffer buffer = ReadBuffer(table, refer->page_num);
+    void *leaf_node = GetBufferPage(buffer);
     void *destinct = get_leaf_node_cell_value(leaf_node, key_len, value_len, refer->cell_num);
     Row *row = generate_row(destinct, table->meta_table);
     
     /* Release the buffer. */
-    ReleaseBuffer(table, refer->page_num);
+    ReleaseBuffer(buffer);
     return row;
 }
 
@@ -665,7 +666,8 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
         return;
 
     /* Get leaf node buffer. */
-    void *leaf_node = ReadBuffer(table, page_num);
+    Buffer buffer = ReadBuffer(table, page_num);
+    void *leaf_node = GetBufferPage(buffer);
 
     /* Get cell number, key length and value lenght. */
     uint32_t key_len, value_len, cell_num ;
@@ -705,7 +707,7 @@ static void select_from_leaf_node(SelectResult *select_result, ConditionNode *co
     }
 
     /* Release the buffer. */
-    ReleaseBuffer(table, page_num);
+    ReleaseBuffer(buffer);
 }
 
 /* Select through internal node. */
@@ -718,7 +720,8 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         return;
 
     /* Get the internal node buffer. */
-    void *internal_node = ReadBuffer(table, page_num);
+    Buffer buffer = ReadBuffer(table, page_num);
+    void *internal_node = GetBufferPage(buffer);
 
     /* Get variables. */
     uint32_t key_len, value_len;
@@ -744,7 +747,9 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
 
         /* Check other non-key column */
         uint32_t child_page_num = get_internal_node_child(internal_node, i, key_len, value_len);
-        void *node = ReadBuffer(table, child_page_num);
+        Assert(child_page_num != 0);
+        Buffer child_buffer = ReadBuffer(table, child_page_num);
+        void *node = GetBufferPage(child_buffer);
         switch (get_node_type(node)) {
             case LEAF_NODE:
                 select_from_leaf_node(
@@ -764,18 +769,14 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
         }
 
         /* Release the child buffer. */
-        ReleaseBuffer(table, child_page_num);
+        ReleaseBuffer(child_buffer);
     }
 
     /* Don`t forget the right child. */
-    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
-
-    /* Zero means there is no page. */
-    if (right_child_page_num == 0) 
-        return;
-
     /* Fetch right child. */
-    void *right_child = ReadBuffer(table, right_child_page_num);
+    uint32_t right_child_page_num = get_internal_node_right_child(internal_node, value_len);
+    Buffer right_child_buffer = ReadBuffer(table, right_child_page_num);
+    void *right_child = GetBufferPage(right_child_buffer);
     NodeType node_type = get_node_type(right_child);
     switch (node_type) {
         case LEAF_NODE:
@@ -798,13 +799,14 @@ static void select_from_internal_node(SelectResult *select_result, ConditionNode
     }
 
     /* Release buffers. */
-    ReleaseBuffer(table, right_child_page_num);
-    ReleaseBuffer(table, page_num);
+    ReleaseBuffer(right_child_buffer);
+    ReleaseBuffer(buffer);
 }
 
 
 static void select_from_internal_node_child_task(void *taskArg) {
     Assert(taskArg != NULL);
+
     SelectFromInternalChildTaskArgs *args = (SelectFromInternalChildTaskArgs *) taskArg;
     uint32_t child_page_num = args->page_num;
     SelectResult *select_result = args->select_result;
@@ -814,7 +816,8 @@ static void select_from_internal_node_child_task(void *taskArg) {
     ROW_HANDLER_ARG_TYPE type = args->type;
     void *arg = args->arg;
 
-    void *node = ReadBuffer(table, child_page_num);
+    Buffer child_buffer = ReadBuffer(table, child_page_num);
+    void *node = GetBufferPage(child_buffer);
     switch (get_node_type(node)) {
         case LEAF_NODE:
             select_from_leaf_node(
@@ -834,7 +837,7 @@ static void select_from_internal_node_child_task(void *taskArg) {
     }
 
     /* Release the child buffer. */
-    ReleaseBuffer(table, child_page_num);
+    ReleaseBuffer(child_buffer);
 }
 
 /* Select through internal node. */
@@ -847,7 +850,8 @@ static void select_from_internal_node_async(SelectResult *select_result, Conditi
         return;
 
     /* Get the internal node buffer. */
-    void *internal_node = ReadBuffer(table, page_num);
+    Buffer buffer = ReadBuffer(table, page_num);
+    void *internal_node = GetBufferPage(buffer);
 
     /* Get variables. */
     uint32_t key_len, value_len, keys_num;
@@ -905,7 +909,7 @@ static void select_from_internal_node_async(SelectResult *select_result, Conditi
         merge_select_result(select_result, selectResults[i]);
     }
 
-    ReleaseBuffer(table, page_num);
+    ReleaseBuffer(buffer);
 }
 
 /* The condition of executing async. 
@@ -931,7 +935,8 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
     if (table == NULL)
         return;
 
-    void *root = ReadBuffer(table, table->root_page_num);
+    Buffer buffer = ReadBuffer(table, table->root_page_num); 
+    void *root = GetBufferPage(buffer);
     switch (get_node_type(root)) {
         case LEAF_NODE:
             select_from_leaf_node(
@@ -957,7 +962,7 @@ void query_with_condition(ConditionNode *condition, SelectResult *select_result,
     }
 
     /* Release the root node buffer. */
-    ReleaseBuffer(table, table->root_page_num);
+    ReleaseBuffer(buffer);
 }
 
 /* Count number of row, used in the sql function count(1) */
@@ -2197,7 +2202,6 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
 
     ListCell *lc;
     foreach (lc, list) {
-
         TableRefNode *table_ref = lfirst(lc);
         SelectResult *current_result = new_select_result(SELECT_STMT, table_ref->table);
 
@@ -2213,10 +2217,8 @@ static SelectResult *query_multi_table_with_condition(SelectNode *select_node) {
 
         /* Query with condition to filter satisfied conditions rows. */
         query_with_condition(
-            condition, 
-            current_result, 
-            select_row,
-            ARG_LIMIT_CLAUSE_NODE, 
+            condition, current_result, 
+            select_row, ARG_LIMIT_CLAUSE_NODE, 
             get_limit_clause(select_node)
         );
 

@@ -41,11 +41,16 @@
  ************************************************************************************************************
  */
 
+#include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #include "bufmgr.h"
 #include "asserts.h"
 #include "mmgr.h"
+#include "ltree.h"
 #include "buftable.h"
+#include "bufpool.h"
+#include "c.h"
 #include "table.h"
 #include "pager.h"
 
@@ -54,203 +59,225 @@
  */
 static s_lock *sync_lock;
 
-/* Pager size valid.
- * The pager pages size may equals to the buffer size or less one when not synchronized.
- * */
-#define PAGER_SIZE_VALID(pager)\
-    ((pager->size == pager->buffers->size) || (pager->size == pager->buffers->size - 1))
+/*
+ * BufferDesc table. 
+ */
+static BufferDesc *BDescTable;
 
-/* Check Pager Buffers valid. */
-static void CheckPagerBuffersValid(Pager *pager) {
-    Assert(pager->buffers != NULL);
-    /* Double check to avoid cache issue. */
-    assert_true(PAGER_SIZE_VALID(pager) || PAGER_SIZE_VALID(pager), 
-                "Pager size %d != buffer size %d", 
-                pager->size, 
-                pager->buffers->size);
-}
+/*
+ * Next Victim index.
+ */
+static volatile Index *VictimIndex;
+
 
 /* Create BufferDesc. */
-static BufferDesc *CreateBufferDesc(Buffer buffer) {
-    Assert(in_shared_memory());
-    /* Generate new Buffer. */
-    BufferDesc *buff_desc = instance(BufferDesc);
-    buff_desc->refcount = 0;
-    buff_desc->buffer = buffer; 
-    init_spin_lock(&buff_desc->io_lock);
-    buff_desc->lock = instance(RWLockEntry);
-    InitRWlock(buff_desc->lock, buffer);
-    return buff_desc;
+void CreateBufferDescTable() {
+    Size size = BUFFER_SLOT_NUM;
+    switch_shared();
+
+    /* Init BDescTable. */
+    BDescTable = dalloc(sizeof(BufferDesc) * size);
+    for (Index i = 0; i < size; i++) {
+        BufferDesc *desc = (BufferDesc *)(BDescTable + i);
+        desc->buffer = i;
+        InitRWlock(&desc->lock);
+    }
+
+    /* Init sync lock. */
+    sync_lock = instance(s_lock);
+    init_spin_lock(sync_lock);
+
+    /* Init VictimIndex. */
+    VictimIndex = instance(Index);
+    *VictimIndex = 0;
+
+    switch_local();
 }
 
 
 /* Init BufMgr. */
 void InitBufMgr() {
-    switch_shared();
-    sync_lock = instance(s_lock);
-    init_spin_lock(sync_lock);
-    switch_local();
+    CreateBufferTable();
+    CreateBufferDescTable();
+    CreateBufferPool();
 }
+
+/* Pin the buffer. */
+static void PinBuffer(BufferDesc *desc) {
+    desc->status = PINNED;
+    desc->usage_count++;
+    desc->refcount++;
+}
+
+/* Unpin the buffer. */
+static void UnpinBuffer(BufferDesc *desc) {
+    desc->refcount--;
+    desc->status = UNPINNED;
+    Assert(desc->refcount >= 0);
+}
+
+/* Next Victim index. */
+static inline Index NextVictimIndex() {
+    if (*VictimIndex >= BUFFER_SLOT_NUM) 
+        *VictimIndex = 0;
+    return (*VictimIndex)++;
+}
+
+/* Get the BufferDesc. */
+inline BufferDesc *GetBufferDesc(Buffer buffer) {
+    Assert(buffer < BUFFER_SLOT_NUM);
+    return (BufferDesc *)(BDescTable + buffer);
+}
+
+/* Loop Find BufferDesc when missing in BDescTable. */
+static BufferDesc *LoopFindBufferDesc(BufferTag *tag) {
+    Index vindex;
+    BufferDesc *desc;
+    
+    /* Loop the circle to lookup the free table buffer. */
+    for (;;) {
+        vindex = NextVictimIndex();
+        desc = GetBufferDesc(vindex);
+        if (desc->status == EMPTY) {
+            PinBuffer(desc);
+            break;
+        }
+        else if (desc->status == UNPINNED) {
+            if (desc->usage_count == 0) {
+                PinBuffer(desc);
+                /* Write the old buffer to storage. */
+                BufferWriteBlock(desc->buffer);
+                break;
+            }
+            desc->usage_count--;
+        }
+    }
+
+    return desc;
+}
+
+/* Load new BufferDesc. 
+ * -------------------
+ * The buffer missing in the buffer table.
+ * */
+static BufferDesc *LoadNewBufferDesc(BufferTag *tag) {
+    BufferTableEntrySlot *slot;
+    BufferDesc *desc;
+
+    /* Get slot to acquire the rwlock. */
+    slot = GetBufferTableSlot(tag);
+
+    /* Acquire the rwlock in exclusive mode. */
+    AcquireRWlock(&slot->lock, RW_WRITER);
+
+    /* Loop the circle to find access buffer desc. */
+    desc = LoopFindBufferDesc(tag);
+    
+    /* Load the desired page data from storage. */
+    BufferReadBlock(tag, desc->buffer);
+
+    /* Update the tag. */
+    desc->tag.blockNum = tag->blockNum;
+    memcpy(desc->tag.tableName, tag->tableName, MAX_TABLE_NAME_LEN);
+
+    /* Delete Old Buffer Table Entry. */
+    if (desc->status == UNPINNED)
+        DeleteBufferTableEntry(&desc->tag);
+
+    /* Insert new Buffer Table Entry. */
+    InsertBufferTableEntry(tag, desc->buffer);
+
+    /* Release the rwlock. */
+    ReleaseRWlock(&slot->lock);
+
+    return desc;
+}
+
 
 /* Read Buffer.
  * Get shared buffer data via Buffer value. */
-void *ReadBuffer(Table *table, Buffer buffer) {
+Buffer ReadBuffer(Table *table, BlockNum blockNum) {
     return ReadBufferInner(
         get_table_name(table), 
-        table->pager, 
-        buffer
+        blockNum
     );
 }
 
 /* Read Buffer.
  * Get shared buffer data via Buffer value. */
-void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer) {
-
-    /* Check Pager Buffer valid. */
-    CheckPagerBuffersValid(pager);
-
-    /* If buffers missing the buffer, we will create the 
-     * BufferDesc, and store it in shared memory. */
-    if (buffer >= pager->buffers->size) {
-        acquire_spin_lock(sync_lock);
-
-        /* Double check. */
-        if (buffer >= pager->buffers->size) {
-            switch_shared();
-
-
-            BufferDesc *buff_desc = CreateBufferDesc(buffer);
-            append_list(pager->buffers, buff_desc);
-
-            switch_local();
-        }
-
-        release_spin_lock(sync_lock);
-    }
-
-    ListCell *lc = list_nth_cell(pager->buffers, buffer);
-    if (lfirst(lc) == NULL) {
-        acquire_spin_lock(sync_lock);
-        
-        /* Double check. */
-        lc = list_nth_cell(pager->buffers, buffer);
-        if (lfirst(lc) == NULL) {
-            switch_shared();
-
-            BufferDesc *buff_desc = CreateBufferDesc(buffer);
-            lfirst(lc) = buff_desc;
-
-            switch_local();
-        }
-
-        release_spin_lock(sync_lock);
-    }
-
-    BufferDesc *buff_desc = lfirst(lc);
+Buffer ReadBufferInner(char *table_name, BlockNum blockNum) {
+    Buffer buffer;
+    BufferTag tag;
+    BufferDesc *desc;
     
-    /* Acquire the Rwlock in RW_READERS mode. */
-    AcquireRWlock(buff_desc->lock, RW_READERS);
+    memset(&tag, 0, sizeof(BufferTag));
+    Assert(strlen(table_name) < MAX_TABLE_NAME_LEN);
+    memcpy(tag.tableName, table_name, strlen(table_name));
+    tag.blockNum = blockNum;
 
-    /* Increase the refcount. */
-    buff_desc->refcount++;
+    /* Lookup if tag exists in buffer table. */
+    buffer = LookupBufferTable(&tag);
+    if (buffer >= 0) {
+        desc = GetBufferDesc(buffer);
+        /* Maybe the buffer desc has unpinned and reused, 
+         * neccessary to check the tag if still.*/
+        if (BufferTagEquals(&tag, &desc->tag)) {
+            PinBuffer(desc);
+            return desc->buffer;
+        }
+    }
+  
+    /* Missing in the entry buffer, then load new buffer desc. */
+    desc = LoadNewBufferDesc(&tag);
 
-    /* Get the shared buffer data. */
-    return get_page(table_name, pager, buffer);
+    return desc->buffer;
+}
+
+/* Get Buffer page. */
+inline void *GetBufferPage(Buffer buffer) {
+    return GetBufferBlock(buffer);
+}
+
+/* Make Buffer dirty. */
+inline void MakeBufferDirty(Buffer buffer) {
+    void *page = GetBufferPage(buffer);
+    set_node_state(page, DIRTY_STATE);
 }
 
 /* Release Buffer.
+ * -----------------
  * Release Buffer after using. 
- * And the function is called aftert ReadBuffer. */
-void ReleaseBuffer(Table *table, Buffer buffer) {
-    ReleaseBufferInner(table->pager, buffer);
+ * And this function must be called aftert ReadBuffer. */
+void ReleaseBuffer(Buffer buffer) {
+    ReleaseBufferInner(buffer);
 }
 
 /* Release Buffer Inner.
  * Release Buffer after using. 
  * And the function is called aftert ReadBuffer. 
  * */
-void ReleaseBufferInner(Pager *pager, Buffer buffer) {
-
-    /* Check Pager Buffer valid. */
-    CheckPagerBuffersValid(pager);
-
-    ListCell *lc = list_nth_cell(pager->buffers, buffer);
-    BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
-    Assert(buff_desc != NULL);
-
-    /* Release the Rwlock. */
-    ReleaseRWlock(buff_desc->lock);
-
-    /* Descrease the refcount. */
-    buff_desc->refcount--;
+void ReleaseBufferInner(Buffer buffer) {
+    Assert(buffer < BUFFER_SLOT_NUM);
+    BufferDesc *desc = GetBufferDesc(buffer);
+    UnpinBuffer(desc);
 }
 
 
 /* Lock Buffer. 
  * Try to acquire the exclusive content lock in BufferDesc. 
  * */
-void LockBuffer(Table *table, Buffer buffer) {
-    Pager *pager = table->pager;
-
-    /* Check Pager Buffer valid. */
-    CheckPagerBuffersValid(pager);
-
-    /* If buffers missing the buffer, we will create the 
-     * BufferDesc, and store it in shared memory. */
-    if (buffer >= pager->buffers->size) {
-        acquire_spin_lock(sync_lock);
-
-        /* Double check. */
-        if (buffer >= pager->buffers->size) {
-            switch_shared();
-
-            BufferDesc *buff_desc = CreateBufferDesc(buffer);
-            append_list(pager->buffers, buff_desc);
-
-            switch_local();
-        }
-
-        release_spin_lock(sync_lock);
-    }
-
-    ListCell *lc = list_nth_cell(pager->buffers, buffer);
-    if (lfirst(lc) == NULL) {
-        acquire_spin_lock(sync_lock);
-        
-        /* Double check. */
-        lc = list_nth_cell(pager->buffers, buffer);
-        if (lfirst(lc) == NULL) {
-            switch_shared();
-
-            BufferDesc *buff_desc = CreateBufferDesc(buffer);
-            lfirst(lc) = buff_desc;
-
-            switch_local();
-        }
-        release_spin_lock(sync_lock);
-    }
-
-    BufferDesc *buff_desc = lfirst(lc);
-    Assert(buff_desc != NULL);
-
-    /* Try to acquire the exclusive lock. */
-    AcquireRWlock(buff_desc->lock, RW_WRITER);
+void LockBuffer(Buffer buffer, RWLockMode mode) {
+    Assert(buffer < BUFFER_SLOT_NUM);
+    BufferDesc *desc = GetBufferDesc(buffer);
+    AcquireRWlock(&desc->lock, mode);
 }
 
 /* Unlock Buffer
  * Unlock the exclusive content lock in BufferDesc. 
  * */
-void UnlockBuffer(Table *table, Buffer buffer) {
-    Pager *pager = table->pager;
-
-    /* Check Pager Buffer valid. */
-    CheckPagerBuffersValid(pager);
-
-    ListCell *lc = list_nth_cell(pager->buffers, buffer);
-    BufferDesc *buff_desc = (BufferDesc *) lfirst(lc);
-    Assert(buff_desc != NULL);
-
-    /* Release the writer lock. */
-    ReleaseRWlock(buff_desc->lock);
+void UnlockBuffer(Buffer buffer) {
+    Assert(buffer < BUFFER_SLOT_NUM);
+    BufferDesc *desc = GetBufferDesc(buffer);
+    ReleaseRWlock(&desc->lock);
 }
 

@@ -173,7 +173,6 @@ bool add_new_meta_column(char *table_name, MetaColumn *new_meta_column, ColumnPo
     MetaTable *meta_table = table->meta_table;
     int pos = get_column_position(meta_table, post_def);
     append_new_column(table->root_page_num, table, new_meta_column, pos);
-    flush(table_name);
     return true;
 }
 
@@ -183,7 +182,6 @@ bool drop_meta_column(char *table_name, char *column_name) {
     int pos = get_meta_column_pos_by_name(table->meta_table, column_name);
     Assert(pos >= 0);
     drop_column(table->root_page_num, table, pos);
-    flush(table_name);
     return true;
 }
 
@@ -221,22 +219,12 @@ Table *open_table(char *table_name) {
     
     /* New table. */
     Table *table = instance(Table);
-    Pager *pager = open_pager(table_name);
-    Assert(pager != NULL);
 
     /* Define root page is first page. */
     table->root_page_num = 0; 
-    table->pager = pager;
     table->creator = getpid();
     table->meta_table = gen_meta_table(table, table_name);
-
-    if (pager->size == 0) {
-        /* New db file and initialize page 0 as leaf node. */
-        void *root_node = ReadBuffer(table, 0);
-        uint32_t value_len = calc_table_row_length(table);
-        initial_leaf_node(root_node, value_len, true);
-        ReleaseBuffer(table, 0);
-    }
+    table->page_size = GetPageSize(table_name);
 
     /* Save table cache. */
     save_table_cache(table);
@@ -255,13 +243,15 @@ Table *open_table(char *table_name) {
 
 /* Drop an existed table. */
 bool drop_table(char *table_name) {
-
     /* Check if exist the table. */
     char *file_path = table_file_path(table_name);
     if (!table_file_exist(file_path)) {
         dfree(file_path);
         return false;
     }
+
+    /* Try to acquire the table lock. */
+    try_acquire_table(table_name);
 
     /* Get file descriptor. */
     FDesc fdesc = get_file_desc(table_name);
@@ -276,8 +266,13 @@ bool drop_table(char *table_name) {
     if (remove(file_path) == 0) {
         /* Remove table cache. */
         remove_table_cache(table_name);
+        /* Release the table lock. */
+        try_release_table(table_name);
         return true;
     }
+
+    /* Release the table lock. */
+    try_release_table(table_name);
     
     /* Not reach here logically. */
     db_log(ERROR, "Table '%s' deleted fail, error : %d", table_name, errno);

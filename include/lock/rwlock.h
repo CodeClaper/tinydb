@@ -15,7 +15,6 @@ typedef enum RWLockMode {
 
 /* Rwlock Entry. */
 typedef struct RWLockEntry {
-    int buffer;                         /* Buffer. */
     List *owner;                        /* Content lock owner rocesses. */
     volatile RWLockMode mode;           /* Rwlock mode. */
     volatile s_lock content_lock;       /* Content spinlock. */
@@ -34,7 +33,7 @@ typedef struct RWLockEntry {
         (entry->mode == RW_WRITER)
 
 /* Init the rwlock. */
-void InitRWlock(RWLockEntry *lock_entry, int buffer);
+void InitRWlock(RWLockEntry *lock_entry);
 
 /* Acuqire the rwlock. */
 void AcquireRWlock(RWLockEntry *lock_entry, RWLockMode mode);

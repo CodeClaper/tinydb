@@ -50,8 +50,6 @@ static void delete_row(Row *row, SelectResult *select_result, Table *table, ROW_
         /* Free memeory. */
         free_cursor(cursor);
         free_refer(refer);
-
-        flush(get_table_name(table));
     }
 }
 

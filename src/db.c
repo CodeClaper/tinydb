@@ -31,7 +31,7 @@
 #include "shmem.h"
 #include "tablereg.h"
 #include "bufmgr.h"
-#include "buftable.h"
+#include "pager.h"
 
 /* 
  * Conf 
@@ -77,9 +77,6 @@ static void db_start() {
     /* Initialise bufmgr. */
     InitBufMgr();
 
-    /* Initialise Buffer Table.*/
-    InitBufferTable();
-
     /* Initialise table cache. */
     init_table_cache();
 
@@ -88,6 +85,9 @@ static void db_start() {
 
     /* Initialise table lock. */
     init_table_lock();
+
+    /* Init pager. */
+    InitPager();
 
     /* Load configuration. */
     conf = load_conf();

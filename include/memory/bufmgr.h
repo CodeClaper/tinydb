@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 #include "rwlock.h"
 #include "shmem.h"
@@ -7,12 +8,12 @@
 #ifndef BUFMGR_H
 #define BUFMGR_H
 
-typedef int BlockNum;
-typedef int Buffer;
+typedef int32_t BlockNum;
+typedef int32_t Buffer;
 
 /* Use half of shared memory to store buffer. 
  * So the BUFFER_SLOT_NUM as flowing. */
-#define BUFFER_SLOT_NUM  ((SHMEM_SIZE) / (2 * PAGE_SIZE))
+#define BUFFER_SLOT_NUM  ((SHMEM_SIZE * 2) / (3 * PAGE_SIZE))
 
 /* Buffer tag. */
 typedef struct BufferTag {
@@ -20,12 +21,22 @@ typedef struct BufferTag {
     BlockNum blockNum;
 } BufferTag;
 
+/* BufferDescStatus. */
+typedef enum BufferDescStatus {
+    EMPTY = 0,
+    PINNED,
+    UNPINNED
+} BufferDescStatus;
+
 /* Buffer Desc. */
 typedef struct BufferDesc {
-    Buffer buffer;          /* Buffer value, corresponding to page number. */
-    volatile int refcount;  /* Reference count. */
-    RWLockEntry *lock;      /* RW lock. */
-    s_lock      io_lock;    /* IO lock.*/
+    BufferTag tag;              /* Buffer tag. */
+    Buffer buffer;              /* Buffer value, corresponding to page number. */
+    BufferDescStatus status;    /* Buffer Desc status. */
+    volatile int refcount;      /* Reference count. */
+    volatile int usage_count;   /* Usage count. */
+    RWLockEntry lock;           /* RW lock. */
+    s_lock      io_lock;        /* IO lock.*/
 } BufferDesc;
 
 
@@ -49,36 +60,45 @@ static inline void MakeBufferTagEmpty(BufferTag *tag) {
 /* Init BufMgr. */
 void InitBufMgr();
 
+/* Get the BufferDesc. */
+BufferDesc *GetBufferDesc(Buffer buffer);
+
 /* Read Buffer.
  * Get shared buffer data via Buffer value. 
  * */
-void *ReadBuffer(Table *table, Buffer buffer);
+Buffer ReadBuffer(Table *table, BlockNum blockNum);
 
 /* Read Buffer Inner.
  * Get shared buffer data via Buffer value. 
  * */
-void *ReadBufferInner(char *table_name, Pager *pager, Buffer buffer);
+Buffer ReadBufferInner(char *table_name, BlockNum blockNum);
 
 /* Release Buffer.
  * Release Buffer after using. 
  * And the function is called aftert ReadBuffer. 
  * */
-void ReleaseBuffer(Table *table, Buffer buffer);
+void ReleaseBuffer(Buffer buffer);
 
 /* Release Buffer Inner.
  * Release Buffer after using. 
  * And the function is called aftert ReadBuffer. 
  * */
-void ReleaseBufferInner(Pager *pager, Buffer buffer);
+void ReleaseBufferInner(Buffer buffer);
 
 /* LocK Buffer. 
  * Try to acquire the exclusive content lock in BufferDesc.
  * */
-void LockBuffer(Table *table, Buffer buffer);
+void LockBuffer(Buffer buffer, RWLockMode mode);
 
 /* Unlock Buffer
  * Unlock the exclusive content lock in BufferDesc.
  * */
-void UnlockBuffer(Table *table, Buffer buffer);
+void UnlockBuffer(Buffer buffer);
+
+/* Get Buffer page. */
+void *GetBufferPage(Buffer buffer);
+
+/* Make Buffer dirty. */
+void MakeBufferDirty(Buffer buffer);
 
 #endif

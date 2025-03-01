@@ -132,8 +132,8 @@ static Cursor *define_cursor_leaf_node(Table *table, void *leaf_node, uint32_t p
 /* Define cursor when meet internal node. */
 static Cursor *define_cursor_internal_node(Table *table, void *internal_node, void *key, bool if_exsits) {
     Cursor *cursor;
-
     uint32_t key_len, value_len, keys_num;
+
     key_len = calc_primary_key_length(table);
     value_len = calc_table_row_length(table);
     keys_num = get_internal_node_keys_num(internal_node, value_len);
@@ -145,7 +145,8 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
     Assert(child_page_num != -1);
 
     /* Get the child node buffer. */
-    void *child_node = ReadBuffer(table, child_page_num);
+    Buffer buffer = ReadBuffer(table, child_page_num);
+    void *child_node = GetBufferPage(buffer);
     NodeType node_type = get_node_type(child_node);
     switch(node_type) {
         case LEAF_NODE:
@@ -160,19 +161,21 @@ static Cursor *define_cursor_internal_node(Table *table, void *internal_node, vo
     }
 
     /* Release the child node buffer. */
-    ReleaseBuffer(table, child_page_num);
+    ReleaseBuffer(buffer);
 
     return cursor;
 }
 
 /* Define Cursor. */
 Cursor *define_cursor(Table *table, void *key, bool if_exsits) {
+    Cursor *cursor;
+
     Assert(table != NULL);
     Assert(key != NULL);
 
-    Cursor *cursor;
     /* Get root node buffer. */
-    void *root_node = ReadBuffer(table, table->root_page_num);
+    Buffer buffer = ReadBuffer(table, table->root_page_num);
+    void *root_node = GetBufferPage(buffer);
     NodeType node_type = get_node_type(root_node);
     switch(node_type) {
         case LEAF_NODE:
@@ -187,7 +190,7 @@ Cursor *define_cursor(Table *table, void *key, bool if_exsits) {
     }
 
     /* Release the root buffer. */
-    ReleaseBuffer(table, table->root_page_num);
+    ReleaseBuffer(buffer);
 
     return cursor;
 }
@@ -380,8 +383,6 @@ static void update_row_refer(Row *row, SelectResult *select_result, Table *table
                 streq(meta_column->table_name, self_table_name)) 
             update_key_value_refer(row, meta_column, cursor, refer_update_entity);
     }
-
-    flush(meta_table->table_name);
 }
 
 /* Update table refer. */

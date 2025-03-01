@@ -1,11 +1,11 @@
 #include "buftable.h"
 #include "spinlock.h"
 #include "mmgr.h"
+#include <stdint.h>
 #include <string.h>
-#include <time.h>
 
 /* BTable is a hash table. */
-static BufferTableEntry *BTable;
+static BufferTableEntrySlot *BTable;
 
 typedef unsigned long Hash;
 
@@ -27,101 +27,110 @@ static BufferTableEntry *NewBufferTableEntry(BufferTag *tag, Buffer buffer) {
     BufferTableEntry *entry = instance(BufferTableEntry);
     entry->buffer = buffer;
     entry->tag.blockNum = tag->blockNum;
-    memcpy(entry->tag.tableName, tag->tableName,  MAX_TABLE_NAME_LEN);
-    entry->pres = NULL;
+    memcpy(entry->tag.tableName, tag->tableName, MAX_TABLE_NAME_LEN);
     entry->next = NULL;
-    init_spin_lock(&entry->lock);
     switch_local();
     return entry;
 }
 
 /* Get Buffer Table slot. */
-static inline BufferTableEntry *GetBufferTableSlot(BufferTag *tag) {
+inline BufferTableEntrySlot *GetBufferTableSlot(BufferTag *tag) {
     Hash hash = HashBufferTag(tag, BUFFER_SLOT_NUM);
-    return (BufferTableEntry *)(BTable + hash);
+    return (BufferTableEntrySlot *)(BTable + hash);
 }
 
-/* Init the buffer table.*/
-void InitBufferTable() {
+/* Create the buffer table.*/
+void CreateBufferTable() {
+    Size size = BUFFER_SLOT_NUM;
     switch_shared();
-    Size size = sizeof(BufferTableEntry) * BUFFER_SLOT_NUM;
-    BTable = dalloc(size);
+    BTable = dalloc(sizeof(BufferTableEntrySlot) * size);
+    for (Index i = 0; i < size; i++) {
+        BufferTableEntrySlot *header = (BufferTableEntrySlot *)(BTable + i);
+        InitRWlock(&header->lock);
+    }
     switch_local();
 }
 
 
-/* Return Buffer of BufferDesc, 
- * and -1 if not found.*/
+/* Lookup for Buffer in entry table. 
+ * -------------------------
+ * Return the found buffer and -1 if not found. */
 Buffer LookupBufferTable(BufferTag *tag) {
     Buffer buffer;
-    BufferTableEntry *slot, *current;
+    BufferTableEntrySlot *slot;
+    BufferTableEntry *entry;
+
     buffer = -1;
     slot = GetBufferTableSlot(tag);
-    current = slot;
-    acquire_spin_lock(&slot->lock);
-    while (current != NULL) {
-        if (BufferTagEquals(&current->tag, tag)) {
-            buffer = current->buffer;
+    entry = slot->next;
+
+    /* Acquire the rwlock in shared mode.*/
+    AcquireRWlock(&slot->lock, RW_READERS);
+
+    /* Loop up the entry table. */
+    while (entry != NULL) {
+        if (BufferTagEquals(&entry->tag, tag)) {
+            buffer = entry->buffer;
             break;
         }
-        current = current->next;
+        entry = entry->next;
     }
-    release_spin_lock(&slot->lock);
+    /* Release the rwlock. */
+    ReleaseRWlock(&slot->lock);
     return buffer;
 }
 
 
 /* Save new BufferTableEntry 
- * which link the BufferTag and Buffer. */
+ * ---------------
+ * BufferTableEntry link the BufferTag and Buffer. 
+ * Note: This <InsertBufferTableEntry> need acquire the rwlock in exclusive mode. 
+ * But not acquire itself, and by the caller.
+ * */
 void InsertBufferTableEntry(BufferTag *tag, Buffer buffer) {
-    BufferTableEntry *slot, *current;
+    BufferTableEntrySlot *slot;
+    BufferTableEntry *entry;
+
     slot = GetBufferTableSlot(tag);
-    acquire_spin_lock(&slot->lock);
-    current = slot;
-    while (current->next != NULL) {
-        current = current->next;
+    entry = slot->next;
+    Assert(slot->lock.mode == RW_WRITER);
+
+    if (entry == NULL) {
+        slot->next = NewBufferTableEntry(tag, buffer);
+        return;
     }
-    if (BufferTagEmpty(current->tag)) {
-        memcpy(current->tag.tableName, tag->tableName, MAX_TABLE_NAME_LEN);
-        current->tag.blockNum = tag->blockNum;
-        current->buffer = buffer;
-    } else 
-        current->next = NewBufferTableEntry(tag, buffer);
-    release_spin_lock(&slot->lock);
+
+    /* Find the tail. */
+    while (entry->next) {
+        entry = entry->next;
+    }
+    entry->next = NewBufferTableEntry(tag, buffer);
 }
 
-/* Delete the BufferTableEntry by tag.*/
+/* Delete the BufferTableEntry by tag.
+ * ------------
+ * Note: This <DeleteBufferTableEntry> need acquire the rwlock in exclusive mode. 
+ * But not acquire itself, and by the caller.
+ * */
 void DeleteBufferTableEntry(BufferTag *tag) {
-    BufferTableEntry *slot, *current;
+    BufferTableEntrySlot *slot; 
+    BufferTableEntry *pres, *current;
+
     slot = GetBufferTableSlot(tag);
-    switch_shared();
-    acquire_spin_lock(&slot->lock);
-    current = slot;
-    while (current != NULL) {
+    current = slot->next;
+    Assert(slot->lock.mode == RW_WRITER);
+
+    for (current = slot->next, pres = current; current != NULL; pres = current, current = current->next) {
         if (BufferTagEquals(&current->tag, tag)) {
-            if (current == slot) {
-                /* If Current is slot, then check if next exists.
-                 * If yes, replace the slot with next and delete the next.
-                 * If no, just make the tag empty. in slot. */
-                if (current->next != NULL) {
-                    BufferTableEntry *next = current->next;
-                    memcpy(current->tag.tableName, next->tag.tableName, MAX_TABLE_NAME_LEN);
-                    current->tag.blockNum = next->tag.blockNum;
-                    current->next = next->next;
-                    dfree(next);
-                } else 
-                    MakeBufferTagEmpty(&current->tag);
-            } else {
-                BufferTableEntry *pres = current->pres;
-                BufferTableEntry *next = current->next;
-                pres->next = next;
-                if (next != NULL)
-                    next->pres = pres;
-            }
-            break;
+            if (current == slot->next) 
+                slot->next = current->next;
+            else 
+                pres->next = current->next;
+            
+            /* Necessary to free the shared memory. */
+            switch_shared();
+            dfree(current);
+            switch_local();
         }
-        current = current->next;
     }
-    release_spin_lock(&slot->lock);
-    switch_local();
 }

@@ -349,9 +349,6 @@ static Refer *insert_one_row(Table *table, Row *row) {
     /* Insert into leaf node. */
     insert_leaf_node_cell(cursor, row);
 
-    /* Flush. */
-    flush(get_table_name(table));
-
     /* Convert to Refer. */
     Refer *refer = convert_refer(cursor);
 

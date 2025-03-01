@@ -601,10 +601,10 @@ typedef struct MetaTable {
 
 /* Table */
 typedef struct Table {
-    Pager *pager;               /* Pager manages pages. */
     uint32_t root_page_num;     /* Root page num. */
     MetaTable *meta_table;      /* Meta table info. */
     Pid creator;                /* The creator pid. */
+    Size page_size;             /* Page size. */
 } Table;
 
 /* TableBufferEntry */

@@ -255,10 +255,7 @@ BufferDesc *copy_buffer_desc(BufferDesc *buff_desc) {
         return NULL;
 
     BufferDesc *duplica = instance(BufferDesc);
-    duplica->lock = buff_desc->lock;
-    duplica->refcount = buff_desc->refcount;
-    duplica->lock = copy_rwlock_entry(buff_desc->lock);
-    duplica->io_lock = buff_desc->io_lock;
+    memcpy(duplica, buff_desc, sizeof(BufferDesc));
     return duplica;
 }
 
@@ -284,9 +281,9 @@ Table *copy_table(Table *table) {
 
     Table *duplica = instance(Table);
     duplica->root_page_num = table->root_page_num;
-    duplica->pager = copy_pager(table->pager);
     duplica->meta_table = copy_meta_table(table->meta_table);
     duplica->creator = table->creator;
+    duplica->page_size = table->page_size;
 
     return duplica;
 }

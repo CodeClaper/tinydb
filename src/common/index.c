@@ -16,8 +16,10 @@
 
 /* Check if key already exists  */
  bool check_duplicate_key(Cursor *cursor, void *key) {
+
     /* Get the buffer. */
-    void *node = ReadBuffer(cursor->table, cursor->page_num);
+    Buffer buffer = ReadBuffer(cursor->table, cursor->page_num); 
+    void *node = GetBufferPage(buffer);
 
     uint32_t key_len, value_len;
     value_len = calc_table_row_length(cursor->table);
@@ -27,7 +29,7 @@
     void *target = get_leaf_node_cell_key(node, cursor->cell_num, key_len, value_len);
 
     /* Release the buffer. */
-    ReleaseBuffer(cursor->table, cursor->page_num);
+    ReleaseBuffer(buffer);
 
     /* Get result. */
     return (target < node + PAGE_SIZE) && equal(target, key, primary_key_meta_column->column_type);

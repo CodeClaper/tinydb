@@ -156,7 +156,6 @@ static void HeapInsertXLog(Refer *refer, TransEntry *transaction) {
 
     /* Delete the insered row. */
     *(Xid *)expired_xid_col->value = transaction->xid;
-    flush(refer->table_name);
 }
 
 /* Reverse delete operation. 
@@ -184,7 +183,6 @@ static void HeapDeleteXLog(Refer *refer, TransEntry *transaction) {
 
     /* Re-insert. */
     insert_leaf_node_cell(new_cur, newRow);
-    flush(refer->table_name);
 }
 
 /* Reverse update delete transaction. */
@@ -216,6 +214,4 @@ static void HeadUpdateDeleteXlog(Refer *refer, TransEntry *transaction) {
 
     /* Free update refer lock. */
     free_refer_update_lock(new_ref);
-
-    flush(refer->table_name);
 }

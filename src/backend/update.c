@@ -131,9 +131,6 @@ static void update_row(Row *rawRow, SelectResult *select_result, Table *table,
         update_related_tables_refer(refer_update_entity);
         free_refer_update_entity(refer_update_entity);
     }
-        
-    /* Flush. */
-    flush(get_table_name(table));
 }
 
 /* Get ConditionNode form WhereClause.. */

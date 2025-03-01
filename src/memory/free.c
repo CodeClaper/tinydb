@@ -154,8 +154,6 @@ void free_column_node(ColumnNode *column_node) {
 /* Free BufferDesc. */
 void free_buffer_desc(BufferDesc *buf_desc) {
     if (buf_desc) {
-        if (buf_desc->lock)
-            dfree(buf_desc->lock);
         dfree(buf_desc);
     }
 }
@@ -175,7 +173,6 @@ void free_pager(Pager *pager) {
 /* Free table */
 void free_table(Table *table) {
     if (table) {
-        free_pager(table->pager);
         free_meta_table(table->meta_table);
         dfree(table);
     }

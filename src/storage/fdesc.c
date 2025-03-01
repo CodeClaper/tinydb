@@ -81,12 +81,9 @@ void unregister_fdesc(char *table_name) {
 static FDesc load_file_desc(char *file_path) {
     FDesc desc= open(file_path, O_RDWR, S_IRUSR | S_IWUSR);
     if (desc == -1) 
-        db_log(
-            PANIC,
-            "Open table file %d fail: %s.", 
-            file_path, 
-            strerror(errno)
-        );
+        db_log(PANIC, "Open table file %s fail: %s.", 
+               file_path, 
+               strerror(errno));
     return desc;
 }
 

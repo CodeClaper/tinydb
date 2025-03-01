@@ -1269,7 +1269,6 @@ bool check_create_table_node(CreateTableNode *create_table_node) {
 
 /* Check allowed to drop table. */
 bool check_drop_table(char *table_name) {
-
     /* Check table exists. */
     if (!check_table_exist(table_name)) {
         db_log(ERROR, "Table '%s' not exists.", table_name);

@@ -32,8 +32,7 @@ static inline int GetCurrentPid() {
 }
 
 /* Init the rwlock. */
-void InitRWlock(RWLockEntry *lock_entry, int buffer) {
-    lock_entry->buffer = buffer;
+void InitRWlock(RWLockEntry *lock_entry) {
     lock_entry->mode = RW_INIT;
     lock_entry->owner = create_list(NODE_INT);
     lock_entry->waiting_reader = 0;

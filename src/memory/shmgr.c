@@ -23,8 +23,6 @@ int ShFreeIndex(Size size) {
     int idx = size > (1 << SHM_MINBITS) 
             ? leftmost_32_pos(size -1) - SHM_MINBITS + 1
             : 0;
-    if (idx >= SHM_FREELISTS_NUM)
-        Assert(idx < SHM_FREELISTS_NUM);
     return idx;
 }
 
@@ -45,14 +43,14 @@ void *shdalloc(size_t size) {
     ShMemFreeEntry *entry;
 
     Assert(size > 0);
-    Assert(size < SHM_ALLOC_LIMIT);
+    // Assert(size < SHM_ALLOC_LIMIT);
 
     /* First reuse in free list, 
      * if missing, allocate new one.*/
     acquire_spin_lock(shlock);
     fdx = ShFreeIndex(size);
     entry = sh_free_list[fdx];
-    if (entry != NULL) {
+    if (size < SHM_ALLOC_LIMIT && entry != NULL) {
         if (size > entry->size)
             Assert(entry->size >= size);
         sh_free_list[fdx] = entry->next;

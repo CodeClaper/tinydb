@@ -1,16 +1,24 @@
 #include "bufmgr.h"
+#include "rwlock.h"
+
+typedef struct BufferTableEntrySlot {
+    RWLockEntry lock;
+    struct BufferTableEntry *next;
+} BufferTableEntrySlot;
 
 typedef struct BufferTableEntry {
     BufferTag tag;
     Buffer buffer;
-    s_lock lock;
-    struct BufferTableEntry *pres;
     struct BufferTableEntry *next;
 } BufferTableEntry;
 
 
-/* Init the buffer table.*/
-void InitBufferTable();
+/* Create the buffer table.*/
+void CreateBufferTable();
+
+
+/* Get Buffer Table slot. */
+BufferTableEntrySlot *GetBufferTableSlot(BufferTag *tag);
 
 
 /* Return Buffer of BufferDesc, 

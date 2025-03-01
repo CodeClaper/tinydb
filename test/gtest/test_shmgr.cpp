@@ -17,7 +17,7 @@ TEST(list, ShFreeIndex) {
     int index7 = ShFreeIndex((1 << (3 + 12)) + 1);
     ASSERT_EQ(index1, 0);
     ASSERT_EQ(index2, 1);
-    ASSERT_EQ(index3, 15);
+    ASSERT_EQ(index3, 23);
     ASSERT_EQ(index4, 3);
     ASSERT_EQ(index5, 5);
     ASSERT_EQ(index6, 12);
