@@ -2097,7 +2097,6 @@ static KeyValue *query_row_value(SelectResult *select_result, ScalarExpNode *sca
 /* Query a Row of Selection,
  * Actually, the Selection is pure-column scalars. */
 static Row *query_plain_row_selection(SelectResult *select_result, List *scalar_exp_list, Row *row) {
-
     if (is_null(row)) 
         return NULL;
     
@@ -2154,7 +2153,6 @@ static bool is_function_scalar_exp(ScalarExpNode *scalar_exp) {
 
 /* Check if exists function type scalar exp. */
 static bool exists_function_scalar_exp(List *scalar_exp_list) {
-
     ListCell *lc;
     foreach (lc, scalar_exp_list) {
         /* Check self if SCALAR_FUNCTION. */

@@ -82,6 +82,7 @@ Buffer LookupBufferTable(BufferTag *tag) {
         }
         entry = entry->next;
     }
+
     /* Release the rwlock. */
     ReleaseRWlock(&slot->lock);
     return buffer;
@@ -127,6 +128,7 @@ void DeleteBufferTableEntry(BufferTag *tag) {
     current = slot->next;
     Assert(slot->lock.mode == RW_WRITER);
 
+    switch_shared();
     for (current = slot->next, pres = current; current != NULL; pres = current, current = current->next) {
         if (BufferTagEquals(&current->tag, tag)) {
             if (current == slot->next) 
@@ -135,11 +137,10 @@ void DeleteBufferTableEntry(BufferTag *tag) {
                 pres->next = current->next;
             
             /* Necessary to free the shared memory. */
-            switch_shared();
             dfree(current);
-            switch_local();
         }
     }
+    switch_local();
 }
 
 /* Remove all the table-relative buffer entry. */
