@@ -14,6 +14,7 @@
 #include "mmgr.h"
 #include "free.h"
 #include "cache.h"
+#include "buftable.h"
 #include "common.h"
 #include "asserts.h"
 #include "utils.h"
@@ -266,6 +267,8 @@ bool drop_table(char *table_name) {
     if (remove(file_path) == 0) {
         /* Remove table cache. */
         remove_table_cache(table_name);
+        /* Remove table buffer. */
+        RemoveTableBuffer(table_name);
         /* Release the table lock. */
         try_release_table(table_name);
         return true;

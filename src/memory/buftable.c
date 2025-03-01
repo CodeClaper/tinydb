@@ -22,6 +22,7 @@ static Hash HashBufferTag(BufferTag *tag, Size size) {
     return hash % size;
 }
 
+/* Geneate new BufferTableEntry. */
 static BufferTableEntry *NewBufferTableEntry(BufferTag *tag, Buffer buffer) {
     switch_shared();
     BufferTableEntry *entry = instance(BufferTableEntry);
@@ -39,13 +40,19 @@ inline BufferTableEntrySlot *GetBufferTableSlot(BufferTag *tag) {
     return (BufferTableEntrySlot *)(BTable + hash);
 }
 
+
+/* Get Buffer Table slot by index. */
+static inline BufferTableEntrySlot *GetBufferTableSlotByIndex(Index idx) {
+     return (BufferTableEntrySlot *)(BTable + idx);
+}
+
 /* Create the buffer table.*/
 void CreateBufferTable() {
     Size size = BUFFER_SLOT_NUM;
     switch_shared();
     BTable = dalloc(sizeof(BufferTableEntrySlot) * size);
     for (Index i = 0; i < size; i++) {
-        BufferTableEntrySlot *header = (BufferTableEntrySlot *)(BTable + i);
+        BufferTableEntrySlot *header = GetBufferTableSlotByIndex(i);
         InitRWlock(&header->lock);
     }
     switch_local();
@@ -133,4 +140,27 @@ void DeleteBufferTableEntry(BufferTag *tag) {
             switch_local();
         }
     }
+}
+
+/* Remove all the table-relative buffer entry. */
+void RemoveTableBuffer(char *table_name) {
+    switch_shared();
+    for (Index i = 0; i < BUFFER_SLOT_NUM; i++) {
+        BufferTableEntrySlot *slot; 
+        BufferTableEntry *pres, *current;
+        slot = GetBufferTableSlotByIndex(i);
+        current = slot->next;
+        for (current = slot->next, pres = current; current != NULL; pres = current, current = current->next) {
+            BufferTag tag = current->tag;
+            if (streq(tag.tableName, table_name)) {
+                if (current == slot->next) 
+                    slot->next = current->next;
+                else 
+                    pres->next = current->next;
+                /* Necessary to free the shared memory. */
+                dfree(current);
+            }
+        }
+    }
+    switch_local();
 }

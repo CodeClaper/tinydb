@@ -35,3 +35,5 @@ void InsertBufferTableEntry(BufferTag *tag, Buffer buffer);
 void DeleteBufferTableEntry(BufferTag *tag);
 
 
+/* Remove all the table-relative buffer entry. */
+void RemoveTableBuffer(char *table_name);
