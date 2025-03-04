@@ -8,8 +8,8 @@
 #ifndef BUFMGR_H
 #define BUFMGR_H
 
-typedef int32_t BlockNum;
-typedef int32_t Buffer;
+typedef int64_t BlockNum;
+typedef int64_t Buffer;
 
 /* Use half of shared memory to store buffer. 
  * So the BUFFER_SLOT_NUM as flowing. */

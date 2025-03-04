@@ -8,6 +8,7 @@
 #include "data.h"
 #include "fdesc.h"
 #include "ltree.h"
+#include "log.h"
 
 /*
  * The Buffer Pool. 
@@ -60,15 +61,16 @@ void BufferWriteBlock(Buffer buffer) {
 
 
     off_t offset = lseek(fdesc, PAGE_SIZE * tag.blockNum, SEEK_SET);
-    if (offset == -1) {
-        fprintf(stderr, "Error seek set: %s.", strerror(errno));
+    if (offset == (off_t)-1) {
+        db_log(PANIC, "Error seek set: %s, which happen in %s and page num %d.", 
+               strerror(errno), tag.tableName, tag.blockNum);
         exit(1);
     }
 
     /* Write. */
     ssize_t write_size = write(fdesc, node, PAGE_SIZE);
     if (write_size == -1) {
-        fprintf(stderr, "Try to write page error: %s.", strerror(errno));
+        db_log(PANIC, "Try to write page error: %s.", strerror(errno));
         exit(1);
     }
 

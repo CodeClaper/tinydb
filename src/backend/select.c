@@ -542,7 +542,7 @@ static ArrayValue *get_row_array_value(void *destination, MetaColumn *meta_colum
 static void *assign_row_value(void *destination, MetaColumn *meta_column) {
     return (meta_column->array_dim == 0)
             /* For non-array data. */
-            ? copy_value(destination + LEAF_NODE_CELL_NULL_FLAG_SIZE, meta_column->column_type) 
+            ? destination + LEAF_NODE_CELL_NULL_FLAG_SIZE 
             /* For array data. */
             : get_row_array_value(destination, meta_column); 
 }

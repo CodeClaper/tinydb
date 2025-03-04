@@ -81,6 +81,7 @@ void CreateBufferDescTable() {
         BufferDesc *desc = (BufferDesc *)(BDescTable + i);
         desc->buffer = i;
         InitRWlock(&desc->lock);
+        init_spin_lock(&desc->io_lock);
     }
 
     /* Init sync lock. */
@@ -104,16 +105,20 @@ void InitBufMgr() {
 
 /* Pin the buffer. */
 static void PinBuffer(BufferDesc *desc) {
+    acquire_spin_lock(&desc->io_lock);
     desc->status = PINNED;
     desc->usage_count++;
     desc->refcount++;
+    release_spin_lock(&desc->io_lock);
 }
 
 /* Unpin the buffer. */
 static void UnpinBuffer(BufferDesc *desc) {
+    acquire_spin_lock(&desc->io_lock);
     desc->refcount--;
     desc->status = UNPINNED;
     Assert(desc->refcount >= 0);
+    release_spin_lock(&desc->io_lock);
 }
 
 /* Next Victim index. */
