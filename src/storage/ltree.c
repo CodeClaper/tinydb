@@ -60,11 +60,6 @@
 #include "index.h"
 #include "utils.h"
 
-/*
- * Sync lock for sync opreation.
- */
-static volatile s_lock sync_lock = SPIN_UN_LOCKED_STATUS;
-
 static void assign_row_value(void *destination, void *value, MetaColumn *meta_column);
 static void insert_leaf_node_new_cell(Cursor *cursor, Row *row);
 static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos);
@@ -399,7 +394,6 @@ void *get_internal_node_cell(void *node, uint32_t index, uint32_t key_len, uint3
 
 /* Get internal node index of key */
 uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, uint32_t key_len, uint32_t default_value_len , DataType key_data_type) {
-
     /* Binary search */
     uint32_t min_index = 0;
     uint32_t max_index = keys_num;
