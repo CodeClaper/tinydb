@@ -43,6 +43,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include "bufmgr.h"
 #include "asserts.h"
@@ -55,19 +56,14 @@
 #include "pager.h"
 
 /*
- * Sync Lock. 
- */
-static s_lock *sync_lock;
-
-/*
  * BufferDesc table. 
  */
-static BufferDesc *BDescTable;
+static BufferDesc *bDescTable;
 
 /*
  * Next Victim index.
  */
-static volatile Index *VictimIndex;
+static BufferIndex *bufferIndex;
 
 
 /* Create BufferDesc. */
@@ -76,21 +72,18 @@ void CreateBufferDescTable() {
     switch_shared();
 
     /* Init BDescTable. */
-    BDescTable = dalloc(sizeof(BufferDesc) * size);
+    bDescTable = dalloc(sizeof(BufferDesc) * size);
     for (Index i = 0; i < size; i++) {
-        BufferDesc *desc = (BufferDesc *)(BDescTable + i);
+        BufferDesc *desc = (BufferDesc *)(bDescTable + i);
         desc->buffer = i;
         InitRWlock(&desc->lock);
         init_spin_lock(&desc->io_lock);
     }
 
-    /* Init sync lock. */
-    sync_lock = instance(s_lock);
-    init_spin_lock(sync_lock);
-
     /* Init VictimIndex. */
-    VictimIndex = instance(Index);
-    *VictimIndex = 0;
+    bufferIndex = instance(BufferIndex);
+    bufferIndex->victimIndex = 0;
+    init_spin_lock(&bufferIndex->lock);
 
     switch_local();
 }
@@ -123,15 +116,19 @@ static void UnpinBuffer(BufferDesc *desc) {
 
 /* Next Victim index. */
 static inline Index NextVictimIndex() {
-    if (*VictimIndex >= BUFFER_SLOT_NUM) 
-        *VictimIndex = 0;
-    return (*VictimIndex)++;
+    Index index;
+    acquire_spin_lock(&bufferIndex->lock);
+    if (bufferIndex->victimIndex >= BUFFER_SLOT_NUM) 
+        bufferIndex = 0;
+    index = (bufferIndex->victimIndex)++;
+    release_spin_lock(&bufferIndex->lock);
+    return index;
 }
 
 /* Get the BufferDesc. */
 inline BufferDesc *GetBufferDesc(Buffer buffer) {
     Assert(buffer < BUFFER_SLOT_NUM);
-    return (BufferDesc *)(BDescTable + buffer);
+    return (BufferDesc *)(bDescTable + buffer);
 }
 
 /* Loop Find BufferDesc when missing in BDescTable. */
