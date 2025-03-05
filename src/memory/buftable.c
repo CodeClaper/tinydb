@@ -1,8 +1,8 @@
+#include <stdint.h>
+#include <string.h>
 #include "buftable.h"
 #include "spinlock.h"
 #include "mmgr.h"
-#include <stdint.h>
-#include <string.h>
 
 /* BTable is a hash table. */
 static BufferTableEntrySlot *BTable;

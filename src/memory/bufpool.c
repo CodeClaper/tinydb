@@ -59,7 +59,6 @@ void BufferWriteBlock(Buffer buffer) {
     if (get_node_state(node) != DIRTY_STATE)
         return;
 
-
     off_t offset = lseek(fdesc, PAGE_SIZE * tag.blockNum, SEEK_SET);
     if (offset == (off_t)-1) {
         db_log(PANIC, "Error seek set: %s, which happen in %s and page num %d.", 

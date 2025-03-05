@@ -104,6 +104,12 @@ void UnlockBuffer(Buffer buffer);
 /* Get Buffer page. */
 void *GetBufferPage(Buffer buffer);
 
+/* Pin the buffer. */
+void PinBuffer(BufferDesc *desc);
+
+/* Unpin the buffer. */
+void UnpinBuffer(BufferDesc *desc);
+
 /* Make Buffer dirty. */
 void MakeBufferDirty(Buffer buffer);
 

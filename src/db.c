@@ -32,6 +32,8 @@
 #include "tablereg.h"
 #include "bufmgr.h"
 #include "pager.h"
+#include "bgwriter.h"
+#include "asctx.h"
 
 /* 
  * Conf 
@@ -54,7 +56,7 @@ static inline void sigchild() {
 }
 
 /* DB Start. */
-static void db_start() {
+static void init_db() {
 
     /* MemoryContext init.*/
     MemoryContextInit();
@@ -93,18 +95,21 @@ static void db_start() {
     conf = load_conf();
 }
 
-/* DB Run. */
-static void db_run() {
-    int server_socket = -1;
+/* Start bgwriter. */
+static void start_bgwriter() {
+    /* Create new child process. */
+    pid_t pid = fork();
+    if (pid < 0) 
+        db_log(PANIC, "Create new child process fail.");
+    else if (pid == 0)
+        StartBgWriter();
+    else 
+        db_log(SUCCESS, "Start up background writer successfully.");
+}
+
+/* Start backend. */
+static void start_backend(int server_socket, struct sockaddr_in *client_name, socklen_t client_name_len) {
     int client_secket = -1;
-
-    struct sockaddr_in *client_name = dalloc(sizeof(struct sockaddr_in));
-    socklen_t client_name_len = sizeof(*client_name);
-
-    /* Start up server. */
-    server_socket = startup(conf->port);
-    db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
-
     /* Listen client connecting. */
     while (true) {
         client_secket = accept(server_socket, (struct sockaddr *) client_name, &client_name_len);
@@ -125,6 +130,25 @@ static void db_run() {
     }
 }
 
+
+/* DB Run. */
+static void db_run() {
+    int server_socket = -1;
+
+    struct sockaddr_in *client_name = dalloc(sizeof(struct sockaddr_in));
+    socklen_t client_name_len = sizeof(*client_name);
+
+    /* Start up server. */
+    server_socket = startup(conf->port);
+    db_log(INFO, "Tinydb server start up successfully and listen port %d.", conf->port);
+
+    /* Start up bgwriter.*/
+    start_bgwriter();
+
+    /* Start up backend. */
+    start_backend(server_socket, client_name, client_name_len);
+}
+
 /* DB End */
 static void db_end() {
     MemoryContextDelete(TOP_MEMORY_CONTEXT);
@@ -135,7 +159,7 @@ static void db_end() {
 /* The main entry. */
 int main(int argc, char* argv[]) {
     program_name = argv[0];
-    db_start();
+    init_db();
     db_run();
     db_end();
 }

@@ -97,7 +97,7 @@ void InitBufMgr() {
 }
 
 /* Pin the buffer. */
-static void PinBuffer(BufferDesc *desc) {
+void PinBuffer(BufferDesc *desc) {
     acquire_spin_lock(&desc->io_lock);
     desc->status = PINNED;
     desc->usage_count++;
@@ -106,7 +106,7 @@ static void PinBuffer(BufferDesc *desc) {
 }
 
 /* Unpin the buffer. */
-static void UnpinBuffer(BufferDesc *desc) {
+void UnpinBuffer(BufferDesc *desc) {
     acquire_spin_lock(&desc->io_lock);
     desc->refcount--;
     desc->status = UNPINNED;
