@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import socket
+from sourcer import Source
 import connector
 import getpass
 import readline
@@ -14,7 +15,8 @@ keywords = [
     'SELECT', 'UPDATE', 'DELETE', 'INSERT', 'DROP', 'CREATE', 'ALTER', 'DESC', 'DESCRIBE', 'SHOW', 'SET', ## operation.
     'TABLE', 'FROM', 'WHERE',  ## clause
     'AND', 'OR' ## logic
-    'MAX', 'MIN', 'SUM', 'COUNT', 'AVG' ## aggregate functions
+    'MAX', 'MIN', 'SUM', 'COUNT', 'AVG', ## aggregate functions
+    'SOURCE'
 ]
 
 ## Load keywords.
@@ -62,20 +64,9 @@ def readCmd():
         exit()
 
 ## Source sql file.
-def source(file):
-    try:
-        with open(file) as file:
-            for line in file:
-                sql = line.strip()
-                ret = client.execute(sql)
-                print (ret)
-                if ret["success"] == False:
-                    break
-    except FileNotFoundError:
-        print(f"file {file} not found")
-        pass
-    except KeyboardInterrupt:
-        exit()
+def exec_source(file):
+    source = Source(client, file)
+    source.exec()
 
 ## Output result to file.
 def output(cmd: str):
@@ -122,7 +113,7 @@ def handleJsonpp(raw: dict):
 def exec_cmd(cmd):
     cmd = cmd.strip()
     if cmd.upper().startswith("SOURCE "):
-        source(cmd.strip("SOURCE ").strip("source").strip())
+        exec_source(cmd.strip("SOURCE ").strip("source").strip())
     elif ">>" in cmd:
         output(cmd)
     elif '|' in cmd:
