@@ -12,7 +12,7 @@ class Source:
 
     def push(self, sql):
         self.patch.append(sql)
-        if len(self.patch) >= 10:
+        if len(self.patch) >= 50:
             self.exec_inner()
 
 
@@ -57,6 +57,7 @@ class Source:
             splits = re.split("VALUES", item, flags=re.IGNORECASE)
             sql += "{}, ".format(splits[1].rstrip(";"))
         sql = sql.rstrip().rstrip(",")
+        sql += ";"
         ret = self.client.execute(sql);
         print(ret)
         

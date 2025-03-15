@@ -52,12 +52,13 @@ void BufferWriteBlock(Buffer buffer) {
 
     desc = GetBufferDesc(buffer);
     tag = desc->tag;
-    fdesc = get_file_desc(tag.tableName);
     node = GetBufferBlock(buffer);
 
     /* Only flush dirty page. */
     if (get_node_state(node) != DIRTY_STATE)
         return;
+
+    fdesc = get_file_desc(tag.tableName);
 
     off_t offset = lseek(fdesc, PAGE_SIZE * tag.blockNum, SEEK_SET);
     if (offset == (off_t)-1) {

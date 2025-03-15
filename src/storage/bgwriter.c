@@ -4,6 +4,7 @@
 #include "bufpool.h"
 #include "defs.h"
 #include "asctx.h"
+#include "ltree.h"
 #include "log.h"
 
 /* Start Memory Context.*/
@@ -20,9 +21,12 @@ static void FlushDirtyPage() {
     for (idx = 0; idx < BUFFER_SLOT_NUM; idx++) {
         BufferDesc *desc = GetBufferDesc(idx);
         if (desc->status == UNPINNED) {
-            PinBuffer(desc);
-            BufferWriteBlock(desc->buffer);
-            UnpinBuffer(desc);
+            void *node = GetBufferBlock(desc->buffer);
+            if (get_node_state(node) == DIRTY_STATE) {
+                PinBuffer(desc);
+                BufferWriteBlock(desc->buffer);
+                UnpinBuffer(desc);
+            }
         }
     }
 }

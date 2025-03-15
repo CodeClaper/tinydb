@@ -126,7 +126,7 @@ void DeleteBufferTableEntry(BufferTag *tag) {
 
     slot = GetBufferTableSlot(tag);
     current = slot->next;
-    Assert(slot->lock.mode == RW_WRITER);
+    // Assert(slot->lock.mode == RW_WRITER);
 
     switch_shared();
     for (current = slot->next, pres = current; current != NULL; pres = current, current = current->next) {

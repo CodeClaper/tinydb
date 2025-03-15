@@ -26,10 +26,9 @@ static char* LOG_LEVEL_NAME_LIST[] = { "TRACE", "DEBUG", "INFO", "SUCCS", "WARN"
 static char CurrentMessage[BUFF_SIZE] = {};
 
 /* Save message to stack. */
-static void save_stack_message(char *msg) {
-    Assert(strlen(msg) < BUFF_SIZE);
+static void save_stack_message(const char *msg) {
     bzero(CurrentMessage, BUFF_SIZE);
-    memcpy(CurrentMessage, msg, strlen(msg));
+    memcpy(CurrentMessage, msg, min_size(BUFF_SIZE, strlen(msg)));
 }
 
 
@@ -62,27 +61,41 @@ static void flush_log(char* msg) {
     FILE *file;
     file = fopen(log_path, "a");
     if (file == NULL) {
-        fprintf(stderr, "Try to open log file '%s', error info: %s. \n", log_path, strerror(errno));
+        fprintf(stderr, "Try to open log file '%s', error info: %s. \n", 
+                log_path, strerror(errno));
         exit(1);
     }
     fputs(msg, file);
+    fflush(file);
     fclose(file);
     dfree(sys_date);
 }
 
 /* Db log. */
 void db_log(LogLevel level, char *format, ...) {
-    /* Combinate message. */
-    char message[BUFF_SIZE];
+    Size len;
     va_list ap;
+
+    /* Calculate the len. */
     va_start(ap, format);
-    vsprintf(message, format, ap);
+    len = vsnprintf(NULL, 0, format, ap);
+    if (len < 0) {
+        va_end(ap);
+        return;
+    }
+
+    len = len + 1;
+    char message[len];
+    memset(message, 0, len);
+
+    va_start(ap, format);
+    vsnprintf(message, len + 1, format, ap);
     va_end(ap);
 
     /* Only print higher level log. */
     if (level >= conf->log_level) {
         char *sys_time = get_current_sys_time2(MICROSECOND);
-        char buff[BUFF_SIZE * 2];
+        char buff[len + 100];
         sprintf(buff, "[%s][%d][%s]:\t%s\n", 
                 sys_time, getpid(), 
                 LOG_LEVEL_NAME_LIST[level], message);

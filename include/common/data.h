@@ -722,5 +722,12 @@ typedef struct AliasMap {
     AliasEntry map[MAX_MULTI_TABLE_NUM];
 } AliasMap;
 
+/* InternalNodeCellEntry. */
+typedef struct InternalNodeCellEntry {
+    void *key;
+    DataType key_type;
+    uint32_t value;
+} InternalNodeCellEntry;
+
 
 #endif

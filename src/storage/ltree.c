@@ -45,6 +45,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include "ltree.h"
+#include "bufpool.h"
 #include "mmgr.h"
 #include "copy.h"
 #include "free.h"
@@ -59,10 +60,12 @@
 #include "log.h"
 #include "index.h"
 #include "utils.h"
+#include "qsort.h"
 
 static void assign_row_value(void *destination, void *value, MetaColumn *meta_column);
 static void insert_leaf_node_new_cell(Cursor *cursor, Row *row);
 static void append_leaf_node_column(uint32_t page_num, Table *table, MetaColumn *new_column, int pos);
+static bool check_internal_node_cells_mass(void *internal_node, uint32_t keys_num, uint32_t key_len, uint32_t value_len, DataType data_type);
 
 /* If obsolute node. */
 bool is_obsolute_node(void *node) {
@@ -393,7 +396,8 @@ void *get_internal_node_cell(void *node, uint32_t index, uint32_t key_len, uint3
 }
 
 /* Get internal node index of key */
-uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, uint32_t key_len, uint32_t default_value_len , DataType key_data_type) {
+uint32_t get_internal_node_key_index(void *node, void *key, uint32_t keys_num, uint32_t key_len, 
+                                     uint32_t default_value_len , DataType key_data_type) {
     /* Binary search */
     uint32_t min_index = 0;
     uint32_t max_index = keys_num;
@@ -522,14 +526,19 @@ void initial_internal_node(void *internal_node, bool is_root) {
 /* Update internal node node key. */
 static void update_internal_node_key(Table *table, uint32_t page_num, void *old_key, void *new_key, 
                                      uint32_t key_len, uint32_t value_len, DataType key_data_type) {
-    Buffer buffer = ReadBuffer(table, page_num);
-    void *internal_node = GetBufferPage(buffer);
-    uint32_t keys_num = get_internal_node_keys_num(internal_node, value_len);  
+    Buffer buffer;
+    uint32_t keys_num;
+    void *internal_node;
+    void *max_key, *absolute_max_key;
+
+    buffer = ReadBuffer(table, page_num);
+    internal_node = GetBufferPage(buffer);
+    keys_num = get_internal_node_keys_num(internal_node, value_len);  
     Assert(keys_num > 0);
 
     /* Get max key and absolute max key in internal node cell. */
-    void *max_key = get_internal_node_key(internal_node, keys_num - 1, key_len, value_len);
-    void *absolute_max_key = get_max_key(table, internal_node, key_len, value_len);
+    max_key = get_internal_node_key(internal_node, keys_num - 1, key_len, value_len);
+    absolute_max_key = get_max_key(table, internal_node, key_len, value_len);
     
     /* If old key greater than the max key, it means it exist in the right child node. 
      * No need to change cells key. Otherwise, it means the key in the cells, 
@@ -539,7 +548,8 @@ static void update_internal_node_key(Table *table, uint32_t page_num, void *old_
         void *key = get_internal_node_key(internal_node, key_index, key_len, value_len);
 
         /* Theoretically equal, just for check.*/
-        Assert(equal(old_key, key, key_data_type));
+        if (!equal(old_key, key, key_data_type))
+            Assert(equal(old_key, key, key_data_type));
         set_internal_node_key(internal_node, key_index, new_key, key_len, value_len);
         MakeBufferDirty(buffer);
     }
@@ -619,6 +629,97 @@ static void redefine_parent(Table *table, uint32_t page_num) {
     ReleaseBuffer(right_child_buffer);
     ReleaseBuffer(buffer);
 }
+
+/* Check internal node cells mass. */
+static bool check_internal_node_cells_mass(void *internal_node, uint32_t keys_num, uint32_t key_len, uint32_t value_len, DataType data_type) {
+    void *before = NULL;
+    for (uint32_t i = 0; i < keys_num; i++) {
+        void *key = get_internal_node_key(internal_node, i, key_len, value_len);
+        if (before) {
+            if (greater(before, key, data_type))
+                return true;
+        }
+        before = key;
+    }
+    return false;
+}
+
+/* The comparator of InternalNodeCellEntry. */
+static inline int internal_node_cell_entry_comparator(const ListCell *lc1, const ListCell *lc2) {
+    InternalNodeCellEntry *entry1 = (InternalNodeCellEntry *)lfirst(lc1);
+    InternalNodeCellEntry *entry2 = (InternalNodeCellEntry *)lfirst(lc2);
+    return compare(entry1->key, entry2->key, entry1->key_type);
+}
+
+/* Resort the internal node cells. 
+ * Sometimes, mass of internal node cells may happer when children splitting.
+ * It's necessary to resort internal node cells.
+ * */
+void resort_internal_node_cells(Table *table, uint32_t page_num, uint32_t key_len, uint32_t value_len, DataType data_type) {
+    uint32_t keys_num, index;
+    Buffer buffer;
+    void *internal_node;
+    List *list;
+    
+    buffer = ReadBuffer(table, page_num);
+    internal_node = GetBufferPage(buffer);
+    keys_num = get_internal_node_keys_num(internal_node, value_len);
+
+    if (!check_internal_node_cells_mass(internal_node, keys_num, key_len, value_len, data_type)) {
+        ReleaseBuffer(buffer);
+        return;
+    }
+
+    list = create_list(NODE_VOID);
+
+    /* Append internal node cells. */
+    for (index = 0; index < keys_num; index++) {
+        void *key = get_internal_node_key(internal_node, index, key_len, value_len);
+        uint32_t value = get_internal_node_child(internal_node, index, key_len, value_len);
+        InternalNodeCellEntry *entry = instance(InternalNodeCellEntry);
+        entry->key = key;
+        entry->value = value;
+        entry->key_type = data_type;
+        append_list(list, entry);
+    }
+    
+    /* Append internal node right cell. */
+    {
+        void *right_key = get_max_key(table, internal_node,  key_len, value_len);
+        uint32_t right_value = get_internal_node_right_child(internal_node, value_len);
+        InternalNodeCellEntry *entry = instance(InternalNodeCellEntry);
+        entry->key = right_key;
+        entry->value = right_value;
+        entry->key_type = data_type;
+        append_list(list, entry);
+    }
+
+    /* Resort*/
+    list_qsort(list, internal_node_cell_entry_comparator);
+
+    /* Reset into internal node cells. */
+    for (index = 0; index < keys_num; index++) {
+        ListCell *cell = list_nth_cell(list, index);
+        InternalNodeCellEntry *entry = (InternalNodeCellEntry *) lfirst(cell);
+        set_internal_node_key(internal_node, index, entry->key, key_len, value_len);
+        set_internal_node_child(internal_node, index, entry->value, key_len, value_len);
+    }
+
+    /* Reset into internal node right cell. */
+    {
+        ListCell *cell = last_cell(list);
+        InternalNodeCellEntry *entry = (InternalNodeCellEntry *) lfirst(cell);
+        set_internal_node_right_child(internal_node, value_len, entry->value);
+    }
+    
+    /* Free list. */
+    free_list(list);
+
+    /* Make page dirty. */
+    MakeBufferDirty(buffer);
+    ReleaseBuffer(buffer);
+}
+
 
 /* Covnert root node to leaf node */
 static void copy_root_to_leaf_node(Table *table, uint32_t new_page_num, 
@@ -744,11 +845,13 @@ static void create_new_root_node(Table *table, uint32_t right_child_page_num,
  * And half hight cells in the old internal node will be moved into the new one. */
 static void insert_and_split_internal_node(Table *table, uint32_t old_internal_page_num, 
                                            uint32_t new_child_page_num) {
+    Buffer old_buffer, new_buffer;
+    void *old_internal_node, *new_internal_node;
     uint32_t keys_num, next_unused_page_num, key_len, value_len, cell_len;
 
     /* Get old internal node. */
-    Buffer old_buffer = ReadBuffer(table, old_internal_page_num);
-    void *old_internal_node = GetBufferPage(old_buffer);
+    old_buffer = ReadBuffer(table, old_internal_page_num);
+    old_internal_node = GetBufferPage(old_buffer);
 
     value_len = calc_table_row_length(table);
     key_len = calc_primary_key_length(table);
@@ -759,8 +862,8 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
     
     /* Get new internal node. */
     next_unused_page_num = GetNextUnusedPageNum(table);
-    Buffer new_buffer = ReadBuffer(table, next_unused_page_num);
-    void *new_internal_node = GetBufferPage(new_buffer);
+    new_buffer = ReadBuffer(table, next_unused_page_num);
+    new_internal_node = GetBufferPage(new_buffer);
 
     initial_internal_node(new_internal_node, false);
     set_parent_pointer(new_internal_node, get_parent_pointer(old_internal_node));
@@ -859,7 +962,12 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
         create_new_root_node(table, next_unused_page_num, key_len, value_len);
     else {
         /* Otherwise, it`s a normal internal node. 
-         * Maybe the max key change, need update max key in parent internal node. */
+         * -----------------------------------
+         * Maybe the max key change, need update max key in parent internal node. 
+         * Note that: because of new_max_key more likely less than the old_max_key,
+         * so mass of parent internal node cells may be happer.
+         * We'll resort parent internal node cells lately.
+         * */
         uint32_t parent_page_num = get_parent_pointer(old_internal_node);
         void *new_max_key = get_max_key(table, old_internal_node, key_len, value_len);
         update_internal_node_key(
@@ -870,10 +978,14 @@ static void insert_and_split_internal_node(Table *table, uint32_t old_internal_p
 
         /* And insert a new cell about the new leaf node to the parent internal node. */
         insert_internal_node_cell(table, parent_page_num, next_unused_page_num, key_len, value_len);
+
+        /* Parent internla node cells may mass, so resort the cells. */
+        resort_internal_node_cells(table, parent_page_num, key_len, value_len, primary_key_meta_column->column_type);
+
         MakeBufferDirty(old_buffer);
         MakeBufferDirty(new_buffer);
     }
-    
+
     /* Release the old right page buffer.*/
     ReleaseBuffer(old_buffer);
     ReleaseBuffer(new_buffer);
@@ -965,12 +1077,13 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
         /* Flush disk. */
         MakeBufferDirty(buffer);
 
+        /* Unlock buffer. */
         UnlockBuffer(buffer);
 
         /* Release right child buffer. */
         ReleaseBuffer(right_child_buffer);
     }
-
+    
     /* Release buffer. */
     ReleaseBuffer(new_child_buffer);
     ReleaseBuffer(buffer);
@@ -981,6 +1094,7 @@ void insert_internal_node_cell(Table *table, uint32_t page_num, uint32_t new_chi
 static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
     /* Get cell key, value and cell lenght. */
     uint32_t key_len, value_len, cell_length;
+
     key_len = calc_primary_key_length(cursor->table);
     value_len = calc_table_row_length(cursor->table);
     cell_length = key_len + value_len;
@@ -1079,7 +1193,12 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         create_new_root_node(cursor->table, next_unused_page_num, key_len, value_len); 
     else {
         /* Otherwise, it`s a normal leaf node. 
-         * Maybe the max key change, need update max key in parent internal node. */
+         * -----------------------------------
+         * Maybe the max key change, need update max key in parent internal node. 
+         * Note that: because of new_max_key more likely less than the old_max_key,
+         * so mass of parent internal node cells may be happen.
+         * We'll resort parent internal node cells lately.
+         * */
         void *new_max_key = get_max_key(cursor->table, old_node, key_len, value_len);
         update_internal_node_key(
             cursor->table, parent_page_num, 
@@ -1090,6 +1209,9 @@ static void insert_and_split_leaf_node(Cursor *cursor, Row *row) {
         /* And insert a new cell about the new 
          * leaf node to the parent internal node. */
         insert_internal_node_cell(cursor->table, parent_page_num, next_unused_page_num, key_len, value_len);
+
+        /* Parent internla node cells may mass, so resort the cells. */
+        resort_internal_node_cells(cursor->table, parent_page_num, key_len, value_len, primary_key_meta_column->column_type);
 
         /* Dirty pages. */
         MakeBufferDirty(old_buffer);
@@ -1174,11 +1296,13 @@ static void insert_leaf_node_new_cell(Cursor *cursor, Row *row) {
 
 /* Insert a new cell in leaf node */
 void insert_leaf_node_cell(Cursor *cursor, Row *row) {
+    Buffer buffer;
+    void *node;
     uint32_t cell_num, value_len, key_len;
 
     /* Get the node buffer. */
-    Buffer buffer = ReadBuffer(cursor->table, cursor->page_num); 
-    void *node = GetBufferPage(buffer); 
+    buffer = ReadBuffer(cursor->table, cursor->page_num); 
+    node = GetBufferPage(buffer); 
     
     /* Get data. */ 
     value_len = calc_table_row_length(cursor->table);
@@ -1199,10 +1323,12 @@ void insert_leaf_node_cell(Cursor *cursor, Row *row) {
 /* Check if overflow after appending new column for leaf node. */
 static bool overflow_leaf_node_new_column(void *leaf_node, MetaColumn *new_column, uint32_t key_len, uint32_t value_len) {
     uint32_t after_len;
-    uint32_t cell_num = get_leaf_node_cell_num(leaf_node, value_len);
+    uint32_t cell_num, row_len;
+
+    cell_num = get_leaf_node_cell_num(leaf_node, value_len);
     /* Row value lenght after adding new column. */
     value_len += new_column->column_length;
-    uint32_t row_len = key_len + value_len;
+    row_len = key_len + value_len;
     if (is_root_node(leaf_node)) {
         /* Column size increases one. */
         uint32_t column_size = get_column_size(leaf_node) + 1;
@@ -1402,7 +1528,12 @@ static void split_leaf_node_append_column(uint32_t page_num, Table *table, MetaC
         uint32_t parent_page_num = get_parent_pointer(leaf_node);
         void *new_max_key = get_max_key(table, leaf_node, key_len, value_len);
 
-        /* Update internal node key. */
+        /* Update internal node key. 
+         * ------------------------
+         * Note that: because of new_max_key more likely less than the old_max_key,
+         * so mass of parent internal node cells may be happer.
+         * We'll resort parent internal node cells lately.
+         * */
         update_internal_node_key(
             table, parent_page_num, 
             old_max_key, 
@@ -1412,6 +1543,9 @@ static void split_leaf_node_append_column(uint32_t page_num, Table *table, MetaC
         
         /* And insert a new cell about the new leaf node to the parent internal node. */
         insert_internal_node_cell(table, parent_page_num, next_unused_page_num, key_len, value_len);
+
+        /* Parent internla node cells may mass, so resort the cells. */
+        resort_internal_node_cells(table, parent_page_num, key_len, value_len, primary_key_meta_column->column_type);
 
         MakeBufferDirty(buffer);
         MakeBufferDirty(new_buffer);

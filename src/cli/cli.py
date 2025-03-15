@@ -19,9 +19,44 @@ keywords = [
     'SOURCE'
 ]
 
+def get_path_completions(text: str):
+    if (text.startswith('source ')):
+        text = text.removeprefix("source ")
+
+    # 扩展用户目录（如 ~）
+    expanded_text = os.path.expanduser(text)
+    
+    # 分离目录和前缀
+    if os.path.isdir(expanded_text):
+        dir_path = expanded_text
+        prefix = ""
+    else:
+        dir_path, prefix = os.path.split(expanded_text)
+    
+    # 检查目录是否存在
+    if not os.path.isdir(dir_path):
+        return []
+    
+    # 获取目录下的文件和子目录
+    try:
+        files = os.listdir(dir_path)
+    except PermissionError:
+        return []
+    
+    # 过滤匹配项，并为目录添加斜杠
+    matches = [
+        f + "/" if os.path.isdir(os.path.join(dir_path, f)) else f
+        for f in files
+        if f.startswith(prefix)
+    ]
+    matches.sort()
+    return matches
+
 ## Load keywords.
 def completer(text, state):
-    options = [i for i in keywords if i.startswith(text) or i.startswith(text.upper())]
+    keyword_options = [i for i in keywords if i.startswith(text) or i.startswith(text.upper())]
+    path_options = get_path_completions(text)
+    options = keyword_options + path_options
     try:
         return options[state]
     except:

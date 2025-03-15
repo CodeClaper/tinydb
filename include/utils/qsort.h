@@ -97,7 +97,6 @@ static inline list_sort_comparator implement_list_sort_comparator(DataType type)
             return list_tiemstamp_sort_comparator;
         default:
             UNEXPECTED_VALUE(type);
-            
     }
 }
 

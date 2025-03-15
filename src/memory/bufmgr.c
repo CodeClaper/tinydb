@@ -119,7 +119,7 @@ static inline Index NextVictimIndex() {
     Index index;
     acquire_spin_lock(&bufferIndex->lock);
     if (bufferIndex->victimIndex >= BUFFER_SLOT_NUM) 
-        bufferIndex = 0;
+        bufferIndex->victimIndex = 0;
     index = (bufferIndex->victimIndex)++;
     release_spin_lock(&bufferIndex->lock);
     return index;
@@ -149,6 +149,8 @@ static BufferDesc *LoopFindBufferDesc(BufferTag *tag) {
                 PinBuffer(desc);
                 /* Write the old buffer to storage. */
                 BufferWriteBlock(desc->buffer);
+                /* Delete Old Buffer Table Entry. */
+                DeleteBufferTableEntry(&desc->tag);
                 break;
             }
             desc->usage_count--;
@@ -181,10 +183,6 @@ static BufferDesc *LoadNewBufferDesc(BufferTag *tag) {
     /* Update the tag. */
     desc->tag.blockNum = tag->blockNum;
     memcpy(desc->tag.tableName, tag->tableName, MAX_TABLE_NAME_LEN);
-
-    /* Delete Old Buffer Table Entry. */
-    if (desc->status == UNPINNED)
-        DeleteBufferTableEntry(&desc->tag);
 
     /* Insert new Buffer Table Entry. */
     InsertBufferTableEntry(tag, desc->buffer);
