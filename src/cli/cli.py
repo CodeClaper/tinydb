@@ -19,7 +19,7 @@ keywords = [
     'SOURCE'
 ]
 
-def get_path_completions(text: str):
+def get_path_completions():
     line = readline.get_line_buffer()
     if (line.startswith('source ')):
         line = line.replace("source", "", 1).lstrip()
