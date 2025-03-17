@@ -20,11 +20,13 @@ keywords = [
 ]
 
 def get_path_completions(text: str):
-    if (text.startswith('source ')):
-        text = text.removeprefix("source ")
+    line = readline.get_line_buffer()
+    if (line.startswith('source ')):
+        line = line.replace("source", "", 1).lstrip()
 
     # 扩展用户目录（如 ~）
-    expanded_text = os.path.expanduser(text)
+    expanded_text = os.path.expanduser(line)
+
     
     # 分离目录和前缀
     if os.path.isdir(expanded_text):
