@@ -323,7 +323,7 @@ def test_query_with_limit_claus4():
     sql = "select * from Student offset 1 limit 5;";
     ret = client.execute(sql)
     assert ret["success"] == False
-    assert ret["message"] == "Sql syntax error near [offset]."
+    assert ret["message"] == "syntax error, unexpected OFFSET, expecting ';'."
 
 
 ## query with limit clause.
