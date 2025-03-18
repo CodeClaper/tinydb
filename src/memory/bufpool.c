@@ -8,6 +8,7 @@
 #include "data.h"
 #include "fdesc.h"
 #include "ltree.h"
+#include "table.h"
 #include "log.h"
 
 /*
@@ -56,6 +57,11 @@ void BufferWriteBlock(Buffer buffer) {
 
     /* Only flush dirty page. */
     if (get_node_state(node) != DIRTY_STATE)
+        return;
+
+    /* Maybe table has dropped, so necessary 
+     * to check if table still exists. */
+    if (!check_table_exist(tag.tableName))
         return;
 
     fdesc = get_file_desc(tag.tableName);
