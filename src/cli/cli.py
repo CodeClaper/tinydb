@@ -27,7 +27,6 @@ def get_path_completions():
     # 扩展用户目录（如 ~）
     expanded_text = os.path.expanduser(line)
 
-    
     # 分离目录和前缀
     if os.path.isdir(expanded_text):
         dir_path = expanded_text
@@ -57,7 +56,7 @@ def get_path_completions():
 ## Load keywords.
 def completer(text, state):
     keyword_options = [i for i in keywords if i.startswith(text) or i.startswith(text.upper())]
-    path_options = get_path_completions(text)
+    path_options = get_path_completions()
     options = keyword_options + path_options
     try:
         return options[state]
