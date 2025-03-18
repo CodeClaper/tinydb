@@ -145,7 +145,7 @@ static void handler(int sig) {
 			break;
 		case SIGINT:
 			db_log(SYS_ERROR, "Caught SIGINT: interactive attention signal, probably a ctrl+c.");
-			break;
+            return;
 		case SIGSEGV:
 			db_log(SYS_ERROR, "Caught SIGSEGV: segfault.");
 			break;
