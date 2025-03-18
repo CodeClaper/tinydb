@@ -14,8 +14,8 @@ all: $(objects)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 y.tab.c: sql.l sql.y
-	lex sql.l
-	yacc -d sql.y
+	bison -d -y sql.y
+	flex sql.l
 
 PHONY: clean all
 

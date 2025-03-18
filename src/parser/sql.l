@@ -9,9 +9,10 @@
 #include "intpr.h"
 #include "log.h"
 #include "y.tab.h"
+#include "list.h"
 int lineno = 1;
-int yyerror(const char *s);
 int yylex();
+int yyerror(List *states, const char *s);
 
 /* macro to save the text and return a token */
 #define TOK(name) { return name; }
@@ -108,13 +109,9 @@ FALSE                   return FALSE;
                           } 
                           return STRINGVALUE;
                         } 
-'[^'\n]*$	            { yyerror("Unterminated string");  return YYerror;}
+'[^'\n]*$	            { yyerror(NULL, "Unterminated string");  return YYerror;}
 \n                      { lineno++; return NL;}
 [ \t]                   /* igonore space */
 "--".*$		;	        /* comment */
 %%
 
-int yyerror(const char *s) {
-	db_log(ERROR, "Sql syntax error near [%s].", yytext);
-    return 0;
-}

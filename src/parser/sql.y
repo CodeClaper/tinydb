@@ -14,6 +14,7 @@ int yywrap() {
     return 1;
 }
 int yylex();
+int yyerror(List *states, const char *s);
 %} 
 %union 
 {
@@ -166,6 +167,9 @@ int yylex();
 %type <statement> statement;
 %type <list> statements;
 %parse-param {List *states}
+%lex-param {List *states}
+%locations
+%define parse.error detailed
 
 %%
 statements: 
@@ -1274,3 +1278,8 @@ end:
     | ';' NL
     ;
 %%
+
+int yyerror(List *states, const char *s) {
+	db_log(ERROR, "%s.", s);
+    return 0;
+}
